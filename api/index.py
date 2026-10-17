@@ -33,7 +33,28 @@ except Exception as _e_init:
 </html>"""
         return Response(html, mimetype='text/html', status=500)
 
+class VercelPathFixerMiddleware:
+    def __init__(self, wsgi_app):
+        self.wsgi_app = wsgi_app
+
+    def __call__(self, environ, start_response):
+        matched_path = environ.get('HTTP_X_MATCHED_PATH') or environ.get('HTTP_X_VERCEL_MATCHED_PATH')
+        if matched_path:
+            # Garante que querystring não seja misturada no PATH_INFO se vier no matched_path
+            if '?' in matched_path:
+                path_part, query_part = matched_path.split('?', 1)
+                environ['PATH_INFO'] = path_part
+                if not environ.get('QUERY_STRING'):
+                    environ['QUERY_STRING'] = query_part
+            else:
+                environ['PATH_INFO'] = matched_path
+        return self.wsgi_app(environ, start_response)
+
+if app is not None:
+    app.wsgi_app = VercelPathFixerMiddleware(app.wsgi_app)
+
 # Exportações explícitas no escopo global para compatibilidade total com o builder da Vercel
 application = app
 handler = app
+
 
