@@ -14,10 +14,33 @@ import re
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+from dotenv import load_dotenv
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
+
 CERT_DIR = os.path.join(os.path.dirname(__file__), 'certificado')
 os.makedirs(CERT_DIR, exist_ok=True)
-DEFAULT_CERT_PATH = os.path.join(CERT_DIR, 'NFT_LOGISTICS_LTDA_47998441000198_1771873069312658700_nftcnpj.pfx')
-DEFAULT_CERT_PASS = b'nftecnpj'
+
+# Suporte a injeção de Certificado via Base64 na Vercel (sem precisar subir o .pfx no Git)
+_env_cert_base64 = os.environ.get('CERT_PFX_BASE64', '').strip()
+if _env_cert_base64:
+    try:
+        _cloud_pfx_path = os.path.join(CERT_DIR, 'cloud_empresa.pfx')
+        with open(_cloud_pfx_path, 'wb') as _f_cloud:
+            _f_cloud.write(base64.b64decode(_env_cert_base64))
+        _env_cert_path = _cloud_pfx_path
+    except Exception as _e_b64:
+        print(f"Aviso ao carregar CERT_PFX_BASE64: {_e_b64}")
+        _env_cert_path = ''
+else:
+    _env_cert_path = os.environ.get('CERT_PFX_PATH', '').strip()
+
+DEFAULT_CERT_PATH = (
+    os.path.abspath(_env_cert_path)
+    if _env_cert_path and os.path.exists(_env_cert_path)
+    else os.path.join(CERT_DIR, 'certificado_empresa.pfx')
+)
+_env_cert_pass = os.environ.get('CERT_PFX_PASSWORD', '')
+DEFAULT_CERT_PASS = _env_cert_pass.encode('utf-8') if _env_cert_pass else b''
 
 CERT_PATH = DEFAULT_CERT_PATH
 CERT_PASS = DEFAULT_CERT_PASS
@@ -72,11 +95,24 @@ def carregar_certificado_salvo():
     except Exception as e:
         print(f"Aviso ao carregar config de certificado: {e}")
 
-    # Fallback: se CERT_PATH não existir, procura o primeiro .pfx na pasta certificado
+    # Fallback: se CERT_PATH não existir ou não estiver configurado no banco
     if not os.path.exists(CERT_PATH) and os.path.exists(CERT_DIR):
         pfxs = [f for f in os.listdir(CERT_DIR) if f.lower().endswith(('.pfx', '.p12'))]
         if pfxs:
-            CERT_PATH = os.path.join(CERT_DIR, pfxs[0])
+            # Prioriza arquivo que contenha 'cnpj' ou 'nft' ou 'empresa'
+            cand_pj = [f for f in pfxs if any(k in f.lower() for k in ('cnpj', 'nft', 'empresa', 'nfe'))]
+            chosen = cand_pj[0] if cand_pj else pfxs[0]
+            CERT_PATH = os.path.join(CERT_DIR, chosen)
+            if not CERT_PASS:
+                # Testa senhas comuns cadastradas no template (ex: 'nftecnpj')
+                for test_pwd in (b'nftecnpj', b''):
+                    try:
+                        with open(CERT_PATH, 'rb') as f_test:
+                            pkcs12.load_key_and_certificates(f_test.read(), test_pwd)
+                        CERT_PASS = test_pwd
+                        break
+                    except Exception:
+                        pass
 
 # Executa carga inicial
 carregar_certificado_salvo()

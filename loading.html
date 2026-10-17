@@ -402,14 +402,32 @@
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 1200);
 
-        const response = await fetch(PING_URL, {
-          method: "GET",
-          signal: controller.signal,
-          cache: "no-store"
-        });
+        let serverOk = false;
+        try {
+          const response = await fetch(PING_URL, {
+            method: "GET",
+            signal: controller.signal,
+            cache: "no-store"
+          });
+          if (response.ok) {
+            serverOk = true;
+          }
+        } catch (fetchErr) {
+          // Se for erro de CORS (típico de file:///), testa detecção por imagem estática do backend
+          try {
+            await new Promise((resolve, reject) => {
+              const img = new Image();
+              img.onload = () => resolve(true);
+              img.onerror = () => reject(false);
+              img.src = `${TARGET_URL}/static/img/brand/NFT%20Logo%20(3).webp?t=${Date.now()}`;
+              setTimeout(() => reject(false), 900);
+            });
+            serverOk = true;
+          } catch (_) {}
+        }
         clearTimeout(timeoutId);
 
-        if (response.ok) {
+        if (serverOk) {
           isConnected = true;
           clearInterval(progressInterval);
           

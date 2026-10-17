@@ -35,18 +35,35 @@ Function CheckServer()
     On Error GoTo 0
 End Function
 
+Sub StartPythonServer()
+    On Error Resume Next
+    Dim objWMIService, objStartup, objConfig, intProcessID, strCommand, intReturn
+    Set objWMIService = GetObject("winmgmts:\\.\root\cimv2")
+    Set objStartup = objWMIService.Get("Win32_ProcessStartup")
+    Set objConfig = objStartup.SpawnInstance_
+    objConfig.ShowWindow = 0 ' 0 = SW_HIDE (janela oculta/invisível)
+
+    strPythonExe = strGeradorDir & "\venv\Scripts\python.exe"
+    If Not fso.FileExists(strPythonExe) Then
+        strPythonExe = "python.exe"
+    End If
+    strCommand = """" & strPythonExe & """ """ & strGeradorDir & "\app.py"""
+    
+    Dim objProcess
+    Set objProcess = objWMIService.Get("Win32_Process")
+    intReturn = objProcess.Create(strCommand, strGeradorDir, objConfig, intProcessID)
+    On Error GoTo 0
+End Sub
+
 ' 1. Verifica se o backend já está respondendo
 bServerRunning = CheckServer()
 
-' Se o servidor JÁ estiver rodando, abre direto o portal.
-' Se NÃO estiver rodando, abre IMEDIATAMENTE a tela de loading em primeiro plano
-' e inicia o servidor Python em segundo plano.
 If bServerRunning Then
     strInitialUrl = "http://127.0.0.1:1652"
 Else
     strInitialUrl = "file:///" & Replace(strLoadingFile, "\", "/")
-    ' Inicia o servidor Python Flask em segundo plano
-    WshShell.Run "cmd.exe /c " & Chr(34) & strBat & Chr(34), 0, False
+    ' Inicia o servidor Python Flask via WMI de modo independente e transparente
+    StartPythonServer
 End If
 
 ' 2. Localiza Chrome ou Edge para abrir em modo App (janela de aplicativo nativo)

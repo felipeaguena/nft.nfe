@@ -10,7 +10,12 @@ if sys.stderr is None:
 import sqlite3
 import json
 import xml.etree.ElementTree as ET
-from flask import Flask, render_template, request, jsonify, send_file, redirect
+from flask import Flask, render_template, request, jsonify, send_file, redirect, session, make_response
+from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from dotenv import load_dotenv
+import jwt
 import tempfile
 import openpyxl
 import io
@@ -18,12 +23,17 @@ import re
 import urllib.request
 import urllib.parse
 import unicodedata
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 import random
 import hashlib
 import base64
+
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
+load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
+
 import sefaz_client
 import pucomex_client
+import security
 import zipfile
 import shutil
 from lxml import etree
@@ -59,6 +69,99 @@ def get_template_sig_and_cert():
     return DEFAULT_SIGNATURE_VALUE, DEFAULT_X509_CERT
 
 app = Flask(__name__)
+
+# Configuração de Segredo de Sessão e Cookies Seguros para Produção
+app.secret_key = (
+    os.environ.get('FLASK_SECRET_KEY')
+    or os.environ.get('AUTH_SECRET')
+    or os.urandom(32)
+)
+_is_prod_env = (
+    os.environ.get('VERCEL') == '1'
+    or os.environ.get('FLASK_ENV', '').lower() == 'production'
+    or os.environ.get('NODE_ENV', '').lower() == 'production'
+)
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+    SESSION_COOKIE_SECURE=True if _is_prod_env else False,
+)
+
+# Configuração de CORS estrita com base em ALLOWED_ORIGIN (sem usar '*' com credenciais)
+ALLOWED_ORIGIN = os.environ.get('ALLOWED_ORIGIN', 'http://localhost:1652').strip()
+_allowed_origins_list = [o.strip() for o in ALLOWED_ORIGIN.split(',') if o.strip() and o.strip() != '*']
+if not _allowed_origins_list:
+    _allowed_origins_list = ['http://localhost:1652', 'http://127.0.0.1:1652']
+
+CORS(
+    app,
+    origins=_allowed_origins_list,
+    supports_credentials=True,
+    allow_headers=['Content-Type', 'Authorization', 'X-Internal-API-Key'],
+    methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
+)
+
+# Configuração de Rate Limiting contra ataques de força bruta e abuso de API
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["300 per minute"],
+    storage_uri="memory://",
+)
+
+# Rotas públicas isentas de autenticação de API e páginas
+PUBLIC_ENDPOINTS = {
+    'ping',
+    'pagina_login',
+    'api_auth_login',
+    'api_auth_logout',
+    'static',
+}
+
+@app.before_request
+def enforce_private_routes_auth():
+    if request.method == 'OPTIONS':
+        return None
+    if request.endpoint in PUBLIC_ENDPOINTS or (request.path and request.path.startswith('/static/')):
+        return None
+
+    # Rotas de páginas HTML públicas
+    if request.path in ('/login', '/api/ping'):
+        return None
+
+    # 1. Validação para chamadas de API ou uploads
+    is_api_or_action = (
+        request.path.startswith('/api/')
+        or request.path.startswith('/tipos_operacao')
+        or request.path in ('/upload_di_duimp', '/upload_xml', '/generate_xml', '/export_excel', '/import_excel', '/download_ncm_json', '/download_ncm_excel')
+    )
+    if is_api_or_action:
+        if not security.verify_auth_token_or_internal_key():
+            return jsonify({"error": "Não autorizado. Token JWT ou sessão inválida ou expirada."}), 401
+        return None
+
+    # 2. Validação para páginas HTML (redireciona para /login se não autenticado)
+    # Exige autenticação de sessão explícita para navegação nas telas do sistema
+    token_jwt_valido = False
+    auth_header = request.headers.get('Authorization', '').strip()
+    cookie_token = request.cookies.get('__Secure-authjs.session-token') or request.cookies.get('authjs.session-token')
+    auth_secret = os.environ.get('AUTH_SECRET', '').strip()
+    if (auth_header.startswith('Bearer ') or cookie_token) and auth_secret:
+        try:
+            tok = auth_header[7:].strip() if auth_header.startswith('Bearer ') else cookie_token
+            jwt.decode(tok, auth_secret, algorithms=['HS256', 'HS384', 'HS512'])
+            token_jwt_valido = True
+        except Exception:
+            token_jwt_valido = False
+
+    is_authenticated = (session.get('user_authenticated') is True or token_jwt_valido)
+    if not is_authenticated:
+        from urllib.parse import quote
+        next_target = quote(request.full_path if request.query_string else request.path)
+        return redirect(f"/login?next={next_target}")
+
+    return None
+
 DB_PATH = os.path.join(os.path.dirname(__file__), 'database.db')
 
 _DB_INITIALIZED = False
@@ -998,6 +1101,12 @@ def build_nfe_element(cabecalho, itens, rodape):
 
     return root
 
+@app.route('/login', methods=['GET'])
+def pagina_login():
+    if session.get('user_authenticated') is True:
+        return redirect('/')
+    return render_template('login.html')
+
 @app.route('/')
 def portal():
     return render_template('portal.html')
@@ -1017,6 +1126,68 @@ def modulo_nova_nf():
     return render_template('nova_nf.html')
 
 
+# === ROTAS DE AUTENTICAÇÃO (LOGIN / LOGOUT COM RATE LIMITING E BCRYPT) ===
+@app.route('/api/auth/login', methods=['POST'])
+@limiter.limit("5 per minute")
+def api_auth_login():
+    data, err_resp = security.validate_json_payload(security.LoginPayloadSchema)
+    if err_resp:
+        return jsonify({"error": "Credenciais inválidas"}), 401
+
+    user = security.authenticate_user_credentials(data['email'], data['password'])
+    if not user:
+        return jsonify({"error": "Credenciais inválidas"}), 401
+
+    session['user_authenticated'] = True
+    session['user'] = user
+
+    auth_secret = os.environ.get('AUTH_SECRET', '').strip()
+    token_jwt = ""
+    if auth_secret:
+        payload_jwt = {
+            "sub": user["id"],
+            "email": user["email"],
+            "name": user["name"],
+            "role": user["role"],
+            "exp": datetime.now(timezone.utc) + timedelta(hours=8)
+        }
+        token_jwt = jwt.encode(payload_jwt, auth_secret, algorithm="HS256")
+
+    resp = make_response(jsonify({
+        "status": "success",
+        "user": user,
+        "token": token_jwt
+    }))
+    if token_jwt:
+        cookie_name = "__Secure-authjs.session-token" if _is_prod_env else "authjs.session-token"
+        resp.set_cookie(
+            cookie_name,
+            token_jwt,
+            httponly=True,
+            samesite='Lax',
+            secure=True if _is_prod_env else False,
+            max_age=8 * 3600,
+            path='/'
+        )
+    return resp
+
+
+@app.route('/logout', methods=['GET', 'POST'])
+@app.route('/api/auth/logout', methods=['GET', 'POST'])
+def api_auth_logout():
+    session.clear()
+    is_json = request.is_json or request.path.startswith('/api/') or request.headers.get('Accept') == 'application/json'
+    if is_json:
+        resp = make_response(jsonify({"status": "success", "message": "Sessão encerrada com sucesso."}))
+    else:
+        resp = make_response(redirect('/login'))
+
+    resp.delete_cookie("__Secure-authjs.session-token", path='/')
+    resp.delete_cookie("authjs.session-token", path='/')
+    resp.delete_cookie("session", path='/')
+    return resp
+
+
 # === ROTAS DE EMPRESAS ===
 @app.route('/empresas')
 def page_empresas():
@@ -1024,10 +1195,12 @@ def page_empresas():
 
 @app.route('/api/empresas', methods=['GET', 'POST'])
 def api_empresas():
-    conn = get_db_connection()
-    c = conn.cursor()
     if request.method == 'POST':
-        data = request.json
+        data, err_resp = security.validate_json_payload(security.EmpresaPayloadSchema)
+        if err_resp:
+            return err_resp
+        conn = get_db_connection()
+        c = conn.cursor()
         c.execute('''
             INSERT INTO cadastros (tipo, nome, cnpj_cpf, ie, logradouro, numero, complemento, bairro, municipio, uf, cep, cpais, xpais, cmun, fone, apelido, ind_ie)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -1045,6 +1218,8 @@ def api_empresas():
         conn.close()
         return jsonify({"status": "success", "id": new_id, "empresa": dict(row) if row else {}})
     
+    conn = get_db_connection()
+    c = conn.cursor()
     c.execute('SELECT * FROM cadastros')
     rows = c.fetchall()
     conn.close()
@@ -1052,12 +1227,12 @@ def api_empresas():
 
 @app.route('/api/empresas/<int:cid>', methods=['PUT', 'DELETE'])
 def api_edit_delete_empresa(cid):
-    conn = get_db_connection()
-    c = conn.cursor()
-    if request.method == 'DELETE':
-        c.execute('DELETE FROM cadastros WHERE id = ?', (cid,))
-    elif request.method == 'PUT':
-        data = request.json
+    if request.method == 'PUT':
+        data, err_resp = security.validate_json_payload(security.EmpresaPayloadSchema)
+        if err_resp:
+            return err_resp
+        conn = get_db_connection()
+        c = conn.cursor()
         c.execute('''
             UPDATE cadastros
             SET tipo=?, nome=?, cnpj_cpf=?, ie=?, logradouro=?, numero=?, complemento=?, bairro=?, municipio=?, uf=?, cep=?, cpais=?, xpais=?, cmun=?, fone=?, apelido=?, ind_ie=?
@@ -1070,6 +1245,14 @@ def api_edit_delete_empresa(cid):
             data.get('apelido', ''), data.get('ind_ie', ''),
             cid
         ))
+        conn.commit()
+        conn.close()
+        return jsonify({"status": "success"})
+
+    conn = get_db_connection()
+    c = conn.cursor()
+    if request.method == 'DELETE':
+        c.execute('DELETE FROM cadastros WHERE id = ?', (cid,))
     conn.commit()
     conn.close()
     return jsonify({"status": "success"})
@@ -1300,7 +1483,9 @@ def get_tipos_operacao():
 
 @app.route('/tipos_operacao', methods=['POST'])
 def save_tipo_operacao():
-    data = request.json
+    data, err_resp = security.validate_json_payload(security.TipoOperacaoPayloadSchema)
+    if err_resp:
+        return err_resp
     nome = data.get('nome_operacao', '').strip()
     if not nome:
         return jsonify({"error": "Nome da operação é obrigatório"}), 400
@@ -1383,7 +1568,9 @@ def save_tipo_operacao():
 
 @app.route('/api/operacoes/reordenar', methods=['POST'])
 def reordenar_operacoes():
-    data = request.json or {}
+    data, err_resp = security.validate_json_payload(security.ReordenarOperacoesSchema)
+    if err_resp:
+        return err_resp
     ordem_ids = data.get('ordem_ids', [])
     if not isinstance(ordem_ids, list):
         return jsonify({"status": "error", "message": "ordem_ids deve ser uma lista de IDs."}), 400
@@ -1504,7 +1691,9 @@ def get_config_regimes_tributarios():
 
 @app.route('/api/config/regimes_tributarios', methods=['POST'])
 def save_config_regimes_tributarios():
-    data = request.json or {}
+    data, err_resp = security.validate_json_payload(security.RegimesTributariosPayloadSchema)
+    if err_resp:
+        return err_resp
     novos_regimes = data.get('regimes')
     if not isinstance(novos_regimes, dict):
         return jsonify({"status": "error", "message": "Dados de regimes inválidos"}), 400
@@ -1579,7 +1768,9 @@ def get_ultima_operacao():
 
 @app.route('/api/config/ultima_operacao', methods=['POST'])
 def set_ultima_operacao():
-    data = request.json or {}
+    data, err_resp = security.validate_json_payload(security.UltimaOperacaoPayloadSchema)
+    if err_resp:
+        return err_resp
     modulo = data.get('modulo', 'rascunho')
     nome_operacao = (data.get('nome_operacao') or '').strip()
     chave = f"ultima_operacao_{modulo}"
@@ -1597,7 +1788,9 @@ def set_ultima_operacao():
 
 @app.route('/api/config/salvar', methods=['POST'])
 def salvar_config_geral():
-    data = request.json or {}
+    data, err_resp = security.validate_json_payload(security.ConfigGeralPayloadSchema)
+    if err_resp:
+        return err_resp
     chave = data.get('chave')
     valor = data.get('valor')
     if not chave:
@@ -1629,9 +1822,9 @@ os.makedirs(RASCUNHOS_DIR, exist_ok=True)
 @app.route('/api/rascunhos/salvar', methods=['POST'])
 def salvar_rascunho():
     try:
-        data = request.get_json(force=True)
-        if not data:
-            return jsonify({"error": "Dados inválidos para o rascunho"}), 400
+        data, err_resp = security.validate_json_payload(security.RascunhoPayloadSchema)
+        if err_resp:
+            return err_resp
 
         rascunho_id = data.get('id')
         referencia_interna = str(data.get('referencia_interna') or '').strip()
@@ -1943,9 +2136,12 @@ DUIMP_IMPORTADA_DIR = os.path.join(os.path.dirname(__file__), 'DUIMP Importada')
 os.makedirs(DUIMP_IMPORTADA_DIR, exist_ok=True)
 
 @app.route('/api/duimp/importar_por_numero', methods=['POST'])
+@limiter.limit("10 per minute")
 def api_importar_duimp_por_numero():
     try:
-        data = request.get_json(force=True) or {}
+        data, err_resp = security.validate_json_payload(security.DuimpImportarPayloadSchema)
+        if err_resp:
+            return err_resp
         numero_duimp_raw = str(data.get('numero_duimp') or '').strip().upper()
         numero_duimp = re.sub(r'[^A-Z0-9-]', '', numero_duimp_raw)
 
@@ -3094,7 +3290,10 @@ def validar_dados_nfe(cabecalho, itens, rodape, referencia_interna=''):
 @app.route('/api/analisar_rascunho', methods=['POST'])
 def api_analisar_rascunho():
     try:
-        data = request.json or {}
+        validated, err_resp = security.validate_json_payload(security.NFeDocumentPayloadSchema, request.get_json(silent=True) or {})
+        if err_resp:
+            return jsonify({"sucesso": False, "error": err_resp[0].get("error", "Payload inválido")}), err_resp[1]
+        data = validated.model_dump()
         cabecalho = data.get('cabecalho', {})
         itens = data.get('itens', [])
         rodape = data.get('rodape', {})
@@ -3109,9 +3308,13 @@ def api_analisar_rascunho():
 
 # === ROTA: GERAR XML ===
 @app.route('/generate_xml', methods=['POST'])
+@limiter.limit("30 per minute")
 def generate_xml():
     try:
-        data = request.json or {}
+        validated, err_resp = security.validate_json_payload(security.NFeDocumentPayloadSchema, request.get_json(silent=True) or {})
+        if err_resp:
+            return jsonify(err_resp[0]), err_resp[1]
+        data = validated.model_dump()
         cabecalho = data.get('cabecalho', {})
         itens = data.get('itens', [])
         rodape = data.get('rodape', {})
@@ -3176,7 +3379,10 @@ def generate_xml():
 # === ROTAS: EXCEL ===
 @app.route('/export_excel', methods=['POST'])
 def export_excel():
-    data = request.json or {}
+    validated, err_resp = security.validate_json_payload(security.ExportExcelPayloadSchema, request.get_json(silent=True) or {})
+    if err_resp:
+        return jsonify(err_resp[0]), err_resp[1]
+    data = validated.model_dump()
     itens = data.get('itens', [])
     if not itens:
         return jsonify({"error": "Nenhum item para exportar"}), 400
@@ -3308,7 +3514,10 @@ def download_ncm_excel():
 
 @app.route('/api/ncm/unidades_tributaveis', methods=['POST'])
 def api_ncm_unidades_tributaveis():
-    data = request.json or {}
+    validated, err_resp = security.validate_json_payload(security.UnidadesTributaveisPayloadSchema, request.get_json(silent=True) or {})
+    if err_resp:
+        return jsonify(err_resp[0]), err_resp[1]
+    data = validated.model_dump()
     ncms = data.get('ncms', [])
     if not ncms:
         return jsonify({})
@@ -3559,11 +3768,12 @@ def api_feiras():
         return jsonify(lista)
 
     elif request.method == 'POST':
-        data = request.json or {}
-        nome = (data.get('nome') or '').strip()
-        if not nome:
+        validated, err_resp = security.validate_json_payload(security.FeiraPayloadSchema, request.get_json(silent=True) or {})
+        if err_resp:
             conn.close()
-            return jsonify({'error': 'O Nome da Feira é obrigatório.'}), 400
+            return jsonify(err_resp[0]), err_resp[1]
+        data = validated.model_dump()
+        nome = (data.get('nome') or '').strip()
 
         data_feira = (data.get('data_feira') or '').strip()
         deadline = (data.get('deadline') or '').strip()
@@ -3607,11 +3817,12 @@ def api_feira_item(feira_id):
         })
 
     elif request.method == 'PUT':
-        data = request.json or {}
-        nome = (data.get('nome') or '').strip()
-        if not nome:
+        validated, err_resp = security.validate_json_payload(security.FeiraPayloadSchema, request.get_json(silent=True) or {})
+        if err_resp:
             conn.close()
-            return jsonify({'error': 'O Nome da Feira é obrigatório.'}), 400
+            return jsonify(err_resp[0]), err_resp[1]
+        data = validated.model_dump()
+        nome = (data.get('nome') or '').strip()
 
         data_feira = (data.get('data_feira') or '').strip()
         deadline = (data.get('deadline') or '').strip()
@@ -3634,6 +3845,7 @@ def api_feira_item(feira_id):
         return jsonify({'status': 'success', 'message': 'Feira removida com sucesso!'})
 
 @app.route('/api/feiras/sync_sheets', methods=['GET', 'POST'])
+@limiter.limit("10 per minute")
 def api_feiras_sync_sheets():
     """Obtém ou atualiza a base de feiras a partir de um link do Google Sheets informado pelo usuário"""
     import urllib.request, csv, io, re
@@ -3641,7 +3853,7 @@ def api_feiras_sync_sheets():
     conn = get_db_connection()
     c = conn.cursor()
 
-    padrao_url = 'https://docs.google.com/spreadsheets/d/1AdyWmSlqCaVaPJ0khW2siap-kVzNxu-n8kdyZu5u7SU/edit?gid=82185219'
+    padrao_url = os.environ.get('FEIRAS_GOOGLE_SHEETS_URL', '').strip()
 
     # Se for GET, retorna o link salvo atualmente no sistema
     if request.method == 'GET':
@@ -3651,12 +3863,24 @@ def api_feiras_sync_sheets():
         return jsonify({'status': 'success', 'url': url_salva})
 
     # Se for POST, executa a sincronização com o link enviado ou salvo
-    data = request.json or {}
+    validated, err_resp = security.validate_json_payload(security.SyncSheetsPayloadSchema, request.get_json(silent=True) or {})
+    if err_resp:
+        conn.close()
+        return jsonify(err_resp[0]), err_resp[1]
+    data = validated.model_dump()
     url_input = (data.get('url') or '').strip()
 
     if not url_input:
         row = c.execute("SELECT valor FROM sistema_config WHERE chave = 'feiras_google_sheets_url'").fetchone()
         url_input = row['valor'] if (row and row['valor']) else padrao_url
+
+    if not url_input:
+        conn.close()
+        return jsonify({
+            'status': 'error',
+            'url': '',
+            'message': 'Nenhuma URL do Google Sheets informada ou configurada em FEIRAS_GOOGLE_SHEETS_URL.'
+        }), 400
 
     # Salva o novo link no banco para futuras sincronizações
     c.execute("""
@@ -3847,11 +4071,12 @@ def api_locais_entrega():
         return jsonify(lista)
 
     elif request.method == 'POST':
-        data = request.json or {}
-        nome = (data.get('nome') or '').strip()
-        if not nome:
+        validated, err_resp = security.validate_json_payload(security.LocalEntregaPayloadSchema, request.get_json(silent=True) or {})
+        if err_resp:
             conn.close()
-            return jsonify({'error': 'O Nome do Local é obrigatório.'}), 400
+            return jsonify(err_resp[0]), err_resp[1]
+        data = validated.model_dump()
+        nome = (data.get('nome') or '').strip()
 
         endereco = re.sub(r'[\r\n]+', ' - ', (data.get('endereco') or '')).strip()
         endereco = re.sub(r'\s+', ' ', endereco)
@@ -3888,11 +4113,12 @@ def api_local_entrega_item(local_id):
         })
 
     elif request.method == 'PUT':
-        data = request.json or {}
-        nome = (data.get('nome') or '').strip()
-        if not nome:
+        validated, err_resp = security.validate_json_payload(security.LocalEntregaPayloadSchema, request.get_json(silent=True) or {})
+        if err_resp:
             conn.close()
-            return jsonify({'error': 'O Nome do Local é obrigatório.'}), 400
+            return jsonify(err_resp[0]), err_resp[1]
+        data = validated.model_dump()
+        nome = (data.get('nome') or '').strip()
 
         endereco = re.sub(r'[\r\n]+', ' - ', (data.get('endereco') or '')).strip()
         endereco = re.sub(r'\s+', ' ', endereco)
@@ -3916,14 +4142,23 @@ def api_local_entrega_item(local_id):
         conn.close()
         return jsonify({'status': 'success', 'message': 'Local removido com sucesso!'})
 
-@app.route('/api/ping')
+@app.route('/api/ping', methods=['GET', 'OPTIONS'])
 def ping():
-    resp = jsonify({'status': 'ok', 'port': 1652})
-    resp.headers['Access-Control-Allow-Origin'] = '*'
+    # Permite retorno rápido e compatível com a tela de carregamento local (loading.html / file://)
+    resp = make_response(jsonify({'status': 'ok', 'port': 1652}))
+    origin = request.headers.get('Origin', '')
+    if origin in ('null', 'file://') or origin.startswith('http://localhost') or origin.startswith('http://127.0.0.1'):
+        resp.headers['Access-Control-Allow-Origin'] = origin if origin else '*'
+        resp.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+        resp.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
     return resp
 
 @app.route('/api/shutdown', methods=['POST', 'GET'])
+@limiter.limit("3 per minute")
 def shutdown_server():
+    if _is_prod_env:
+        return jsonify({'error': 'Operação de desligamento remoto desativada em produção.'}), 403
+
     import os, subprocess, threading, ctypes
 
     def close_app_windows():
@@ -3957,7 +4192,7 @@ def shutdown_server():
         close_app_windows()
         time.sleep(0.3)
         try:
-            subprocess.run(f'taskkill /F /T /PID {os.getpid()}', shell=True)
+            subprocess.run(['taskkill', '/F', '/T', '/PID', str(os.getpid())], check=False)
         except Exception:
             pass
 
@@ -3970,6 +4205,7 @@ def api_certificado_status():
     return jsonify(info)
 
 @app.route('/api/certificado/importar', methods=['POST'])
+@limiter.limit("5 per minute")
 def api_certificado_importar():
     try:
         if 'file' not in request.files and 'certificado' not in request.files:
@@ -3984,7 +4220,9 @@ def api_certificado_importar():
         if ext not in ('.pfx', '.p12'):
             return jsonify({'status': 'error', 'message': 'Formato não suportado. Por favor, envie um arquivo .pfx ou .p12.'}), 400
         
-        senha = (request.form.get('senha') or 'nftecnpj').strip()
+        senha = (request.form.get('senha') or os.environ.get('CERT_PFX_PASSWORD') or '').strip()
+        if not senha:
+            return jsonify({'status': 'error', 'message': 'A senha do certificado digital é obrigatória.'}), 400
         senha_bytes = senha.encode('utf-8')
         
         pfx_bytes = file.read()
@@ -4004,7 +4242,7 @@ def api_certificado_importar():
         cert_dir = os.path.join(os.path.dirname(__file__), 'certificado')
         os.makedirs(cert_dir, exist_ok=True)
         
-        nome_sanitizado = re.sub(r'[^a-zA-Z0-9_\-\.]', '_', filename)
+        nome_sanitizado = re.sub(r'[^a-zA-Z0-9_\-\.]', '_', os.path.basename(filename))
         caminho_final = os.path.join(cert_dir, nome_sanitizado)
         with open(caminho_final, 'wb') as f:
             f.write(pfx_bytes)
@@ -4012,7 +4250,7 @@ def api_certificado_importar():
         # Atualiza o sefaz_client ativo em memória
         sefaz_client.set_active_certificate(caminho_final, senha_bytes)
         
-        # Persiste a configuração no banco de dados SQLite
+        # Persiste a configuração no banco de dados SQLite para inicialização local automática
         conn = get_db_connection()
         conn.execute("INSERT OR REPLACE INTO sistema_config (chave, valor, data_atualizacao) VALUES (?, ?, CURRENT_TIMESTAMP)",
                      ('certificado_ativo_arquivo', nome_sanitizado))
@@ -4028,15 +4266,16 @@ def api_certificado_importar():
         return jsonify({'status': 'error', 'message': f'Erro interno ao importar certificado: {str(e)}'}), 500
 
 @app.route('/api/sefaz/enviar', methods=['POST'])
+@limiter.limit("15 per minute")
 def api_sefaz_enviar():
     try:
-        data = request.json or {}
+        validated, err_resp = security.validate_json_payload(security.SefazEnviarPayloadSchema, request.get_json(silent=True) or {})
+        if err_resp:
+            return jsonify(err_resp[0]), err_resp[1]
+        data = validated.model_dump()
         xml_string = data.get('xml')
         chave_input = (data.get('chave') or 'N/A').strip()
         tpAmb = int(data.get('tpAmb', 2))
-        
-        if not xml_string:
-            return jsonify({'error': 'XML não fornecido'}), 400
             
         # Sanitizar XML (garante regras 598 em homologação, cPais 1600, tolerância 630 e dhEmi/chave)
         xml_sanitizado, chave_calculada = sefaz_client.sanitizar_xml_para_envio(xml_string, tpAmb=tpAmb)
@@ -4136,20 +4375,17 @@ def api_sefaz_enviar():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/sefaz/cancelar', methods=['POST'])
+@limiter.limit("10 per minute")
 def api_sefaz_cancelar():
     try:
-        data = request.json or {}
+        validated, err_resp = security.validate_json_payload(security.SefazCancelarPayloadSchema, request.get_json(silent=True) or {})
+        if err_resp:
+            return jsonify(err_resp[0]), err_resp[1]
+        data = validated.model_dump()
         chave = str(data.get('chave') or '').strip()
         protocolo = str(data.get('protocolo') or '').strip()
         justificativa = str(data.get('justificativa') or '').strip()
         tpAmb = int(data.get('tpAmb', 1)) # Padrão Produção (1)
-        
-        if not chave or len(chave) != 44:
-            return jsonify({'error': 'Chave de acesso inválida ou não informada (deve ter 44 dígitos).'}), 400
-        if not protocolo:
-            return jsonify({'error': 'Número do protocolo de autorização é obrigatório para cancelamento.'}), 400
-        if len(justificativa) < 15:
-            return jsonify({'error': 'A justificativa de cancelamento deve ter no mínimo 15 caracteres (exigência SEFAZ).'}), 400
             
         retorno = sefaz_client.cancelar_nfe(
             chave=chave,
@@ -4203,17 +4439,16 @@ def api_sefaz_cancelar():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/sefaz/carta_correcao', methods=['POST'])
+@limiter.limit("10 per minute")
 def api_sefaz_carta_correcao():
     try:
-        data = request.json or {}
+        validated, err_resp = security.validate_json_payload(security.SefazCartaCorrecaoPayloadSchema, request.get_json(silent=True) or {})
+        if err_resp:
+            return jsonify(err_resp[0]), err_resp[1]
+        data = validated.model_dump()
         chave = str(data.get('chave') or '').strip()
         texto_correcao = str(data.get('texto_correcao') or '').strip()
         tpAmb = int(data.get('tpAmb', 1)) # Padrão Produção (1)
-        
-        if not chave or len(chave) != 44:
-            return jsonify({'error': 'Chave de acesso inválida ou não informada (deve ter 44 dígitos).'}), 400
-        if len(texto_correcao) < 15:
-            return jsonify({'error': 'O texto da Carta de Correção deve ter no mínimo 15 caracteres (exigência SEFAZ).'}), 400
             
         # Determina o próximo nSeqEvento se não informado ou se já houver CC-e anteriores
         conn = get_db_connection()
@@ -4272,14 +4507,15 @@ def api_sefaz_carta_correcao():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/sefaz/consultar', methods=['POST'])
+@limiter.limit("20 per minute")
 def api_sefaz_consultar():
     try:
-        data = request.json or {}
+        validated, err_resp = security.validate_json_payload(security.SefazConsultarPayloadSchema, request.get_json(silent=True) or {})
+        if err_resp:
+            return jsonify(err_resp[0]), err_resp[1]
+        data = validated.model_dump()
         chave = str(data.get('chave') or '').strip().replace(' ', '')
         tpAmb = int(data.get('tpAmb', 1)) # Padrão Produção (1)
-        
-        if not chave or len(chave) != 44:
-            return jsonify({'error': 'Chave de acesso inválida ou não informada (deve ter 44 dígitos).'}), 400
             
         retorno = sefaz_client.consultar_nfe(chave=chave, tpAmb=tpAmb, uf='SP')
         
@@ -5070,12 +5306,12 @@ def api_relatorios_notas():
 @app.route('/api/relatorios/notas/atualizar_referencia', methods=['POST'])
 def api_relatorios_atualizar_referencia():
     try:
-        data = request.json or {}
+        validated, err_resp = security.validate_json_payload(security.RelatorioAtualizarRefSchema, request.get_json(silent=True) or {})
+        if err_resp:
+            return jsonify({'success': False, 'error': err_resp[0].get('error', 'Payload inválido')}), err_resp[1]
+        data = validated.model_dump()
         chave = (data.get('chave') or '').strip().replace(' ', '')
         nova_ref = (data.get('referencia_interna') or '').strip()
-        
-        if not chave:
-            return jsonify({'success': False, 'error': 'Chave de acesso não informada.'}), 400
             
         conn = get_db_connection()
         c = conn.cursor()
@@ -5103,11 +5339,11 @@ def api_relatorios_atualizar_referencia():
 @app.route('/api/relatorios/notas/excluir', methods=['POST'])
 def api_relatorios_excluir_nota():
     try:
-        data = request.json or {}
+        validated, err_resp = security.validate_json_payload(security.RelatorioExcluirNotaSchema, request.get_json(silent=True) or {})
+        if err_resp:
+            return jsonify({'success': False, 'error': err_resp[0].get('error', 'Payload inválido')}), err_resp[1]
+        data = validated.model_dump()
         chave = (data.get('chave') or '').strip().replace(' ', '')
-        
-        if not chave:
-            return jsonify({'success': False, 'error': 'Chave de acesso não informada.'}), 400
             
         conn = get_db_connection()
         c = conn.cursor()
@@ -5126,6 +5362,13 @@ def api_relatorios_excluir_nota():
 
 if __name__ == '__main__':
     get_db_connection().close()
-    app.run(debug=True, port=1652)
+    # Desativa debug=True em produção (Vercel / FLASK_ENV=production)
+    _debug_enabled = (
+        os.environ.get('FLASK_DEBUG', 'false').lower() in ('1', 'true', 'yes')
+        and not _is_prod_env
+    )
+    _port = int(os.environ.get('PORT', 1652))
+    app.run(debug=_debug_enabled, port=_port)
+
 
 

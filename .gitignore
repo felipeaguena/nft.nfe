@@ -1,3 +1,12 @@
+# Variáveis de Ambiente (Segurança Crítica)
+.env*
+!.env.example
+
+# Vercel & Build
+.vercel/
+.next/
+node_modules/
+
 # Python & Bytecode
 __pycache__/
 *.py[cod]
@@ -11,17 +20,32 @@ env/
 ENV/
 .venv/
 
-# Certificados Digitais e Chaves Privadas (Segurança)
+# Certificados Digitais, Sessões e Chaves Privadas (Segurança)
+**/*.pfx
+**/*.p12
+**/*.pem
+**/*.key
+**/*.crt
 gerador/certificado/*.pfx
 gerador/certificado/*.p12
 gerador/certificado/*.pem
 gerador/certificado/*.key
 gerador/certificado/*.crt
+gerador/siscomex_session.json
+siscomex_session.json
 
-# Arquivos Gerados de Downloads (XMLs, DANFEs, ZIPs)
+# Banco de Dados Local (contém dados fiscais e configurações)
+gerador/database.db
+*.db
+*.sqlite
+*.sqlite3
+
+# Arquivos Gerados de Downloads e Importações (XMLs, DANFEs, ZIPs, DUIMPs)
 gerador/downloads/*-nfe.xml
 gerador/downloads/*-danfe.pdf
 gerador/downloads/*-arquivos.zip
+gerador/DUIMP Importada/*.json
+DUIMP Importada/*.json
 
 # Rascunhos e Arquivos de Trabalho Temporários
 gerador/rascunhos/rascunho_*.json
@@ -33,6 +57,8 @@ gerador/rascunhos/rascunho_*.json
 test_out.txt
 last_compact.txt
 last_290.xml
+test_webp.pdf
 
 # Arquivos e Modelos Legados
 arquivos_e_modelos_antigos/
+

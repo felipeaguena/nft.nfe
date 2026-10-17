@@ -3,3 +3,13 @@ Werkzeug==3.0.0
 openpyxl
 pymupdf
 python-barcode
+pydantic>=2.0.0
+PyJWT>=2.8.0
+bcrypt>=4.1.0
+python-dotenv>=1.0.0
+flask-cors>=4.0.0
+flask-limiter>=3.5.0
+lxml
+requests
+cryptography
+signxml

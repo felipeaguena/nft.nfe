@@ -31,38 +31,53 @@ _cached_cert_pem_path = None
 _cached_key_pem_path = None
 
 
+from dotenv import load_dotenv
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
+
+
 def obter_caminho_certificado_ecpf():
     r"""
     Localiza o certificado e-CPF para autenticação no Portal Único Siscomex.
-    1. Verifica se já existe em gerador/certificado/felipe_ecpf.pfx
-    2. Se não existir, tenta exportar do repositório de certificados do Windows (Cert:\CurrentUser\My)
-    3. Fallback para outros certificados pfx em gerador/certificado/
+    1. Verifica variável de ambiente ECPF_PFX_PATH ou gerador/certificado/felipe_ecpf.pfx
+    2. Fallback para outros certificados pfx em gerador/certificado/
     """
+    ecpf_pass_str = os.environ.get('ECPF_PFX_PASSWORD', '')
+    ecpf_pass_bytes = ecpf_pass_str.encode('utf-8') if ecpf_pass_str else None
+
+    env_ecpf_path = os.environ.get('ECPF_PFX_PATH', '').strip()
+    if env_ecpf_path and os.path.exists(env_ecpf_path) and os.path.getsize(env_ecpf_path) > 0:
+        return env_ecpf_path, ecpf_pass_bytes
+
     ecpf_pfx = os.path.join(CERT_DIR, 'felipe_ecpf.pfx')
     if os.path.exists(ecpf_pfx) and os.path.getsize(ecpf_pfx) > 0:
-        return ecpf_pfx, b'senha123'
-    
-    # Tentativa de exportar automaticamente do Windows Certificate Store
-    try:
-        ps_script = """
-        $cert = Get-ChildItem -Path Cert:\\CurrentUser\\My | Where-Object { $_.Subject -like '*AGUENA*' -or $_.Subject -like '*e-CPF*' } | Select-Object -First 1
-        if ($cert -and $cert.HasPrivateKey) {
-            $bytes = $cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pkcs12, 'senha123')
-            [System.IO.File]::WriteAllBytes('""" + ecpf_pfx.replace('\\', '\\\\') + """', $bytes)
-            Write-Output "OK"
-        }
-        """
-        res = subprocess.run(['powershell', '-NoProfile', '-Command', ps_script], capture_output=True, text=True, timeout=10)
-        if os.path.exists(ecpf_pfx) and os.path.getsize(ecpf_pfx) > 0:
-            return ecpf_pfx, b'senha123'
-    except Exception as e:
-        print(f"[PUCOMEX] Aviso ao exportar cert do Windows: {e}")
+        return ecpf_pfx, ecpf_pass_bytes
+
+    # Tentativa de exportar automaticamente do Windows Certificate Store apenas se senha definida no ambiente
+    if ecpf_pass_str and sys.platform == 'win32':
+        try:
+            ps_script = (
+                "$cert = Get-ChildItem -Path Cert:\\CurrentUser\\My | "
+                "Where-Object { $_.Subject -like '*AGUENA*' -or $_.Subject -like '*e-CPF*' } | "
+                "Select-Object -First 1; "
+                "if ($cert -and $cert.HasPrivateKey) { "
+                "$bytes = $cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pkcs12, $env:ECPF_PFX_PASSWORD); "
+                f"[System.IO.File]::WriteAllBytes('{ecpf_pfx.replace(chr(92), chr(92)*2)}', $bytes); "
+                "Write-Output 'OK' }"
+            )
+            subprocess.run(['powershell', '-NoProfile', '-Command', ps_script], capture_output=True, text=True, timeout=10)
+            if os.path.exists(ecpf_pfx) and os.path.getsize(ecpf_pfx) > 0:
+                return ecpf_pfx, ecpf_pass_bytes
+        except Exception as e:
+            print(f"[PUCOMEX] Aviso ao exportar cert do Windows: {e}")
 
     # Fallback para o certificado padrão da pasta (e-CNPJ)
-    for f in os.listdir(CERT_DIR):
-        if f.endswith('.pfx'):
-            full_p = os.path.join(CERT_DIR, f)
-            return full_p, b'nftecnpj'
+    cert_pass_str = os.environ.get('CERT_PFX_PASSWORD', '')
+    cert_pass_bytes = cert_pass_str.encode('utf-8') if cert_pass_str else None
+    if os.path.exists(CERT_DIR):
+        for f in os.listdir(CERT_DIR):
+            if f.endswith('.pfx'):
+                full_p = os.path.join(CERT_DIR, f)
+                return full_p, cert_pass_bytes
             
     return None, None
 

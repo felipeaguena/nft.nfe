@@ -1,14 +1,14 @@
 @echo off
 cd /d "%~dp0"
 
-REM 1. Tenta usar o pythonw ou python do venv local
-if exist "venv\Scripts\pythonw.exe" (
-    start "" "venv\Scripts\pythonw.exe" app.py
+REM 1. Tenta usar o python do venv local (minimizado e estavel)
+if exist "%~dp0venv\Scripts\python.exe" (
+    start "" /min "%~dp0venv\Scripts\python.exe" "%~dp0app.py"
     exit /b 0
 )
 
-if exist "venv\Scripts\python.exe" (
-    start "" /min "venv\Scripts\python.exe" app.py
+if exist "%~dp0venv\Scripts\pythonw.exe" (
+    start "" "%~dp0venv\Scripts\pythonw.exe" "%~dp0app.py"
     exit /b 0
 )
 

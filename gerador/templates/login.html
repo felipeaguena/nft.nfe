@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html data-theme="dark" lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Acesso Restrito — NFT Logistics</title>
+  <link href="/static/img/brand/nftlogo.webp" rel="icon" type="image/webp"/>
+  <link href="https://fonts.googleapis.com" rel="preconnect"/>
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="/static/css/nft-theme.css?v=3.0" rel="stylesheet"/>
+  <script src="/static/js/theme.js"></script>
+  <script src="/static/js/lucide.min.js"></script>
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 50% 10%, rgba(59, 130, 246, 0.08) 0%, rgba(11, 15, 25, 1) 100%);
+      font-family: 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 1.5rem;
+    }
+    .login-card {
+      width: 100%;
+      max-width: 440px;
+      background: var(--card-bg, #131b2e);
+      border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+      border-radius: 20px;
+      padding: 2.5rem 2.25rem;
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(12px);
+    }
+    .brand-logo-wrap {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 1.25rem;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+    }
+    .brand-logo-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .form-control {
+      background-color: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #fff;
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+    }
+    .form-control:focus {
+      background-color: rgba(255, 255, 255, 0.07);
+      border-color: #3b82f6;
+      color: #fff;
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+    }
+    .input-group-text {
+      background-color: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #94a3b8;
+      border-radius: 12px;
+    }
+    .btn-login {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      border: none;
+      color: #fff;
+      font-weight: 700;
+      border-radius: 12px;
+      padding: 0.8rem;
+      font-size: 1rem;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      box-shadow: 0 8px 20px -6px rgba(37, 99, 235, 0.5);
+    }
+    .btn-login:hover {
+      background: linear-gradient(135deg, #1d4ed8, #1e40af);
+      transform: translateY(-1px);
+      box-shadow: 0 12px 24px -6px rgba(37, 99, 235, 0.6);
+      color: #fff;
+    }
+    .btn-login:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .login-error {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+      font-size: 0.88rem;
+      margin-bottom: 1.25rem;
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge-env {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 3px 10px;
+      border-radius: 100px;
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <div class="text-center">
+      <div class="brand-logo-wrap">
+        <img alt="NFT Logistics" class="logo-theme-black" src="/static/img/brand/NFT%20Logo%20(3).webp"/>
+        <img alt="NFT Logistics" class="logo-theme-white" src="/static/img/brand/NFT%20Logo%20(11).webp"/>
+      </div>
+      <div><span class="badge-env">Acesso Seguro</span></div>
+      <h3 class="fw-bold mb-1 text-white">NFT Logistics</h3>
+      <p class="text-muted small mb-4">Portal de Emissão & Gestão Aduaneira / Fiscal</p>
+    </div>
+
+    <div class="login-error" id="loginError">
+      <i data-lucide="alert-circle" style="width: 18px; height: 18px; flex-shrink: 0;"></i>
+      <span id="errorMessage">Credenciais inválidas.</span>
+    </div>
+
+    <form id="formLogin" onsubmit="realizarLogin(event)">
+      <div class="mb-3">
+        <label class="form-label text-muted small fw-semibold" for="inputEmail">E-mail Corporativo</label>
+        <div class="input-group">
+          <span class="input-group-text border-end-0" style="border-top-right-radius: 0; border-bottom-right-radius: 0;">
+            <i data-lucide="mail" style="width: 18px; height: 18px;"></i>
+          </span>
+          <input 
+            type="email" 
+            class="form-control border-start-0" 
+            id="inputEmail" 
+            name="email" 
+            required 
+            placeholder="admin@nftlogistics.com.br"
+            autocomplete="username"
+            style="border-top-left-radius: 0; border-bottom-left-radius: 0;"
+          />
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label text-muted small fw-semibold" for="inputPassword">Senha</label>
+        <div class="input-group">
+          <span class="input-group-text border-end-0" style="border-top-right-radius: 0; border-bottom-right-radius: 0;">
+            <i data-lucide="lock" style="width: 18px; height: 18px;"></i>
+          </span>
+          <input 
+            type="password" 
+            class="form-control border-start-0 border-end-0" 
+            id="inputPassword" 
+            name="password" 
+            required 
+            placeholder="••••••••"
+            autocomplete="current-password"
+            style="border-radius: 0;"
+          />
+          <button 
+            type="button" 
+            class="btn input-group-text border-start-0" 
+            onclick="togglePasswordVisibility()"
+            title="Mostrar/Ocultar Senha"
+            style="border-top-left-radius: 0; border-bottom-left-radius: 0;"
+          >
+            <i data-lucide="eye" id="eyeIcon" style="width: 18px; height: 18px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-login" id="btnLogin">
+        <span id="btnText">Acessar Sistema</span>
+        <i data-lucide="arrow-right" id="btnIcon" style="width: 18px; height: 18px;"></i>
+      </button>
+    </form>
+
+    <div class="mt-4 pt-3 text-center border-top border-secondary border-opacity-10">
+      <small class="text-muted" style="font-size: 0.75rem;">
+        Protegido com autenticação criptografada & Rate Limiting.<br/>
+        &copy; NFT Logistics. Todos os direitos reservados.
+      </small>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    function togglePasswordVisibility() {
+      const pwdInput = document.getElementById('inputPassword');
+      const eyeIcon = document.getElementById('eyeIcon');
+      if (pwdInput.type === 'password') {
+        pwdInput.type = 'text';
+        eyeIcon.setAttribute('data-lucide', 'eye-off');
+      } else {
+        pwdInput.type = 'password';
+        eyeIcon.setAttribute('data-lucide', 'eye');
+      }
+      lucide.createIcons();
+    }
+
+    async function realizarLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('inputEmail').value.trim();
+      const password = document.getElementById('inputPassword').value;
+      const errorBox = document.getElementById('loginError');
+      const errorMsg = document.getElementById('errorMessage');
+      const btn = document.getElementById('btnLogin');
+      const btnText = document.getElementById('btnText');
+
+      errorBox.style.display = 'none';
+      btn.disabled = true;
+      btnText.innerText = 'Autenticando...';
+
+      try {
+        const resp = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await resp.json().catch(() => ({}));
+
+        if (resp.ok && data.status === 'success') {
+          btnText.innerText = 'Redirecionando...';
+          // Obtém query param next se houver
+          const urlParams = new URLSearchParams(window.location.search);
+          const nextUrl = urlParams.get('next') || '/';
+          window.location.href = nextUrl;
+        } else {
+          errorMsg.innerText = data.error || 'Credenciais inválidas ou excesso de tentativas.';
+          errorBox.style.display = 'flex';
+          btn.disabled = false;
+          btnText.innerText = 'Acessar Sistema';
+        }
+      } catch (err) {
+        errorMsg.innerText = 'Erro ao conectar ao servidor. Tente novamente.';
+        errorBox.style.display = 'flex';
+        btn.disabled = false;
+        btnText.innerText = 'Acessar Sistema';
+      }
+    }
+  </script>
+</body>
+</html>

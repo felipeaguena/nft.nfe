@@ -118,6 +118,13 @@
         }
     };
 
+    window.logoutSistema = async function() {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+        } catch(e) {}
+        window.location.href = '/login';
+    };
+
     // Monitora a conexão do servidor (Heartbeat)
     let offlineCount = 0;
     setInterval(() => {
