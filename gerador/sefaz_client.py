@@ -17,8 +17,16 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
 
-CERT_DIR = os.path.join(os.path.dirname(__file__), 'certificado')
-os.makedirs(CERT_DIR, exist_ok=True)
+if os.environ.get('VERCEL') == '1':
+    CERT_DIR = '/tmp/certificado'
+else:
+    CERT_DIR = os.path.join(os.path.dirname(__file__), 'certificado')
+
+try:
+    os.makedirs(CERT_DIR, exist_ok=True)
+except OSError:
+    pass
+
 
 # Suporte a injeção de Certificado via Base64 na Vercel (sem precisar subir o .pfx no Git)
 _env_cert_base64 = os.environ.get('CERT_PFX_BASE64', '').strip()

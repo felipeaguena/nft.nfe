@@ -13,14 +13,24 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 BASE_DIR = os.path.dirname(__file__)
-CERT_DIR = os.path.join(BASE_DIR, 'certificado')
-SESSION_CACHE_FILE = os.path.join(BASE_DIR, 'siscomex_session.json')
-DUIMP_IMPORTADA_DIR = os.path.join(BASE_DIR, 'DUIMP Importada')
-DUIMP_IMPORTADA_ROOT_DIR = os.path.join(os.path.dirname(BASE_DIR), 'DUIMP Importada')
+if os.environ.get('VERCEL') == '1':
+    CERT_DIR = '/tmp/certificado'
+    SESSION_CACHE_FILE = '/tmp/siscomex_session.json'
+    DUIMP_IMPORTADA_DIR = '/tmp/duimp'
+    DUIMP_IMPORTADA_ROOT_DIR = '/tmp/duimp_root'
+else:
+    CERT_DIR = os.path.join(BASE_DIR, 'certificado')
+    SESSION_CACHE_FILE = os.path.join(BASE_DIR, 'siscomex_session.json')
+    DUIMP_IMPORTADA_DIR = os.path.join(BASE_DIR, 'DUIMP Importada')
+    DUIMP_IMPORTADA_ROOT_DIR = os.path.join(os.path.dirname(BASE_DIR), 'DUIMP Importada')
 
-os.makedirs(CERT_DIR, exist_ok=True)
-os.makedirs(DUIMP_IMPORTADA_DIR, exist_ok=True)
-os.makedirs(DUIMP_IMPORTADA_ROOT_DIR, exist_ok=True)
+try:
+    os.makedirs(CERT_DIR, exist_ok=True)
+    os.makedirs(DUIMP_IMPORTADA_DIR, exist_ok=True)
+    os.makedirs(DUIMP_IMPORTADA_ROOT_DIR, exist_ok=True)
+except OSError:
+    pass
+
 
 PUCOMEX_AUTH_URL = "https://portalunico.siscomex.gov.br/portal/api/autenticar"
 PUCOMEX_DUIMP_BASE = "https://portalunico.siscomex.gov.br/duimp-api/api/ext"

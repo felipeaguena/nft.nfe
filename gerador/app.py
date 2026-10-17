@@ -38,10 +38,20 @@ import zipfile
 import shutil
 from lxml import etree
 
-DOWNLOADS_DIR = os.path.join(os.path.dirname(__file__), 'downloads')
-os.makedirs(DOWNLOADS_DIR, exist_ok=True)
+# Na Vercel ou ambientes serverless, o disco de código é estritamente Read-Only.
+# Usamos diretórios sob /tmp se VERCEL == '1'
+if os.environ.get('VERCEL') == '1':
+    DOWNLOADS_DIR = '/tmp/downloads'
+else:
+    DOWNLOADS_DIR = os.path.join(os.path.dirname(__file__), 'downloads')
+
+try:
+    os.makedirs(DOWNLOADS_DIR, exist_ok=True)
+except OSError:
+    pass
 
 NFE_NS = "http://www.portalfiscal.inf.br/nfe"
+
 DS_NS = "http://www.w3.org/2000/09/xmldsig#"
 ET.register_namespace('', NFE_NS)
 ET.register_namespace('ds', DS_NS)
@@ -1828,10 +1838,18 @@ def obter_config_geral():
     return jsonify({"status": "success", "chave": chave, "valor": valor})
 
 # === ROTAS: GESTÃO DE RASCUNHOS SALVOS (ISOLADOS EM ARQUIVO & INDEXADOS NO BD) ===
-RASCUNHOS_DIR = os.path.join(os.path.dirname(__file__), 'rascunhos')
-os.makedirs(RASCUNHOS_DIR, exist_ok=True)
+if os.environ.get('VERCEL') == '1':
+    RASCUNHOS_DIR = '/tmp/rascunhos'
+else:
+    RASCUNHOS_DIR = os.path.join(os.path.dirname(__file__), 'rascunhos')
+
+try:
+    os.makedirs(RASCUNHOS_DIR, exist_ok=True)
+except OSError:
+    pass
 
 @app.route('/api/rascunhos/salvar', methods=['POST'])
+
 def salvar_rascunho():
     try:
         data, err_resp = security.validate_json_payload(security.RascunhoPayloadSchema)
@@ -2144,10 +2162,18 @@ def listar_categorias_rascunhos():
 
 
 # === DIRETÓRIO: DUIMP IMPORTADA ===
-DUIMP_IMPORTADA_DIR = os.path.join(os.path.dirname(__file__), 'DUIMP Importada')
-os.makedirs(DUIMP_IMPORTADA_DIR, exist_ok=True)
+if os.environ.get('VERCEL') == '1':
+    DUIMP_IMPORTADA_DIR = '/tmp/duimp'
+else:
+    DUIMP_IMPORTADA_DIR = os.path.join(os.path.dirname(__file__), 'DUIMP Importada')
+
+try:
+    os.makedirs(DUIMP_IMPORTADA_DIR, exist_ok=True)
+except OSError:
+    pass
 
 @app.route('/api/duimp/importar_por_numero', methods=['POST'])
+
 @limiter.limit("10 per minute")
 def api_importar_duimp_por_numero():
     try:
@@ -4250,11 +4276,19 @@ def api_certificado_importar():
                 return jsonify({'status': 'error', 'message': 'Senha incorreta para o certificado digital. Verifique a senha informada e tente novamente.'}), 400
             return jsonify({'status': 'error', 'message': f'Erro ao validar o certificado digital: {err_msg}'}), 400
         
-        # Salva o arquivo na pasta gerador/certificado
-        cert_dir = os.path.join(os.path.dirname(__file__), 'certificado')
-        os.makedirs(cert_dir, exist_ok=True)
+        # Salva o arquivo na pasta gerador/certificado (ou /tmp/certificado na Vercel)
+        if os.environ.get('VERCEL') == '1':
+            cert_dir = '/tmp/certificado'
+        else:
+            cert_dir = os.path.join(os.path.dirname(__file__), 'certificado')
+        
+        try:
+            os.makedirs(cert_dir, exist_ok=True)
+        except OSError:
+            pass
         
         nome_sanitizado = re.sub(r'[^a-zA-Z0-9_\-\.]', '_', os.path.basename(filename))
+
         caminho_final = os.path.join(cert_dir, nome_sanitizado)
         with open(caminho_final, 'wb') as f:
             f.write(pfx_bytes)

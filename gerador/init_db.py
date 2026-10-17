@@ -291,8 +291,15 @@ def init_db(target_db_path=None):
             data_atualizacao DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-    rascunhos_dir = os.path.join(os.path.dirname(__file__), 'rascunhos')
-    os.makedirs(rascunhos_dir, exist_ok=True)
+    if os.environ.get('VERCEL') == '1':
+        rascunhos_dir = '/tmp/rascunhos'
+    else:
+        rascunhos_dir = os.path.join(os.path.dirname(__file__), 'rascunhos')
+    try:
+        os.makedirs(rascunhos_dir, exist_ok=True)
+    except OSError:
+        pass
+
 
     # 5. Tabelas de Localidades (Paises BACEN, Municipios IBGE e Cache de CEPs)
     c.execute('''
