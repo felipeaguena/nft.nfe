@@ -1969,6 +1969,8 @@ def salvar_rascunho():
             except (ValueError, TypeError):
                 is_update = False
 
+        json_payload_str = json.dumps(data, ensure_ascii=False)
+
         if is_update:
             c.execute('''
                 UPDATE rascunhos SET
@@ -1981,12 +1983,13 @@ def salvar_rascunho():
                     qtd_itens = ?,
                     valor_total = ?,
                     chave_acesso = ?,
+                    payload_json = ?,
                     data_atualizacao = datetime('now', 'localtime')
                 WHERE id = ?
             ''', (
                 referencia_interna, categoria, origem, tipo_operacao, operacao_id,
                 nome_arquivo_original, nome_arquivo_original, qtd_itens, round(valor_total, 2),
-                chave_acesso, rascunho_id
+                chave_acesso, json_payload_str, rascunho_id
             ))
             conn.commit()
             arquivo_nome = f'rascunho_{rascunho_id}.json'
@@ -1995,11 +1998,11 @@ def salvar_rascunho():
                 INSERT INTO rascunhos (
                     referencia_interna, categoria, origem, tipo_operacao, operacao_id,
                     nome_arquivo_original, caminho_arquivo_isolado, qtd_itens, valor_total,
-                    chave_acesso, data_criacao, data_atualizacao
-                ) VALUES (?, ?, ?, ?, ?, ?, '', ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))
+                    chave_acesso, payload_json, data_criacao, data_atualizacao
+                ) VALUES (?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))
             ''', (
                 referencia_interna, categoria, origem, tipo_operacao, operacao_id,
-                nome_arquivo_original, qtd_itens, round(valor_total, 2), chave_acesso
+                nome_arquivo_original, qtd_itens, round(valor_total, 2), chave_acesso, json_payload_str
             ))
             rascunho_id = c.lastrowid
             arquivo_nome = f'rascunho_{rascunho_id}.json'
@@ -2008,21 +2011,25 @@ def salvar_rascunho():
 
         conn.close()
 
-        # Salvar o payload completo no arquivo isolado em disco
-        caminho_arquivo = os.path.join(RASCUNHOS_DIR, arquivo_nome)
-        data['id'] = rascunho_id
-        data['referencia_interna'] = referencia_interna
-        data['categoria'] = categoria
-        data['origem'] = origem
-        data['tipo_operacao'] = tipo_operacao
-        data['operacao_id'] = operacao_id
-        data['nome_arquivo_original'] = nome_arquivo_original
-        data['qtd_itens'] = qtd_itens
-        data['valor_total'] = round(valor_total, 2)
-        data['data_salvo'] = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+        # Salvar o payload completo no arquivo isolado em disco (quando sistema de arquivo permitir)
+        try:
+            caminho_arquivo = os.path.join(RASCUNHOS_DIR, arquivo_nome)
+            data['id'] = rascunho_id
+            data['referencia_interna'] = referencia_interna
+            data['categoria'] = categoria
+            data['origem'] = origem
+            data['tipo_operacao'] = tipo_operacao
+            data['operacao_id'] = operacao_id
+            data['nome_arquivo_original'] = nome_arquivo_original
+            data['qtd_itens'] = qtd_itens
+            data['valor_total'] = round(valor_total, 2)
+            data['data_salvo'] = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
 
-        with open(caminho_arquivo, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+            with open(caminho_arquivo, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+
 
         return jsonify({
             "success": True,
@@ -2090,18 +2097,31 @@ def obter_rascunho(rascunho_id):
             return jsonify({"error": "Rascunho não encontrado"}), 404
             
         caminho_arquivo = os.path.join(RASCUNHOS_DIR, f'rascunho_{rascunho_id}.json')
+        payload = None
         if os.path.exists(caminho_arquivo):
-            with open(caminho_arquivo, 'r', encoding='utf-8') as f:
-                payload = json.load(f)
-            payload['id'] = row['id']
-            payload['referencia_interna'] = row['referencia_interna']
-            payload['categoria'] = row['categoria']
-            payload['origem'] = row['origem']
-            payload['tipo_operacao'] = row['tipo_operacao']
-            payload['operacao_id'] = row['operacao_id']
-            return jsonify(payload)
-        else:
-            return jsonify(dict(row))
+            try:
+                with open(caminho_arquivo, 'r', encoding='utf-8') as f:
+                    payload = json.load(f)
+            except Exception:
+                payload = None
+
+        if not payload and row.get('payload_json'):
+            try:
+                payload = json.loads(row['payload_json'])
+            except Exception:
+                payload = None
+
+        if not payload:
+            payload = dict(row)
+
+        payload['id'] = row['id']
+        payload['referencia_interna'] = row['referencia_interna']
+        payload['categoria'] = row['categoria']
+        payload['origem'] = row['origem']
+        payload['tipo_operacao'] = row['tipo_operacao']
+        payload['operacao_id'] = row['operacao_id']
+        return jsonify(payload)
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
