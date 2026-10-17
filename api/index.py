@@ -51,13 +51,33 @@ class VercelPathFixerMiddleware:
             ])
             return [body]
 
+        # 1. Verifica parâmetro __path injetado via rewrite do vercel.json
+        query_string = environ.get('QUERY_STRING', '')
+        if '__path=' in query_string:
+            import urllib.parse
+            parsed_query = urllib.parse.parse_qs(query_string, keep_blank_values=True)
+            if '__path' in parsed_query and parsed_query['__path']:
+                target_path = parsed_query['__path'][0]
+                if not target_path.startswith('/'):
+                    target_path = '/' + target_path
+                # Normaliza barras duplas eventuais como // -> /
+                while '//' in target_path:
+                    target_path = target_path.replace('//', '/')
+                environ['PATH_INFO'] = target_path
+                
+                # Remove __path da query string repassada à aplicação
+                parsed_query.pop('__path', None)
+                new_query = urllib.parse.urlencode(parsed_query, doseq=True)
+                environ['QUERY_STRING'] = new_query
+
+        # 2. Fallbacks de headers se disponíveis
         matched_path = (
             environ.get('HTTP_X_MATCHED_PATH')
             or environ.get('HTTP_X_VERCEL_MATCHED_PATH')
             or environ.get('HTTP_X_NOW_ROUTE_MATCHES')
             or environ.get('HTTP_X_FORWARDED_PATH')
         )
-        if matched_path:
+        if matched_path and environ.get('PATH_INFO') == '/api/index.py':
             if '?' in matched_path:
                 path_part, query_part = matched_path.split('?', 1)
                 environ['PATH_INFO'] = path_part
@@ -65,7 +85,9 @@ class VercelPathFixerMiddleware:
                     environ['QUERY_STRING'] = query_part
             else:
                 environ['PATH_INFO'] = matched_path
+
         return self.wsgi_app(environ, start_response)
+
 
 
 if app is not None:
