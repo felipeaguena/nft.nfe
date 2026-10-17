@@ -4442,8 +4442,22 @@ def api_sefaz_enviar():
                             zf.write(pdf_path, f"{chave}-danfe.pdf")
                         if os.path.exists(xml_path):
                             zf.write(xml_path, f"{chave}-nfe.xml")
+
+                    # Sincroniza imediatamente com o Cloudflare R2
+                    try:
+                        import r2_storage
+                        if os.path.exists(xml_path):
+                            r2_storage.upload_file_r2(xml_path, f"downloads/{chave}-nfe.xml", "application/xml")
+                        if os.path.exists(pdf_path):
+                            r2_storage.upload_file_r2(pdf_path, f"downloads/{chave}-danfe.pdf", "application/pdf")
+                        if os.path.exists(zip_path):
+                            r2_storage.upload_file_r2(zip_path, f"downloads/{chave}-arquivos.zip", "application/zip")
+                    except Exception as _e_r2_sync:
+                        print(f"Aviso ao sincronizar novos arquivos no Cloudflare R2: {_e_r2_sync}")
+
                 except Exception as e_save:
                     print(f"Erro ao salvar arquivos em downloads: {e_save}")
+
 
         # Salvar no histórico
         conn = get_db_connection()
@@ -4937,8 +4951,23 @@ def download_pdf(chave):
     chave = chave.strip().replace(' ', '')
     pdf_path = os.path.join(DOWNLOADS_DIR, f"{chave}-danfe.pdf")
     xml_path = os.path.join(DOWNLOADS_DIR, f"{chave}-nfe.xml")
-    
-    # Se nao tem XML local, tenta obter do banco
+
+    # 1. Tenta baixar do Cloudflare R2 se não estiver em disco local
+    if not os.path.exists(pdf_path):
+        try:
+            import r2_storage
+            r2_storage.download_file_r2(f"downloads/{chave}-danfe.pdf", pdf_path)
+        except Exception:
+            pass
+
+    # 2. Se ainda não tem XML local, tenta obter do R2 ou do banco Turso
+    if not os.path.exists(xml_path):
+        try:
+            import r2_storage
+            r2_storage.download_file_r2(f"downloads/{chave}-nfe.xml", xml_path)
+        except Exception:
+            pass
+
     if not os.path.exists(xml_path):
         conn = get_db_connection()
         c = conn.cursor()
@@ -4952,7 +4981,7 @@ def download_pdf(chave):
             except Exception as e_w:
                 print(f"Aviso ao salvar XML para PDF: {e_w}")
 
-    # Se nao tem PDF, tenta renderizar via DanfeGenerator
+    # 3. Se não tem PDF, tenta renderizar via DanfeGenerator
     if not os.path.exists(pdf_path) and os.path.exists(xml_path):
         try:
             from danfe_generator import DanfeGenerator
@@ -4975,9 +5004,19 @@ def download_pdf(chave):
 def download_xml(chave):
     chave = chave.strip().replace(' ', '')
     xml_path = os.path.join(DOWNLOADS_DIR, f"{chave}-nfe.xml")
+
+    # 1. Tenta baixar do Cloudflare R2
+    if not os.path.exists(xml_path):
+        try:
+            import r2_storage
+            r2_storage.download_file_r2(f"downloads/{chave}-nfe.xml", xml_path)
+        except Exception:
+            pass
+
     if os.path.exists(xml_path):
         nome_download = f"{obter_nome_padrao_arquivo(chave, xml_path)}.xml"
         return send_file(xml_path, as_attachment=True, download_name=nome_download, mimetype='application/xml')
+
         
     conn = get_db_connection()
     c = conn.cursor()
@@ -4998,9 +5037,27 @@ def download_zip(chave):
     chave = chave.strip().replace(' ', '')
     zip_path = os.path.join(DOWNLOADS_DIR, f"{chave}-arquivos.zip")
     nome_padrao = obter_nome_padrao_arquivo(chave)
-        
-    # Garante o XML
+
+    # 1. Tenta baixar o ZIP pronto do R2
+    if not os.path.exists(zip_path):
+        try:
+            import r2_storage
+            r2_storage.download_file_r2(f"downloads/{chave}-arquivos.zip", zip_path)
+        except Exception:
+            pass
+            
+    if os.path.exists(zip_path):
+        return send_file(zip_path, as_attachment=True, download_name=f"{nome_padrao}.zip", mimetype='application/zip')
+
+    # 2. Garante o XML (do R2 ou banco Turso)
     xml_path = os.path.join(DOWNLOADS_DIR, f"{chave}-nfe.xml")
+    if not os.path.exists(xml_path):
+        try:
+            import r2_storage
+            r2_storage.download_file_r2(f"downloads/{chave}-nfe.xml", xml_path)
+        except Exception:
+            pass
+
     if not os.path.exists(xml_path):
         conn = get_db_connection()
         c = conn.cursor()
@@ -5011,8 +5068,15 @@ def download_zip(chave):
             with open(xml_path, 'w', encoding='utf-8') as f:
                 f.write(row['xml_envio'])
 
-    # Garante o PDF
+    # 3. Garante o PDF (do R2 ou gerando via DanfeGenerator)
     pdf_path = os.path.join(DOWNLOADS_DIR, f"{chave}-danfe.pdf")
+    if not os.path.exists(pdf_path):
+        try:
+            import r2_storage
+            r2_storage.download_file_r2(f"downloads/{chave}-danfe.pdf", pdf_path)
+        except Exception:
+            pass
+
     if not os.path.exists(pdf_path) and os.path.exists(xml_path):
         try:
             from danfe_generator import DanfeGenerator

@@ -13,3 +13,5 @@ lxml
 requests
 cryptography
 signxml
+boto3
+
