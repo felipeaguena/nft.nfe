@@ -1,8 +1,8 @@
 import sqlite3
 import os
 
-def init_db():
-    db_path = os.path.join(os.path.dirname(__file__), 'database.db')
+def init_db(target_db_path=None):
+    db_path = target_db_path or os.path.join(os.path.dirname(__file__), 'database.db')
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
     

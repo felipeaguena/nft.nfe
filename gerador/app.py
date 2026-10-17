@@ -68,7 +68,15 @@ def get_template_sig_and_cert():
             pass
     return DEFAULT_SIGNATURE_VALUE, DEFAULT_X509_CERT
 
-app = Flask(__name__)
+GERADOR_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+TEMPLATES_DIR = os.path.join(GERADOR_BASE_DIR, 'templates')
+STATIC_DIR = os.path.join(GERADOR_BASE_DIR, 'static')
+
+app = Flask(
+    __name__,
+    template_folder=TEMPLATES_DIR,
+    static_folder=STATIC_DIR
+)
 
 # Configuração de Segredo de Sessão e Cookies Seguros para Produção
 app.secret_key = (
@@ -162,7 +170,11 @@ def enforce_private_routes_auth():
 
     return None
 
-DB_PATH = os.path.join(os.path.dirname(__file__), 'database.db')
+# Na Vercel o disco raiz é Read-Only. Utilizamos a pasta temporária gravável /tmp para o SQLite
+if os.environ.get('VERCEL') == '1':
+    DB_PATH = '/tmp/database.db'
+else:
+    DB_PATH = os.path.join(os.path.dirname(__file__), 'database.db')
 
 _DB_INITIALIZED = False
 
@@ -170,7 +182,7 @@ def get_db_connection():
     global _DB_INITIALIZED
     if not os.path.exists(DB_PATH):
         import init_db
-        init_db.init_db()
+        init_db.init_db(target_db_path=DB_PATH)
         _DB_INITIALIZED = True
 
     conn = sqlite3.connect(DB_PATH)
