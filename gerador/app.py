@@ -196,7 +196,11 @@ def enforce_private_routes_auth():
 
     return None
 
-# Na Vercel o disco raiz é Read-Only. Utilizamos a pasta temporária gravável /tmp para o SQLite
+# Suporte a Banco de Dados na Nuvem (Turso / libSQL) com fallback para SQLite Local
+TURSO_DB_URL = os.environ.get('TURSO_DATABASE_URL', 'libsql://nft-database-luminous-sagittarius-tn25tt.aws-sa-east-1.turso.io').strip()
+TURSO_TOKEN = os.environ.get('TURSO_AUTH_TOKEN', 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3OTIyNjc1MDYsImlkIjoiMDFhMTRiNzctMWEwMS03Yjg0LTgzZTUtODM5NWFkZWEyY2Q1Iiwia2lkIjoiaUJrV2FlSUV0TGJhM0lsdWtUSGtqWEZBcGtFemFYV1E5OER6WE01OUtSUSIsInJpZCI6IjZhOWZiMmZjLWUxYzItNDZhZS04NWRjLWU4NjliNjU3YTlkOCJ9.HDeZOwGSiCl5-jHaQhzLgGXHhaRLZ_Hz5Ob9l7wem_Ab9LAeOpGqjulJXCPz18LMffA3tI6VCp5_2b43hm8nBQ').strip()
+
+# Na Vercel o disco raiz é Read-Only. Utilizamos a pasta temporária gravável /tmp para o SQLite caso o Turso não seja usado
 if os.environ.get('VERCEL') == '1':
     DB_PATH = '/tmp/database.db'
 else:
@@ -206,6 +210,14 @@ _DB_INITIALIZED = False
 
 def get_db_connection():
     global _DB_INITIALIZED
+    # Em ambiente de nuvem (Vercel) ou se configurado explicitamente, usa o Turso
+    if (os.environ.get('VERCEL') == '1' or os.environ.get('USE_TURSO') == '1') and TURSO_DB_URL and TURSO_TOKEN:
+        try:
+            import turso_client
+            return turso_client.connect_turso(TURSO_DB_URL, TURSO_TOKEN)
+        except Exception as _e_turso:
+            print(f"Aviso: Falha ao conectar ao Turso, caindo para SQLite local: {_e_turso}")
+
     if not os.path.exists(DB_PATH):
         import init_db
         init_db.init_db(target_db_path=DB_PATH)
@@ -213,6 +225,7 @@ def get_db_connection():
 
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+
     
     # Executa validações de migração apenas uma vez na inicialização
     if not _DB_INITIALIZED:
