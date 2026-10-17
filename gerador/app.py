@@ -143,15 +143,28 @@ def enforce_private_routes_auth():
     if request.endpoint in PUBLIC_ENDPOINTS or (request.path and request.path.startswith('/static/')):
         return None
 
-    # Rotas de páginas HTML públicas
-    if request.path in ('/login', '/api/ping'):
+    # Rotas de páginas HTML públicas e endpoints especiais
+    if request.path in ('/login', '/api/ping', '/api/index.py'):
+        return None
+
+    # Se a Vercel chamou /api/index.py, podemos obter a rota real via headers da Vercel
+    actual_path = (
+        request.headers.get('X-Matched-Path')
+        or request.headers.get('x-matched-path')
+        or request.environ.get('HTTP_X_MATCHED_PATH')
+        or request.path
+    )
+    if '?' in actual_path:
+        actual_path = actual_path.split('?', 1)[0]
+
+    if actual_path in ('/login', '/api/ping', '/api/auth/login', '/api/auth/logout'):
         return None
 
     # 1. Validação para chamadas de API ou uploads
     is_api_or_action = (
-        request.path.startswith('/api/')
-        or request.path.startswith('/tipos_operacao')
-        or request.path in ('/upload_di_duimp', '/upload_xml', '/generate_xml', '/export_excel', '/import_excel', '/download_ncm_json', '/download_ncm_excel')
+        (actual_path.startswith('/api/') and actual_path not in ('/api/auth/login', '/api/auth/logout', '/api/ping', '/api/index.py'))
+        or actual_path.startswith('/tipos_operacao')
+        or actual_path in ('/upload_di_duimp', '/upload_xml', '/generate_xml', '/export_excel', '/import_excel', '/download_ncm_json', '/download_ncm_excel')
     )
     if is_api_or_action:
         if not security.verify_auth_token_or_internal_key():
@@ -163,6 +176,7 @@ def enforce_private_routes_auth():
     token_jwt_valido = False
     auth_header = request.headers.get('Authorization', '').strip()
     cookie_token = request.cookies.get('__Secure-authjs.session-token') or request.cookies.get('authjs.session-token')
+
     auth_secret = os.environ.get('AUTH_SECRET', '').strip()
     if (auth_header.startswith('Bearer ') or cookie_token) and auth_secret:
         try:
