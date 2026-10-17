@@ -11,8 +11,18 @@ if GERADOR_DIR not in sys.path:
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-# Importa o app Flask principal
-from app import app
-
-# Exporta para a Vercel
-app = app
+try:
+    from app import app
+except Exception as e:
+    import traceback
+    err_trace = traceback.format_exc()
+    from flask import Flask, Response
+    app = Flask(__name__)
+    @app.route('/', defaults={'path': ''})
+    @app.route('/<path:path>')
+    def catch_all_err(path):
+        return Response(
+            f"<h1>Erro na Inicialização da Função Vercel</h1><pre>{err_trace}</pre>",
+            mimetype="text/html",
+            status=500
+        )

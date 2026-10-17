@@ -133,7 +133,11 @@ def get_certificate_info():
     except Exception as e:
         return {'status': 'error', 'message': str(e), 'arquivo': os.path.basename(CERT_PATH) if os.path.exists(CERT_PATH) else ''}
 
-import xmlsec
+try:
+    import xmlsec
+except Exception as _e_xmlsec:
+    xmlsec = None
+    print(f"Aviso: xmlsec não disponível neste ambiente ({_e_xmlsec}).")
 import time
 from cryptography.hazmat.primitives import serialization
 
