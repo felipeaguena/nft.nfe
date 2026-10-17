@@ -38,9 +38,12 @@ class VercelPathFixerMiddleware:
         self.wsgi_app = wsgi_app
 
     def __call__(self, environ, start_response):
-        matched_path = environ.get('HTTP_X_MATCHED_PATH') or environ.get('HTTP_X_VERCEL_MATCHED_PATH')
+        matched_path = (
+            environ.get('HTTP_X_MATCHED_PATH')
+            or environ.get('HTTP_X_VERCEL_MATCHED_PATH')
+            or environ.get('HTTP_X_NOW_ROUTE_MATCHES')
+        )
         if matched_path:
-            # Garante que querystring não seja misturada no PATH_INFO se vier no matched_path
             if '?' in matched_path:
                 path_part, query_part = matched_path.split('?', 1)
                 environ['PATH_INFO'] = path_part
@@ -51,10 +54,23 @@ class VercelPathFixerMiddleware:
         return self.wsgi_app(environ, start_response)
 
 if app is not None:
+    # Registra rota direta de diagnóstico para vermos os headers exatos recebidos na Vercel
+    @app.route('/api/debug-env')
+    def debug_env():
+        from flask import request, jsonify
+        env_dump = {k: str(v) for k, v in request.environ.items() if not k.startswith('wsgi.')}
+        headers_dump = dict(request.headers)
+        return jsonify({
+            "path": request.path,
+            "headers": headers_dump,
+            "environ": env_dump
+        })
+
     app.wsgi_app = VercelPathFixerMiddleware(app.wsgi_app)
 
 # Exportações explícitas no escopo global para compatibilidade total com o builder da Vercel
 application = app
 handler = app
+
 
 
