@@ -15,34 +15,46 @@
   <style>
     body {
       min-height: 100vh;
+      margin: 0;
+      padding: 1.5rem;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: radial-gradient(circle at 50% 10%, rgba(59, 130, 246, 0.08) 0%, rgba(11, 15, 25, 1) 100%);
+      position: relative;
+      background-image: 
+        linear-gradient(180deg, rgba(10, 15, 29, 0.72) 0%, rgba(10, 15, 29, 0.88) 100%),
+        url('/static/img/login-bg.webp');
+      background-size: cover;
+      background-position: center center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
       font-family: 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      padding: 1.5rem;
     }
     .login-card {
       width: 100%;
       max-width: 440px;
-      background: var(--card-bg, #131b2e);
-      border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
-      border-radius: 20px;
-      padding: 2.5rem 2.25rem;
-      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(12px);
+      position: relative;
+      z-index: 2;
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 24px;
+      padding: 2.75rem 2.25rem 2.25rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
     }
     .brand-logo-wrap {
-      width: 72px;
-      height: 72px;
+      width: 80px;
+      height: 80px;
       margin: 0 auto 1.25rem;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 12px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
     }
     .brand-logo-wrap img {
       width: 100%;
@@ -50,8 +62,8 @@
       object-fit: contain;
     }
     .form-control {
-      background-color: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      background-color: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.18);
       color: #fff;
       border-radius: 12px;
       padding: 0.75rem 1rem;
@@ -59,15 +71,15 @@
       transition: all 0.2s ease;
     }
     .form-control:focus {
-      background-color: rgba(255, 255, 255, 0.07);
+      background-color: rgba(255, 255, 255, 0.1);
       border-color: #3b82f6;
       color: #fff;
-      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.25);
     }
     .input-group-text {
-      background-color: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      color: #94a3b8;
+      background-color: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #cbd5e1;
       border-radius: 12px;
     }
     .btn-login {
@@ -76,7 +88,7 @@
       color: #fff;
       font-weight: 700;
       border-radius: 12px;
-      padding: 0.8rem;
+      padding: 0.85rem;
       font-size: 1rem;
       width: 100%;
       display: flex;
@@ -84,12 +96,12 @@
       justify-content: center;
       gap: 8px;
       transition: all 0.2s ease;
-      box-shadow: 0 8px 20px -6px rgba(37, 99, 235, 0.5);
+      box-shadow: 0 8px 20px -6px rgba(37, 99, 235, 0.6);
     }
     .btn-login:hover {
       background: linear-gradient(135deg, #1d4ed8, #1e40af);
       transform: translateY(-1px);
-      box-shadow: 0 12px 24px -6px rgba(37, 99, 235, 0.6);
+      box-shadow: 0 12px 24px -6px rgba(37, 99, 235, 0.7);
       color: #fff;
     }
     .btn-login:disabled {
@@ -98,8 +110,8 @@
       transform: none;
     }
     .login-error {
-      background: rgba(239, 68, 68, 0.12);
-      border: 1px solid rgba(239, 68, 68, 0.3);
+      background: rgba(239, 68, 68, 0.16);
+      border: 1px solid rgba(239, 68, 68, 0.35);
       color: #fca5a5;
       border-radius: 12px;
       padding: 0.75rem 1rem;
@@ -117,9 +129,9 @@
       letter-spacing: 0.05em;
       padding: 3px 10px;
       border-radius: 100px;
-      background: rgba(59, 130, 246, 0.15);
-      color: #60a5fa;
-      border: 1px solid rgba(59, 130, 246, 0.3);
+      background: rgba(59, 130, 246, 0.2);
+      color: #93c5fd;
+      border: 1px solid rgba(59, 130, 246, 0.35);
       margin-bottom: 0.5rem;
     }
   </style>
@@ -128,15 +140,15 @@
   <div class="login-card">
     <div class="text-center">
       <div class="brand-logo-wrap">
-        <img alt="NFT Logistics" class="logo-theme-black" src="/static/img/brand/NFT%20Logo%20(3).webp"/>
-        <img alt="NFT Logistics" class="logo-theme-white" src="/static/img/brand/NFT%20Logo%20(11).webp"/>
+        <img alt="NFT Logistics" src="/static/img/brand/NFT%20Logo%20(11).webp"/>
       </div>
       <div><span class="badge-env">Acesso Seguro</span></div>
       <h3 class="fw-bold mb-1 text-white">NFT Logistics</h3>
-      <p class="text-muted small mb-4">Portal de Emissão & Gestão Aduaneira / Fiscal</p>
+      <p class="text-white-50 small mb-4">Portal de Emissão & Gestão Aduaneira / Fiscal</p>
     </div>
 
     <div class="login-error" id="loginError">
+
       <i data-lucide="alert-circle" style="width: 18px; height: 18px; flex-shrink: 0;"></i>
       <span id="errorMessage">Credenciais inválidas.</span>
     </div>
