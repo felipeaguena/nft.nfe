@@ -15,9 +15,10 @@ from pydantic import BaseModel, Field, ValidationError, ConfigDict, field_valida
 class LoginPayloadSchema(BaseModel):
     model_config = ConfigDict(extra='ignore')
     email: str = Field(..., min_length=5, max_length=254)
-    password: str = Field(..., min_length=8, max_length=128)
+    password: str = Field(..., min_length=6, max_length=128)
 
     @field_validator('email')
+
     @classmethod
     def validate_email_format(cls, v: str) -> str:
         v = v.strip().lower()
@@ -318,9 +319,13 @@ def authenticate_user_credentials(email: str, password: str) -> Optional[Dict[st
     """
     Valida credenciais usando hashing seguro (bcrypt) e tempo constante.
     Nunca compara senhas em texto puro.
+    Senha padrão configurada: 'NFT1652' (armazenada em hash bcrypt seguro).
+    Pode ser sobrescrita via variável de ambiente AUTH_ADMIN_PASSWORD_HASH.
     """
     admin_email = os.environ.get('AUTH_ADMIN_EMAIL', 'admin@nftlogistics.com.br').strip().lower()
-    admin_hash = os.environ.get('AUTH_ADMIN_PASSWORD_HASH', '').strip()
+    # Hash bcrypt de 'NFT1652'
+    default_nft1652_hash = "$2b$12$2OEHVkbB4cpGnIXwA2Pt8.79L1jYeophfsuqrnW43CPhI4Hyw0bCK"
+    admin_hash = os.environ.get('AUTH_ADMIN_PASSWORD_HASH', '').strip() or default_nft1652_hash
 
     # Hash dummy bcrypt para mitigar enumeração de usuário por timing attack
     dummy_hash = b"$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4h/9S1G5C2"
@@ -331,7 +336,7 @@ def authenticate_user_credentials(email: str, password: str) -> Optional[Dict[st
     except Exception:
         is_valid = False
 
-    if email == admin_email and admin_hash and is_valid:
+    if email == admin_email and is_valid:
         return {
             "id": "admin-1",
             "email": admin_email,
@@ -339,3 +344,4 @@ def authenticate_user_credentials(email: str, password: str) -> Optional[Dict[st
             "role": "admin"
         }
     return None
+
