@@ -82,37 +82,60 @@ def validar_e_extrair_info_pfx(pfx_data, senha_bytes):
 
 def carregar_certificado_salvo():
     global CERT_PATH, CERT_PASS
-    try:
-        db_path = os.path.join(os.path.dirname(__file__), 'database.db')
-        if os.path.exists(db_path):
-            import sqlite3
-            conn = sqlite3.connect(db_path)
-            c = conn.cursor()
-            c.execute("CREATE TABLE IF NOT EXISTS sistema_config (chave TEXT PRIMARY KEY, valor TEXT, data_atualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
-            row_arq = c.execute("SELECT valor FROM sistema_config WHERE chave = 'certificado_ativo_arquivo'").fetchone()
-            row_pwd = c.execute("SELECT valor FROM sistema_config WHERE chave = 'certificado_ativo_senha'").fetchone()
-            conn.close()
-            if row_arq and row_arq[0]:
-                nome_arq = row_arq[0].strip()
-                caminho_cand = os.path.join(CERT_DIR, nome_arq)
-                if os.path.exists(caminho_cand):
-                    CERT_PATH = caminho_cand
-                    if row_pwd and row_pwd[0]:
-                        CERT_PASS = row_pwd[0].strip().encode('utf-8')
-                    return
-    except Exception as e:
-        print(f"Aviso ao carregar config de certificado: {e}")
+    # 1. Se CERT_PATH atual já existe e é válido, não precisa recarregar
+    if os.path.exists(CERT_PATH) and os.path.getsize(CERT_PATH) > 0:
+        return
 
-    # Fallback: se CERT_PATH não existir ou não estiver configurado no banco
-    if not os.path.exists(CERT_PATH) and os.path.exists(CERT_DIR):
+    nome_arq = None
+    senha_str = None
+
+    # 2. Tenta obter nome e senha do certificado salvo via Turso ou SQLite local
+    try:
+        from app import get_db_connection
+        conn = get_db_connection()
+        c = conn.cursor()
+        row_arq = c.execute("SELECT valor FROM sistema_config WHERE chave = 'certificado_ativo_arquivo'").fetchone()
+        row_pwd = c.execute("SELECT valor FROM sistema_config WHERE chave = 'certificado_ativo_senha'").fetchone()
+        conn.close()
+        if row_arq and row_arq['valor']:
+            nome_arq = row_arq['valor'].strip()
+        if row_pwd and row_pwd['valor']:
+            senha_str = row_pwd['valor'].strip()
+    except Exception as e_cfg:
+        pass
+
+    # Nome padrão do certificado caso não venha do banco
+    if not nome_arq:
+        nome_arq = "NFT_LOGISTICS_LTDA_47998441000198_1771873069312658700_nftcnpj.pfx"
+    if not senha_str:
+        senha_str = "nftecnpj"
+
+    caminho_cand = os.path.join(CERT_DIR, nome_arq)
+
+    # 3. Se não existe em disco, tenta baixar direto do Cloudflare R2
+    if not os.path.exists(caminho_cand) or os.path.getsize(caminho_cand) == 0:
+        try:
+            import r2_storage
+            # Tenta com chave 'certificado/<nome>' ou '<nome>'
+            ok_r2 = r2_storage.download_file_r2(f"certificado/{nome_arq}", caminho_cand)
+            if not ok_r2:
+                r2_storage.download_file_r2(nome_arq, caminho_cand)
+        except Exception as _e_r2_cert:
+            print(f"Aviso ao baixar certificado do R2: {_e_r2_cert}")
+
+    if os.path.exists(caminho_cand) and os.path.getsize(caminho_cand) > 0:
+        CERT_PATH = caminho_cand
+        CERT_PASS = senha_str.encode('utf-8')
+        return
+
+    # 4. Fallback: verifica qualquer arquivo .pfx/.p12 disponível na pasta CERT_DIR
+    if os.path.exists(CERT_DIR):
         pfxs = [f for f in os.listdir(CERT_DIR) if f.lower().endswith(('.pfx', '.p12'))]
         if pfxs:
-            # Prioriza arquivo que contenha 'cnpj' ou 'nft' ou 'empresa'
             cand_pj = [f for f in pfxs if any(k in f.lower() for k in ('cnpj', 'nft', 'empresa', 'nfe'))]
             chosen = cand_pj[0] if cand_pj else pfxs[0]
             CERT_PATH = os.path.join(CERT_DIR, chosen)
             if not CERT_PASS:
-                # Testa senhas comuns cadastradas no template (ex: 'nftecnpj')
                 for test_pwd in (b'nftecnpj', b''):
                     try:
                         with open(CERT_PATH, 'rb') as f_test:
@@ -122,18 +145,24 @@ def carregar_certificado_salvo():
                     except Exception:
                         pass
 
+
+def ensure_certificate_loaded():
+    global CERT_PATH, CERT_PASS
+    if not os.path.exists(CERT_PATH) or os.path.getsize(CERT_PATH) == 0:
+        carregar_certificado_salvo()
+
 # Executa carga inicial
 carregar_certificado_salvo()
 
 def get_certificate_info():
+    ensure_certificate_loaded()
     if not os.path.exists(CERT_PATH):
-        carregar_certificado_salvo()
-        if not os.path.exists(CERT_PATH):
-            return {'status': 'error', 'message': 'Nenhum certificado PFX/P12 encontrado na pasta de certificados.'}
+        return {'status': 'error', 'message': 'Nenhum certificado PFX/P12 encontrado na pasta de certificados.'}
     
     try:
         with open(CERT_PATH, 'rb') as f:
             pfx_data = f.read()
+
             
         info = validar_e_extrair_info_pfx(pfx_data, CERT_PASS)
         info['arquivo'] = os.path.basename(CERT_PATH)
@@ -421,8 +450,10 @@ def assinar_xml(xml_string):
             el.tail = None
 
     # 4. Carrega a chave privada e certificado público do PFX
+    ensure_certificate_loaded()
     with open(CERT_PATH, 'rb') as f:
         pfx_data = f.read()
+
     private_key, certificate, _ = pkcs12.load_key_and_certificates(pfx_data, CERT_PASS)
     pem_k = private_key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.TraditionalOpenSSL, serialization.NoEncryption())
     pem_c = certificate.public_bytes(serialization.Encoding.PEM)
@@ -505,8 +536,10 @@ def enviar_nfe(xml_assinado, uf='SP', tpAmb=2):
         from cryptography.hazmat.primitives import serialization
         import tempfile
         
+        ensure_certificate_loaded()
         with open(CERT_PATH, 'rb') as f:
             pfx_data = f.read()
+
         private_key, certificate, _ = pkcs12.load_key_and_certificates(pfx_data, CERT_PASS)
         
         with tempfile.NamedTemporaryFile(delete=False, suffix='.pem') as cert_file:
@@ -650,8 +683,10 @@ def enviar_evento_nfe(tpEvento, chave, nSeqEvento=1, descEvento="", detalhe_xml=
         if el.tail and el.tail.isspace():
             el.tail = None
 
+    ensure_certificate_loaded()
     with open(CERT_PATH, 'rb') as f:
         pfx_data = f.read()
+
     private_key, certificate, _ = pkcs12.load_key_and_certificates(pfx_data, CERT_PASS)
     pem_k = private_key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.TraditionalOpenSSL, serialization.NoEncryption())
     pem_c = certificate.public_bytes(serialization.Encoding.PEM)
@@ -825,8 +860,10 @@ def consultar_nfe(chave, tpAmb=1, uf='SP'):
 
     headers = {'Content-Type': 'application/soap+xml; charset=utf-8'}
 
+    ensure_certificate_loaded()
     with open(CERT_PATH, 'rb') as f:
         pfx_data = f.read()
+
     private_key, certificate, _ = pkcs12.load_key_and_certificates(pfx_data, CERT_PASS)
 
     import tempfile
