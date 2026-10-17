@@ -536,6 +536,23 @@ def init_db(target_db_path=None):
     if 'complemento' not in cad_cols:
         c.execute("ALTER TABLE cadastros ADD COLUMN complemento TEXT DEFAULT ''")
 
+    # 9. Tabela de Usuários Autorizados
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS usuarios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            name TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'user',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    c.execute('''
+        INSERT OR IGNORE INTO usuarios (email, password_hash, name, role)
+        VALUES ('admin@nftlogistics.com.br', '$2b$12$2OEHVkbB4cpGnIXwA2Pt8.79L1jYeophfsuqrnW43CPhI4Hyw0bCK', 'Administrador NFT Logistics', 'admin')
+    ''')
+
     conn.commit()
     conn.close()
     print("Banco de dados inicializado com sucesso!")

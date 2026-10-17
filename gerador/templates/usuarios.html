@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <!-- Favicon -->
+  <link href="/static/img/brand/nftlogo.webp" rel="icon" type="image/webp"/>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Usuários Autorizados - NFT Logistics</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <!-- NFT Logistics Theme (Light & Dark) -->
+  <link href="/static/css/nft-theme.css?v=3.1" rel="stylesheet"/>
+  <link href="/static/css/nft-sidebar.css" rel="stylesheet"/>
+  <script src="/static/js/theme.js"></script>
+  <!-- Lucide Icons -->
+  <script src="/static/js/lucide.min.js"></script>
+  <script src="/static/js/nft-dialogs.js"></script>
+  <script defer src="/static/js/nft-sidebar.js?v=2.8"></script>
+  <script defer src="/static/js/nft-shortcuts.js?v=1.0"></script>
+  <style>
+    .badge-role-admin {
+      background-color: rgba(37, 99, 235, 0.15) !important;
+      color: #2563eb !important;
+      border: 1px solid rgba(37, 99, 235, 0.35) !important;
+      font-weight: 700;
+      padding: 0.35rem 0.65rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+    }
+    .badge-role-user {
+      background-color: rgba(16, 185, 129, 0.15) !important;
+      color: #059669 !important;
+      border: 1px solid rgba(16, 185, 129, 0.35) !important;
+      font-weight: 700;
+      padding: 0.35rem 0.65rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+    }
+    [data-theme="dark"] .badge-role-admin {
+      background-color: rgba(59, 130, 246, 0.22) !important;
+      color: #60a5fa !important;
+      border-color: rgba(59, 130, 246, 0.45) !important;
+    }
+    [data-theme="dark"] .badge-role-user {
+      background-color: rgba(16, 185, 129, 0.22) !important;
+      color: #34d399 !important;
+      border-color: rgba(16, 185, 129, 0.45) !important;
+    }
+    .user-avatar-circle {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--primary-subtle);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.95rem;
+      border: 1px solid var(--primary-border);
+      flex-shrink: 0;
+    }
+    .table-users tbody tr td {
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body class="has-sidebar">
+<!-- MENU LATERAL FIXO (SIDEBAR) -->
+<aside class="nft-sidebar" id="nftSidebar">
+  <!-- 1. Cabeçalho da Sidebar -->
+  <div class="nft-sidebar-header">
+    <a class="sidebar-brand-link" href="/" title="NFT Logistics - Retornar ao Início">
+      <div class="sidebar-brand-logo-wrap">
+        <img alt="NFT" class="logo-theme-black" src="/static/img/brand/NFT%20Logo%20(3).webp"/>
+        <img alt="NFT" class="logo-theme-white" src="/static/img/brand/NFT%20Logo%20(11).webp"/>
+      </div>
+      <div class="sidebar-brand-info">
+        <span class="sidebar-brand-title">NFT Logistics</span>
+        <span class="badge sidebar-brand-badge bg-primary-subtle text-primary fw-bold">Acesso</span>
+      </div>
+    </a>
+    <button aria-label="Recolher / Fixar Menu" class="sidebar-toggle-btn" onclick="toggleSidebar()" title="Recolher / Fixar Menu Lateral" type="button">
+      <i data-lucide="chevron-left" style="width: 14px; height: 14px;"></i>
+    </button>
+  </div>
+  <!-- 2. Corpo com Menus e Itens -->
+  <div class="nft-sidebar-body">
+    <!-- Grupo: Módulos -->
+    <div class="sidebar-section-title">Módulos</div>
+    <ul class="nft-sidebar-nav">
+      <li class="nft-sidebar-item">
+        <a class="nft-sidebar-btn" href="/" title="Portal Inicial">
+          <span class="sidebar-icon"><i data-lucide="home"></i></span>
+          <span class="sidebar-label">Início / Módulos</span>
+        </a>
+      </li>
+      <li class="nft-sidebar-item">
+        <a class="nft-sidebar-btn" href="/nova_nf?nova_nota=1" title="Módulo Nova NF (Sem XML)">
+          <span class="sidebar-icon"><i data-lucide="file-plus-2"></i></span>
+          <span class="sidebar-label">Nova NF</span>
+        </a>
+      </li>
+      <li class="nft-sidebar-item">
+        <a class="nft-sidebar-btn" href="/rascunho?nova_nota=1" title="Módulo XML Rascunho">
+          <span class="sidebar-icon"><i data-lucide="file-code"></i></span>
+          <span class="sidebar-label">XML Rascunho</span>
+        </a>
+      </li>
+      <li class="nft-sidebar-item">
+        <a class="nft-sidebar-btn" href="/di_duimp?nova_nota=1" title="Módulo XML da DI ou DUIMP">
+          <span class="sidebar-icon"><i data-lucide="globe"></i></span>
+          <span class="sidebar-label">XML da DI ou DUIMP</span>
+        </a>
+      </li>
+      <li class="nft-sidebar-item">
+        <a class="nft-sidebar-btn" href="/rascunho?abrir_rascunhos=1" title="Ver e gerenciar Rascunhos Salvos">
+          <span class="sidebar-icon"><i data-lucide="folder-clock"></i></span>
+          <span class="sidebar-label">Rascunhos Salvos</span>
+        </a>
+      </li>
+    </ul>
+    <!-- Grupo: Relatório -->
+    <div class="sidebar-section-title">Relatório</div>
+    <ul class="nft-sidebar-nav">
+      <li class="nft-sidebar-item">
+        <a class="nft-sidebar-btn" href="/relatorios" title="Relatório de Notas Fiscais Geradas">
+          <span class="sidebar-icon"><i data-lucide="file-spreadsheet"></i></span>
+          <span class="sidebar-label">Relatório</span>
+        </a>
+      </li>
+    </ul>
+    <!-- Grupo: Configurações -->
+    <div class="sidebar-section-title">Configurações</div>
+    <ul class="nft-sidebar-nav">
+      <li class="nft-sidebar-item">
+        <a class="nft-sidebar-btn" href="/empresas" title="Gestão de Empresas e Cadastros">
+          <span class="sidebar-icon"><i data-lucide="building-2"></i></span>
+          <span class="sidebar-label">Empresas</span>
+        </a>
+      </li>
+      <li class="nft-sidebar-item">
+        <a class="nft-sidebar-btn" href="/banco_ncm" title="Grande Tabela NCM &amp; Impostos">
+          <span class="sidebar-icon"><i data-lucide="book-open"></i></span>
+          <span class="sidebar-label">Tabela NCM</span>
+        </a>
+      </li>
+      <li class="nft-sidebar-item">
+        <a class="nft-sidebar-btn" href="/localidades" title="Localidades Oficiais (BACEN, IBGE, CEPs)">
+          <span class="sidebar-icon"><i data-lucide="map-pin"></i></span>
+          <span class="sidebar-label">Localidades</span>
+        </a>
+      </li>
+      <li class="nft-sidebar-item">
+        <a class="nft-sidebar-btn" href="/feiras" title="Descrição da Feira (Feiras do Ano)">
+          <span class="sidebar-icon"><i data-lucide="calendar-days"></i></span>
+          <span class="sidebar-label">Descrição da Feira</span>
+        </a>
+      </li>
+      <li class="nft-sidebar-item">
+        <a class="nft-sidebar-btn active" href="/usuarios" title="Gerenciar Usuários Autorizados">
+          <span class="sidebar-icon"><i data-lucide="users"></i></span>
+          <span class="sidebar-label">Usuários Autorizados</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+  <!-- 3. Rodapé da Sidebar -->
+  <div class="nft-sidebar-footer">
+    <div class="sidebar-footer-actions">
+      <button class="sidebar-footer-btn" onclick="logoutSistema()" title="Sair / Fazer Logout" type="button" style="color: #f59e0b !important;">
+        <span class="sidebar-icon" style="color: #f59e0b !important;"><i data-lucide="log-out"></i></span>
+        <span class="sidebar-footer-text" style="color: #f59e0b !important; font-weight: 700;">Sair</span>
+      </button>
+      <a class="sidebar-footer-btn user-toggle-btn active" href="/usuarios" title="Gerenciar Usuários">
+        <i data-lucide="user"></i>
+      </a>
+      <button class="sidebar-footer-btn theme-toggle-btn" onclick="toggleTheme()" title="Alternar Modo Claro / Escuro" type="button">
+        <i data-lucide="moon"></i>
+      </button>
+    </div>
+    <div class="sidebar-footer-info">
+      <span>NFT Logistics</span>
+      <span>v2.2</span>
+    </div>
+  </div>
+</aside>
+
+<!-- ÁREA PRINCIPAL DE CONTEÚDO (DESLOCADA PELA SIDEBAR) -->
+<div class="nft-main-wrapper">
+  <div class="container-fluid px-4 py-3">
+    <!-- Top Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3 bg-white p-3 rounded shadow-sm border" style="background-color: var(--surface) !important; border-color: var(--border) !important;">
+      <div class="d-flex align-items-center gap-3">
+        <button class="btn-nft d-lg-none" onclick="document.body.classList.toggle('sidebar-mobile-open')" title="Abrir Menu" type="button">
+          <i data-lucide="menu" style="width: 16px; height: 16px;"></i>
+        </button>
+        <div>
+          <h4 class="mb-0 fw-bold d-flex align-items-center gap-2">
+            <i class="text-primary" data-lucide="users"></i>
+            <span>Usuários Autorizados</span>
+          </h4>
+          <small class="text-muted">Gerenciamento de contas com acesso ao sistema NFT Logistics</small>
+        </div>
+      </div>
+      <div>
+        <button class="btn btn-primary d-flex align-items-center gap-2" onclick="abrirModalNovoUsuario()">
+          <i data-lucide="user-plus" style="width: 16px; height: 16px;"></i>
+          <span class="fw-bold">Novo Usuário</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Card de Listagem de Usuários -->
+    <div class="card shadow-sm border-0" style="background-color: var(--surface); border: 1px solid var(--border) !important; border-radius: 12px;">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover table-users mb-0">
+            <thead class="table-light border-bottom" style="background-color: var(--surface-secondary) !important;">
+              <tr>
+                <th style="width: 60px; padding: 1rem 1.25rem;">ID</th>
+                <th style="padding: 1rem 1.25rem;">Usuário / Nome</th>
+                <th style="padding: 1rem 1.25rem;">E-mail Corporativo</th>
+                <th style="padding: 1rem 1.25rem;">Perfil / Perfil de Acesso</th>
+                <th style="padding: 1rem 1.25rem;">Data de Criação</th>
+                <th class="text-end" style="width: 130px; padding: 1rem 1.25rem;">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaUsuariosCorpo">
+              <tr>
+                <td colspan="6" class="text-center py-4 text-muted">
+                  <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                  Carregando usuários autorizados...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: INCLUIR / EDITAR USUÁRIO -->
+<div class="modal fade" id="modalUsuario" tabindex="-1" aria-labelledby="modalUsuarioLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background-color: var(--surface); border: 1px solid var(--border); border-radius: 16px;">
+      <div class="modal-header border-bottom py-3" style="border-color: var(--border) !important;">
+        <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="modalUsuarioLabel">
+          <i class="text-primary" data-lucide="user-plus" id="modalUserIcon"></i>
+          <span id="modalUsuarioTitulo">Novo Usuário</span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <form id="formUsuario" onsubmit="salvarUsuario(event)">
+        <div class="modal-body p-4">
+          <input type="hidden" id="usuarioId" value=""/>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold" for="usuarioNome">Nome Completo</label>
+            <input type="text" class="form-control" id="usuarioNome" required placeholder="Ex: Felipe Aguena" style="border-radius: 8px;"/>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold" for="usuarioEmail">E-mail de Acesso</label>
+            <input type="email" class="form-control" id="usuarioEmail" required placeholder="nome@nftlogistics.com.br" style="border-radius: 8px; text-transform: lowercase;"/>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold" for="usuarioRole">Perfil de Acesso</label>
+            <select class="form-select" id="usuarioRole" style="border-radius: 8px;">
+              <option value="admin">Administrador (Total)</option>
+              <option value="user" selected>Operador / Emissor</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold" for="usuarioSenha">
+              Senha <span id="labelSenhaInfo" class="text-muted fw-normal">(Mínimo 6 caracteres)</span>
+            </label>
+            <div class="input-group">
+              <input type="password" class="form-control border-end-0" id="usuarioSenha" placeholder="Digite a senha" style="border-radius: 8px 0 0 8px;"/>
+              <button class="btn btn-outline-secondary border-start-0" type="button" onclick="toggleSenhaModal()" style="border-radius: 0 8px 8px 0;">
+                <i data-lucide="eye" id="iconEyeModal" style="width: 16px; height: 16px;"></i>
+              </button>
+            </div>
+            <small class="text-muted" id="helpSenhaTexto">Para novos usuários a senha é obrigatória.</small>
+          </div>
+        </div>
+        <div class="modal-footer border-top py-3" style="border-color: var(--border) !important;">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
+          <button type="submit" class="btn btn-primary d-flex align-items-center gap-2" id="btnSalvarUsuario" style="border-radius: 8px;">
+            <i data-lucide="check" style="width: 16px; height: 16px;"></i>
+            <span>Salvar Usuário</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Bootstrap 5 JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  let listaUsuariosGlobal = [];
+  let modalBootstrap = null;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    modalBootstrap = new bootstrap.Modal(document.getElementById('modalUsuario'));
+    carregarUsuarios();
+  });
+
+  async function carregarUsuarios() {
+    const tbody = document.getElementById('tabelaUsuariosCorpo');
+    try {
+      const resp = await fetch('/api/usuarios');
+      const data = await resp.json();
+      if (resp.ok && data.status === 'success') {
+        listaUsuariosGlobal = data.usuarios || [];
+        renderizarTabela(listaUsuariosGlobal);
+      } else {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">Falha ao carregar usuários: ${data.error || 'Erro desconhecido'}</td></tr>`;
+      }
+    } catch(err) {
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">Erro de rede ao conectar com o servidor.</td></tr>`;
+    }
+  }
+
+  function renderizarTabela(usuarios) {
+    const tbody = document.getElementById('tabelaUsuariosCorpo');
+    if (!usuarios || usuarios.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">Nenhum usuário cadastrado.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = usuarios.map(u => {
+      const initials = (u.name || u.email || 'U').split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('').toUpperCase();
+      const roleBadge = u.role === 'admin' 
+        ? `<span class="badge-role-admin">Administrador</span>` 
+        : `<span class="badge-role-user">Operador</span>`;
+      
+      const createdDate = u.created_at ? new Date(u.created_at).toLocaleString('pt-BR') : '-';
+
+      return `
+        <tr>
+          <td class="text-muted fw-bold ps-4">${u.id}</td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="user-avatar-circle">${initials}</div>
+              <div>
+                <div class="fw-bold text-heading">${escapeHtml(u.name)}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="text-muted">${escapeHtml(u.email)}</span>
+          </td>
+          <td>${roleBadge}</td>
+          <td class="text-muted small">${createdDate}</td>
+          <td class="text-end pe-4">
+            <button class="btn btn-sm btn-outline-primary me-1" onclick="abrirModalEditarUsuario(${u.id})" title="Editar Usuário">
+              <i data-lucide="edit-2" style="width: 14px; height: 14px;"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger" onclick="excluirUsuario(${u.id}, '${escapeHtml(u.name)}')" title="Excluir Usuário">
+              <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    lucide.createIcons();
+  }
+
+  function escapeHtml(text) {
+    if (!text) return '';
+    return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  }
+
+  function abrirModalNovoUsuario() {
+    document.getElementById('usuarioId').value = '';
+    document.getElementById('usuarioNome').value = '';
+    document.getElementById('usuarioEmail').value = '';
+    document.getElementById('usuarioRole').value = 'user';
+    document.getElementById('usuarioSenha').value = '';
+    document.getElementById('usuarioSenha').required = true;
+    document.getElementById('labelSenhaInfo').innerText = '(Mínimo 6 caracteres)';
+    document.getElementById('helpSenhaTexto').innerText = 'Para novos usuários a senha é obrigatória.';
+    document.getElementById('modalUsuarioTitulo').innerText = 'Novo Usuário';
+    document.getElementById('modalUserIcon').setAttribute('data-lucide', 'user-plus');
+    lucide.createIcons();
+    modalBootstrap.show();
+  }
+
+  function abrirModalEditarUsuario(id) {
+    const user = listaUsuariosGlobal.find(u => u.id === id);
+    if (!user) return;
+
+    document.getElementById('usuarioId').value = user.id;
+    document.getElementById('usuarioNome').value = user.name || '';
+    document.getElementById('usuarioEmail').value = user.email || '';
+    document.getElementById('usuarioRole').value = user.role || 'user';
+    document.getElementById('usuarioSenha').value = '';
+    document.getElementById('usuarioSenha').required = false;
+    document.getElementById('labelSenhaInfo').innerText = '(Deixe em branco para manter a atual)';
+    document.getElementById('helpSenhaTexto').innerText = 'Preencha este campo apenas se desejar redefinir a senha do usuário.';
+    document.getElementById('modalUsuarioTitulo').innerText = 'Editar Usuário';
+    document.getElementById('modalUserIcon').setAttribute('data-lucide', 'edit-3');
+    lucide.createIcons();
+    modalBootstrap.show();
+  }
+
+  function toggleSenhaModal() {
+    const inp = document.getElementById('usuarioSenha');
+    const icon = document.getElementById('iconEyeModal');
+    if (inp.type === 'password') {
+      inp.type = 'text';
+      icon.setAttribute('data-lucide', 'eye-off');
+    } else {
+      inp.type = 'password';
+      icon.setAttribute('data-lucide', 'eye');
+    }
+    lucide.createIcons();
+  }
+
+  async function salvarUsuario(e) {
+    e.preventDefault();
+    const id = document.getElementById('usuarioId').value;
+    const name = document.getElementById('usuarioNome').value.trim();
+    const email = document.getElementById('usuarioEmail').value.trim();
+    const role = document.getElementById('usuarioRole').value;
+    const password = document.getElementById('usuarioSenha').value;
+
+    const btn = document.getElementById('btnSalvarUsuario');
+    btn.disabled = true;
+
+    try {
+      let resp, data;
+      if (id) {
+        // Edição (PUT)
+        const payload = { name, email, role };
+        if (password) payload.password = password;
+
+        resp = await fetch(`/api/usuarios/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } else {
+        // Inclusão (POST)
+        resp = await fetch('/api/usuarios', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, role, password })
+        });
+      }
+
+      data = await resp.json();
+      if (resp.ok && data.status === 'success') {
+        modalBootstrap.hide();
+        await carregarUsuarios();
+        if (window.nftToast) {
+          window.nftToast(data.message || 'Operação realizada com sucesso!', 'success');
+        } else {
+          alert(data.message || 'Operação realizada com sucesso!');
+        }
+      } else {
+        const msg = data.error || 'Erro ao salvar usuário.';
+        if (window.nftAlert) {
+          window.nftAlert(msg, { title: 'Atenção', type: 'warning' });
+        } else {
+          alert(msg);
+        }
+      }
+    } catch(err) {
+      alert('Erro de comunicação com o servidor.');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function excluirUsuario(id, nome) {
+    const confirmar = await (window.nftConfirm 
+      ? window.nftConfirm(`Deseja realmente remover o acesso do usuário "${nome}"?`, {
+          title: "Excluir Usuário",
+          type: "danger",
+          confirmText: "Sim, Excluir",
+          cancelText: "Cancelar"
+        })
+      : confirm(`Deseja realmente remover o acesso do usuário "${nome}"?`));
+
+    if (!confirmar) return;
+
+    try {
+      const resp = await fetch(`/api/usuarios/${id}`, { method: 'DELETE' });
+      const data = await resp.json();
+      if (resp.ok && data.status === 'success') {
+        await carregarUsuarios();
+        if (window.nftToast) {
+          window.nftToast(data.message || 'Usuário excluído com sucesso!', 'success');
+        } else {
+          alert(data.message || 'Usuário excluído com sucesso!');
+        }
+      } else {
+        const msg = data.error || 'Erro ao excluir usuário.';
+        if (window.nftAlert) {
+          window.nftAlert(msg, { title: 'Atenção', type: 'danger' });
+        } else {
+          alert(msg);
+        }
+      }
+    } catch(err) {
+      alert('Erro de rede ao excluir usuário.');
+    }
+  }
+</script>
+</body>
+</html>

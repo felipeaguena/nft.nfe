@@ -18,13 +18,36 @@ class LoginPayloadSchema(BaseModel):
     password: str = Field(..., min_length=6, max_length=128)
 
     @field_validator('email')
-
     @classmethod
     def validate_email_format(cls, v: str) -> str:
         v = v.strip().lower()
         if '@' not in v or '.' not in v.split('@')[-1]:
             raise ValueError('Credenciais inválidas')
         return v
+
+
+class UsuarioCreateSchema(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+    email: str = Field(..., min_length=5, max_length=254)
+    password: str = Field(..., min_length=6, max_length=128)
+    name: str = Field(..., min_length=2, max_length=150)
+    role: Optional[str] = Field(default='user', max_length=30)
+
+    @field_validator('email')
+    @classmethod
+    def validate_email_format(cls, v: str) -> str:
+        v = v.strip().lower()
+        if '@' not in v or '.' not in v.split('@')[-1]:
+            raise ValueError('E-mail inválido')
+        return v
+
+
+class UsuarioUpdateSchema(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+    email: Optional[str] = Field(default=None, min_length=5, max_length=254)
+    password: Optional[str] = Field(default=None, max_length=128)
+    name: Optional[str] = Field(default=None, min_length=2, max_length=150)
+    role: Optional[str] = Field(default=None, max_length=30)
 
 
 class EmpresaPayloadSchema(BaseModel):
@@ -315,28 +338,51 @@ def require_auth(f):
     return decorated
 
 
-def authenticate_user_credentials(email: str, password: str) -> Optional[Dict[str, str]]:
+def authenticate_user_credentials(email: str, password: str, db_conn=None) -> Optional[Dict[str, str]]:
     """
     Valida credenciais usando hashing seguro (bcrypt) e tempo constante.
-    Nunca compara senhas em texto puro.
-    Senha padrão configurada: 'NFT1652' (armazenada em hash bcrypt seguro).
-    Pode ser sobrescrita via variável de ambiente AUTH_ADMIN_PASSWORD_HASH.
+    Consulta a tabela de 'usuarios' no banco de dados e mantém fallback para a conta admin padrão.
     """
+    clean_email = (email or '').strip().lower()
+    clean_password = password or ''
+
+    # 1. Tenta autenticar pelo banco de dados (Turso / SQLite)
+    if db_conn is not None:
+        try:
+            cur = db_conn.cursor()
+            cur.execute("SELECT id, email, password_hash, name, role FROM usuarios WHERE LOWER(email) = ? LIMIT 1", (clean_email,))
+            row = cur.fetchone()
+            if row:
+                pwd_hash = row['password_hash'] if hasattr(row, '__getitem__') else row[2]
+                user_id = str(row['id'] if hasattr(row, '__getitem__') else row[0])
+                user_email = row['email'] if hasattr(row, '__getitem__') else row[1]
+                user_name = row['name'] if hasattr(row, '__getitem__') else row[3]
+                user_role = row['role'] if hasattr(row, '__getitem__') else row[4]
+
+                if pwd_hash and bcrypt.checkpw(clean_password.encode('utf-8'), pwd_hash.encode('utf-8')):
+                    return {
+                        "id": user_id,
+                        "email": user_email,
+                        "name": user_name,
+                        "role": user_role
+                    }
+        except Exception as _e_auth_db:
+            pass
+
+    # 2. Fallback seguro para o administrador padrão
     admin_email = os.environ.get('AUTH_ADMIN_EMAIL', 'admin@nftlogistics.com.br').strip().lower()
-    # Hash bcrypt de 'NFT1652'
     default_nft1652_hash = "$2b$12$2OEHVkbB4cpGnIXwA2Pt8.79L1jYeophfsuqrnW43CPhI4Hyw0bCK"
     admin_hash = os.environ.get('AUTH_ADMIN_PASSWORD_HASH', '').strip() or default_nft1652_hash
 
-    # Hash dummy bcrypt para mitigar enumeração de usuário por timing attack
     dummy_hash = b"$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4h/9S1G5C2"
-    target_hash = admin_hash.encode('utf-8') if (admin_hash and email == admin_email) else dummy_hash
+    target_hash = admin_hash.encode('utf-8') if (admin_hash and clean_email == admin_email) else dummy_hash
 
     try:
-        is_valid = bcrypt.checkpw(password.encode('utf-8'), target_hash)
+        is_valid = bcrypt.checkpw(clean_password.encode('utf-8'), target_hash)
     except Exception:
         is_valid = False
 
-    if email == admin_email and is_valid:
+    if clean_email == admin_email and is_valid:
         return {
             "id": "admin-1",
             "email": admin_email,
@@ -344,4 +390,5 @@ def authenticate_user_credentials(email: str, password: str) -> Optional[Dict[st
             "role": "admin"
         }
     return None
+
 

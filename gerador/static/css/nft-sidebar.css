@@ -328,7 +328,8 @@ body.sidebar-collapsed .nft-sidebar:hover {
   color: #ef4444 !important;
 }
 
-.sidebar-footer-btn.theme-toggle-btn {
+.sidebar-footer-btn.theme-toggle-btn,
+.sidebar-footer-btn.user-toggle-btn {
   width: 38px;
   min-width: 38px;
   padding: 0;
@@ -337,9 +338,21 @@ body.sidebar-collapsed .nft-sidebar:hover {
 }
 
 .sidebar-footer-btn.theme-toggle-btn i,
-.sidebar-footer-btn.theme-toggle-btn svg {
+.sidebar-footer-btn.theme-toggle-btn svg,
+.sidebar-footer-btn.user-toggle-btn i,
+.sidebar-footer-btn.user-toggle-btn svg {
   width: 18px;
   height: 18px;
+}
+
+.sidebar-footer-btn.user-toggle-btn {
+  color: var(--primary) !important;
+}
+
+.sidebar-footer-btn.user-toggle-btn:hover {
+  background: var(--primary-subtle);
+  border-color: var(--primary);
+  color: var(--primary-hover) !important;
 }
 
 .sidebar-footer-info {

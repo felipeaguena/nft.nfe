@@ -316,6 +316,24 @@ def get_db_connection():
                     )
                 ''')
                 conn.commit()
+
+            if 'usuarios' not in tables:
+                conn.execute('''
+                    CREATE TABLE IF NOT EXISTS usuarios (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        email TEXT UNIQUE NOT NULL,
+                        password_hash TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        role TEXT NOT NULL DEFAULT 'user',
+                        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
+                conn.execute('''
+                    INSERT OR IGNORE INTO usuarios (email, password_hash, name, role)
+                    VALUES ('admin@nftlogistics.com.br', '$2b$12$2OEHVkbB4cpGnIXwA2Pt8.79L1jYeophfsuqrnW43CPhI4Hyw0bCK', 'Administrador NFT Logistics', 'admin')
+                ''')
+                conn.commit()
             _DB_INITIALIZED = True
         except Exception:
             pass
@@ -1185,7 +1203,15 @@ def api_auth_login():
     if err_resp:
         return jsonify({"error": "Credenciais inválidas"}), 401
 
-    user = security.authenticate_user_credentials(data['email'], data['password'])
+    conn = get_db_connection()
+    try:
+        user = security.authenticate_user_credentials(data['email'], data['password'], db_conn=conn)
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
     if not user:
         return jsonify({"error": "Credenciais inválidas"}), 401
 
@@ -1247,6 +1273,158 @@ def api_auth_logout():
     resp.delete_cookie("authjs.session-token", path='/')
     resp.delete_cookie("session", path='/')
     return resp
+
+
+# === GESTÃO DE USUÁRIOS AUTORIZADOS ===
+@app.route('/usuarios')
+def pagina_usuarios():
+    return render_template('usuarios.html')
+
+@app.route('/api/usuarios', methods=['GET', 'POST'])
+def api_usuarios():
+    import bcrypt
+    conn = get_db_connection()
+    c = conn.cursor()
+    try:
+        if request.method == 'GET':
+            rows = c.execute("SELECT id, email, name, role, created_at, updated_at FROM usuarios ORDER BY id ASC").fetchall()
+            usuarios = []
+            for r in rows:
+                usuarios.append({
+                    "id": r['id'] if hasattr(r, '__getitem__') else r[0],
+                    "email": r['email'] if hasattr(r, '__getitem__') else r[1],
+                    "name": r['name'] if hasattr(r, '__getitem__') else r[2],
+                    "role": r['role'] if hasattr(r, '__getitem__') else r[3],
+                    "created_at": r['created_at'] if hasattr(r, '__getitem__') else r[4],
+                    "updated_at": r['updated_at'] if hasattr(r, '__getitem__') else r[5],
+                })
+            return jsonify({"status": "success", "usuarios": usuarios})
+
+        # POST: Inclusão de Usuário
+        data, err_resp = security.validate_json_payload(security.UsuarioCreateSchema)
+        if err_resp:
+            return err_resp
+
+        email = data['email'].strip().lower()
+        name = data['name'].strip()
+        role = (data.get('role') or 'user').strip()
+        raw_password = data['password']
+
+        # Verifica se e-mail já existe
+        existe = c.execute("SELECT id FROM usuarios WHERE LOWER(email) = ?", (email,)).fetchone()
+        if existe:
+            return jsonify({"status": "error", "error": f"O e-mail '{email}' já está cadastrado no sistema."}), 400
+
+        pwd_hash = bcrypt.hashpw(raw_password.encode('utf-8'), bcrypt.gensalt(12)).decode('utf-8')
+        c.execute("""
+            INSERT INTO usuarios (email, password_hash, name, role, created_at, updated_at)
+            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        """, (email, pwd_hash, name, role))
+        conn.commit()
+
+        novo_id = c.lastrowid
+        return jsonify({
+            "status": "success",
+            "message": "Usuário cadastrado com sucesso!",
+            "usuario": {
+                "id": novo_id,
+                "email": email,
+                "name": name,
+                "role": role
+            }
+        }), 201
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
+@app.route('/api/usuarios/<int:user_id>', methods=['GET', 'PUT', 'DELETE'])
+def api_usuario_detalhes(user_id):
+    import bcrypt
+    conn = get_db_connection()
+    c = conn.cursor()
+    try:
+        user_row = c.execute("SELECT id, email, name, role, created_at, updated_at FROM usuarios WHERE id = ?", (user_id,)).fetchone()
+        if not user_row:
+            return jsonify({"status": "error", "error": "Usuário não encontrado."}), 404
+
+        if request.method == 'GET':
+            return jsonify({
+                "status": "success",
+                "usuario": {
+                    "id": user_row['id'] if hasattr(user_row, '__getitem__') else user_row[0],
+                    "email": user_row['email'] if hasattr(user_row, '__getitem__') else user_row[1],
+                    "name": user_row['name'] if hasattr(user_row, '__getitem__') else user_row[2],
+                    "role": user_row['role'] if hasattr(user_row, '__getitem__') else user_row[3],
+                    "created_at": user_row['created_at'] if hasattr(user_row, '__getitem__') else user_row[4],
+                    "updated_at": user_row['updated_at'] if hasattr(user_row, '__getitem__') else user_row[5],
+                }
+            })
+
+        if request.method == 'DELETE':
+            # Protege para não permitir deletar se for o único usuário admin
+            total_users = c.execute("SELECT COUNT(*) FROM usuarios").fetchone()[0]
+            if total_users <= 1:
+                return jsonify({"status": "error", "error": "Não é possível excluir o único usuário do sistema."}), 400
+
+            c.execute("DELETE FROM usuarios WHERE id = ?", (user_id,))
+            conn.commit()
+            return jsonify({"status": "success", "message": "Usuário excluído com sucesso."})
+
+        # PUT: Edição de Usuário
+        data, err_resp = security.validate_json_payload(security.UsuarioUpdateSchema)
+        if err_resp:
+            return err_resp
+
+        email = data.get('email')
+        name = data.get('name')
+        role = data.get('role')
+        password = data.get('password')
+
+        current_email = user_row['email'] if hasattr(user_row, '__getitem__') else user_row[1]
+        if email and email.strip().lower() != current_email.lower():
+            email_clean = email.strip().lower()
+            outro = c.execute("SELECT id FROM usuarios WHERE LOWER(email) = ? AND id != ?", (email_clean, user_id)).fetchone()
+            if outro:
+                return jsonify({"status": "error", "error": f"O e-mail '{email_clean}' já está em uso por outro usuário."}), 400
+        else:
+            email_clean = current_email
+
+        name_final = name.strip() if name else (user_row['name'] if hasattr(user_row, '__getitem__') else user_row[2])
+        role_final = role.strip() if role else (user_row['role'] if hasattr(user_row, '__getitem__') else user_row[3])
+
+        if password and len(password.strip()) >= 6:
+            pwd_hash = bcrypt.hashpw(password.strip().encode('utf-8'), bcrypt.gensalt(12)).decode('utf-8')
+            c.execute("""
+                UPDATE usuarios
+                SET email = ?, password_hash = ?, name = ?, role = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            """, (email_clean, pwd_hash, name_final, role_final, user_id))
+        else:
+            c.execute("""
+                UPDATE usuarios
+                SET email = ?, name = ?, role = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            """, (email_clean, name_final, role_final, user_id))
+
+        conn.commit()
+        return jsonify({
+            "status": "success",
+            "message": "Usuário atualizado com sucesso!",
+            "usuario": {
+                "id": user_id,
+                "email": email_clean,
+                "name": name_final,
+                "role": role_final
+            }
+        })
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 
 # === ROTAS DE EMPRESAS ===
