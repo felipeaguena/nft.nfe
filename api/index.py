@@ -38,10 +38,24 @@ class VercelPathFixerMiddleware:
         self.wsgi_app = wsgi_app
 
     def __call__(self, environ, start_response):
+        import json
+        path_info = environ.get('PATH_INFO', '')
+        
+        # Se for rota de diagnóstico /dump-headers ou se PATH_INFO for /api/index.py com header de diagnóstico
+        if 'dump-headers' in path_info or environ.get('HTTP_X_DUMP') == '1':
+            headers_info = {k: str(v) for k, v in environ.items() if not k.startswith('wsgi.')}
+            body = json.dumps(headers_info, indent=2).encode('utf-8')
+            start_response('200 OK', [
+                ('Content-Type', 'application/json'),
+                ('Content-Length', str(len(body)))
+            ])
+            return [body]
+
         matched_path = (
             environ.get('HTTP_X_MATCHED_PATH')
             or environ.get('HTTP_X_VERCEL_MATCHED_PATH')
             or environ.get('HTTP_X_NOW_ROUTE_MATCHES')
+            or environ.get('HTTP_X_FORWARDED_PATH')
         )
         if matched_path:
             if '?' in matched_path:
@@ -52,6 +66,7 @@ class VercelPathFixerMiddleware:
             else:
                 environ['PATH_INFO'] = matched_path
         return self.wsgi_app(environ, start_response)
+
 
 if app is not None:
     # Registra rota direta de diagnóstico para vermos os headers exatos recebidos na Vercel
