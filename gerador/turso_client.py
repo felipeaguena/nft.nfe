@@ -86,6 +86,9 @@ class TursoCursor:
         return row
 
 
+_TURSO_HTTP_SESSION = requests.Session()
+
+
 class TursoConnection:
     def __init__(self, database_url: str, auth_token: str):
         # Converte libsql:// para https://
@@ -148,9 +151,9 @@ class TursoConnection:
         }
 
         try:
-            resp = requests.post(self.pipeline_url, headers=self.headers, json=payload, timeout=20)
+            resp = _TURSO_HTTP_SESSION.post(self.pipeline_url, headers=self.headers, json=payload, timeout=15)
             if resp.status_code != 200:
-                raise RuntimeError(f"Erro Turso HTTP {resp.status_code}: {resp.text}")
+                raise RuntimeError(f"Erro Turso HTTP {resp.status_code}")
             data = resp.json()
             result = data["results"][0]
             if result.get("type") == "error":

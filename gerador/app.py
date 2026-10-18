@@ -104,7 +104,18 @@ app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax',
     SESSION_COOKIE_SECURE=True if _is_prod_env else False,
+    MAX_CONTENT_LENGTH=15 * 1024 * 1024,  # Limite máximo de upload: 15 MB
 )
+
+# Parser XML blindado contra XXE (XML External Entity) e expansão de entidades (XML Bomb)
+SAFE_XML_PARSER = etree.XMLParser(resolve_entities=False, no_network=True, dtd_validation=False, load_dtd=False)
+
+@app.after_request
+def apply_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    return response
 
 # Configuração de CORS estrita com base em ALLOWED_ORIGIN (sem usar '*' com credenciais)
 ALLOWED_ORIGIN = os.environ.get('ALLOWED_ORIGIN', 'http://localhost:1652').strip()
@@ -2032,19 +2043,27 @@ def set_ultima_operacao():
     conn.close()
     return jsonify({"status": "success", "modulo": modulo, "ultima_operacao": nome_operacao})
 
+_SENSITIVE_CONFIG_PATTERNS = ('certificado', 'senha', 'password', 'secret', 'token', 'key', 'ecpf')
+
+def _is_sensitive_config_key(chave: str) -> bool:
+    k = (chave or '').strip().lower()
+    return any(p in k for p in _SENSITIVE_CONFIG_PATTERNS)
+
 @app.route('/api/config/salvar', methods=['POST'])
 def salvar_config_geral():
     data, err_resp = security.validate_json_payload(security.ConfigGeralPayloadSchema)
     if err_resp:
         return err_resp
-    chave = data.get('chave')
+    chave = str(data.get('chave') or '').strip()
     valor = data.get('valor')
     if not chave:
         return jsonify({"error": "Chave é obrigatória"}), 400
+    if _is_sensitive_config_key(chave):
+        return jsonify({"error": "Acesso negado: chave de configuração protegida."}), 403
     conn = get_db_connection()
     conn.execute(
         "INSERT OR REPLACE INTO sistema_config (chave, valor, data_atualizacao) VALUES (?, ?, CURRENT_TIMESTAMP)",
-        (str(chave), str(valor) if valor is not None else "")
+        (chave, str(valor) if valor is not None else "")
     )
     conn.commit()
     conn.close()
@@ -2052,9 +2071,11 @@ def salvar_config_geral():
 
 @app.route('/api/config/obter', methods=['GET'])
 def obter_config_geral():
-    chave = request.args.get('chave')
+    chave = str(request.args.get('chave') or '').strip()
     if not chave:
         return jsonify({"error": "Chave é obrigatória"}), 400
+    if _is_sensitive_config_key(chave):
+        return jsonify({"error": "Acesso negado: chave de configuração protegida."}), 403
     conn = get_db_connection()
     row = conn.execute("SELECT valor FROM sistema_config WHERE chave = ?", (chave,)).fetchone()
     conn.close()
@@ -4178,21 +4199,29 @@ def api_feiras_sync_sheets():
             'message': 'Nenhuma URL do Google Sheets informada ou configurada em FEIRAS_GOOGLE_SHEETS_URL.'
         }), 400
 
-    # Salva o novo link no banco para futuras sincronizações
+    # Validação estrita anti-SSRF: permite exclusivamente HTTPS no domínio oficial docs.google.com
+    parsed_url = urllib.parse.urlparse(url_input)
+    match_key = re.search(r'/spreadsheets/d/([a-zA-Z0-9-_]+)', parsed_url.path or '')
+    if parsed_url.scheme != 'https' or parsed_url.hostname != 'docs.google.com' or not match_key:
+        conn.close()
+        return jsonify({
+            'status': 'error',
+            'url': url_input,
+            'message': 'URL inválida. Apenas links HTTPS oficiais do Google Sheets (https://docs.google.com/spreadsheets/d/...) são permitidos.'
+        }), 400
+
+    # Salva o novo link validado no banco para futuras sincronizações
     c.execute("""
         INSERT OR REPLACE INTO sistema_config (chave, valor, data_atualizacao)
         VALUES ('feiras_google_sheets_url', ?, CURRENT_TIMESTAMP)
     """, (url_input,))
     conn.commit()
 
-    # Converte URL para formato de exportação CSV caso seja um link comum de visualização/edição do Sheets
-    url_csv = url_input
-    match_key = re.search(r'/spreadsheets/d/([a-zA-Z0-9-_]+)', url_input)
-    if match_key:
-        sheet_id = match_key.group(1)
-        match_gid = re.search(r'[#&?]gid=([0-9]+)', url_input)
-        gid = match_gid.group(1) if match_gid else '0'
-        url_csv = f'https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}'
+    # Converte URL para formato seguro de exportação CSV
+    sheet_id = match_key.group(1)
+    match_gid = re.search(r'[#&?]gid=([0-9]+)', url_input)
+    gid = match_gid.group(1) if match_gid else '0'
+    url_csv = f'https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}'
 
     try:
         req = urllib.request.Request(url_csv, headers={'User-Agent': 'Mozilla/5.0'})
@@ -4524,6 +4553,8 @@ def api_certificado_importar():
         pfx_bytes = file.read()
         if not pfx_bytes or len(pfx_bytes) < 32:
             return jsonify({'status': 'error', 'message': 'O arquivo do certificado está vazio ou corrompido.'}), 400
+        if len(pfx_bytes) > 512 * 1024:
+            return jsonify({'status': 'error', 'message': 'O arquivo do certificado excede o tamanho máximo permitido (512 KB).'}), 400
         
         # Validar o certificado e a senha com a biblioteca cryptography
         try:
@@ -4550,6 +4581,13 @@ def api_certificado_importar():
         caminho_final = os.path.join(cert_dir, nome_sanitizado)
         with open(caminho_final, 'wb') as f:
             f.write(pfx_bytes)
+
+        # Sincroniza certificado válido com o Cloudflare R2 para persistência em nuvem
+        try:
+            import r2_storage
+            r2_storage.upload_file_r2(caminho_final, f"certificado/{nome_sanitizado}", "application/x-pkcs12")
+        except Exception:
+            pass
         
         # Atualiza o sefaz_client ativo em memória
         sefaz_client.set_active_certificate(caminho_final, senha_bytes)
@@ -4607,10 +4645,10 @@ def api_sefaz_enviar():
             xml_final = xml_assinado
             if is_autorizado and retorno.get('response_xml'):
                 try:
-                    ret_root = etree.fromstring(retorno['response_xml'].encode('utf-8'))
+                    ret_root = etree.fromstring(retorno['response_xml'].encode('utf-8'), parser=SAFE_XML_PARSER)
                     prot_el = ret_root.find('.//{http://www.portalfiscal.inf.br/nfe}protNFe')
                     if prot_el is not None:
-                        nfe_root = etree.fromstring(xml_assinado.encode('utf-8'))
+                        nfe_root = etree.fromstring(xml_assinado.encode('utf-8'), parser=SAFE_XML_PARSER)
                         proc_el = etree.Element('{http://www.portalfiscal.inf.br/nfe}nfeProc', versao="4.00", nsmap={None: 'http://www.portalfiscal.inf.br/nfe'})
                         proc_el.append(nfe_root)
                         proc_el.append(prot_el)
@@ -4906,7 +4944,7 @@ def api_sefaz_consultar():
             
             if xml_encontrado:
                 try:
-                    root_xml = etree.fromstring(xml_encontrado.encode('utf-8') if isinstance(xml_encontrado, str) else xml_encontrado)
+                    root_xml = etree.fromstring(xml_encontrado.encode('utf-8') if isinstance(xml_encontrado, str) else xml_encontrado, parser=SAFE_XML_PARSER)
                     def _get_val(tag):
                         nodes = root_xml.xpath(f"//*[local-name()='{tag}']")
                         return nodes[0].text if nodes and nodes[0].text else ''
@@ -5110,7 +5148,7 @@ def obter_nome_padrao_arquivo(chave, xml_content_or_path=None):
 
     if xml_data:
         try:
-            root = etree.fromstring(xml_data.encode('utf-8'))
+            root = etree.fromstring(xml_data.encode('utf-8'), parser=SAFE_XML_PARSER)
             if not n_nf:
                 nnf_nodes = root.xpath("//*[local-name()='nNF']")
                 if nnf_nodes and nnf_nodes[0].text:
@@ -5145,9 +5183,17 @@ def obter_nome_padrao_arquivo(chave, xml_content_or_path=None):
 
     return f"{ref_sanitizada} - DANFE {n_nf} - {chave_limpa}"
 
+def _sanitizar_chave_nfe_download(chave_raw: str) -> str:
+    chave_limpa = re.sub(r'\s+', '', str(chave_raw or ''))
+    if not re.fullmatch(r'\d{44}', chave_limpa):
+        return ''
+    return chave_limpa
+
 @app.route('/api/sefaz/download/pdf/<chave>', methods=['GET'])
 def download_pdf(chave):
-    chave = chave.strip().replace(' ', '')
+    chave = _sanitizar_chave_nfe_download(chave)
+    if not chave:
+        return jsonify({"error": "Chave de acesso inválida. Deve conter exatamente 44 dígitos numéricos."}), 400
     pdf_path = os.path.join(DOWNLOADS_DIR, f"{chave}-danfe.pdf")
     xml_path = os.path.join(DOWNLOADS_DIR, f"{chave}-nfe.xml")
 
@@ -5201,7 +5247,9 @@ def download_pdf(chave):
 
 @app.route('/api/sefaz/download/xml/<chave>', methods=['GET'])
 def download_xml(chave):
-    chave = chave.strip().replace(' ', '')
+    chave = _sanitizar_chave_nfe_download(chave)
+    if not chave:
+        return jsonify({"error": "Chave de acesso inválida. Deve conter exatamente 44 dígitos numéricos."}), 400
     xml_path = os.path.join(DOWNLOADS_DIR, f"{chave}-nfe.xml")
 
     # 1. Tenta baixar do Cloudflare R2
@@ -5233,7 +5281,9 @@ def download_xml(chave):
 
 @app.route('/api/sefaz/download/zip/<chave>', methods=['GET'])
 def download_zip(chave):
-    chave = chave.strip().replace(' ', '')
+    chave = _sanitizar_chave_nfe_download(chave)
+    if not chave:
+        return jsonify({"error": "Chave de acesso inválida. Deve conter exatamente 44 dígitos numéricos."}), 400
     zip_path = os.path.join(DOWNLOADS_DIR, f"{chave}-arquivos.zip")
     nome_padrao = obter_nome_padrao_arquivo(chave)
 
@@ -5368,7 +5418,7 @@ def sync_and_get_notas_fiscais(conn):
         # 2. Extrai de infCpl do XML
         if xml_str:
             try:
-                root_cpl = etree.fromstring(xml_str.encode('utf-8') if isinstance(xml_str, str) else xml_str)
+                root_cpl = etree.fromstring(xml_str.encode('utf-8') if isinstance(xml_str, str) else xml_str, parser=SAFE_XML_PARSER)
                 cpl_nodes = root_cpl.xpath("//*[local-name()='infCpl']")
                 if cpl_nodes and cpl_nodes[0].text:
                     txt = cpl_nodes[0].text
@@ -5468,7 +5518,7 @@ def sync_and_get_notas_fiscais(conn):
 
         if xml_str:
             try:
-                root_xml = etree.fromstring(xml_str.encode('utf-8') if isinstance(xml_str, str) else xml_str)
+                root_xml = etree.fromstring(xml_str.encode('utf-8') if isinstance(xml_str, str) else xml_str, parser=SAFE_XML_PARSER)
                 def get_tag(tag):
                     nodes = root_xml.xpath(f"//*[local-name()='{tag}']")
                     return nodes[0].text if nodes and nodes[0].text else ''
