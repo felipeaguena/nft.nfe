@@ -125,30 +125,33 @@
         window.location.href = '/login';
     };
 
-    // Monitora a conexão do servidor (Heartbeat)
-    let offlineCount = 0;
-    setInterval(() => {
-        if (isShuttingDown) return;
+    // Monitora a conexão do servidor (Heartbeat apenas em ambiente Desktop local)
+    const isLocalDesktop = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+    if (isLocalDesktop) {
+        let offlineCount = 0;
+        setInterval(() => {
+            if (isShuttingDown) return;
 
-        fetch('/api/ping', { method: 'GET', cache: 'no-store' })
-            .then(res => {
-                if (res.ok) {
-                    offlineCount = 0;
-                } else {
+            fetch('/api/ping', { method: 'GET', cache: 'no-store' })
+                .then(res => {
+                    if (res.ok) {
+                        offlineCount = 0;
+                    } else {
+                        offlineCount++;
+                    }
+                })
+                .catch(() => {
                     offlineCount++;
-                }
-            })
-            .catch(() => {
-                offlineCount++;
-                if (offlineCount >= 2 && !isShuttingDown) {
-                    isShuttingDown = true;
-                    window.showShutdownOverlay("Servidor Desligado", "O backend local foi finalizado. Fechando a janela...", true);
-                    setTimeout(() => {
-                        window.fecharJanelaCompleta();
-                    }, 500);
-                }
-            });
-    }, 3500);
+                    if (offlineCount >= 2 && !isShuttingDown) {
+                        isShuttingDown = true;
+                        window.showShutdownOverlay("Servidor Desligado", "O backend local foi finalizado. Fechando a janela...", true);
+                        setTimeout(() => {
+                            window.fecharJanelaCompleta();
+                        }, 500);
+                    }
+                });
+        }, 3500);
+    }
 
     // Intercepta navegação interna do sistema para usar location.replace
     // Isso mantem history.length === 1 permanentemente, permitindo que window.close()

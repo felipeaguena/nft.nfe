@@ -1670,9 +1670,14 @@ def api_ptax_cotacao():
         return jsonify({"error": str(e)}), 500
 
 # === ROTAS: CSTS OFICIAIS (ICMS, CSOSN, IPI, PIS, COFINS) ===
+_CSTS_MEM_CACHE = {}
+
 @app.route('/api/csts', methods=['GET'])
 def api_get_csts():
     tipo = request.args.get('tipo', '').strip().upper()
+    if tipo in _CSTS_MEM_CACHE:
+        return jsonify({"status": "success", "csts": _CSTS_MEM_CACHE[tipo]})
+
     conn = get_db_connection()
     c = conn.cursor()
     if tipo:
@@ -1710,6 +1715,8 @@ def api_get_csts():
         elif r['tipo_imposto'] == 'PIS_COFINS':
             res['pis_cofins'].append(item)
 
+    if res['all']:
+        _CSTS_MEM_CACHE[tipo] = res
     return jsonify({"status": "success", "csts": res})
 
 # === ROTAS: TIPOS DE NOTA / OPERAÇÃO ===
@@ -2255,7 +2262,7 @@ def listar_rascunhos():
             lk = f"%{busca}%"
             params.extend([lk, lk, lk, lk])
             
-        query += " ORDER BY data_atualizacao DESC, id DESC"
+        query += " ORDER BY data_atualizacao DESC, id DESC LIMIT 200"
         rows = c.execute(query, params).fetchall()
         rascunhos = [dict(r) for r in rows]
         conn.close()
@@ -3728,7 +3735,11 @@ def api_search_ncm():
 
     if q:
         q_clean = re.sub(r'\D', '', q)
-        if q_clean:
+        if q_clean and not re.search(r'[A-Za-z]', q):
+            # Busca numérica por código/prefixo de NCM: usa BETWEEN para aproveitar o índice B-Tree idx_ncm_codigo_limpo
+            conditions.append("(codigo_limpo BETWEEN ? AND ?)")
+            params.extend([q_clean, f"{q_clean}99999999"])
+        elif q_clean:
             conditions.append("(codigo_limpo LIKE ? OR codigo LIKE ? OR descricao LIKE ?)")
             params.extend([f"%{q_clean}%", f"%{q}%", f"%{q}%"])
         else:
@@ -3787,6 +3798,8 @@ def download_ncm_excel():
         exportar_ncm_excel.exportar_ncm_excel()
     return send_file(excel_path, as_attachment=True, download_name="Tabela_NCM_Completa_Backup.xlsx", mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
+_NCM_UTRIB_CACHE = {}
+
 @app.route('/api/ncm/unidades_tributaveis', methods=['POST'])
 def api_ncm_unidades_tributaveis():
     validated, err_resp = security.validate_json_payload(security.UnidadesTributaveisPayloadSchema, request.get_json(silent=True) or {})
@@ -3808,34 +3821,48 @@ def api_ncm_unidades_tributaveis():
     if not ncms_limpos:
         return jsonify({})
 
+    mapa = {}
+    ncms_para_consultar = []
+    for n in ncms_limpos:
+        if n in _NCM_UTRIB_CACHE:
+            mapa[n] = _NCM_UTRIB_CACHE[n]
+        else:
+            ncms_para_consultar.append(n)
+
+    if not ncms_para_consultar:
+        return jsonify(mapa)
+
     conn = get_db_connection()
     c = conn.cursor()
-    placeholders = ','.join(['?'] * len(ncms_limpos))
+    placeholders = ','.join(['?'] * len(ncms_para_consultar))
     rows = c.execute(
         f"SELECT codigo_limpo, utrib, descricao_utrib FROM ncm WHERE codigo_limpo IN ({placeholders}) AND utrib > ''",
-        ncms_limpos
+        ncms_para_consultar
     ).fetchall()
 
-    mapa = {}
     for r in rows:
-        mapa[r['codigo_limpo']] = {
+        info = {
             'utrib': (r['utrib'] or '').strip().upper(),
             'descricao': (r['descricao_utrib'] or '').strip()
         }
+        mapa[r['codigo_limpo']] = info
+        _NCM_UTRIB_CACHE[r['codigo_limpo']] = info
 
-    # Para NCMs sem match exato, tenta por prefixo de 6 ou 4 dígitos
-    faltantes = [n for n in ncms_limpos if n not in mapa]
+    # Para NCMs sem match exato, tenta por prefixo de 6 ou 4 dígitos usando BETWEEN (aproveita índice B-Tree)
+    faltantes = [n for n in ncms_para_consultar if n not in mapa]
     for n in faltantes:
         prefix = n[:6] if len(n) >= 6 else (n[:4] if len(n) >= 4 else n)
         row = c.execute(
-            "SELECT utrib, descricao_utrib FROM ncm WHERE codigo_limpo LIKE ? AND utrib > '' LIMIT 1",
-            (f"{prefix}%",)
+            "SELECT utrib, descricao_utrib FROM ncm WHERE codigo_limpo BETWEEN ? AND ? AND utrib > '' LIMIT 1",
+            (prefix, f"{prefix}99999999")
         ).fetchone()
         if row:
-            mapa[n] = {
+            info = {
                 'utrib': (row['utrib'] or '').strip().upper(),
                 'descricao': (row['descricao_utrib'] or '').strip()
             }
+            mapa[n] = info
+            _NCM_UTRIB_CACHE[n] = info
 
     conn.close()
     return jsonify(mapa)
@@ -3844,20 +3871,22 @@ def api_ncm_unidades_tributaveis():
 def localidades_view():
     return render_template('localidades.html')
 
+_PAISES_MEM_CACHE = None
+
 @app.route('/api/localidades/paises')
 def api_localidades_paises():
-    q = request.args.get('q', '').strip()
-    conn = get_db_connection()
-    c = conn.cursor()
-    if q:
-        rows = c.execute(
-            "SELECT codigo, nome FROM tabela_paises WHERE codigo LIKE ? OR nome LIKE ? ORDER BY CASE WHEN codigo = '1058' THEN 0 ELSE 1 END, nome ASC",
-            (f"%{q}%", f"%{q}%")
-        ).fetchall()
-    else:
+    global _PAISES_MEM_CACHE
+    q = request.args.get('q', '').strip().lower()
+    if _PAISES_MEM_CACHE is None:
+        conn = get_db_connection()
+        c = conn.cursor()
         rows = c.execute("SELECT codigo, nome FROM tabela_paises ORDER BY CASE WHEN codigo = '1058' THEN 0 ELSE 1 END, nome ASC").fetchall()
-    conn.close()
-    return jsonify([dict(r) for r in rows])
+        conn.close()
+        _PAISES_MEM_CACHE = [dict(r) for r in rows]
+
+    if q:
+        return jsonify([p for p in _PAISES_MEM_CACHE if q in str(p.get('codigo', '')).lower() or q in str(p.get('nome', '')).lower()])
+    return jsonify(_PAISES_MEM_CACHE)
 
 @app.route('/api/localidades/municipios')
 def api_localidades_municipios():
@@ -3901,19 +3930,11 @@ def api_localidades_municipios():
         "items": [dict(r) for r in rows]
     })
 
+_UFS_STATIC = ['AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MG', 'MS', 'MT', 'PA', 'PB', 'PE', 'PI', 'PR', 'RJ', 'RN', 'RO', 'RR', 'RS', 'SC', 'SE', 'SP', 'TO']
+
 @app.route('/api/localidades/ufs')
 def api_localidades_ufs():
-    try:
-        conn = get_db_connection()
-        c = conn.cursor()
-        rows = c.execute("SELECT DISTINCT uf FROM tabela_municipios WHERE uf IS NOT NULL AND uf != '' ORDER BY uf ASC").fetchall()
-        ufs = [r[0] for r in rows if r[0]]
-        conn.close()
-    except Exception:
-        ufs = []
-    if not ufs:
-        ufs = ['AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MG', 'MS', 'MT', 'PA', 'PB', 'PE', 'PI', 'PR', 'RJ', 'RN', 'RO', 'RR', 'RS', 'SC', 'SE', 'SP', 'TO']
-    return jsonify(ufs)
+    return jsonify(_UFS_STATIC)
 
 @app.route('/api/localidades/cep/<cep>')
 def api_localidades_cep(cep):
@@ -5281,43 +5302,60 @@ def download_zip(chave):
 # === MÓDULO RELATÓRIO: NOTAS FISCAIS GERADAS & FILTROS AVANÇADOS ===
 # ==============================================================================
 
+_NOTAS_FISCAIS_SCHEMA_READY = False
+
 def sync_and_get_notas_fiscais(conn):
     """
     Sincroniza histórico SEFAZ, downloads e rascunhos para a tabela notas_fiscais,
     garantindo que todas as notas emitidas, autorizadas ou canceladas estejam atualizadas.
+    Otimizado para evitar leituras de colunas pesadas (payload_json) e escritas redundantes no Turso.
     """
+    global _NOTAS_FISCAIS_SCHEMA_READY
     c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS notas_fiscais (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            chave_nfe TEXT UNIQUE,
-            referencia_interna TEXT,
-            data_hora TEXT,
-            numero_nfe TEXT,
-            tipo_operacao TEXT,
-            tipo_movimento TEXT DEFAULT '1',
-            valor_total REAL DEFAULT 0.0,
-            total_produtos REAL DEFAULT 0.0,
-            status TEXT DEFAULT 'Gerada',
-            protocolo TEXT DEFAULT '',
-            recibo TEXT DEFAULT '',
-            ambiente INTEGER DEFAULT 2,
-            cstat TEXT DEFAULT '',
-            xmotivo TEXT DEFAULT '',
-            caminho_xml TEXT DEFAULT '',
-            caminho_pdf TEXT DEFAULT '',
-            oculto INTEGER DEFAULT 0,
-            data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP,
-            data_atualizacao DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    try:
-        c.execute('ALTER TABLE notas_fiscais ADD COLUMN oculto INTEGER DEFAULT 0')
-    except Exception:
-        pass
-    conn.commit()
+    if not _NOTAS_FISCAIS_SCHEMA_READY:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS notas_fiscais (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                chave_nfe TEXT UNIQUE,
+                referencia_interna TEXT,
+                data_hora TEXT,
+                numero_nfe TEXT,
+                tipo_operacao TEXT,
+                tipo_movimento TEXT DEFAULT '1',
+                valor_total REAL DEFAULT 0.0,
+                total_produtos REAL DEFAULT 0.0,
+                status TEXT DEFAULT 'Gerada',
+                protocolo TEXT DEFAULT '',
+                recibo TEXT DEFAULT '',
+                ambiente INTEGER DEFAULT 2,
+                cstat TEXT DEFAULT '',
+                xmotivo TEXT DEFAULT '',
+                caminho_xml TEXT DEFAULT '',
+                caminho_pdf TEXT DEFAULT '',
+                oculto INTEGER DEFAULT 0,
+                data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP,
+                data_atualizacao DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        try:
+            c.execute('ALTER TABLE notas_fiscais ADD COLUMN oculto INTEGER DEFAULT 0')
+        except Exception:
+            pass
+        conn.commit()
+        _NOTAS_FISCAIS_SCHEMA_READY = True
 
-    rascunhos_rows = c.execute('SELECT * FROM rascunhos').fetchall()
+    # Busca apenas colunas leves de rascunhos (sem carregar payload_json)
+    rascunhos_rows = c.execute(
+        "SELECT chave_acesso, referencia_interna FROM rascunhos WHERE referencia_interna IS NOT NULL AND referencia_interna != ''"
+    ).fetchall()
+
+    # Carrega notas já salvas em memória em uma única query (evita N+1 SELECTs no loop)
+    existing_rows = c.execute('SELECT * FROM notas_fiscais').fetchall()
+    existing_map = {}
+    for er in existing_rows:
+        ch_clean = (er['chave_nfe'] or '').replace(' ', '').strip()
+        if ch_clean:
+            existing_map[ch_clean] = dict(er)
 
     def find_reference(chave, xml_str):
         # 1. Match direto em rascunhos por chave
@@ -5402,8 +5440,24 @@ def sync_and_get_notas_fiscais(conn):
             if item['status'] != 'Cancelada':
                 item['has_cce'] = True
 
-    # Processa e persiste cada nota
+    # Processa e persiste apenas notas novas ou que sofreram alteração de status/protocolo
+    houve_alteracao = False
     for chave, item in notas_dict.items():
+        existing = existing_map.get(chave)
+        protocolo_final = item.get('protocolo_cancelamento') or item.get('protocolo') or ''
+
+        # Se a nota já existe no banco com os mesmos dados essenciais, pula reprocessamento e escrita no Turso
+        if existing:
+            ex_ref = (existing.get('referencia_interna') or '').strip()
+            if (
+                existing.get('status') == item['status']
+                and str(existing.get('protocolo') or '') == str(protocolo_final)
+                and str(existing.get('cstat') or '') == str(item['cstat'])
+                and ex_ref and ex_ref != '-'
+                and existing.get('numero_nfe')
+            ):
+                continue
+
         xml_str = item['xml_envio']
         nNF = ''
         dhEmi = item['data_envio'] or ''
@@ -5450,39 +5504,42 @@ def sync_and_get_notas_fiscais(conn):
         caminho_xml = xml_file if os.path.exists(os.path.join(DOWNLOADS_DIR, xml_file)) else ''
         caminho_pdf = pdf_file if os.path.exists(os.path.join(DOWNLOADS_DIR, pdf_file)) else ''
 
-        # Protocolo final
-        protocolo_final = item.get('protocolo_cancelamento') or item.get('protocolo') or ''
-
-        # Upsert
-        existing = c.execute('SELECT id, referencia_interna, oculto FROM notas_fiscais WHERE chave_nfe = ?', (chave,)).fetchone()
         if existing:
-            if existing['referencia_interna'] and existing['referencia_interna'] != '-':
+            if existing.get('referencia_interna') and existing.get('referencia_interna') != '-':
                 ref_interna = existing['referencia_interna']
-            c.execute('''
-                UPDATE notas_fiscais SET
-                    referencia_interna = ?,
-                    data_hora = ?,
-                    numero_nfe = ?,
-                    tipo_operacao = ?,
-                    tipo_movimento = ?,
-                    valor_total = ?,
-                    total_produtos = ?,
-                    status = ?,
-                    protocolo = ?,
-                    recibo = ?,
-                    ambiente = ?,
-                    cstat = ?,
-                    xmotivo = ?,
-                    caminho_xml = ?,
-                    caminho_pdf = ?,
-                    data_atualizacao = CURRENT_TIMESTAMP
-                WHERE chave_nfe = ?
-            ''', (
-                ref_interna, data_hora_fmt, nNF, natOp, tpNF, vNF, vProd,
-                item['status'], protocolo_final, item.get('recibo', ''),
-                item['tpAmb'], item['cstat'], item['xmotivo'], caminho_xml, caminho_pdf,
-                chave
-            ))
+            # Só executa UPDATE se algo realmente mudou
+            if (
+                existing.get('status') != item['status']
+                or str(existing.get('protocolo') or '') != str(protocolo_final)
+                or str(existing.get('cstat') or '') != str(item['cstat'])
+                or (existing.get('referencia_interna') or '-') != ref_interna
+            ):
+                c.execute('''
+                    UPDATE notas_fiscais SET
+                        referencia_interna = ?,
+                        data_hora = ?,
+                        numero_nfe = ?,
+                        tipo_operacao = ?,
+                        tipo_movimento = ?,
+                        valor_total = ?,
+                        total_produtos = ?,
+                        status = ?,
+                        protocolo = ?,
+                        recibo = ?,
+                        ambiente = ?,
+                        cstat = ?,
+                        xmotivo = ?,
+                        caminho_xml = ?,
+                        caminho_pdf = ?,
+                        data_atualizacao = CURRENT_TIMESTAMP
+                    WHERE chave_nfe = ?
+                ''', (
+                    ref_interna, data_hora_fmt, nNF, natOp, tpNF, vNF, vProd,
+                    item['status'], protocolo_final, item.get('recibo', ''),
+                    item['tpAmb'], item['cstat'], item['xmotivo'], caminho_xml, caminho_pdf,
+                    chave
+                ))
+                houve_alteracao = True
         else:
             c.execute('''
                 INSERT INTO notas_fiscais (
@@ -5495,8 +5552,10 @@ def sync_and_get_notas_fiscais(conn):
                 item['status'], protocolo_final, item.get('recibo', ''),
                 item['tpAmb'], item['cstat'], item['xmotivo'], caminho_xml, caminho_pdf
             ))
+            houve_alteracao = True
 
-    conn.commit()
+    if houve_alteracao:
+        conn.commit()
 
     # Busca todas as notas ativas (não ocultadas) ordenadas por data
     rows = c.execute('SELECT * FROM notas_fiscais WHERE COALESCE(oculto, 0) = 0 ORDER BY data_hora DESC, id DESC').fetchall()
