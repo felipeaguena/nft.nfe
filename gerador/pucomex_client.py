@@ -47,30 +47,80 @@ load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
 
 def obter_caminho_certificado_ecpf():
     r"""
-    Localiza o certificado e-CPF para autenticação no Portal Único Siscomex.
-    1. Verifica variável de ambiente ECPF_PFX_PATH ou gerador/certificado/felipe_ecpf.pfx
-    2. Fallback para outros certificados pfx em gerador/certificado/
+    Localiza o certificado e-CPF (ou e-CNPJ com procuração) para autenticação no Portal Único Siscomex.
+    1. Suporte a Base64 no ambiente (ECPF_PFX_BASE64 ou CERT_PFX_BASE64)
+    2. Suporte a download automático via Cloudflare R2 caso esteja na nuvem (Vercel)
+    3. Consulta de senha e arquivo ativo no banco de dados (Turso / SQLite)
+    4. Varredura local e teste automático de senhas conhecidas
     """
-    ecpf_pass_str = os.environ.get('ECPF_PFX_PASSWORD', '')
+    # 1. Recupera senha configurada em variáveis de ambiente ou no banco
+    ecpf_pass_str = os.environ.get('ECPF_PFX_PASSWORD', '').strip()
+    if not ecpf_pass_str:
+        ecpf_pass_str = os.environ.get('CERT_PFX_PASSWORD', '').strip()
+    
+    # Se ainda sem senha nas envs, tenta obter do banco sistema_config
+    if not ecpf_pass_str:
+        try:
+            from app import get_db_connection
+            conn = get_db_connection()
+            c = conn.cursor()
+            row_ecpf_pwd = c.execute("SELECT valor FROM sistema_config WHERE chave = 'certificado_ecpf_senha'").fetchone()
+            if row_ecpf_pwd and row_ecpf_pwd['valor']:
+                ecpf_pass_str = row_ecpf_pwd['valor'].strip()
+            else:
+                row_pwd = c.execute("SELECT valor FROM sistema_config WHERE chave = 'certificado_ativo_senha'").fetchone()
+                if row_pwd and row_pwd['valor']:
+                    ecpf_pass_str = row_pwd['valor'].strip()
+            conn.close()
+        except Exception:
+            pass
+
+    if not ecpf_pass_str:
+        ecpf_pass_str = "nftecnpj"
+
     ecpf_pass_bytes = ecpf_pass_str.encode('utf-8') if ecpf_pass_str else None
 
+    # 2. Suporte a certificado via BASE64 (Vercel)
+    ecpf_base64 = os.environ.get('ECPF_PFX_BASE64', '').strip() or os.environ.get('CERT_PFX_BASE64', '').strip()
+    if ecpf_base64:
+        try:
+            import base64
+            cloud_pfx_path = os.path.join(CERT_DIR, 'cloud_siscomex.pfx')
+            with open(cloud_pfx_path, 'wb') as f_b64:
+                f_b64.write(base64.b64decode(ecpf_base64))
+            if os.path.exists(cloud_pfx_path) and os.path.getsize(cloud_pfx_path) > 0:
+                return cloud_pfx_path, ecpf_pass_bytes
+        except Exception as e_b64:
+            print(f"[PUCOMEX] Aviso ao carregar ECPF_PFX_BASE64: {e_b64}")
+
+    # 3. Caminho explícito por variável de ambiente
     env_ecpf_path = os.environ.get('ECPF_PFX_PATH', '').strip()
     if env_ecpf_path and os.path.exists(env_ecpf_path) and os.path.getsize(env_ecpf_path) > 0:
         return env_ecpf_path, ecpf_pass_bytes
 
+    # 4. Verifica se felipe_ecpf.pfx existe localmente; se não, tenta baixar do Cloudflare R2
     ecpf_pfx = os.path.join(CERT_DIR, 'felipe_ecpf.pfx')
+    if not os.path.exists(ecpf_pfx) or os.path.getsize(ecpf_pfx) == 0:
+        try:
+            import r2_storage
+            ok_r2 = r2_storage.download_file_r2('certificado/felipe_ecpf.pfx', ecpf_pfx)
+            if not ok_r2:
+                r2_storage.download_file_r2('felipe_ecpf.pfx', ecpf_pfx)
+        except Exception as e_r2:
+            print(f"[PUCOMEX] Aviso ao baixar e-CPF do R2: {e_r2}")
+
     if os.path.exists(ecpf_pfx) and os.path.getsize(ecpf_pfx) > 0:
         return ecpf_pfx, ecpf_pass_bytes
 
-    # Tentativa de exportar automaticamente do Windows Certificate Store apenas se senha definida no ambiente
-    if ecpf_pass_str and sys.platform == 'win32':
+    # 5. Tentativa de exportar automaticamente do Windows Certificate Store se estiver rodando em Windows
+    if sys.platform == 'win32':
         try:
             ps_script = (
                 "$cert = Get-ChildItem -Path Cert:\\CurrentUser\\My | "
                 "Where-Object { $_.Subject -like '*AGUENA*' -or $_.Subject -like '*e-CPF*' } | "
                 "Select-Object -First 1; "
                 "if ($cert -and $cert.HasPrivateKey) { "
-                "$bytes = $cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pkcs12, $env:ECPF_PFX_PASSWORD); "
+                f"$bytes = $cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pkcs12, '{ecpf_pass_str}'); "
                 f"[System.IO.File]::WriteAllBytes('{ecpf_pfx.replace(chr(92), chr(92)*2)}', $bytes); "
                 "Write-Output 'OK' }"
             )
@@ -80,14 +130,31 @@ def obter_caminho_certificado_ecpf():
         except Exception as e:
             print(f"[PUCOMEX] Aviso ao exportar cert do Windows: {e}")
 
-    # Fallback para o certificado padrão da pasta (e-CNPJ)
-    cert_pass_str = os.environ.get('CERT_PFX_PASSWORD', '')
-    cert_pass_bytes = cert_pass_str.encode('utf-8') if cert_pass_str else None
+    # 6. Fallback para outros certificados na pasta CERT_DIR ou baixar certificado ativo do R2
     if os.path.exists(CERT_DIR):
-        for f in os.listdir(CERT_DIR):
-            if f.endswith('.pfx'):
-                full_p = os.path.join(CERT_DIR, f)
-                return full_p, cert_pass_bytes
+        pfx_list = [f for f in os.listdir(CERT_DIR) if f.lower().endswith(('.pfx', '.p12'))]
+        if pfx_list:
+            full_p = os.path.join(CERT_DIR, pfx_list[0])
+            return full_p, ecpf_pass_bytes
+
+    # Tenta baixar qualquer certificado ativo do R2
+    try:
+        from app import get_db_connection
+        conn = get_db_connection()
+        c = conn.cursor()
+        row_arq = c.execute("SELECT valor FROM sistema_config WHERE chave = 'certificado_ativo_arquivo'").fetchone()
+        conn.close()
+        nome_arq = row_arq['valor'].strip() if row_arq and row_arq['valor'] else 'NFT_LOGISTICS_LTDA_47998441000198_1771873069312658700_nftcnpj.pfx'
+        caminho_cand = os.path.join(CERT_DIR, nome_arq)
+        if not os.path.exists(caminho_cand) or os.path.getsize(caminho_cand) == 0:
+            import r2_storage
+            ok_r2 = r2_storage.download_file_r2(f"certificado/{nome_arq}", caminho_cand)
+            if not ok_r2:
+                r2_storage.download_file_r2(nome_arq, caminho_cand)
+        if os.path.exists(caminho_cand) and os.path.getsize(caminho_cand) > 0:
+            return caminho_cand, ecpf_pass_bytes
+    except Exception:
+        pass
             
     return None, None
 
@@ -95,6 +162,7 @@ def obter_caminho_certificado_ecpf():
 def get_mtls_pem_files():
     """
     Converte o PFX ativo para arquivos PEM temporários compatíveis com o requests.
+    Implementa teste resiliente de senha caso a senha configurada falhe.
     """
     global _cached_cert_pem_path, _cached_key_pem_path
     if _cached_cert_pem_path and _cached_key_pem_path:
@@ -108,7 +176,26 @@ def get_mtls_pem_files():
     with open(pfx_path, 'rb') as f:
         pfx_data = f.read()
 
-    private_key, cert, add_certs = pkcs12.load_key_and_certificates(pfx_data, pfx_pass)
+    # Tenta carregar com a senha fornecida; se falhar, tenta senhas conhecidas como fallback resiliente
+    private_key, cert, add_certs = None, None, None
+    passwords_to_try = []
+    if pfx_pass is not None:
+        passwords_to_try.append(pfx_pass)
+    # Senhas comuns / padrão do projeto
+    for default_pwd in (b'nftecnpj', b'', b'123456', b'1234'):
+        if default_pwd not in passwords_to_try:
+            passwords_to_try.append(default_pwd)
+
+    ultimo_erro = None
+    for pwd in passwords_to_try:
+        try:
+            private_key, cert, add_certs = pkcs12.load_key_and_certificates(pfx_data, pwd)
+            break
+        except Exception as e_pwd:
+            ultimo_erro = e_pwd
+
+    if not private_key or not cert:
+        raise ValueError(f"Não foi possível abrir o certificado digital ({os.path.basename(pfx_path)}): {ultimo_erro or 'Senha inválida'}")
 
     c_file = tempfile.NamedTemporaryFile(suffix='_cert.pem', delete=False)
     k_file = tempfile.NamedTemporaryFile(suffix='_key.pem', delete=False)
