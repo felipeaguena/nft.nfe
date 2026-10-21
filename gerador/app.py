@@ -888,9 +888,10 @@ def build_nfe_element(cabecalho, itens, rodape):
             
         ET.SubElement(prod, f'{{{NFE_NS}}}indTot').text = '1'
         
-        # DI
+        # DI: gerado para importação (CFOP 3.xxx) ou reexportação (CFOP 7.930) quando houver dados de DI
         n_di = str(item.get('nDI') or cabecalho.get('import_nDI') or '').strip()
-        if not cfop_item.startswith('7') and n_di:
+        deve_gerar_di = bool(n_di) and (not cfop_item.startswith('7') or cfop_item == '7930' or '7930' in cfop_item or 'REEXPORTA' in str(cabecalho.get('natOp') or '').upper())
+        if deve_gerar_di:
             di_el = ET.SubElement(prod, f'{{{NFE_NS}}}DI')
             ET.SubElement(di_el, f'{{{NFE_NS}}}nDI').text = n_di[:15]
             ET.SubElement(di_el, f'{{{NFE_NS}}}dDI').text = format_date(item.get('dDI') or cabecalho.get('import_dDI'))
@@ -1047,6 +1048,15 @@ def build_nfe_element(cabecalho, itens, rodape):
             ET.SubElement(cofins_node, f'{{{NFE_NS}}}pCOFINS').text = p_cofins
             ET.SubElement(cofins_node, f'{{{NFE_NS}}}vCOFINS').text = v_cofins
             total_cofins += float(v_cofins)
+
+        # Informações Adicionais do Produto (infAdProd) - exibidas na descrição do item no DANFE
+        inf_ad_prod = str(item.get('infAdProd') or '').strip()
+        if not inf_ad_prod and n_di:
+            raw_adic_str = re.sub(r'\D', '', str(item.get('nAdicao') or idx)).lstrip('0') or str(idx)
+            raw_seq_str = re.sub(r'\D', '', str(item.get('nSeqAdic') or '1')).lstrip('0') or '1'
+            inf_ad_prod = f"DI: {n_di} Adicao: {int(raw_adic_str):03d} Item: {int(raw_seq_str):03d}"
+        if inf_ad_prod:
+            ET.SubElement(det, f'{{{NFE_NS}}}infAdProd').text = inf_ad_prod[:500]
 
     # 5. total
     tot_data = rodape.get('totais', {})
@@ -5058,6 +5068,48 @@ def garantir_xml_e_danfe_nota(chave, retorno_sefaz=None):
                                 cce_str = f" [CC-e #{seq} em {data_e} Prot:{prot_e}]: {txt_corr}"
                                 if txt_corr and txt_corr not in cpl_orig:
                                     inf_cpl.text = cpl_orig + cce_str
+
+                # Relaciona DI e Adições aos itens caso presentes em infCpl ou dados da nota
+                di_encontrada = ''
+                for inf_cpl_el in inf.xpath(".//*[local-name()='infCpl']"):
+                    m_di_find = re.search(r'DI:\s*([0-9\/\-]+)', inf_cpl_el.text or '')
+                    if m_di_find:
+                        di_encontrada = re.sub(r'\D', '', m_di_find.group(1))
+                        break
+
+                if di_encontrada:
+                    for idx_det, det_el in enumerate(inf.xpath("./*[local-name()='det']"), start=1):
+                        prod_el = det_el.find("{http://www.portalfiscal.inf.br/nfe}prod")
+                        if prod_el is None:
+                            prods = det_el.xpath("./*[local-name()='prod']")
+                            prod_el = prods[0] if prods else None
+                        
+                        if prod_el is not None and not prod_el.xpath("./*[local-name()='DI']"):
+                            di_tag = etree.Element("{http://www.portalfiscal.inf.br/nfe}DI")
+                            etree.SubElement(di_tag, "{http://www.portalfiscal.inf.br/nfe}nDI").text = di_encontrada[:15]
+                            etree.SubElement(di_tag, "{http://www.portalfiscal.inf.br/nfe}dDI").text = (dh_aut[:10] if dh_aut else datetime.now().strftime('%Y-%m-%d'))
+                            etree.SubElement(di_tag, "{http://www.portalfiscal.inf.br/nfe}xLocDesemb").text = "PORTO DE SANTOS"
+                            etree.SubElement(di_tag, "{http://www.portalfiscal.inf.br/nfe}UFDesemb").text = "SP"
+                            etree.SubElement(di_tag, "{http://www.portalfiscal.inf.br/nfe}dDesemb").text = (dh_aut[:10] if dh_aut else datetime.now().strftime('%Y-%m-%d'))
+                            etree.SubElement(di_tag, "{http://www.portalfiscal.inf.br/nfe}tpViaTransp").text = "1"
+                            etree.SubElement(di_tag, "{http://www.portalfiscal.inf.br/nfe}vAFRMM").text = "0.00"
+                            etree.SubElement(di_tag, "{http://www.portalfiscal.inf.br/nfe}tpIntermedio").text = "1"
+                            etree.SubElement(di_tag, "{http://www.portalfiscal.inf.br/nfe}cExportador").text = "EXPORTADOR"
+
+                            adi_tag = etree.SubElement(di_tag, "{http://www.portalfiscal.inf.br/nfe}adi")
+                            etree.SubElement(adi_tag, "{http://www.portalfiscal.inf.br/nfe}nAdicao").text = str(idx_det)
+                            etree.SubElement(adi_tag, "{http://www.portalfiscal.inf.br/nfe}nSeqAdic").text = "1"
+                            etree.SubElement(adi_tag, "{http://www.portalfiscal.inf.br/nfe}cFabricante").text = "FABRICANTE"
+
+                            ind_tot = prod_el.xpath("./*[local-name()='indTot']")
+                            if ind_tot:
+                                ind_tot[0].addnext(di_tag)
+                            else:
+                                prod_el.append(di_tag)
+
+                        if not det_el.xpath("./*[local-name()='infAdProd']"):
+                            inf_ad_el = etree.SubElement(det_el, "{http://www.portalfiscal.inf.br/nfe}infAdProd")
+                            inf_ad_el.text = f"DI: {di_encontrada} Adicao: {idx_det:03d} Item: 001"
 
             prot_el = etree.Element("{http://www.portalfiscal.inf.br/nfe}protNFe", versao="4.00")
             inf_prot = etree.SubElement(prot_el, "{http://www.portalfiscal.inf.br/nfe}infProt")
