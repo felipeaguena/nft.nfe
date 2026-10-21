@@ -5229,6 +5229,26 @@ def garantir_xml_e_danfe_nota(chave, retorno_sefaz=None):
     except Exception:
         pass
 
+    # 9. Atualiza registro em notas_fiscais com os caminhos dos arquivos
+    try:
+        if os.path.exists(xml_path) or os.path.exists(pdf_path):
+            c.execute("""
+                UPDATE notas_fiscais SET
+                    caminho_xml = CASE WHEN ? != '' THEN ? ELSE caminho_xml END,
+                    caminho_pdf = CASE WHEN ? != '' THEN ? ELSE caminho_pdf END,
+                    data_atualizacao = CURRENT_TIMESTAMP
+                WHERE REPLACE(chave_nfe, ' ', '') = ?
+            """, (
+                f"{chave_limpa}-nfe.xml" if os.path.exists(xml_path) else "",
+                f"{chave_limpa}-nfe.xml" if os.path.exists(xml_path) else "",
+                f"{chave_limpa}-danfe.pdf" if os.path.exists(pdf_path) else "",
+                f"{chave_limpa}-danfe.pdf" if os.path.exists(pdf_path) else "",
+                chave_limpa
+            ))
+            conn.commit()
+    except Exception:
+        pass
+
     conn.close()
     return (xml_path if os.path.exists(xml_path) else None,
             pdf_path if os.path.exists(pdf_path) else None)
@@ -5752,6 +5772,30 @@ def sync_and_get_notas_fiscais(conn):
             if item['status'] != 'Cancelada':
                 item['has_cce'] = True
 
+    # Adiciona notas presentes na pasta downloads que não constavam no historico_sefaz
+    if os.path.exists(DOWNLOADS_DIR):
+        for f_name in os.listdir(DOWNLOADS_DIR):
+            if f_name.endswith('-nfe.xml'):
+                raw_ch = f_name.replace('-nfe.xml', '').strip()
+                if len(raw_ch) == 44 and raw_ch not in notas_dict:
+                    try:
+                        with open(os.path.join(DOWNLOADS_DIR, f_name), 'r', encoding='utf-8', errors='ignore') as fx_n:
+                            xml_conteudo = fx_n.read()
+                        notas_dict[raw_ch] = {
+                            'chave': raw_ch,
+                            'tpAmb': 1,
+                            'data_envio': '',
+                            'cstat': '100',
+                            'xmotivo': 'Autorizado o uso da NF-e',
+                            'recibo': '',
+                            'protocolo': '',
+                            'xml_envio': xml_conteudo,
+                            'status': 'Autorizada',
+                            'eventos': []
+                        }
+                    except Exception:
+                        pass
+
     # Processa e persiste apenas notas novas ou que sofreram alteração de status/protocolo
     houve_alteracao = False
     for chave, item in notas_dict.items():
@@ -5810,11 +5854,11 @@ def sync_and_get_notas_fiscais(conn):
         except Exception:
             pass
 
-        # Verifica presenca dos arquivos em downloads
+        # Verifica presenca dos arquivos em downloads ou R2
         xml_file = f"{chave}-nfe.xml"
         pdf_file = f"{chave}-danfe.pdf"
-        caminho_xml = xml_file if os.path.exists(os.path.join(DOWNLOADS_DIR, xml_file)) else ''
-        caminho_pdf = pdf_file if os.path.exists(os.path.join(DOWNLOADS_DIR, pdf_file)) else ''
+        caminho_xml = existing.get('caminho_xml') if (existing and existing.get('caminho_xml')) else (xml_file if os.path.exists(os.path.join(DOWNLOADS_DIR, xml_file)) else (xml_file if xml_str else ''))
+        caminho_pdf = existing.get('caminho_pdf') if (existing and existing.get('caminho_pdf')) else (pdf_file if os.path.exists(os.path.join(DOWNLOADS_DIR, pdf_file)) else (pdf_file if xml_str else ''))
 
         if existing:
             if existing.get('referencia_interna') and existing.get('referencia_interna') != '-':

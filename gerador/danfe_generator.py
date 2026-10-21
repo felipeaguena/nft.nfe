@@ -375,16 +375,29 @@ class DanfeGenerator:
     def render(self, xml_path_or_content, output_pdf_path):
         if HAS_BFR:
             try:
-                if os.path.exists(xml_path_or_content):
-                    with open(xml_path_or_content, "rb") as f:
-                        xml_bytes = f.read()
+                xml_bytes = None
+                if isinstance(xml_path_or_content, (bytes, bytearray)):
+                    xml_bytes = bytes(xml_path_or_content)
                 elif isinstance(xml_path_or_content, str):
-                    xml_bytes = xml_path_or_content.encode("utf-8")
+                    if xml_path_or_content.strip().startswith('<') or len(xml_path_or_content) > 300:
+                        xml_bytes = xml_path_or_content.encode("utf-8")
+                    elif os.path.exists(xml_path_or_content):
+                        with open(xml_path_or_content, "rb") as f:
+                            xml_bytes = f.read()
+                    else:
+                        xml_bytes = xml_path_or_content.encode("utf-8")
                 else:
                     xml_bytes = bytes(xml_path_or_content)
 
+                is_cancelada = bool(
+                    b'<cStat>101</cStat>' in xml_bytes
+                    or b'110111' in xml_bytes
+                    or b'CANCELAMENTO' in xml_bytes.upper()
+                )
+
                 config = DanfeConfig(
-                    logo=self.logo_path if (self.logo_path and os.path.exists(self.logo_path)) else None
+                    logo=self.logo_path if (self.logo_path and os.path.exists(self.logo_path)) else None,
+                    watermark_cancelled=is_cancelada
                 )
                 danfe = BFRDanfe(xml_bytes, config=config)
                 pdf_bytes = danfe.output()
