@@ -2402,43 +2402,84 @@ def duplicar_rascunho(rascunho_id):
         if c_check > 0:
             nova_ref = f"{nova_ref} ({c_check + 1})"
 
-        # Carregar payload original
+        # Carregar payload original (prioriza payload_json do banco de dados, com fallback para arquivo)
         payload = {}
-        caminho_orig = os.path.join(RASCUNHOS_DIR, f'rascunho_{rascunho_id}.json')
-        if os.path.exists(caminho_orig):
-            with open(caminho_orig, 'r', encoding='utf-8') as f:
-                payload = json.load(f)
+        if row.get('payload_json'):
+            try:
+                payload = json.loads(row['payload_json'])
+            except Exception:
+                payload = {}
 
-        # Inserir novo registro no SQLite
+        if not payload:
+            caminho_orig = os.path.join(RASCUNHOS_DIR, f'rascunho_{rascunho_id}.json')
+            if os.path.exists(caminho_orig):
+                try:
+                    with open(caminho_orig, 'r', encoding='utf-8') as f:
+                        payload = json.load(f)
+                except Exception:
+                    payload = {}
+
+        if not payload:
+            payload = dict(row)
+
+        payload['referencia_interna'] = nova_ref
+        payload['data_salvo'] = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+
+        # Inserir novo registro no Banco de Dados com payload_json completo
+        payload_str = json.dumps(payload, ensure_ascii=False)
         c.execute('''
             INSERT INTO rascunhos (
                 referencia_interna, categoria, origem, tipo_operacao, operacao_id,
                 nome_arquivo_original, caminho_arquivo_isolado, qtd_itens, valor_total,
-                chave_acesso, data_criacao, data_atualizacao
-            ) VALUES (?, ?, ?, ?, ?, ?, '', ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))
+                chave_acesso, payload_json, data_criacao, data_atualizacao
+            ) VALUES (?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))
         ''', (
             nova_ref, row['categoria'], row['origem'], row['tipo_operacao'], row['operacao_id'],
-            row['nome_arquivo_original'], row['qtd_itens'], row['valor_total'], row['chave_acesso']
+            row['nome_arquivo_original'], row['qtd_itens'], row['valor_total'], row['chave_acesso'],
+            payload_str
         ))
         novo_id = c.lastrowid
         novo_arquivo_nome = f'rascunho_{novo_id}.json'
-        c.execute('UPDATE rascunhos SET caminho_arquivo_isolado = ? WHERE id = ?', (novo_arquivo_nome, novo_id))
+        
+        payload['id'] = novo_id
+        payload_str = json.dumps(payload, ensure_ascii=False)
+        c.execute('UPDATE rascunhos SET caminho_arquivo_isolado = ?, payload_json = ? WHERE id = ?', (novo_arquivo_nome, payload_str, novo_id))
         conn.commit()
         conn.close()
 
-        # Atualizar payload com novos dados e salvar em disco
-        payload['id'] = novo_id
-        payload['referencia_interna'] = nova_ref
-        payload['data_salvo'] = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
-        novo_caminho = os.path.join(RASCUNHOS_DIR, novo_arquivo_nome)
-        with open(novo_caminho, 'w', encoding='utf-8') as f:
-            json.dump(payload, f, ensure_ascii=False, indent=2)
+        # Salva em disco isolado caso o ambiente permita escrita
+        try:
+            novo_caminho = os.path.join(RASCUNHOS_DIR, novo_arquivo_nome)
+            with open(novo_caminho, 'w', encoding='utf-8') as f:
+                json.dump(payload, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+
+        agora = datetime.now()
+        novo_rascunho_obj = {
+            "id": novo_id,
+            "referencia_interna": nova_ref,
+            "categoria": row['categoria'] or 'Geral',
+            "origem": row['origem'] or 'XML Rascunho',
+            "tipo_operacao": row['tipo_operacao'] or '',
+            "operacao_id": row['operacao_id'] or '',
+            "nome_arquivo_original": row['nome_arquivo_original'] or '',
+            "caminho_arquivo_isolado": novo_arquivo_nome,
+            "qtd_itens": row['qtd_itens'] if row['qtd_itens'] is not None else 0,
+            "valor_total": float(row['valor_total'] or 0.0),
+            "chave_acesso": row['chave_acesso'] or '',
+            "data_criacao": agora.isoformat(),
+            "data_atualizacao": agora.isoformat(),
+            "data_atualizacao_formatada": agora.strftime('%d/%m/%Y %H:%M'),
+            "data_criacao_formatada": agora.strftime('%d/%m/%Y %H:%M')
+        }
 
         return jsonify({
             "success": True,
             "message": f"Rascunho duplicado com sucesso! Nova referência: '{nova_ref}'",
             "novo_id": novo_id,
-            "nova_referencia": nova_ref
+            "nova_referencia": nova_ref,
+            "rascunho": novo_rascunho_obj
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500

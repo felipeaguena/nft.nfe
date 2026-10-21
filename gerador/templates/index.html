@@ -5792,7 +5792,7 @@ Insere o texto: <code>CARGA DESTINADA A {Feira} {Ano} A SER REALIZADA ENTRE {Dat
                         <button type="button" class="btn-nft btn-nft-action-round" onclick="carregarRascunho(${r.id}, '${r.origem}')" title="Abrir e carregar este rascunho">
                             <i data-lucide="folder-open" style="width: 13px; height: 13px;"></i>
                         </button>
-                        <button type="button" class="btn-nft btn-nft-action-round" onclick="duplicarRascunho(${r.id}, '${(r.referencia_interna || '').replace(/'/g, "\\'")}')" title="Duplicar Rascunho">
+                        <button type="button" class="btn-nft btn-nft-action-round" onclick="duplicarRascunho(${r.id}, '${(r.referencia_interna || '').replace(/'/g, "\\'")}', this)" title="Duplicar Rascunho">
                             <i data-lucide="copy" style="width: 13px; height: 13px;"></i>
                         </button>
                         <button type="button" class="btn-nft btn-nft-danger btn-nft-action-round" onclick="excluirRascunho(${r.id}, '${(r.referencia_interna || '').replace(/'/g, "\\'")}')" title="Excluir este rascunho">
@@ -6040,7 +6040,7 @@ Insere o texto: <code>CARGA DESTINADA A {Feira} {Ano} A SER REALIZADA ENTRE {Dat
         }
     }
 
-    async function duplicarRascunho(id, ref) {
+    async function duplicarRascunho(id, ref, btnEl) {
         const conf = await nftConfirm(`Deseja realmente duplicar o rascunho #${id}${ref ? ' (' + ref + ')' : ''}?\n\nUma cópia independente será criada mantendo os mesmos dados e itens.`, {
             title: 'Confirmar Duplicação',
             type: 'info',
@@ -6049,6 +6049,13 @@ Insere o texto: <code>CARGA DESTINADA A {Feira} {Ano} A SER REALIZADA ENTRE {Dat
             icon: 'copy'
         });
         if (!conf) return;
+
+        // Feedback visual imediato no botão clicado
+        const oldIconHtml = btnEl ? btnEl.innerHTML : '';
+        if (btnEl) {
+            btnEl.disabled = true;
+            btnEl.innerHTML = '<span class="spinner-border spinner-border-sm" style="width: 12px; height: 12px; border-width: 1.5px;"></span>';
+        }
 
         try {
             const resp = await fetch(`/api/rascunhos/${id}/duplicar`, { method: 'POST' });
@@ -6062,11 +6069,42 @@ Insere o texto: <code>CARGA DESTINADA A {Feira} {Ano} A SER REALIZADA ENTRE {Dat
             } else {
                 alert(data.message || 'Rascunho duplicado com sucesso!');
             }
-            carregarListaRascunhos();
-            atualizarContadorRascunhos();
+
+            // Atualização instantânea da interface sem recarregar do zero nem dar tela em branco
+            if (data.rascunho) {
+                rascunhosCacheLista.unshift(data.rascunho);
+                renderizarTabelaRascunhos(rascunhosCacheLista);
+
+                // Destaque visual suave na nova linha criada
+                const novaLinha = document.getElementById(`tr-rascunho-${data.rascunho.id}`);
+                if (novaLinha) {
+                    novaLinha.classList.add('table-success');
+                    setTimeout(() => novaLinha.classList.remove('table-success'), 2000);
+                }
+
+                // Atualiza contadores imediatamente em memória
+                const total = rascunhosCacheLista.length;
+                document.querySelectorAll('.badge-counter-rascunhos').forEach(el => el.innerText = total);
+                const badgeTop = document.getElementById('badge-total-rascunhos');
+                if (badgeTop) badgeTop.innerText = total;
+                const badgeSidebar = document.getElementById('sidebar-rascunhos-badge');
+                if (badgeSidebar) badgeSidebar.innerText = total;
+                const badgeModal = document.getElementById('badge-total-rascunhos-modal');
+                if (badgeModal) badgeModal.innerText = total;
+                const infoRodape = document.getElementById('info-rodape-rascunhos');
+                if (infoRodape) infoRodape.innerText = `Total de ${total} rascunho(s) encontrado(s).`;
+            } else {
+                carregarListaRascunhos();
+            }
         } catch (err) {
             console.error("Erro ao duplicar rascunho:", err);
             alert("Erro inesperado ao duplicar rascunho: " + err);
+        } finally {
+            if (btnEl) {
+                btnEl.disabled = false;
+                btnEl.innerHTML = oldIconHtml;
+                if (window.lucide) lucide.createIcons();
+            }
         }
     }
 
