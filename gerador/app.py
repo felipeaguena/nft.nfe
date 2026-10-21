@@ -888,9 +888,15 @@ def build_nfe_element(cabecalho, itens, rodape):
             
         ET.SubElement(prod, f'{{{NFE_NS}}}indTot').text = '1'
         
-        # DI: gerado para importação (CFOP 3.xxx) ou reexportação (CFOP 7.930) quando houver dados de DI
-        n_di = str(item.get('nDI') or cabecalho.get('import_nDI') or '').strip()
-        deve_gerar_di = bool(n_di) and (not cfop_item.startswith('7') or cfop_item == '7930' or '7930' in cfop_item or 'REEXPORTA' in str(cabecalho.get('natOp') or '').upper())
+        # DI: gerado para importação (CFOP 3.xxx) ou reexportação (CFOP 7.930) com busca automática de fallback
+        n_di = str(item.get('nDI') or cabecalho.get('import_nDI') or cabecalho.get('nDI') or '').strip()
+        if not n_di:
+            inf_cpl_busca = str(cabecalho.get('infCpl') or rodape.get('infCpl') or '')
+            m_di_b = re.search(r'DI:\s*([0-9\/\-]+)', inf_cpl_busca)
+            if m_di_b:
+                n_di = re.sub(r'\D', '', m_di_b.group(1))
+
+        deve_gerar_di = bool(n_di) and (cfop_item.startswith('3') or cfop_item == '7930' or '7930' in cfop_item or 'REEXPORTA' in str(cabecalho.get('natOp') or '').upper())
         if deve_gerar_di:
             di_el = ET.SubElement(prod, f'{{{NFE_NS}}}DI')
             ET.SubElement(di_el, f'{{{NFE_NS}}}nDI').text = n_di[:15]
@@ -3345,14 +3351,20 @@ def validar_dados_nfe(cabecalho, itens, rodape, referencia_interna=''):
                         "mensagem": f"Item #{n_item}: Quantidade tributável (qTrib) zerada ou em branco."
                     })
 
-            if cfop.startswith('3'):
-                n_di = str(it.get('nDI') or '').strip()
-                if not n_di:
-                    alertas.append({
-                        "categoria": "Importação",
+            # Validação rigorosa: nenhuma nota de importação ou reexportação pode sair sem DI
+            if cfop.startswith('3') or cfop.startswith('7'):
+                n_di_check = str(it.get('nDI') or cabecalho.get('import_nDI') or cabecalho.get('nDI') or '').strip()
+                if not n_di_check:
+                    inf_cpl_b = str(cabecalho.get('infCpl') or '')
+                    if 'DI:' in inf_cpl_b:
+                        m_b = re.search(r'DI:\s*([0-9\/\-]+)', inf_cpl_b)
+                        if m_b: n_di_check = m_b.group(1)
+                if not n_di_check:
+                    erros.append({
+                        "categoria": "Importação / Regime Aduaneiro",
                         "aba": "3. Itens da Nota",
-                        "campo": f"Item #{n_item} - Nº DI",
-                        "mensagem": f"Item #{n_item}: CFOP de importação ({cfop}) requer preenchimento do Nº da DI/DUIMP."
+                        "campo": f"Item #{n_item} - Nº DI/DUIMP",
+                        "mensagem": f"Item #{n_item}: Nenhuma nota pode ser emitida sem a identificação da DI/DUIMP e Adição correspondente."
                     })
 
     # 2. Identificação da NF-e (ide)
