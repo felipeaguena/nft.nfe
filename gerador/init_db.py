@@ -553,6 +553,22 @@ def init_db(target_db_path=None):
         VALUES ('admin@nftlogistics.com.br', '$2b$12$2OEHVkbB4cpGnIXwA2Pt8.79L1jYeophfsuqrnW43CPhI4Hyw0bCK', 'Administrador NFT Logistics', 'admin')
     ''')
 
+    # 10. Tabela de Histórico SEFAZ
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS historico_sefaz (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            chave_nfe TEXT,
+            tpAmb INTEGER DEFAULT 2,
+            data_envio DATETIME DEFAULT CURRENT_TIMESTAMP,
+            cstat TEXT DEFAULT '',
+            xmotivo TEXT DEFAULT '',
+            recibo TEXT DEFAULT '',
+            protocolo TEXT DEFAULT '',
+            xml_envio TEXT DEFAULT '',
+            xml_retorno TEXT DEFAULT ''
+        )
+    ''')
+
     conn.commit()
     conn.close()
     print("Banco de dados inicializado com sucesso!")
