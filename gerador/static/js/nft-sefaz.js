@@ -326,7 +326,7 @@ async function enviarNfeSefaz(ambiente = 2) {
             }
 
             // Atualizar o histórico
-            atualizarTabelaHistorico(retorno, chaveRetorno, ambiente);
+            atualizarTabelaHistorico(retorno, chaveRetorno, ambiente, 'NF-e emitida');
 
             if (retorno.status === 'success') {
                 const isAutorizado = retorno.autorizado === true || retorno.cstat == '100';
@@ -377,7 +377,7 @@ async function enviarNfeSefaz(ambiente = 2) {
         } catch(e) {
             console.error('Erro no envio', e);
             const msg = e.message || 'Falha interna ao tentar enviar a nota para a SEFAZ.';
-            atualizarTabelaHistorico({ cstat: 'ERRO', error: msg }, getVal('chaveAcesso') || '-', ambiente);
+            atualizarTabelaHistorico({ cstat: 'ERRO', error: msg }, getVal('chaveAcesso') || '-', ambiente, 'NF-e emitida');
             await window.nftAlert(msg, { type: 'danger', title: 'Erro de Envio' });
         } finally {
             // Restaura o botao
@@ -395,7 +395,7 @@ async function enviarNfeSefaz(ambiente = 2) {
         }
     } else {
         const msg = 'A função de geração de XML não está disponível ou a nota não está completa.';
-        atualizarTabelaHistorico({ cstat: 'ERRO', error: msg }, getVal('chaveAcesso') || '-', ambiente);
+        atualizarTabelaHistorico({ cstat: 'ERRO', error: msg }, getVal('chaveAcesso') || '-', ambiente, 'NF-e emitida');
         await window.nftAlert(msg, { type: 'warning', title: 'Nota Incompleta' });
     }
 }
@@ -598,6 +598,54 @@ function renderChaveComBotaoCopiar(chave) {
 }
 window.renderChaveComBotaoCopiar = renderChaveComBotaoCopiar;
 
+function formatarMotivoComAcao(motivoOriginal, acaoInformada, contexto = null) {
+    let motivo = String(motivoOriginal || '').replace(/<[^>]*>?/gm, '').trim();
+    if (!motivo) return '';
+
+    // Se já contém ação entre parênteses no início, extrai
+    const mMatch = motivo.match(/^\(([^)]+)\)\s*(.*)$/);
+    let acaoExistente = '';
+    if (mMatch) {
+        acaoExistente = mMatch[1].trim();
+        motivo = mMatch[2].trim();
+    }
+
+    // Trata prefixo legado [Cancelamento]
+    if (motivo.toLowerCase().startsWith('[cancelamento]')) {
+        motivo = motivo.replace(/^\[cancelamento\]\s*/i, '').trim();
+        if (!acaoInformada) acaoInformada = 'Cancelar NF';
+    }
+
+    let acao = acaoInformada || acaoExistente;
+
+    if (!acao) {
+        const motLower = motivo.toLowerCase();
+        const cstatStr = String(contexto?.cstat || contexto?.status || '').trim();
+
+        if (motLower.includes('cancelamento') || motLower.includes('cancelad') || cstatStr === '101') {
+            acao = 'Cancelar NF';
+        } else if (motLower.includes('correção') || motLower.includes('correcao') || motLower.includes('carta de correção') || motLower.includes('cc-e')) {
+            acao = 'Carta de Correção';
+        } else if (motLower.includes('consulta') || motLower.includes('protocolo de consulta')) {
+            acao = 'Consulta Sefaz';
+        } else if (motLower.includes('inutiliz')) {
+            acao = 'Inutilizar NF';
+        } else if (motLower.includes('evento registrado e vinculado') || cstatStr === '135' || cstatStr === '136') {
+            if (motLower.includes('cancel')) {
+                acao = 'Cancelar NF';
+            } else {
+                acao = 'Carta de Correção';
+            }
+        } else {
+            // Padrão para emissão / retorno de NF-e
+            acao = 'NF-e emitida';
+        }
+    }
+
+    return `(${acao}) ${motivo}`;
+}
+window.formatarMotivoComAcao = formatarMotivoComAcao;
+
 function normalizarItemHistoricoSefaz(item) {
     if (!item) return null;
     let data = item.data || '';
@@ -609,52 +657,65 @@ function normalizarItemHistoricoSefaz(item) {
     let motivo = item.motivo || '';
     let motivoTitle = item.motivoTitle || motivo || '';
     let protocolo = item.protocolo || '';
+    let acao = item.acao || '';
 
-    // Detecta se houve deslocamento de colunas legado
-    const chaveDigitos = String(chave || '').replace(/\D/g, '');
-    const statusDigitos = String(status || '').replace(/\D/g, '');
+    // 1. Extração segura da Chave de Acesso (44 dígitos)
+    let chaveDigitos = String(chave || '').replace(/\D/g, '');
+    if (chaveDigitos.length !== 44) {
+        // Tenta encontrar 44 dígitos no texto de outros campos caso tenha havido deslocamento
+        const juntarCampos = [chave, arquivos, status, motivo, protocolo].join(' ');
+        const match44 = juntarCampos.replace(/\s+/g, '').match(/\d{44}/);
+        if (match44) {
+            chaveDigitos = match44[0];
+        }
+    }
     
-    if (statusDigitos.length === 44) {
-        arquivos = chave;
-        chave = statusDigitos;
+    // Se o status era na verdade a chave (legado 7 colunas antigas)
+    const statusDigitos = String(status || '').replace(/\D/g, '');
+    if (statusDigitos.length === 44 && chaveDigitos !== statusDigitos && !chaveDigitos) {
+        chaveDigitos = statusDigitos;
         status = motivo;
         motivo = protocolo;
         protocolo = '';
-    } else if (String(chave).includes('<div') || String(chave).includes('<a ') || String(chave).includes('disabled')) {
-        arquivos = chave;
-        chave = statusDigitos.length === 44 ? statusDigitos : '';
     }
 
-    // Limpa chave se tiver HTML residual
-    chave = String(chave || '').replace(/<[^>]*>?/gm, '').trim();
+    chave = chaveDigitos;
 
-    // Garante que nnf esteja preenchido mesmo se for rejeição ou cancelamento
+    // 2. Extração segura do Número da NF-e (nnf)
     if (!nnf || nnf === '-' || nnf === 'undefined') {
         nnf = extrairNumeroNfeDeChaveOuRetorno(item, chave);
     }
 
-    // Limpa status (cStat) de tags HTML ou badge antigos
+    // 3. Limpeza do status (cStat)
     let cstatLimpo = limparCodigoCStat(status);
     const ambLimpo = limparAmbiente(ambiente);
     const motivoLower = String(motivo || '').toLowerCase();
 
-    // Normalização: se for evento (135/136/101 ou motivo de evento), preserva 135
+    // Normalização de eventos
     if (cstatLimpo === '135' || cstatLimpo === '136' || cstatLimpo === '101' || motivoLower.includes('vinculado') || motivoLower.includes('cancelamento')) {
         if (!cstatLimpo || cstatLimpo === '100' || cstatLimpo === 'EVENTO') cstatLimpo = '135';
     } else if (cstatLimpo === '801' || motivoLower.includes('autoriz') || item.status === 'Autorizada' || item.autorizado === true) {
         cstatLimpo = '100';
     }
 
-    // Renderiza tags padronizadas com as novas classes
+    // 4. Formata o motivo incluindo a ação entre parênteses
+    const motivoLimpo = String(motivo || '').replace(/<[^>]*>?/gm, '').trim();
+    const motivoFinal = formatarMotivoComAcao(motivoLimpo, acao, { cstat: cstatLimpo, protocolo: protocolo });
+    const motivoTitleFinal = formatarMotivoComAcao(String(motivoTitle || motivoLimpo).replace(/<[^>]*>?/gm, '').trim(), acao, { cstat: cstatLimpo, protocolo: protocolo });
+
+    // 5. Renderiza tags e botões
     const tagAmbiente = obterTagAmbiente(ambLimpo);
-    const tagCStat = obterTagCStat(cstatLimpo, { xmotivo: motivo, autorizado: (cstatLimpo === '100') });
+    const tagCStat = obterTagCStat(cstatLimpo, { xmotivo: motivoFinal, autorizado: (cstatLimpo === '100') });
 
     const isAut = (cstatLimpo === '100' || cstatLimpo === '104' || cstatLimpo === '135' || cstatLimpo === '136');
-    if ((!arquivos || arquivos === '-') && typeof window.renderArquivosIcons === 'function' && chave) {
+    if (chave && typeof window.renderArquivosIcons === 'function') {
         arquivos = window.renderArquivosIcons(chave, isAut);
     }
 
     const chaveFormatadaHtml = renderChaveComBotaoCopiar(chave);
+
+    // Limpeza de protocolo
+    let protLimpo = String(protocolo || '').replace(/<[^>]*>?/gm, '').trim();
 
     return {
         data: String(data || '').replace(/<[^>]*>?/gm, '').trim() || new Date().toLocaleString('pt-BR'),
@@ -664,15 +725,15 @@ function normalizarItemHistoricoSefaz(item) {
         chave: chave,
         chaveHtml: chaveFormatadaHtml,
         cstatHtml: tagCStat,
-        motivo: String(motivo || '').replace(/<[^>]*>?/gm, '').trim(),
-        motivoTitle: String(motivoTitle || motivo || '').replace(/<[^>]*>?/gm, '').trim(),
-        protocolo: String(protocolo || '').replace(/<[^>]*>?/gm, '').trim()
+        motivo: motivoFinal,
+        motivoTitle: motivoTitleFinal,
+        protocolo: protLimpo
     };
 }
 window.normalizarItemHistoricoSefaz = normalizarItemHistoricoSefaz;
 
 
-function atualizarTabelaHistorico(retorno, chave, ambiente = 2) {
+function atualizarTabelaHistorico(retorno, chave, ambiente = 2, acaoOrigem = '') {
     const tbody = document.getElementById('tbody-historico-sefaz');
     if (!tbody) return;
     if (tbody.querySelector('td[colspan]')) {
@@ -684,7 +745,6 @@ function atualizarTabelaHistorico(retorno, chave, ambiente = 2) {
     let cs = String(retorno.cstat || '').trim();
     const xmotivo = String(retorno.xmotivo || '').toLowerCase();
     if (cs === '135' || cs === '136' || cs === '101' || (retorno.is_evento && retorno.autorizado)) {
-        // Mantém 135/136 para eventos (Cancelamento / CC-e)
         if (!cs || cs === '100' || cs === 'EVENTO') cs = '135';
         retorno.cstat = cs;
     } else if (cs === '801' || retorno.autorizado === true || xmotivo.includes('autoriz')) {
@@ -696,6 +756,8 @@ function atualizarTabelaHistorico(retorno, chave, ambiente = 2) {
 
     const now = new Date().toLocaleString('pt-BR');
     const nnf = extrairNumeroNfeDeChaveOuRetorno(retorno, chave);
+    const motivoRaw = retorno.xmotivo || retorno.message || retorno.error || '';
+    const motivoComAcao = formatarMotivoComAcao(motivoRaw, acaoOrigem, retorno);
     
     tr.innerHTML = `
         <td class="align-middle text-nowrap">${now}</td>
@@ -706,8 +768,8 @@ function atualizarTabelaHistorico(retorno, chave, ambiente = 2) {
         <td class="text-center align-middle">${renderArquivosIcons(chave, isAutorizado)}</td>
         <td class="text-center align-middle">${renderChaveComBotaoCopiar(chave)}</td>
         <td class="align-middle text-center">${obterTagCStat(retorno.cstat, retorno)}</td>
-        <td class="text-start align-middle" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${retorno.xmotivo || retorno.message || retorno.error || ''}">
-            ${retorno.xmotivo || retorno.message || retorno.error || ''}
+        <td class="text-start align-middle" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${motivoComAcao}">
+            ${motivoComAcao}
         </td>
         <td class="align-middle text-center" style="font-size: 11px;">
             ${retorno.recibo ? 'R: '+retorno.recibo+'<br>' : ''}
@@ -729,6 +791,7 @@ function atualizarTabelaHistorico(retorno, chave, ambiente = 2) {
         window.confirmarSalvarRascunho(true);
     }
 }
+window.atualizarTabelaHistorico = atualizarTabelaHistorico;
 
 async function solicitarCartaCorrecao(ambiente = 2) {
     const isHomolog = (Number(ambiente) === 2);
@@ -846,7 +909,7 @@ async function solicitarCartaCorrecao(ambiente = 2) {
         });
         
         const retorno = await response.json();
-        atualizarTabelaHistorico(retorno, chave, ambiente);
+        atualizarTabelaHistorico(retorno, chave, ambiente, 'Carta de Correção');
         
         if (retorno.status === 'success') {
             const isVinculado = (retorno.cstat == '135' || retorno.cstat == '136' || retorno.autorizado === true);
@@ -1040,7 +1103,7 @@ async function solicitarCancelarNfe(ambiente = 2) {
         });
         
         const retorno = await response.json();
-        atualizarTabelaHistorico(retorno, chave, ambiente);
+        atualizarTabelaHistorico(retorno, chave, ambiente, 'Cancelar NF');
         
         if (retorno.status === 'success') {
             const isCancelado = (retorno.cstat == '135' || retorno.cstat == '136' || retorno.cstat == '101' || retorno.autorizado === true);
@@ -1193,14 +1256,14 @@ async function consultarSituacaoNfeSefaz(ambiente = 1) {
                         xmotivo: 'Cancelamento de NF-e homologado',
                         protocolo: data.protocolo_cancelamento || data.protocolo_autorizacao,
                         autorizado: false
-                    }, chave, ambiente);
+                    }, chave, ambiente, 'Consulta Sefaz');
                 } else if (isAut) {
                     atualizarTabelaHistorico({
                         cstat: data.cstat || '100',
                         xmotivo: data.xmotivo || 'Autorizado o uso da NF-e',
                         protocolo: data.protocolo_autorizacao,
                         autorizado: true
-                    }, chave, ambiente);
+                    }, chave, ambiente, 'Consulta Sefaz');
                 }
             }
         }
@@ -1429,6 +1492,17 @@ function sanitizarTabelaHistoricoSefaz() {
                 const rawStatus = cellStatus.innerText || cellStatus.innerHTML;
                 cellStatus.innerHTML = obterTagCStat(rawStatus, { xmotivo: motivoText });
                 cellStatus.className = "align-middle text-center";
+            }
+
+            // Coluna 6: Motivo (assegura formato com ação entre parênteses)
+            if (cellMotivo) {
+                const motText = cellMotivo.innerText.trim();
+                if (motText && !motText.startsWith('(')) {
+                    const statusText = cellStatus ? cellStatus.innerText.trim() : '';
+                    const motFmt = formatarMotivoComAcao(motText, '', { cstat: statusText });
+                    cellMotivo.innerText = motFmt;
+                    cellMotivo.setAttribute('title', motFmt);
+                }
             }
         }
     });
