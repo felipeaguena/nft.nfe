@@ -1215,20 +1215,21 @@ Insere o texto: <code>CARGA DESTINADA A {Feira} {Ano} A SER REALIZADA ENTRE {Dat
         <div class="col-12 mt-4">
             <h6 class="fw-bold mb-2"><i data-lucide="history"></i> Histórico de Envios nesta Sessão</h6>
             <div class="table-responsive">
-                <table class="table table-sm table-bordered table-hover font-monospace text-center" style="font-size: 12px;">
+                <table class="table table-sm table-bordered table-hover font-monospace text-center align-middle mb-0" style="font-size: 12px; table-layout: auto;">
                     <thead class="table-light">
                         <tr>
-                            <th>Data/Hora</th>
-                            <th>Ambiente</th>
-                            <th>Arquivos</th>
-                            <th>Chave da NF-e</th>
-                            <th>cStat</th>
-                            <th>Motivo</th>
-                            <th>Recibo/Protocolo</th>
+                            <th style="min-width: 105px; width: 115px;" class="text-center">Data/Hora</th>
+                            <th style="min-width: 75px; width: 85px;" class="text-center">Nº NF-e (nNF)</th>
+                            <th style="min-width: 90px; width: 100px;" class="text-center">Ambiente</th>
+                            <th style="min-width: 80px; width: 90px;" class="text-center">Arquivos</th>
+                            <th style="min-width: 280px;" class="text-center">Chave da NF-e</th>
+                            <th style="min-width: 75px; width: 85px;" class="text-center">cStat</th>
+                            <th style="min-width: 220px;" class="text-start">Motivo</th>
+                            <th style="min-width: 125px; width: 140px;" class="text-center">Recibo/Protocolo</th>
                         </tr>
                     </thead>
                     <tbody id="tbody-historico-sefaz">
-                        <tr><td colspan="7" class="text-muted py-3">Nenhum envio realizado nesta sessão ainda.</td></tr>
+                        <tr><td colspan="8" class="text-muted py-3">Nenhum envio realizado nesta sessão ainda.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -5556,9 +5557,22 @@ Insere o texto: <code>CARGA DESTINADA A {Feira} {Ano} A SER REALIZADA ENTRE {Dat
         const rows = document.querySelectorAll('#tbody-historico-sefaz tr');
         rows.forEach(tr => {
             const cells = tr.querySelectorAll('td');
-            if (cells.length >= 7) {
+            if (cells.length >= 8) {
                 sefazHistory.push({
                     data: cells[0].innerHTML,
+                    nnf: cells[1].innerText.trim() || cells[1].innerHTML,
+                    ambiente: cells[2].innerHTML,
+                    arquivos: cells[3].innerHTML,
+                    chave: cells[4].innerHTML,
+                    status: cells[5].innerHTML,
+                    motivo: cells[6].innerHTML,
+                    motivoTitle: cells[6].getAttribute('title') || '',
+                    protocolo: cells[7].innerHTML
+                });
+            } else if (cells.length === 7) {
+                sefazHistory.push({
+                    data: cells[0].innerHTML,
+                    nnf: '',
                     ambiente: cells[1].innerHTML,
                     arquivos: cells[2].innerHTML,
                     chave: cells[3].innerHTML,
@@ -5566,17 +5580,6 @@ Insere o texto: <code>CARGA DESTINADA A {Feira} {Ano} A SER REALIZADA ENTRE {Dat
                     motivo: cells[5].innerHTML,
                     motivoTitle: cells[5].getAttribute('title') || '',
                     protocolo: cells[6].innerHTML
-                });
-            } else if (cells.length === 6) {
-                sefazHistory.push({
-                    data: cells[0].innerHTML,
-                    ambiente: cells[1].innerHTML,
-                    arquivos: '',
-                    chave: cells[2].innerHTML,
-                    status: cells[3].innerHTML,
-                    motivo: cells[4].innerHTML,
-                    motivoTitle: cells[4].getAttribute('title') || '',
-                    protocolo: cells[5].innerHTML
                 });
             }
         });
@@ -5940,27 +5943,31 @@ Insere o texto: <code>CARGA DESTINADA A {Feira} {Ano} A SER REALIZADA ENTRE {Dat
                             : null;
                         if (norm) {
                             tr.innerHTML = `
-                                <td class="align-middle">${norm.data}</td>
-                                <td class="align-middle">${norm.ambienteHtml}</td>
+                                <td class="align-middle text-nowrap">${norm.data}</td>
+                                <td class="align-middle text-center"><span class="badge bg-light text-dark border font-monospace px-2 py-1 fw-bold" style="font-size: 11px;">${norm.nnf}</span></td>
+                                <td class="align-middle text-center">${norm.ambienteHtml}</td>
                                 <td class="text-center align-middle">${norm.arquivosHtml}</td>
-                                <td class="text-start align-middle font-monospace" style="font-size: 11px;">${norm.chave}</td>
-                                <td class="align-middle">${norm.cstatHtml}</td>
+                                <td class="text-center align-middle">${norm.chaveHtml}</td>
+                                <td class="align-middle text-center">${norm.cstatHtml}</td>
                                 <td class="text-start align-middle" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${norm.motivoTitle}">
                                     ${norm.motivo}
                                 </td>
-                                <td class="align-middle" style="font-size: 11px;">${norm.protocolo}</td>
+                                <td class="align-middle text-center" style="font-size: 11px;">${norm.protocolo}</td>
                             `;
                         } else {
+                            const rawCh = String(item.chave || '').replace(/<[^>]*>?/gm, '').trim();
+                            const nnfVal = item.nnf || (rawCh.length >= 34 ? String(parseInt(rawCh.substring(25, 34), 10)) : '-');
                             tr.innerHTML = `
-                                <td>${item.data || ''}</td>
-                                <td>${item.ambiente || ''}</td>
+                                <td class="align-middle text-nowrap">${item.data || ''}</td>
+                                <td class="align-middle text-center"><span class="badge bg-light text-dark border font-monospace px-2 py-1 fw-bold" style="font-size: 11px;">${nnfVal}</span></td>
+                                <td class="align-middle text-center">${item.ambiente || ''}</td>
                                 <td class="text-center align-middle">${item.arquivos || '-'}</td>
-                                <td class="text-start" style="font-size: 11px;">${item.chave || ''}</td>
-                                <td>${item.status || ''}</td>
-                                <td class="text-start" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.motivoTitle || ''}">
+                                <td class="text-center align-middle">${typeof window.renderChaveComBotaoCopiar === 'function' ? window.renderChaveComBotaoCopiar(rawCh) : rawCh}</td>
+                                <td class="align-middle text-center">${item.status || ''}</td>
+                                <td class="text-start align-middle" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.motivoTitle || ''}">
                                     ${item.motivo || ''}
                                 </td>
-                                <td>${item.protocolo || ''}</td>
+                                <td class="align-middle text-center" style="font-size: 11px;">${item.protocolo || ''}</td>
                             `;
                         }
                         tbody.appendChild(tr);

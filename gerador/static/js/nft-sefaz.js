@@ -527,9 +527,81 @@ function obterBadgeAmbiente(ambiente) {
 window.obterTagAmbiente = obterTagAmbiente;
 window.obterBadgeAmbiente = obterTagAmbiente;
 
+
+window.copiarChaveAcesso = async function(chave, btn) {
+    if (!chave || chave === '-' || chave === 'N/A') return;
+    const chaveLimpa = String(chave).replace(/\D/g, '').trim();
+    if (!chaveLimpa) return;
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(chaveLimpa);
+        } else {
+            const ta = document.createElement('textarea');
+            ta.value = chaveLimpa;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        }
+        if (btn) {
+            const origHtml = btn.innerHTML;
+            btn.innerHTML = '<i data-lucide="check" style="width: 13px; height: 13px; color: #16a34a;"></i>';
+            btn.title = "Chave copiada com sucesso!";
+            btn.classList.add('text-success');
+            if (window.lucide) lucide.createIcons();
+            setTimeout(() => {
+                btn.innerHTML = origHtml;
+                btn.title = "Copiar Chave de Acesso";
+                btn.classList.remove('text-success');
+                if (window.lucide) lucide.createIcons();
+            }, 1800);
+        }
+    } catch (err) {
+        console.error("Erro ao copiar chave:", err);
+        window.prompt("Chave de Acesso (Ctrl+C para copiar):", chaveLimpa);
+    }
+};
+
+function extrairNumeroNfeDeChaveOuRetorno(retorno, chave) {
+    if (retorno && (retorno.numero_nfe || retorno.nNF)) {
+        return String(retorno.numero_nfe || retorno.nNF).trim();
+    }
+    const cleanChave = String(chave || '').replace(/\D/g, '').trim();
+    if (cleanChave.length >= 34) {
+        try {
+            const num = parseInt(cleanChave.substring(25, 34), 10);
+            if (!isNaN(num) && num > 0) return String(num);
+        } catch (e) {}
+    }
+    const campoNnf = document.getElementById('nNF')?.value || document.getElementById('inputNumeroNfe')?.value;
+    if (campoNnf && campoNnf.trim()) return campoNnf.trim();
+    return '-';
+}
+window.extrairNumeroNfeDeChaveOuRetorno = extrairNumeroNfeDeChaveOuRetorno;
+
+function renderChaveComBotaoCopiar(chave) {
+    const chaveLimpa = String(chave || '').replace(/\D/g, '').trim();
+    if (!chaveLimpa || chaveLimpa.length < 20) {
+        return `<span class="text-muted font-monospace" style="font-size: 11px;">${chave || '-'}</span>`;
+    }
+    const chaveFmt = chaveLimpa.length === 44 ? chaveLimpa.replace(/(\d{4})/g, '$1 ').trim() : chaveLimpa;
+    return `
+        <div class="d-inline-flex align-items-center justify-content-center gap-1 font-monospace text-center" style="font-size: 11px; max-width: 100%;">
+            <span class="user-select-all" title="Chave de Acesso: ${chaveLimpa}">${chaveFmt}</span>
+            <button type="button" class="btn btn-sm btn-link p-0 text-secondary border-0 ms-1 d-inline-flex align-items-center" onclick="copiarChaveAcesso('${chaveLimpa}', this)" title="Copiar Chave de Acesso" style="line-height: 1; text-decoration: none;">
+                <i data-lucide="copy" style="width: 13px; height: 13px;"></i>
+            </button>
+        </div>
+    `;
+}
+window.renderChaveComBotaoCopiar = renderChaveComBotaoCopiar;
+
 function normalizarItemHistoricoSefaz(item) {
     if (!item) return null;
     let data = item.data || '';
+    let nnf = item.nnf || item.numero_nfe || '';
     let ambiente = item.ambiente || 'Homologação';
     let arquivos = item.arquivos || '';
     let chave = item.chave || '';
@@ -538,7 +610,7 @@ function normalizarItemHistoricoSefaz(item) {
     let motivoTitle = item.motivoTitle || motivo || '';
     let protocolo = item.protocolo || '';
 
-    // Detecta se houve deslocamento de colunas legado (onde chave tinha html de arquivos ou status tinha chave de 44 dígitos)
+    // Detecta se houve deslocamento de colunas legado
     const chaveDigitos = String(chave || '').replace(/\D/g, '');
     const statusDigitos = String(status || '').replace(/\D/g, '');
     
@@ -556,6 +628,11 @@ function normalizarItemHistoricoSefaz(item) {
     // Limpa chave se tiver HTML residual
     chave = String(chave || '').replace(/<[^>]*>?/gm, '').trim();
 
+    // Garante que nnf esteja preenchido mesmo se for rejeição ou cancelamento
+    if (!nnf || nnf === '-' || nnf === 'undefined') {
+        nnf = extrairNumeroNfeDeChaveOuRetorno(item, chave);
+    }
+
     // Limpa status (cStat) de tags HTML ou badge antigos
     let cstatLimpo = limparCodigoCStat(status);
     const ambLimpo = limparAmbiente(ambiente);
@@ -568,7 +645,7 @@ function normalizarItemHistoricoSefaz(item) {
         cstatLimpo = '100';
     }
 
-    // Renderiza tags padronizadas com as novas classes (sem badge)
+    // Renderiza tags padronizadas com as novas classes
     const tagAmbiente = obterTagAmbiente(ambLimpo);
     const tagCStat = obterTagCStat(cstatLimpo, { xmotivo: motivo, autorizado: (cstatLimpo === '100') });
 
@@ -577,11 +654,15 @@ function normalizarItemHistoricoSefaz(item) {
         arquivos = window.renderArquivosIcons(chave, isAut);
     }
 
+    const chaveFormatadaHtml = renderChaveComBotaoCopiar(chave);
+
     return {
         data: String(data || '').replace(/<[^>]*>?/gm, '').trim() || new Date().toLocaleString('pt-BR'),
+        nnf: String(nnf || '-').replace(/<[^>]*>?/gm, '').trim(),
         ambienteHtml: tagAmbiente,
         arquivosHtml: arquivos || '-',
         chave: chave,
+        chaveHtml: chaveFormatadaHtml,
         cstatHtml: tagCStat,
         motivo: String(motivo || '').replace(/<[^>]*>?/gm, '').trim(),
         motivoTitle: String(motivoTitle || motivo || '').replace(/<[^>]*>?/gm, '').trim(),
@@ -593,7 +674,8 @@ window.normalizarItemHistoricoSefaz = normalizarItemHistoricoSefaz;
 
 function atualizarTabelaHistorico(retorno, chave, ambiente = 2) {
     const tbody = document.getElementById('tbody-historico-sefaz');
-    if(tbody.querySelector('td[colspan="6"]') || tbody.querySelector('td[colspan="7"]')) {
+    if (!tbody) return;
+    if (tbody.querySelector('td[colspan]')) {
         tbody.innerHTML = '';
     }
 
@@ -613,17 +695,21 @@ function atualizarTabelaHistorico(retorno, chave, ambiente = 2) {
     const isAutorizado = ((cs === '100' || cs === '135' || cs === '136' || cs === '101' || retorno.autorizado === true) && !isRejeicao);
 
     const now = new Date().toLocaleString('pt-BR');
+    const nnf = extrairNumeroNfeDeChaveOuRetorno(retorno, chave);
     
     tr.innerHTML = `
-        <td class="align-middle">${now}</td>
-        <td class="align-middle">${obterTagAmbiente(ambiente)}</td>
+        <td class="align-middle text-nowrap">${now}</td>
+        <td class="align-middle text-center">
+            <span class="badge bg-light text-dark border font-monospace px-2 py-1 fw-bold" style="font-size: 11px;">${nnf}</span>
+        </td>
+        <td class="align-middle text-center">${obterTagAmbiente(ambiente)}</td>
         <td class="text-center align-middle">${renderArquivosIcons(chave, isAutorizado)}</td>
-        <td class="text-start align-middle font-monospace" style="font-size: 11px;">${chave}</td>
-        <td class="align-middle">${obterTagCStat(retorno.cstat, retorno)}</td>
+        <td class="text-center align-middle">${renderChaveComBotaoCopiar(chave)}</td>
+        <td class="align-middle text-center">${obterTagCStat(retorno.cstat, retorno)}</td>
         <td class="text-start align-middle" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${retorno.xmotivo || retorno.message || retorno.error || ''}">
             ${retorno.xmotivo || retorno.message || retorno.error || ''}
         </td>
-        <td class="align-middle" style="font-size: 11px;">
+        <td class="align-middle text-center" style="font-size: 11px;">
             ${retorno.recibo ? 'R: '+retorno.recibo+'<br>' : ''}
             ${retorno.protocolo ? 'P: '+retorno.protocolo : ''}
         </td>
@@ -1011,16 +1097,17 @@ async function consultarSituacaoNfeSefaz(ambiente = 1) {
     let chave = '';
     const linhasHist = document.querySelectorAll('#tbody-historico-sefaz tr');
     for (const l of linhasHist) {
-        const txtStatus = (l.querySelector('td:nth-child(5)')?.innerText || l.innerText || '');
-        if (txtStatus.includes('100') || txtStatus.includes('135') || txtStatus.toLowerCase().includes('autoriz') || txtStatus.toLowerCase().includes('cancel')) {
-            const tdChave = l.querySelector('td:nth-child(4)');
-            if (tdChave) {
-                const cand = tdChave.innerText.replace(/\D/g, '').trim();
+        const txt = (l.innerText || '').toLowerCase();
+        if (txt.includes('100') || txt.includes('135') || txt.includes('autoriz') || txt.includes('cancel')) {
+            const cells = l.querySelectorAll('td');
+            for (const td of cells) {
+                const cand = td.innerText.replace(/\D/g, '').trim();
                 if (cand.length === 44) {
                     chave = cand;
                     break;
                 }
             }
+            if (chave) break;
         }
     }
 
@@ -1293,38 +1380,55 @@ function sanitizarTabelaHistoricoSefaz() {
     const rows = tbody.querySelectorAll('tr');
     rows.forEach(tr => {
         const cells = tr.querySelectorAll('td');
-        if (cells.length === 1 && (cells[0].getAttribute('colspan') === '6' || cells[0].getAttribute('colspan') === '7')) {
+        if (cells.length === 1 && (cells[0].getAttribute('colspan') === '6' || cells[0].getAttribute('colspan') === '7' || cells[0].getAttribute('colspan') === '8')) {
+            cells[0].setAttribute('colspan', '8');
             return;
         }
 
-        if (cells.length >= 6) {
-            // Coluna 1: Ambiente (Homologação ou Produção)
-            const cellAmb = cells[1];
+        // Se a linha tem 7 colunas (legado), insere a coluna de Número NF-e na posição 1
+        if (cells.length === 7) {
+            const rawChave = (cells[3] ? cells[3].innerText.replace(/\D/g, '') : '');
+            const nnf = extrairNumeroNfeDeChaveOuRetorno(null, rawChave);
+            const tdNnf = document.createElement('td');
+            tdNnf.className = "align-middle text-center";
+            tdNnf.innerHTML = `<span class="badge bg-light text-dark border font-monospace px-2 py-1 fw-bold" style="font-size: 11px;">${nnf}</span>`;
+            tr.insertBefore(tdNnf, cells[1]);
+        }
+
+        const updatedCells = tr.querySelectorAll('td');
+        if (updatedCells.length >= 8) {
+            // Coluna 1: Nº NF-e
+            const cellNnf = updatedCells[1];
+            if (cellNnf && !cellNnf.classList.contains('text-center')) {
+                cellNnf.classList.add('text-center', 'align-middle');
+            }
+
+            // Coluna 2: Ambiente
+            const cellAmb = updatedCells[2];
             if (cellAmb && (!cellAmb.querySelector('.sefaz-tag') || cellAmb.querySelector('.badge') || cellAmb.innerText.trim())) {
                 const ambText = cellAmb.innerText || cellAmb.innerHTML;
                 cellAmb.innerHTML = obterTagAmbiente(ambText);
-                cellAmb.className = "align-middle";
+                cellAmb.className = "align-middle text-center";
             }
 
-            // Colunas: Arquivos, Chave, cStat, Motivo
-            let cellArq = cells.length >= 7 ? cells[2] : null;
-            let cellChave = cells.length >= 7 ? cells[3] : cells[2];
-            let cellStatus = cells.length >= 7 ? cells[4] : cells[3];
-            let cellMotivo = cells.length >= 7 ? cells[5] : cells[4];
+            // Coluna 4: Chave da NF-e (Centralizada com botão copiar)
+            const cellChave = updatedCells[4];
+            if (cellChave) {
+                cellChave.className = "text-center align-middle";
+                const candChave = cellChave.innerText.replace(/\D/g, '').trim();
+                if (candChave.length === 44 && !cellChave.querySelector('button')) {
+                    cellChave.innerHTML = renderChaveComBotaoCopiar(candChave);
+                }
+            }
 
-            // Verifica se a chave e status estavam deslocados
-            const statusTxt = (cellStatus ? cellStatus.innerText.trim() : '');
-            if (statusTxt.replace(/\D/g, '').length === 44 && cells.length >= 7) {
-                const realChave = statusTxt;
-                const realStatus = cellMotivo ? cellMotivo.innerText.trim() : '';
-                cellStatus.innerHTML = obterTagCStat(realStatus);
-                cellStatus.className = "align-middle";
-                if (cellChave) cellChave.innerText = realChave;
-            } else if (cellStatus && (!cellStatus.querySelector('.sefaz-tag') || cellStatus.querySelector('.badge') || cellStatus.innerText.trim())) {
+            // Coluna 5: cStat
+            const cellStatus = updatedCells[5];
+            const cellMotivo = updatedCells[6];
+            if (cellStatus && (!cellStatus.querySelector('.sefaz-tag') || cellStatus.querySelector('.badge') || cellStatus.innerText.trim())) {
                 const motivoText = cellMotivo ? (cellMotivo.getAttribute('title') || cellMotivo.innerText || '') : '';
                 const rawStatus = cellStatus.innerText || cellStatus.innerHTML;
                 cellStatus.innerHTML = obterTagCStat(rawStatus, { xmotivo: motivoText });
-                cellStatus.className = "align-middle";
+                cellStatus.className = "align-middle text-center";
             }
         }
     });
