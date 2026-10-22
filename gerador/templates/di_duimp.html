@@ -764,7 +764,7 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
                 <span class="text-muted fw-normal" style="font-size: 11px;">(Tag SEFAZ: &lt;exporta&gt;)</span>
             </span>
             <div class="d-flex align-items-center gap-2">
-                <span class="badge font-monospace bg-info-subtle text-info fw-bold" style="font-size: 11px;">Opcional (CFOP 7xxx / Exterior)</span>
+                <span class="badge font-monospace bg-info-subtle text-info fw-bold" id="badge_exporta_status" style="font-size: 11px;">Opcional (CFOP 7xxx / Exterior)</span>
                 <button class="btn-nft py-0 px-2 d-inline-flex align-items-center gap-1" onclick="limparCamposExportacao()" style="height: 24px; font-size: 11px;" title="Limpar campos de exportação" type="button">
                     <i data-lucide="eraser" style="width: 12px; height: 12px;"></i>
                     <span>Limpar</span>
@@ -774,7 +774,7 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
         <div class="card-body py-2">
             <div class="row g-2">
                 <div class="col-md-3">
-                    <label class="form-label small fw-bold mb-1" for="exporta_UFSaidaPais">UF de embarque</label>
+                    <label class="form-label small fw-bold mb-1" for="exporta_UFSaidaPais">UF de embarque <span class="text-danger exporta-req-indicator" style="display: none;">*</span></label>
                     <select class="form-select form-select-sm font-monospace" id="exporta_UFSaidaPais">
                         <option value="">Selecione a UF...</option>
                         <option value="AC">AC</option>
@@ -807,7 +807,7 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
                     </select>
                 </div>
                 <div class="col-md-5">
-                    <label class="form-label small fw-bold mb-1" for="exporta_xLocExporta">Local de embarque</label>
+                    <label class="form-label small fw-bold mb-1" for="exporta_xLocExporta">Local de embarque <span class="text-danger exporta-req-indicator" style="display: none;">*</span></label>
                     <input class="form-control form-control-sm" id="exporta_xLocExporta" maxlength="60" placeholder="Ex: PORTO DE SANTOS, AEROPORTO DE VIRACOPOS" type="text"/>
                 </div>
                 <div class="col-md-4">
@@ -926,9 +926,7 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
 </div>
 </div>
 <div class="col-md-4 col-lg-5 text-md-end pt-md-3">
-<small class="text-muted" style="font-size: 11px;">
-Insere o texto: <code>CARGA DESTINADA A {Feira} {Ano} A SER REALIZADA ENTRE {Data} NO {Local} BRASIL. {Endereço}</code>
-</small>
+<small class="text-muted" id="lbl-ajuda-texto-feira" style="font-size: 11px;">Insere o texto: <code>CARGA DESTINADA A {Feira} {Ano} A SER REALIZADA ENTRE {Data} NO {Local} BRASIL. {Endereço}</code></small>
 </div>
 </div>
 <textarea class="form-control font-monospace form-control-sm" id="infCpl" placeholder="Observações de interesse do contribuinte gravadas no XML..." rows="4"></textarea>
@@ -1152,7 +1150,13 @@ Insere o texto: <code>CARGA DESTINADA A {Feira} {Ano} A SER REALIZADA ENTRE {Dat
 <small class="text-muted">Grupo &lt;transp&gt; SEFAZ</small>
 </div>
 <div class="card-body py-3">
-<div class="row g-2"><div class="col-12 mb-3 border-bottom pb-2"><label class="form-label small fw-bold mb-1">Preencher Dados da Transportadora a partir do Cadastro</label><select class="form-select form-select-sm" id="select_transportadora" onchange="preencherDadosDeCadastro(this, 'transp')"><option value="">Selecione para preencher automaticamente...</option></select></div>
+<div class="row g-2"><div class="col-12 mb-3 border-bottom pb-2"><label class="form-label small fw-bold mb-1">Preencher Dados da Transportadora a partir do Cadastro</label><div class="input-group input-group-sm">
+<select class="form-select form-select-sm" id="select_transportadora" onchange="preencherDadosDeCadastro(this, 'transp')"><option value="">Selecione para preencher automaticamente...</option></select>
+<button class="btn-nft py-0 px-2 d-inline-flex align-items-center gap-1" onclick="abrirModalNovaEmpresaRapido('transp')" title="Cadastrar nova transportadora e aplicar imediatamente à nota" type="button">
+<i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+<span>Nova</span>
+</button>
+</div></div>
 <!-- Modalidade do Frete -->
 <div class="col-md-3">
 <label class="form-label small mb-1 fw-bold" for="transp_modFrete">Modalidade do Frete</label>
@@ -2371,6 +2375,41 @@ Insere o texto: <code>CARGA DESTINADA A {Feira} {Ano} A SER REALIZADA ENTRE {Dat
         return new Date().getFullYear().toString();
     }
 
+        function obterCfopAtual() {
+        let cfop = String(getVal('cfop_padrao') || '').trim();
+        if (!cfop && typeof obterCfopOperacaoAtiva === 'function') {
+            cfop = String(obterCfopOperacaoAtiva() || '').trim();
+        }
+        if (!cfop) {
+            const lbl = document.getElementById('lbl-cfop-ativo')?.innerText?.trim();
+            if (lbl && lbl !== '-' && /^\d+$/.test(lbl)) {
+                cfop = lbl;
+            }
+        }
+        if (!cfop && typeof itensTable !== 'undefined' && itensTable && typeof itensTable.getData === 'function') {
+            const itens = itensTable.getData();
+            if (itens && itens.length > 0 && itens[0].CFOP) {
+                cfop = String(itens[0].CFOP).trim();
+            }
+        }
+        return cfop;
+    }
+    window.obterCfopAtual = obterCfopAtual;
+
+    function atualizarAjudaTextoFeira() {
+        const lbl = document.getElementById('lbl-ajuda-texto-feira');
+        if (!lbl) return;
+        const cfop = obterCfopAtual();
+        if (cfop.startsWith('19') || cfop.startsWith('29')) {
+            lbl.innerHTML = 'Insere o texto: <code>CARGA RETORNANDO DA FEIRA {Feira} {Ano} REALIZADA ENTRE {Data} NO {Local} BRASIL. {Endereço}</code>';
+        } else if (cfop.startsWith('79')) {
+            lbl.innerHTML = 'Insere o texto: <code>REEXPORTAÇÃO TOTAL DE CARGAS QUE PARTICIPARAM DA FEIRA {Feira} {Ano} REALIZADA ENTRE {Data} NO {Local} BRASIL. {Endereço}</code>';
+        } else {
+            lbl.innerHTML = 'Insere o texto: <code>CARGA DESTINADA A {Feira} {Ano} A SER REALIZADA ENTRE {Data} NO {Local} BRASIL. {Endereço}</code>';
+        }
+    }
+    window.atualizarAjudaTextoFeira = atualizarAjudaTextoFeira;
+
     function gerarTextoFeiraInfCpl(feira) {
         if (!feira) return '';
         const nomeFeira = (feira.nome || '').trim();
@@ -2379,11 +2418,21 @@ Insere o texto: <code>CARGA DESTINADA A {Feira} {Ano} A SER REALIZADA ENTRE {Dat
         const localEntrega = (feira.local || '').trim();
         const endereco = (feira.endereco_local || '').trim();
 
-        let texto = `CARGA DESTINADA A ${nomeFeira} ${ano} A SER REALIZADA ENTRE ${dataFeira} NO ${localEntrega} BRASIL.`;
-        if (endereco) {
-            texto += ` ${endereco}`;
+        const cfop = obterCfopAtual();
+        let prefixo = '';
+
+        if (cfop.startsWith('19') || cfop.startsWith('29')) {
+            prefixo = `CARGA RETORNANDO DA FEIRA ${nomeFeira} ${ano} REALIZADA ENTRE ${dataFeira} NO ${localEntrega} BRASIL.`;
+        } else if (cfop.startsWith('79')) {
+            prefixo = `REEXPORTAÇÃO TOTAL DE CARGAS QUE PARTICIPARAM DA FEIRA ${nomeFeira} ${ano} REALIZADA ENTRE ${dataFeira} NO ${localEntrega} BRASIL.`;
+        } else {
+            prefixo = `CARGA DESTINADA A ${nomeFeira} ${ano} A SER REALIZADA ENTRE ${dataFeira} NO ${localEntrega} BRASIL.`;
         }
-        return texto;
+
+        if (endereco) {
+            prefixo += ` ${endereco}`;
+        }
+        return prefixo;
     }
 
     function aoSelecionarFeiraInfCpl(selEl) {
@@ -2406,7 +2455,7 @@ Insere o texto: <code>CARGA DESTINADA A {Feira} {Ano} A SER REALIZADA ENTRE {Dat
         if (!textoFeira) return;
 
         let infCplAtual = getVal('infCpl') || '';
-        const regexFeira = /CARGA DESTINADA A\s+.*?(?=(?:\r?\n|  |TX\s+BACEN|TX\s+SISCOMEX|NF-e\s+Referenciada|$))/i;
+        const regexFeira = /(?:CARGA RETORNANDO DA FEIRA|REEXPORTAÇÃO TOTAL DE CARGAS QUE PARTICIPARAM DA FEIRA|REEXPORTACAO TOTAL DE CARGAS QUE PARTICIPARAM DA FEIRA|CARGA DESTINADA A)\s+.*?(?=(?:\r?\n|  |TX\s+BACEN|TX\s+SISCOMEX|NF-e\s+Referenciada|$))/i;
 
         if (regexFeira.test(infCplAtual)) {
             infCplAtual = infCplAtual.replace(regexFeira, textoFeira);
@@ -2415,6 +2464,7 @@ Insere o texto: <code>CARGA DESTINADA A {Feira} {Ano} A SER REALIZADA ENTRE {Dat
         }
 
         setVal('infCpl', infCplAtual);
+        atualizarAjudaTextoFeira();
         if (window.triggerAutoSave) window.triggerAutoSave();
         if (alertar) {
             alert("Dados da feira inseridos com sucesso nas Informações Complementares (infCpl)!");
@@ -2426,7 +2476,7 @@ Insere o texto: <code>CARGA DESTINADA A {Feira} {Ano} A SER REALIZADA ENTRE {Dat
         if (sel) sel.value = '';
 
         let infCplAtual = getVal('infCpl') || '';
-        const regexFeira = /\s*CARGA DESTINADA A\s+.*?(?=(?:\r?\n|  |TX\s+BACEN|TX\s+SISCOMEX|NF-e\s+Referenciada|$))/gi;
+        const regexFeira = /\s*(?:CARGA RETORNANDO DA FEIRA|REEXPORTAÇÃO TOTAL DE CARGAS QUE PARTICIPARAM DA FEIRA|REEXPORTACAO TOTAL DE CARGAS QUE PARTICIPARAM DA FEIRA|CARGA DESTINADA A)\s+.*?(?=(?:\r?\n|  |TX\s+BACEN|TX\s+SISCOMEX|NF-e\s+Referenciada|$))/gi;
         if (regexFeira.test(infCplAtual)) {
             infCplAtual = infCplAtual.replace(regexFeira, '').trim();
             setVal('infCpl', infCplAtual);
@@ -2437,11 +2487,16 @@ Insere o texto: <code>CARGA DESTINADA A {Feira} {Ano} A SER REALIZADA ENTRE {Dat
     function sincronizarSelectFeiraComInfCpl() {
         const infCplAtual = (getVal('infCpl') || '').toUpperCase();
         const sel = document.getElementById('select_feira_infcpl');
-        if (!sel || !feirasInfCplCache.length || !infCplAtual.includes('CARGA DESTINADA A')) return;
+        const temTextoFeira = infCplAtual.includes('CARGA DESTINADA A') || 
+                              infCplAtual.includes('CARGA RETORNANDO DA FEIRA') || 
+                              infCplAtual.includes('REEXPORTAÇÃO TOTAL') || 
+                              infCplAtual.includes('REEXPORTACAO TOTAL');
+        if (!sel || !feirasInfCplCache.length || !temTextoFeira) return;
         const encontrada = feirasInfCplCache.find(f => f.nome && infCplAtual.includes(f.nome.toUpperCase()));
         if (encontrada) {
             sel.value = encontrada.id;
         }
+        atualizarAjudaTextoFeira();
     }
 
     async function executarConversaoCambialItens(modo = 'recalcular') {
@@ -6884,6 +6939,7 @@ Utilizada para decodificar a chave privada na assinatura e transmissão de docum
         });
 
         function preencherOpcoesSelect(selectId, tipoAlvo) {
+    window.preencherOpcoesSelect = preencherOpcoesSelect;
             const sel = document.getElementById(selectId);
             if (!sel) return;
             
@@ -6993,6 +7049,7 @@ Utilizada para decodificar a chave privada na assinatura e transmissão de docum
         }
 
         function preencherDadosDeCadastro(selectElem, prefix) {
+    window.preencherDadosDeCadastro = preencherDadosDeCadastro;
             const id = typeof selectElem === 'object' && selectElem !== null ? selectElem.value : selectElem;
             if(!id) return; // Não faz nada se voltar pro "Selecione..."
 

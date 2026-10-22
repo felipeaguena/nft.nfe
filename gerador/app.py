@@ -3577,8 +3577,18 @@ def validar_dados_nfe(cabecalho, itens, rodape, referencia_interna=''):
 
     cfop_padrao = str(cabecalho.get('cfop_padrao') or '').strip()
     has_cfop_7 = cfop_padrao.startswith('7') or any(str(it.get('CFOP') or '').strip().startswith('7') for it in itens)
+    has_cfop_79 = cfop_padrao.startswith('79') or any(str(it.get('CFOP') or '').strip().startswith('79') for it in itens)
     nat_op_upper = nat_op.upper()
     is_op_exportacao = (has_cfop_7 or id_dest == '3' or 'EXPORTA' in nat_op_upper or 'REEXPORTA' in nat_op_upper)
+
+    if has_cfop_79:
+        if not uf_exp or not loc_exp:
+            erros.append({
+                "categoria": "Exportação",
+                "aba": "1. Operação",
+                "campo": "Exportação (<exporta>)",
+                "mensagem": "Para operações com CFOP 79xx (Reexportação/Exportação), o preenchimento da seção 'Exportação (Tag SEFAZ: <exporta>)' é obrigatório: informe a UF e o Local de Embarque."
+            })
 
     if uf_exp or loc_exp or loc_desp:
         if not is_op_exportacao:
@@ -3703,6 +3713,16 @@ def generate_xml():
 
         if not itens:
             return jsonify({"error": "Nenhum item informado para gerar o XML."}), 400
+
+        # Validação obrigatória de Exportação para CFOP 79xx
+        cfop_padrao = str(cabecalho.get('cfop_padrao') or '').strip()
+        has_cfop_79 = cfop_padrao.startswith('79') or any(str(it.get('CFOP') or '').strip().startswith('79') for it in itens)
+        if has_cfop_79:
+            exporta_data = rodape.get('exportacao') or cabecalho.get('exportacao') or {}
+            uf_exp = str(exporta_data.get('UFSaidaPais') or cabecalho.get('exporta_UFSaidaPais') or rodape.get('exporta_UFSaidaPais') or '').strip()
+            loc_exp = str(exporta_data.get('xLocExporta') or cabecalho.get('exporta_xLocExporta') or rodape.get('exporta_xLocExporta') or '').strip()
+            if not uf_exp or not loc_exp:
+                return jsonify({"error": "Para operações com CFOP 79xx (Reexportação/Exportação), o preenchimento da seção 'Exportação (Tag SEFAZ: <exporta>)' é obrigatório: informe a UF e o Local de Embarque."}), 400
 
         xml_root = build_nfe_element(cabecalho, itens, rodape)
         xml_str = ET.tostring(xml_root, encoding='utf-8').decode('utf-8')

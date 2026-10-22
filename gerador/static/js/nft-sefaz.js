@@ -268,6 +268,28 @@ async function submeterImportarCertificado() {
 }
 
 async function enviarNfeSefaz(ambiente = 2) {
+    // 0. Validação prévia de Exportação (<exporta>) para operações com CFOP 79xx
+    const cfopAtivo = (typeof window.obterCfopAtual === 'function' ? window.obterCfopAtual() : (document.getElementById('cfop_padrao')?.value || '')).trim();
+    const ufExp = (document.getElementById('exporta_UFSaidaPais')?.value || '').trim();
+    const locExp = (document.getElementById('exporta_xLocExporta')?.value || '').trim();
+
+    if (cfopAtivo.startsWith('79')) {
+        if (!ufExp || !locExp) {
+            const msgAviso = 'Para operações com CFOP 79xx (Reexportação/Exportação), a seção "Exportação (Tag SEFAZ: <exporta>)" na Aba 1 é OBRIGATÓRIA!\n\nPor favor, informe a UF de Embarque e o Local de Embarque antes de transmitir a NF-e.';
+            if (window.nftAlert) {
+                await window.nftAlert(msgAviso, { type: 'danger', title: 'Dados de Exportação Obrigatórios (CFOP 79xx)' });
+            } else {
+                alert(msgAviso);
+            }
+            // Navega para a aba 1 e foca no campo faltante
+            const tabOp = document.querySelector('button[data-bs-target="#operacao"], a[href="#operacao"], #tab-operacao');
+            if (tabOp) tabOp.click();
+            const elFocus = !ufExp ? document.getElementById('exporta_UFSaidaPais') : document.getElementById('exporta_xLocExporta');
+            if (elFocus) elFocus.focus();
+            return;
+        }
+    }
+
     // Pegar o XML atual. Pode vir do modal de visualização ou da geração normal.
     if (typeof window.obterXMLFinal === 'function') {
         try {

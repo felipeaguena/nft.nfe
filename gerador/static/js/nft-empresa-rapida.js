@@ -158,17 +158,15 @@
                                 <input type="text" class="form-control form-control-sm font-monospace" id="rap_cmun" placeholder="3550308">
                             </div>
 
-                            <div class="col-md-8">
-                                <label class="form-label small fw-bold">País (xPais)</label>
-                                <div class="input-group input-group-sm">
-                                    <input type="text" class="form-control form-control-sm fw-semibold" id="rap_xpais" list="datalist-paises" onchange="window.aoMudarPaisRapido()" placeholder="Brasil" value="Brasil">
-                                    <button type="button" class="btn-nft py-0 px-2" onclick="window.resetarPaisRapido()" title="Redefinir para Brasil">
-                                        <i data-lucide="rotate-ccw" style="width: 12px; height: 12px;"></i>
-                                    </button>
+                            <div class="col-md-8 position-relative">
+                                <label class="form-label small fw-bold mb-1">País (xPais)</label>
+                                <div class="position-relative">
+                                    <input type="text" autocomplete="off" class="form-control form-control-sm fw-bold" id="rap_xpais" onfocus="window.aoDigitarPaisRapidoAutocomplete()" oninput="window.aoDigitarPaisRapidoAutocomplete()" onblur="window.aoPerderFocoPaisRapido()" placeholder="Digite para filtrar e selecionar o País..." value="Brasil">
+                                    <div class="dropdown-menu shadow w-100 overflow-auto p-1" id="dropdown_menu_rap_xpais" style="max-height: 220px; display: none; position: absolute; z-index: 1070; top: 100%; left: 0;"></div>
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small fw-bold">Cód. BACEN (cPais)</label>
+                                <label class="form-label small fw-bold mb-1">Cód. BACEN (cPais)</label>
                                 <input type="text" class="form-control form-control-sm font-monospace fw-bold bg-light" id="rap_cpais" readonly value="1058">
                             </div>
                         </div>
@@ -228,6 +226,15 @@
             if (badgeTipo) badgeTipo.innerText = 'Transportadora';
             if (selectTipo) selectTipo.value = 'Transportadora';
             if (titulo) titulo.innerText = 'Adicionar Nova Transportadora';
+            
+            const nomeDigitado = document.getElementById('transp_xNome')?.value || '';
+            const cnpjDigitado = document.getElementById('transp_CNPJ_CPF')?.value || '';
+            if (nomeDigitado && document.getElementById('rap_nome')) {
+                document.getElementById('rap_nome').value = nomeDigitado;
+            }
+            if (cnpjDigitado && document.getElementById('rap_cnpj_cpf')) {
+                document.getElementById('rap_cnpj_cpf').value = cnpjDigitado;
+            }
         } else if (alvo === 'emit') {
             if (badgeTipo) badgeTipo.innerText = 'Emitente';
             if (selectTipo) selectTipo.value = 'Emitente';
@@ -471,21 +478,107 @@
         }
     };
 
-    window.aoMudarPaisRapido = function () {
-        const xpais = document.getElementById('rap_xpais');
-        const cpais = document.getElementById('rap_cpais');
-        if (!xpais || !cpais) return;
+    let _paisesCache = [];
 
-        const val = xpais.value.trim().toUpperCase();
-        if (val === 'BRASIL' || !val) {
-            xpais.value = 'Brasil';
-            cpais.value = '1058';
-            document.getElementById('rap_localidade').value = 'Brasil';
-            window.aoMudarLocalidadeRapida();
+    async function obterPaisesBacen() {
+        if (window.paisesBacenCache && window.paisesBacenCache.length > 0) {
+            _paisesCache = window.paisesBacenCache;
+            return _paisesCache;
+        }
+        if (_paisesCache.length > 0) return _paisesCache;
+        try {
+            const resp = await fetch('/api/localidades/paises');
+            if (resp.ok) {
+                _paisesCache = await resp.json();
+                window.paisesBacenCache = _paisesCache;
+            }
+        } catch (e) {
+            console.warn('Erro ao carregar países no popup de empresa rápida:', e);
+        }
+        return _paisesCache;
+    }
+
+    window.aoDigitarPaisRapidoAutocomplete = async function () {
+        const input = document.getElementById('rap_xpais');
+        const dropdown = document.getElementById('dropdown_menu_rap_xpais');
+        if (!input || !dropdown) return;
+
+        const paises = await obterPaisesBacen();
+        const termo = (input.value || '').trim().toUpperCase();
+
+        let filtrados = [];
+        if (!termo) {
+            filtrados = paises.slice(0, 40);
         } else {
-            document.getElementById('rap_localidade').value = 'Exterior';
+            filtrados = paises.filter(p =>
+                p.nome.toUpperCase().includes(termo) || String(p.codigo).includes(termo)
+            ).slice(0, 40);
+        }
+
+        if (filtrados.length === 0) {
+            dropdown.innerHTML = '<div class="dropdown-item small text-muted text-center py-2">Nenhum país encontrado</div>';
+            dropdown.style.display = 'block';
+            return;
+        }
+
+        dropdown.innerHTML = filtrados.map(p => {
+            const nomeEsc = (p.nome || '').replace(/'/g, "\\'");
+            return `<button type="button" class="dropdown-item small py-1 d-flex justify-content-between align-items-center" onmousedown="window.selecionarPaisRapido('${p.codigo}', '${nomeEsc}')">
+                <span class="fw-semibold text-truncate me-2">${p.nome}</span>
+                <span class="badge bg-secondary-subtle text-secondary font-monospace">${p.codigo}</span>
+            </button>`;
+        }).join('');
+        dropdown.style.display = 'block';
+    };
+
+    window.selecionarPaisRapido = function (codigo, nome) {
+        const inputX = document.getElementById('rap_xpais');
+        const inputC = document.getElementById('rap_cpais');
+        const dropdown = document.getElementById('dropdown_menu_rap_xpais');
+        if (inputX) inputX.value = nome;
+        if (inputC) inputC.value = codigo;
+        if (dropdown) dropdown.style.display = 'none';
+
+        const locSelect = document.getElementById('rap_localidade');
+        if (locSelect) {
+            locSelect.value = (codigo === '1058' || nome.toUpperCase() === 'BRASIL') ? 'Brasil' : 'Exterior';
             window.aoMudarLocalidadeRapida();
         }
+    };
+
+    window.aoPerderFocoPaisRapido = function () {
+        setTimeout(async () => {
+            const dropdown = document.getElementById('dropdown_menu_rap_xpais');
+            if (dropdown) dropdown.style.display = 'none';
+            
+            const inputX = document.getElementById('rap_xpais');
+            const inputC = document.getElementById('rap_cpais');
+            if (!inputX) return;
+            const val = inputX.value.trim().toUpperCase();
+            if (val === 'BRASIL' || !val) {
+                inputX.value = 'Brasil';
+                if (inputC) inputC.value = '1058';
+                const loc = document.getElementById('rap_localidade');
+                if (loc) loc.value = 'Brasil';
+                window.aoMudarLocalidadeRapida();
+                return;
+            }
+            const paises = await obterPaisesBacen();
+            if (paises && paises.length > 0) {
+                const encontrado = paises.find(p => p.nome.toUpperCase() === val || String(p.codigo) === val);
+                if (encontrado) {
+                    inputX.value = encontrado.nome;
+                    if (inputC) inputC.value = encontrado.codigo;
+                    const loc = document.getElementById('rap_localidade');
+                    if (loc) loc.value = (encontrado.codigo === '1058') ? 'Brasil' : 'Exterior';
+                    window.aoMudarLocalidadeRapida();
+                }
+            }
+        }, 250);
+    };
+
+    window.aoMudarPaisRapido = function () {
+        window.aoDigitarPaisRapidoAutocomplete();
     };
 
     window.resetarPaisRapido = function () {
@@ -592,10 +685,18 @@
                     }
                 } else if (_empresaAlvo === 'transp') {
                     const selTransp = document.getElementById('select_transportadora');
-                    if (selTransp && novaEmpresa.id) selTransp.value = String(novaEmpresa.id);
-                    if (typeof window.preencherDadosDeCadastro === 'function') {
-                        window.preencherDadosDeCadastro(selTransp, 'transp');
+                    if (selTransp) {
+                        let optExistente = Array.from(selTransp.options).find(o => o.value == novaEmpresa.id);
+                        if (!optExistente) {
+                            const opt = document.createElement('option');
+                            opt.value = novaEmpresa.id;
+                            const apelido = novaEmpresa.apelido ? ` (${novaEmpresa.apelido})` : '';
+                            opt.text = `${novaEmpresa.nome}${apelido} - ${novaEmpresa.cnpj_cpf || ''}`;
+                            selTransp.appendChild(opt);
+                        }
+                        selTransp.value = String(novaEmpresa.id);
                     }
+                    aplicarDadosEmpresaNaTransportadora(novaEmpresa);
                 }
 
                 // 4. Fecha o modal
@@ -606,7 +707,8 @@
                 }
 
                 // 5. Notificação de sucesso
-                const msg = `Empresa "${novaEmpresa.nome}" cadastrada com sucesso e aplicada aos Dados do Destinatário!`;
+                const msgAlvo = (_empresaAlvo === 'transp') ? 'aplicada aos Dados do Transporte' : 'aplicada aos Dados do Destinatário';
+                const msg = `Empresa "${novaEmpresa.nome}" cadastrada com sucesso e ${msgAlvo}!`;
                 if (window.nftToast) {
                     window.nftToast(msg, { type: 'success' });
                 } else if (window.nftDialog && typeof window.nftDialog.alert === 'function') {
@@ -750,4 +852,28 @@
     document.addEventListener('DOMContentLoaded', () => {
         injetarModalNovaEmpresaRapidaHTML();
     });
+
+    function aplicarDadosEmpresaNaTransportadora(emp) {
+        if (!emp) return;
+        const setCampo = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.value = val || '';
+        };
+
+        setCampo('transp_xNome', emp.nome);
+        setCampo('transp_CNPJ_CPF', emp.cnpj_cpf);
+        setCampo('transp_IE', emp.ie);
+        setCampo('transp_CEP', emp.cep);
+        
+        const numEnd = emp.numero ? `, ${emp.numero}` : '';
+        const cplEnd = emp.complemento ? ` - ${emp.complemento}` : '';
+        setCampo('transp_xEnder', emp.logradouro ? `${emp.logradouro}${numEnd}${cplEnd}` : '');
+        setCampo('transp_xMun', emp.municipio);
+        setCampo('transp_UF', emp.uf);
+
+        if (window.validarCamposRegexVisual) setTimeout(window.validarCamposRegexVisual, 50);
+        if (window.triggerAutoSave) window.triggerAutoSave();
+    }
+    window.aplicarDadosEmpresaNaTransportadora = aplicarDadosEmpresaNaTransportadora;
+
 })();
