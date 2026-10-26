@@ -1820,18 +1820,43 @@ def save_tipo_operacao():
         except Exception:
             return default
 
+    def normalize_str(s):
+        if not s:
+            return ""
+        import unicodedata
+        nfkd = unicodedata.normalize('NFKD', str(s))
+        no_accents = ''.join([c for c in nfkd if not unicodedata.combining(c)])
+        return ' '.join(no_accents.upper().split())
+
     conn = get_db_connection()
     c = conn.cursor()
     
     try:
-        # Verifica se já existe por ID (caso venha preenchido) ou por nome (case-insensitive)
+        # Busca todas as operações existentes para resolução inteligente de IDs e duplicatas
+        all_ops = c.execute('SELECT id, nome_operacao FROM tipos_operacao').fetchall()
+
         op_id = data.get('id')
-        existente = None
+        target_id = None
+
+        # 1. Tenta identificar por ID explícito
         if op_id and str(op_id).strip().isdigit() and int(str(op_id).strip()) > 0:
-            existente = c.execute('SELECT id FROM tipos_operacao WHERE id = ?', (int(str(op_id).strip()),)).fetchone()
-        if not existente:
-            existente = c.execute('SELECT id FROM tipos_operacao WHERE LOWER(TRIM(nome_operacao)) = LOWER(TRIM(?))', (nome,)).fetchone()
-        
+            candidate_id = int(str(op_id).strip())
+            if any(o['id'] == candidate_id for o in all_ops):
+                target_id = candidate_id
+
+        # 2. Se não encontrou por ID, identifica por nome (exato ou normalizado sem acentos)
+        norm_input = normalize_str(nome)
+        if not target_id:
+            for o in all_ops:
+                if str(o['nome_operacao']).strip() == nome:
+                    target_id = o['id']
+                    break
+        if not target_id:
+            for o in all_ops:
+                if normalize_str(o['nome_operacao']) == norm_input:
+                    target_id = o['id']
+                    break
+
         tp_nf = str(data.get('tp_nf', '0')).strip()
         id_dest = str(data.get('id_dest', '3')).strip()
         csosn_icms = limpar_cst(data.get('csosn_icms', '102'))
@@ -1848,9 +1873,10 @@ def save_tipo_operacao():
         p_pis_val = parse_float_safe(data.get('p_pis'))
         p_cofins_val = parse_float_safe(data.get('p_cofins'))
 
-        target_id = None
-        if existente:
-            target_id = existente['id']
+        if target_id:
+            # Elimina eventuais duplicatas órfãs com o mesmo nome para evitar violação de UNIQUE constraint
+            c.execute("DELETE FROM tipos_operacao WHERE LOWER(TRIM(nome_operacao)) = LOWER(TRIM(?)) AND id != ?", (nome, target_id))
+
             c.execute('''
                 UPDATE tipos_operacao SET
                     nome_operacao = ?,
@@ -1879,35 +1905,67 @@ def save_tipo_operacao():
                 target_id
             ))
         else:
-            row_max = c.execute("SELECT COALESCE(MAX(ordem), 0) + 1 FROM tipos_operacao").fetchone()
-            max_ordem = row_max[0] if row_max else 1
-            cur_ins = c.execute('''
-                INSERT INTO tipos_operacao (
-                    nome_operacao, cfop_padrao, tp_nf, id_dest, orig_padrao, csosn_icms, c_enq_ipi,
-                    cst_ipi, p_ipi, aliquota_ii, cst_pis, p_pis, cst_cofins, p_cofins, inf_cpl_padrao,
-                    regime_tributario, t_pag, ordem
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                nome,
-                str(data.get('cfop_padrao', '')).strip(),
-                tp_nf,
-                id_dest,
-                str(data.get('orig_padrao', '1')).strip(),
-                csosn_icms,
-                c_enq_ipi,
-                cst_ipi,
-                p_ipi_val,
-                aliquota_ii_val,
-                cst_pis,
-                p_pis_val,
-                cst_cofins,
-                p_cofins_val,
-                str(data.get('inf_cpl_padrao', '')),
-                regime_tributario,
-                t_pag,
-                max_ordem
-            ))
-            target_id = cur_ins.lastrowid
+            # Verifica se já há colisão antes de inserir
+            dup_op = c.execute("SELECT id FROM tipos_operacao WHERE LOWER(TRIM(nome_operacao)) = LOWER(TRIM(?))", (nome,)).fetchone()
+            if dup_op:
+                target_id = dup_op['id']
+                c.execute('''
+                    UPDATE tipos_operacao SET
+                        nome_operacao = ?,
+                        cfop_padrao = ?, tp_nf = ?, id_dest = ?, orig_padrao = ?, csosn_icms = ?, c_enq_ipi = ?,
+                        cst_ipi = ?, p_ipi = ?, aliquota_ii = ?, cst_pis = ?, p_pis = ?,
+                        cst_cofins = ?, p_cofins = ?, inf_cpl_padrao = ?, regime_tributario = ?, t_pag = ?
+                    WHERE id = ?
+                ''', (
+                    nome,
+                    str(data.get('cfop_padrao', '')).strip(),
+                    tp_nf,
+                    id_dest,
+                    str(data.get('orig_padrao', '1')).strip(),
+                    csosn_icms,
+                    c_enq_ipi,
+                    cst_ipi,
+                    p_ipi_val,
+                    aliquota_ii_val,
+                    cst_pis,
+                    p_pis_val,
+                    cst_cofins,
+                    p_cofins_val,
+                    str(data.get('inf_cpl_padrao', '')),
+                    regime_tributario,
+                    t_pag,
+                    target_id
+                ))
+            else:
+                row_max = c.execute("SELECT COALESCE(MAX(ordem), 0) + 1 FROM tipos_operacao").fetchone()
+                max_ordem = row_max[0] if row_max else 1
+                cur_ins = c.execute('''
+                    INSERT INTO tipos_operacao (
+                        nome_operacao, cfop_padrao, tp_nf, id_dest, orig_padrao, csosn_icms, c_enq_ipi,
+                        cst_ipi, p_ipi, aliquota_ii, cst_pis, p_pis, cst_cofins, p_cofins, inf_cpl_padrao,
+                        regime_tributario, t_pag, ordem
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    nome,
+                    str(data.get('cfop_padrao', '')).strip(),
+                    tp_nf,
+                    id_dest,
+                    str(data.get('orig_padrao', '1')).strip(),
+                    csosn_icms,
+                    c_enq_ipi,
+                    cst_ipi,
+                    p_ipi_val,
+                    aliquota_ii_val,
+                    cst_pis,
+                    p_pis_val,
+                    cst_cofins,
+                    p_cofins_val,
+                    str(data.get('inf_cpl_padrao', '')),
+                    regime_tributario,
+                    t_pag,
+                    max_ordem
+                ))
+                target_id = cur_ins.lastrowid
 
         conn.commit()
         conn.close()
@@ -1923,7 +1981,57 @@ def save_tipo_operacao():
             conn.close()
         except Exception:
             pass
-        return jsonify({"status": "error", "error": f"Erro ao salvar operação no banco de dados: {str(e)}"}), 500
+
+        err_str = str(e)
+        if "UNIQUE constraint" in err_str:
+            try:
+                conn_fix = get_db_connection()
+                c_fix = conn_fix.cursor()
+                existing = c_fix.execute("SELECT id FROM tipos_operacao WHERE LOWER(TRIM(nome_operacao)) = LOWER(TRIM(?))", (nome,)).fetchone()
+                if existing:
+                    fix_id = existing['id']
+                    c_fix.execute('''
+                        UPDATE tipos_operacao SET
+                            cfop_padrao = ?, tp_nf = ?, id_dest = ?, orig_padrao = ?, csosn_icms = ?, c_enq_ipi = ?,
+                            cst_ipi = ?, p_ipi = ?, aliquota_ii = ?, cst_pis = ?, p_pis = ?,
+                            cst_cofins = ?, p_cofins = ?, inf_cpl_padrao = ?, regime_tributario = ?, t_pag = ?
+                        WHERE id = ?
+                    ''', (
+                        str(data.get('cfop_padrao', '')).strip(),
+                        str(data.get('tp_nf', '0')).strip(),
+                        str(data.get('id_dest', '3')).strip(),
+                        str(data.get('orig_padrao', '1')).strip(),
+                        limpar_cst(data.get('csosn_icms', '102')),
+                        str(data.get('c_enq_ipi', '102')).strip(),
+                        limpar_cst(data.get('cst_ipi', '05')),
+                        parse_float_safe(data.get('p_ipi')),
+                        parse_float_safe(data.get('aliquota_ii')),
+                        limpar_cst(data.get('cst_pis', '07')),
+                        parse_float_safe(data.get('p_pis')),
+                        limpar_cst(data.get('cst_cofins', '07')),
+                        parse_float_safe(data.get('p_cofins')),
+                        str(data.get('inf_cpl_padrao', '')),
+                        str(data.get('regime_tributario', 'SUSPENSAO')).strip().upper(),
+                        str(data.get('t_pag', '90')).strip(),
+                        fix_id
+                    ))
+                    conn_fix.commit()
+                    conn_fix.close()
+                    return jsonify({
+                        "status": "success",
+                        "id": int(fix_id),
+                        "nome_operacao": nome,
+                        "message": f"Operação '{nome}' salva com sucesso!"
+                    })
+                conn_fix.close()
+            except Exception:
+                pass
+            return jsonify({
+                "status": "error",
+                "error": f"Já existe uma operação cadastrada com o nome '{nome}'. Por favor, escolha outro nome ou edite a operação existente."
+            }), 400
+
+        return jsonify({"status": "error", "error": f"Erro ao salvar operação no banco de dados: {err_str}"}), 500
 
 @app.route('/api/operacoes/reordenar', methods=['POST'])
 def reordenar_operacoes():
