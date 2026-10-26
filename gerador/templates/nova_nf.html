@@ -1425,42 +1425,28 @@ Aceita exclusivamente números. Ao completar 44 dígitos, a chave é incluída n
 </div>
 <!-- IPI -->
 <div class="col-12"><h6 class="border-bottom pb-1 mb-1 mt-2 fw-bold">2. IPI</h6></div>
-<div class="col-md-4">
+<div class="col-md-6">
 <label class="form-label small">Código de Enquadramento (cEnq)</label>
 <input class="form-control form-control-sm" id="op_c_enq" placeholder="Ex: 102, 999" type="text"/>
 </div>
-<div class="col-md-4">
+<div class="col-md-6">
 <label class="form-label small">CST IPI</label>
 <select class="form-select form-select-sm" id="op_cst_ipi"></select>
 </div>
-<div class="col-md-4">
-<label class="form-label small">Alíquota IPI (%)</label>
-<input class="form-control form-control-sm" id="op_p_ipi" step="0.01" type="number" value="0.00"/>
-</div>
-<!-- II -->
-<div class="col-12"><h6 class="border-bottom pb-1 mb-1 mt-2 fw-bold">3. Imposto de Importação (II)</h6></div>
-<div class="col-md-12">
-<label class="form-label small">Alíquota II Padrão (%)</label>
-<input class="form-control form-control-sm" id="op_aliquota_ii" step="0.01" type="number" value="0.00"/>
-</div>
+<input type="hidden" id="op_p_ipi" value="0.00"/>
+<input type="hidden" id="op_aliquota_ii" value="0.00"/>
 <!-- PIS & COFINS -->
-<div class="col-12"><h6 class="border-bottom pb-1 mb-1 mt-2 fw-bold">4. PIS &amp; COFINS</h6></div>
-<div class="col-md-3">
+<div class="col-12"><h6 class="border-bottom pb-1 mb-1 mt-2 fw-bold">3. PIS &amp; COFINS</h6></div>
+<div class="col-md-6">
 <label class="form-label small">CST PIS</label>
 <select class="form-select form-select-sm" id="op_cst_pis"></select>
 </div>
-<div class="col-md-3">
-<label class="form-label small">Alíquota PIS (%)</label>
-<input class="form-control form-control-sm" id="op_p_pis" step="0.01" type="number" value="0.00"/>
-</div>
-<div class="col-md-3">
+<div class="col-md-6">
 <label class="form-label small">CST COFINS</label>
 <select class="form-select form-select-sm" id="op_cst_cofins"></select>
 </div>
-<div class="col-md-3">
-<label class="form-label small">Alíquota COFINS (%)</label>
-<input class="form-control form-control-sm" id="op_p_cofins" step="0.01" type="number" value="0.00"/>
-</div>
+<input type="hidden" id="op_p_pis" value="0.00"/>
+<input type="hidden" id="op_p_cofins" value="0.00"/>
 <!-- INFORMACOES COMPLEMENTARES -->
 <div class="col-12"><h6 class="border-bottom pb-1 mb-1 mt-2 fw-bold">5. Observações Padronizadas da Operação</h6></div>
 <div class="col-12">
@@ -4940,37 +4926,12 @@ Aceita exclusivamente números. Ao completar 44 dígitos, a chave é incluída n
             if (op.csosn_icms) item.CSOSN = op.csosn_icms;
             if (op.c_enq_ipi) item.cEnq = op.c_enq_ipi;
             if (op.cst_ipi) item.CST_IPI = op.cst_ipi;
-            if (op.p_ipi !== undefined) item.pIPI = op.p_ipi;
-
-            const vp = parseFloat(String(item.vProd || 0).replace(',', '.')) || 0;
-
-            if (isIpiNaoTributado) {
-                item.vBC_IPI = '0.00';
-                item.vIPI = '0.00';
-            } else {
-                item.vBC_IPI = vp.toFixed(2);
-                item.vIPI = (vp * (parseFloat(op.p_ipi || 0) / 100)).toFixed(2);
-            }
-
             if (op.cst_pis) item.CST_PIS = op.cst_pis;
-            if (op.p_pis !== undefined) item.pPIS = op.p_pis;
-            if (isPisNaoTributado) {
-                item.vBC_PIS = '0.00';
-                item.vPIS = '0.00';
-            } else {
-                item.vBC_PIS = vp.toFixed(2);
-                item.vPIS = (vp * (parseFloat(op.p_pis || 0) / 100)).toFixed(2);
-            }
-
             if (op.cst_cofins) item.CST_COFINS = op.cst_cofins;
-            if (op.p_cofins !== undefined) item.pCOFINS = op.p_cofins;
-            if (isCofinsNaoTributado) {
-                item.vBC_COFINS = '0.00';
-                item.vCOFINS = '0.00';
-            } else {
-                item.vBC_COFINS = vp.toFixed(2);
-                item.vCOFINS = (vp * (parseFloat(op.p_cofins || 0) / 100)).toFixed(2);
-            }
+
+            // As alíquotas (pIPI, aliquota_ii, pPIS, pCOFINS) e valores calculados dos itens
+            // NÃO são mais repassados nem apagados pela operação geral, preservando integralmente
+            // as alíquotas e cálculos prévios ou específicos de cada item.
         });
 
         itensCache = itens;

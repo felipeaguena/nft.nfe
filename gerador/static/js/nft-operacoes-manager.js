@@ -246,7 +246,7 @@
         }
 
         const apelido = conf.apelido || conf.nome || regimeKey;
-        let resumoTxt = `${apelido}: cEnq ${conf.c_enq_ipi || '-'} | CST IPI ${conf.cst_ipi || '-'} (${Number(conf.p_ipi || 0).toFixed(2)}%) | PIS ${conf.cst_pis || '-'} | COFINS ${conf.cst_cofins || '-'} | Pagamento ${conf.t_pag || '90'}`;
+        let resumoTxt = `${apelido}: cEnq ${conf.c_enq_ipi || '-'} | CST IPI ${conf.cst_ipi || '-'} | PIS ${conf.cst_pis || '-'} | COFINS ${conf.cst_cofins || '-'} | Pagamento ${conf.t_pag || '90'}`;
         resumoEl.innerText = resumoTxt;
     };
 
