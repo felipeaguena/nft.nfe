@@ -4958,39 +4958,61 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
             return;
         }
 
+        function parseNumVal(v) {
+            if (v === null || v === undefined) return 0;
+            const s = String(v).replace(/\s/g, '').replace(',', '.');
+            const n = parseFloat(s);
+            return isNaN(n) ? 0 : n;
+        }
+
         const payload = {
-            id: getVal('op_id'),
+            id: getVal('op_id') || '',
             nome_operacao: nome,
-            cfop_padrao: getVal('op_cfop'),
-            tp_nf: getVal('op_tp_nf'),
-            id_dest: getVal('op_id_dest'),
+            cfop_padrao: (getVal('op_cfop') || '').trim(),
+            tp_nf: getVal('op_tp_nf') || '0',
+            id_dest: getVal('op_id_dest') || '3',
             regime_tributario: getVal('op_regime') || 'SUSPENSAO',
             t_pag: getVal('op_t_pag') || '90',
-            orig_padrao: getVal('op_orig'),
-            csosn_icms: getVal('op_csosn'),
-            c_enq_ipi: getVal('op_c_enq'),
-            cst_ipi: getVal('op_cst_ipi'),
-            p_ipi: parseFloat(getVal('op_p_ipi') || 0),
-            aliquota_ii: parseFloat(getVal('op_aliquota_ii') || 0),
-            cst_pis: getVal('op_cst_pis'),
-            p_pis: parseFloat(getVal('op_p_pis') || 0),
-            cst_cofins: getVal('op_cst_cofins'),
-            p_cofins: parseFloat(getVal('op_p_cofins') || 0),
-            inf_cpl_padrao: getVal('op_inf_cpl')
+            orig_padrao: getVal('op_orig') || '1',
+            csosn_icms: (getVal('op_csosn') || '').trim(),
+            c_enq_ipi: (getVal('op_c_enq') || '').trim(),
+            cst_ipi: (getVal('op_cst_ipi') || '').trim(),
+            p_ipi: parseNumVal(getVal('op_p_ipi')),
+            aliquota_ii: parseNumVal(getVal('op_aliquota_ii')),
+            cst_pis: (getVal('op_cst_pis') || '').trim(),
+            p_pis: parseNumVal(getVal('op_p_pis')),
+            cst_cofins: (getVal('op_cst_cofins') || '').trim(),
+            p_cofins: parseNumVal(getVal('op_p_cofins')),
+            inf_cpl_padrao: getVal('op_inf_cpl') || ''
         };
 
         try {
             const res = await fetch('/tipos_operacao', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
                 body: JSON.stringify(payload)
             });
-            const data = await res.json();
-            if (data.status === 'error' || data.error) {
+
+            const text = await res.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (jsonErr) {
+                if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+                    throw new Error("Sessão expirada ou página de login retornada pelo servidor. Recarregue a página.");
+                }
+                throw new Error(text.slice(0, 150) || "Resposta inválida do servidor");
+            }
+
+            if (!res.ok || data.status === 'error' || data.error) {
+                const msg = data.error || data.message || `Erro do servidor (status ${res.status})`;
                 if (window.nftAlert) {
-                    await window.nftAlert(data.error || data.message || "Erro ao salvar operação.", { title: "Erro ao Salvar", type: "danger" });
+                    await window.nftAlert(msg, { title: "Erro ao Salvar", type: "danger" });
                 } else {
-                    alert(data.error || data.message || "Erro ao salvar operação.");
+                    alert(msg);
                 }
                 return;
             }
@@ -5011,9 +5033,9 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
         } catch (err) {
             console.error("Erro ao salvar operação:", err);
             if (window.nftAlert) {
-                await window.nftAlert("Falha na comunicação com o servidor ao salvar operação: " + err.message, { title: "Erro de Conexão", type: "danger" });
+                await window.nftAlert("Falha ao salvar operação: " + err.message, { title: "Aviso", type: "danger" });
             } else {
-                alert("Falha na comunicação com o servidor: " + err.message);
+                alert("Falha ao salvar operação: " + err.message);
             }
         }
     }

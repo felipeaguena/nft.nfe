@@ -159,23 +159,24 @@ def enforce_private_routes_auth():
     if request.path in ('/login', '/api/ping', '/api/index.py'):
         return None
 
-    # Se a Vercel chamou /api/index.py, podemos obter a rota real via headers da Vercel
-    actual_path = (
-        request.headers.get('X-Matched-Path')
-        or request.headers.get('x-matched-path')
-        or request.environ.get('HTTP_X_MATCHED_PATH')
-        or request.path
-    )
+    # Determina a rota real da requisição (considerando proxies ou middleware Vercel)
+    req_path = request.path or ''
+    if req_path == '/api/index.py' and request.args.get('__path'):
+        req_path = request.args.get('__path')
+    actual_path = req_path
     if '?' in actual_path:
         actual_path = actual_path.split('?', 1)[0]
 
     if actual_path in ('/login', '/api/ping', '/api/auth/login', '/api/auth/logout'):
         return None
 
-    # 1. Validação para chamadas de API ou uploads
+    # 1. Validação para chamadas de API ou uploads (nunca redireciona chamadas de API para /login)
     is_api_or_action = (
         (actual_path.startswith('/api/') and actual_path not in ('/api/auth/login', '/api/auth/logout', '/api/ping', '/api/index.py'))
         or actual_path.startswith('/tipos_operacao')
+        or request.path.startswith('/tipos_operacao')
+        or request.is_json
+        or request.headers.get('Accept') == 'application/json'
         or actual_path in ('/upload_di_duimp', '/upload_xml', '/generate_xml', '/export_excel', '/import_excel', '/download_ncm_json', '/download_ncm_excel')
     )
     if is_api_or_action:
@@ -1800,98 +1801,129 @@ def save_tipo_operacao():
         return err_resp
     nome = data.get('nome_operacao', '').strip()
     if not nome:
-        return jsonify({"error": "Nome da operação é obrigatório"}), 400
+        return jsonify({"status": "error", "error": "Nome da operação é obrigatório"}), 400
+
+    def parse_float_safe(val, default=0.0):
+        if val is None:
+            return default
+        if isinstance(val, (int, float)):
+            return float(val)
+        s = str(val).strip().replace('%', '').replace(' ', '')
+        if not s:
+            return default
+        if ',' in s and '.' in s:
+            s = s.replace('.', '').replace(',', '.')
+        elif ',' in s:
+            s = s.replace(',', '.')
+        try:
+            return float(s)
+        except Exception:
+            return default
 
     conn = get_db_connection()
     c = conn.cursor()
     
-    # Verifica se ja existe por ID (caso venha preenchido) ou por nome (case-insensitive)
-    op_id = data.get('id')
-    existente = None
-    if op_id and str(op_id).isdigit() and int(op_id) > 0:
-        existente = c.execute('SELECT id FROM tipos_operacao WHERE id = ?', (int(op_id),)).fetchone()
-    if not existente:
-        existente = c.execute('SELECT id FROM tipos_operacao WHERE LOWER(TRIM(nome_operacao)) = LOWER(TRIM(?))', (nome,)).fetchone()
-    
-    tp_nf = str(data.get('tp_nf', '0'))
-    id_dest = str(data.get('id_dest', '3'))
-    csosn_icms = limpar_cst(data.get('csosn_icms', '102'))
-    c_enq_ipi = str(data.get('c_enq_ipi', '102')).strip()
-    cst_ipi = limpar_cst(data.get('cst_ipi', '05'))
-    cst_pis = limpar_cst(data.get('cst_pis', '07'))
-    cst_cofins = limpar_cst(data.get('cst_cofins', '07'))
+    try:
+        # Verifica se já existe por ID (caso venha preenchido) ou por nome (case-insensitive)
+        op_id = data.get('id')
+        existente = None
+        if op_id and str(op_id).strip().isdigit() and int(str(op_id).strip()) > 0:
+            existente = c.execute('SELECT id FROM tipos_operacao WHERE id = ?', (int(str(op_id).strip()),)).fetchone()
+        if not existente:
+            existente = c.execute('SELECT id FROM tipos_operacao WHERE LOWER(TRIM(nome_operacao)) = LOWER(TRIM(?))', (nome,)).fetchone()
+        
+        tp_nf = str(data.get('tp_nf', '0')).strip()
+        id_dest = str(data.get('id_dest', '3')).strip()
+        csosn_icms = limpar_cst(data.get('csosn_icms', '102'))
+        c_enq_ipi = str(data.get('c_enq_ipi', '102')).strip()
+        cst_ipi = limpar_cst(data.get('cst_ipi', '05'))
+        cst_pis = limpar_cst(data.get('cst_pis', '07'))
+        cst_cofins = limpar_cst(data.get('cst_cofins', '07'))
 
-    regime_tributario = str(data.get('regime_tributario', 'SUSPENSAO')).strip().upper()
-    t_pag = str(data.get('t_pag', '90')).strip()
+        regime_tributario = str(data.get('regime_tributario', 'SUSPENSAO')).strip().upper()
+        t_pag = str(data.get('t_pag', '90')).strip()
 
-    target_id = None
-    if existente:
-        target_id = existente['id']
-        c.execute('''
-            UPDATE tipos_operacao SET
-                nome_operacao = ?,
-                cfop_padrao = ?, tp_nf = ?, id_dest = ?, orig_padrao = ?, csosn_icms = ?, c_enq_ipi = ?,
-                cst_ipi = ?, p_ipi = ?, aliquota_ii = ?, cst_pis = ?, p_pis = ?,
-                cst_cofins = ?, p_cofins = ?, inf_cpl_padrao = ?, regime_tributario = ?, t_pag = ?
-            WHERE id = ?
-        ''', (
-            nome,
-            data.get('cfop_padrao', ''),
-            tp_nf,
-            id_dest,
-            data.get('orig_padrao', '1'),
-            csosn_icms,
-            c_enq_ipi,
-            cst_ipi,
-            float(data.get('p_ipi', 0) or 0),
-            float(data.get('aliquota_ii', 0) or 0),
-            cst_pis,
-            float(data.get('p_pis', 0) or 0),
-            cst_cofins,
-            float(data.get('p_cofins', 0) or 0),
-            data.get('inf_cpl_padrao', ''),
-            regime_tributario,
-            t_pag,
-            target_id
-        ))
-    else:
-        max_ordem = c.execute("SELECT COALESCE(MAX(ordem), 0) + 1 FROM tipos_operacao").fetchone()[0]
-        cur_ins = c.execute('''
-            INSERT INTO tipos_operacao (
-                nome_operacao, cfop_padrao, tp_nf, id_dest, orig_padrao, csosn_icms, c_enq_ipi,
-                cst_ipi, p_ipi, aliquota_ii, cst_pis, p_pis, cst_cofins, p_cofins, inf_cpl_padrao,
-                regime_tributario, t_pag, ordem
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            nome,
-            data.get('cfop_padrao', ''),
-            tp_nf,
-            id_dest,
-            data.get('orig_padrao', '1'),
-            csosn_icms,
-            c_enq_ipi,
-            cst_ipi,
-            float(data.get('p_ipi', 0) or 0),
-            float(data.get('aliquota_ii', 0) or 0),
-            cst_pis,
-            float(data.get('p_pis', 0) or 0),
-            cst_cofins,
-            float(data.get('p_cofins', 0) or 0),
-            data.get('inf_cpl_padrao', ''),
-            regime_tributario,
-            t_pag,
-            max_ordem
-        ))
-        target_id = cur_ins.lastrowid
+        p_ipi_val = parse_float_safe(data.get('p_ipi'))
+        aliquota_ii_val = parse_float_safe(data.get('aliquota_ii'))
+        p_pis_val = parse_float_safe(data.get('p_pis'))
+        p_cofins_val = parse_float_safe(data.get('p_cofins'))
 
-    conn.commit()
-    conn.close()
-    return jsonify({
-        "status": "success",
-        "id": target_id,
-        "nome_operacao": nome,
-        "message": f"Operação '{nome}' salva com sucesso!"
-    })
+        target_id = None
+        if existente:
+            target_id = existente['id']
+            c.execute('''
+                UPDATE tipos_operacao SET
+                    nome_operacao = ?,
+                    cfop_padrao = ?, tp_nf = ?, id_dest = ?, orig_padrao = ?, csosn_icms = ?, c_enq_ipi = ?,
+                    cst_ipi = ?, p_ipi = ?, aliquota_ii = ?, cst_pis = ?, p_pis = ?,
+                    cst_cofins = ?, p_cofins = ?, inf_cpl_padrao = ?, regime_tributario = ?, t_pag = ?
+                WHERE id = ?
+            ''', (
+                nome,
+                str(data.get('cfop_padrao', '')).strip(),
+                tp_nf,
+                id_dest,
+                str(data.get('orig_padrao', '1')).strip(),
+                csosn_icms,
+                c_enq_ipi,
+                cst_ipi,
+                p_ipi_val,
+                aliquota_ii_val,
+                cst_pis,
+                p_pis_val,
+                cst_cofins,
+                p_cofins_val,
+                str(data.get('inf_cpl_padrao', '')),
+                regime_tributario,
+                t_pag,
+                target_id
+            ))
+        else:
+            row_max = c.execute("SELECT COALESCE(MAX(ordem), 0) + 1 FROM tipos_operacao").fetchone()
+            max_ordem = row_max[0] if row_max else 1
+            cur_ins = c.execute('''
+                INSERT INTO tipos_operacao (
+                    nome_operacao, cfop_padrao, tp_nf, id_dest, orig_padrao, csosn_icms, c_enq_ipi,
+                    cst_ipi, p_ipi, aliquota_ii, cst_pis, p_pis, cst_cofins, p_cofins, inf_cpl_padrao,
+                    regime_tributario, t_pag, ordem
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                nome,
+                str(data.get('cfop_padrao', '')).strip(),
+                tp_nf,
+                id_dest,
+                str(data.get('orig_padrao', '1')).strip(),
+                csosn_icms,
+                c_enq_ipi,
+                cst_ipi,
+                p_ipi_val,
+                aliquota_ii_val,
+                cst_pis,
+                p_pis_val,
+                cst_cofins,
+                p_cofins_val,
+                str(data.get('inf_cpl_padrao', '')),
+                regime_tributario,
+                t_pag,
+                max_ordem
+            ))
+            target_id = cur_ins.lastrowid
+
+        conn.commit()
+        conn.close()
+        return jsonify({
+            "status": "success",
+            "id": int(target_id) if target_id is not None and str(target_id).isdigit() else target_id,
+            "nome_operacao": nome,
+            "message": f"Operação '{nome}' salva com sucesso!"
+        })
+    except Exception as e:
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
+        return jsonify({"status": "error", "error": f"Erro ao salvar operação no banco de dados: {str(e)}"}), 500
 
 @app.route('/api/operacoes/reordenar', methods=['POST'])
 def reordenar_operacoes():
