@@ -500,6 +500,9 @@
         if (!lista) return;
 
         const termoFiltro = (document.getElementById('filtro-operacoes')?.value || '').toLowerCase().trim();
+        if (Array.isArray(operacoesParaExibir)) {
+            window.operacoesCache = operacoesParaExibir;
+        }
         const ops = Array.isArray(operacoesParaExibir) ? operacoesParaExibir : (window.operacoesCache || []);
 
         lista.innerHTML = '';
@@ -695,7 +698,7 @@
 
     function atualizarSelectOperacoesComNovaOrdem(novaLista) {
         const sel = document.getElementById('select_operacao');
-        if (!sel || !Array.isArray(novaLista)) return;
+        if (!sel || !Array.isArray(novaLista) || novaLista.length === 0) return;
         const valorAtual = sel.value;
 
         sel.innerHTML = '<option value="">-- Selecione a Operação Fiscal --</option>';

@@ -4023,6 +4023,7 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
             .then(res => res.json())
             .then(async data => {
                 operacoesCache = data || [];
+                window.operacoesCache = operacoesCache;
                 
                 // 1. Atualiza Select da Aba 1 (Cabecalho)
                 const sel = document.getElementById('select_operacao');
@@ -4077,11 +4078,22 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
                     }
                 }
 
-                if (opParaSelecionar) {
+                if (opParaSelecionar && sel) {
                     sel.value = opParaSelecionar;
                     aoSelecionarOperacao(opParaSelecionar, false);
-                } else if (sel.value) {
+                } else if (sel && sel.value) {
                     aoSelecionarOperacao(sel.value, false);
+                }
+
+                // Se uma operacao foi salva ou informada, sincroniza o formulario da Aba 4
+                if (selecionarNome) {
+                    const opObj = operacoesCache.find(o => 
+                        (o.nome_operacao && o.nome_operacao.toUpperCase() === selecionarNome.toUpperCase()) ||
+                        (o.id && String(o.id) === String(selecionarNome))
+                    );
+                    if (opObj && typeof selecionarOperacaoParaEdicao === 'function') {
+                        selecionarOperacaoParaEdicao(opObj);
+                    }
                 }
             });
     }
@@ -4697,32 +4709,118 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
     }
 
     async function aplicarOperacaoSelecionadaAosItens() {
-        const nomeOp = getVal('select_operacao');
+        const nomeOp = (getVal('select_operacao') || '').trim();
         if (!nomeOp) {
-            alert("Selecione um Tipo de Operação primeiro!");
+            if (window.nftAlert) {
+                await window.nftAlert("Selecione um Tipo de Operação na aba 1 (Operação) antes de reaplicar as regras!", { title: "Operação Não Selecionada", type: "warning" });
+            } else {
+                alert("Selecione um Tipo de Operação primeiro!");
+            }
             return;
         }
-        const op = operacoesCache.find(o => o.nome_operacao.toUpperCase() === nomeOp.toUpperCase());
-        if (op) {
-            await aplicarRegrasAosItens(op, true);
+
+        let opNomeLimpo = nomeOp;
+        if (opNomeLimpo.includes(') ')) {
+            opNomeLimpo = opNomeLimpo.split(') ')[1].trim();
         }
+
+        const listaOps = (typeof operacoesCache !== 'undefined' && Array.isArray(operacoesCache) && operacoesCache.length > 0)
+            ? operacoesCache
+            : (window.operacoesCache || []);
+
+        const op = listaOps.find(o => 
+            (o.nome_operacao && o.nome_operacao.toUpperCase() === nomeOp.toUpperCase()) ||
+            (o.nome_operacao && o.nome_operacao.toUpperCase() === opNomeLimpo.toUpperCase()) ||
+            (`(${o.cfop_padrao}) ${o.nome_operacao}`.toUpperCase() === nomeOp.toUpperCase())
+        );
+
+        if (!op) {
+            if (window.nftAlert) {
+                await window.nftAlert(`A operação '${nomeOp}' não foi localizada nas configurações cadastradas.`, { title: "Operação Não Encontrada", type: "warning" });
+            } else {
+                alert(`Operação '${nomeOp}' não encontrada.`);
+            }
+            return;
+        }
+
+        let itens = (typeof itensTable !== 'undefined' && itensTable) ? itensTable.getData() : itensCache;
+        if (!itens || itens.length === 0) {
+            if (window.nftAlert) {
+                await window.nftAlert("A nota fiscal não possui itens cadastrados ou importados para aplicar as regras.", { title: "Nenhum Item", type: "warning" });
+            } else {
+                alert("Nenhum item na nota para aplicar as regras.");
+            }
+            return;
+        }
+
+        const totalItens = itens.length;
+        const confirmou = window.nftConfirm
+            ? await window.nftConfirm(
+                `Deseja realmente reaplicar as regras da operação:\n\n• Operação: (${op.cfop_padrao}) ${op.nome_operacao}\n• CFOP: ${op.cfop_padrao} | ICMS: ${op.csosn_icms} | IPI: ${op.cst_ipi} | PIS: ${op.cst_pis}\n\nIsso atualizará os tributos e CFOP de todos os ${totalItens} item(ns) da nota fiscal.`,
+                {
+                    title: 'Reaplicar Regras aos Itens',
+                    type: 'warning',
+                    confirmText: 'Sim, Reaplicar a Todos',
+                    cancelText: 'Cancelar',
+                    icon: 'refresh-cw'
+                }
+            )
+            : confirm(`Deseja reaplicar as regras da operação '${op.nome_operacao}' a todos os ${totalItens} itens?`);
+
+        if (!confirmou) return;
+
+        await aplicarRegrasAosItens(op, true);
     }
 
     async function aplicarRegrasAosItens(op, exibirFeedback = false) {
-        if (!itensCache || itensCache.length === 0) return;
-        
-        itensCache.forEach(item => {
+        let itens = (typeof itensTable !== 'undefined' && itensTable) ? itensTable.getData() : itensCache;
+        if (!itens || itens.length === 0) return;
+
+        const isIpiNaoTributado = ['01', '02', '03', '04', '05', '51', '52', '53', '54', '55'].includes(String(op.cst_ipi || '05').padStart(2, '0'));
+        const isPisNaoTributado = ['04', '05', '06', '07', '08', '09'].includes(String(op.cst_pis || '07').padStart(2, '0'));
+        const isCofinsNaoTributado = ['04', '05', '06', '07', '08', '09'].includes(String(op.cst_cofins || '07').padStart(2, '0'));
+
+        itens.forEach(item => {
             if (op.cfop_padrao) item.CFOP = op.cfop_padrao;
             if (op.orig_padrao) item.orig = op.orig_padrao;
             if (op.csosn_icms) item.CSOSN = op.csosn_icms;
             if (op.c_enq_ipi) item.cEnq = op.c_enq_ipi;
             if (op.cst_ipi) item.CST_IPI = op.cst_ipi;
             if (op.p_ipi !== undefined) item.pIPI = op.p_ipi;
+
+            const vp = parseFloat(String(item.vProd || 0).replace(',', '.')) || 0;
+
+            if (isIpiNaoTributado) {
+                item.vBC_IPI = '0.00';
+                item.vIPI = '0.00';
+            } else {
+                item.vBC_IPI = vp.toFixed(2);
+                item.vIPI = (vp * (parseFloat(op.p_ipi || 0) / 100)).toFixed(2);
+            }
+
             if (op.cst_pis) item.CST_PIS = op.cst_pis;
             if (op.p_pis !== undefined) item.pPIS = op.p_pis;
+            if (isPisNaoTributado) {
+                item.vBC_PIS = '0.00';
+                item.vPIS = '0.00';
+            } else {
+                item.vBC_PIS = vp.toFixed(2);
+                item.vPIS = (vp * (parseFloat(op.p_pis || 0) / 100)).toFixed(2);
+            }
+
             if (op.cst_cofins) item.CST_COFINS = op.cst_cofins;
             if (op.p_cofins !== undefined) item.pCOFINS = op.p_cofins;
+            if (isCofinsNaoTributado) {
+                item.vBC_COFINS = '0.00';
+                item.vCOFINS = '0.00';
+            } else {
+                item.vBC_COFINS = vp.toFixed(2);
+                item.vCOFINS = (vp * (parseFloat(op.p_cofins || 0) / 100)).toFixed(2);
+            }
         });
+
+        itensCache = itens;
+        window.itensCache = itens;
 
         // Verificar se é operação de Exportação (CFOP começa com 7 e tpNF é Saída = '1')
         const cfopStr = String(op.cfop_padrao || getVal('cfop_padrao') || '').trim();
@@ -4730,15 +4828,17 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
         const isExport = cfopStr.startsWith('7') && tpNfStr === '1';
 
         let resExport = null;
-        if (isExport) {
+        if (isExport && typeof aplicarRegrasExportacaoUnidades === 'function') {
             resExport = await aplicarRegrasExportacaoUnidades(itensCache, false);
         } else {
-            if (itensTable) {
+            if (typeof itensTable !== 'undefined' && itensTable) {
                 itensTable.setData(itensCache);
             }
         }
 
-        recalcularTotaisDosItens(true);
+        if (typeof recalcularTotaisDosItens === 'function') {
+            recalcularTotaisDosItens(true);
+        }
 
         if (exibirFeedback) {
             let msg = `Regras da operação '${op.nome_operacao}' aplicadas com sucesso a todos os ${itensCache.length} itens!`;
@@ -4746,10 +4846,14 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
                 msg += `\n\n• Operação de Exportação identificada (CFOP ${cfopStr} / Saída):\n`;
                 msg += `• Unidades Tributáveis (uTrib) e Quantidades Tributáveis (qTrib/vUnTrib) configuradas conforme Comex/Receita Federal.\n`;
                 if (resExport && resExport.manuais > 0) {
-                    msg += `• Há ${resExport.manuais} item(ns) com unidade sem conversão direta (ex: M3) deixados em branco para preenchimento manual no grid. Ao digitar a 'Qtd. Trib.', o valor unitário será calculado automaticamente.`;
+                    msg += `• Há ${resExport.manuais} item(ns) com unidade sem conversão direta (ex: M3) deixados em branco para preenchimento manual no grid.`;
                 }
             }
-            alert(msg);
+            if (window.nftAlert) {
+                await window.nftAlert(msg, { title: "Regras Aplicadas com Sucesso", type: "success" });
+            } else {
+                alert(msg);
+            }
         }
     }
 
@@ -4847,10 +4951,15 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
         alert("Parâmetros de impostos, tipo de nota (entrada/saída) e destino capturados do XML atual! Você pode revisar os dados e clicar em Salvar.");
     }
 
-    function salvarOperacao() {
-        const nome = getVal('op_nome').trim();
+    async function salvarOperacao() {
+        const nome = (getVal('op_nome') || '').trim();
         if (!nome) {
-            alert("Informe o Nome da Operação!");
+            if (window.nftAlert) {
+                await window.nftAlert("Informe o Nome da Operação!", { title: "Campo Obrigatório", type: "warning" });
+            } else {
+                alert("Informe o Nome da Operação!");
+            }
+            document.getElementById('op_nome')?.focus();
             return;
         }
 
@@ -4875,16 +4984,43 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
             inf_cpl_padrao: getVal('op_inf_cpl')
         };
 
-        fetch('/tipos_operacao', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(payload)
-        })
-        .then(res => res.json())
-        .then(data => {
-            alert(data.message || "Operação salva com sucesso!");
+        try {
+            const res = await fetch('/tipos_operacao', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.status === 'error' || data.error) {
+                if (window.nftAlert) {
+                    await window.nftAlert(data.error || data.message || "Erro ao salvar operação.", { title: "Erro ao Salvar", type: "danger" });
+                } else {
+                    alert(data.error || data.message || "Erro ao salvar operação.");
+                }
+                return;
+            }
+
+            if (data.id) {
+                setVal('op_id', data.id);
+            }
+
+            if (window.nftToast) {
+                window.nftToast(data.message || `Operação '${nome}' salva com sucesso!`, { type: 'success' });
+            } else if (window.nftAlert) {
+                await window.nftAlert(data.message || `Operação '${nome}' salva com sucesso!`, { title: "Operação Salva", type: "success" });
+            } else {
+                alert(data.message || `Operação '${nome}' salva com sucesso!`);
+            }
+
             carregarTiposOperacao(nome);
-        });
+        } catch (err) {
+            console.error("Erro ao salvar operação:", err);
+            if (window.nftAlert) {
+                await window.nftAlert("Falha na comunicação com o servidor ao salvar operação: " + err.message, { title: "Erro de Conexão", type: "danger" });
+            } else {
+                alert("Falha na comunicação com o servidor: " + err.message);
+            }
+        }
     }
 
     async function excluirOperacaoAtual() {

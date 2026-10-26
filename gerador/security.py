@@ -73,6 +73,7 @@ class EmpresaPayloadSchema(BaseModel):
 
 class TipoOperacaoPayloadSchema(BaseModel):
     model_config = ConfigDict(extra='allow')
+    id: Optional[Union[int, str]] = Field(default=None)
     nome_operacao: str = Field(..., min_length=1, max_length=150)
     cfop_padrao: Optional[str] = Field(default='', max_length=10)
     tp_nf: Optional[Union[str, int]] = Field(default='0')

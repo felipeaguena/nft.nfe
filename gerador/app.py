@@ -1805,8 +1805,13 @@ def save_tipo_operacao():
     conn = get_db_connection()
     c = conn.cursor()
     
-    # Se ja existe com esse nome, atualiza. Senao, insere.
-    existente = c.execute('SELECT id FROM tipos_operacao WHERE nome_operacao = ?', (nome,)).fetchone()
+    # Verifica se ja existe por ID (caso venha preenchido) ou por nome (case-insensitive)
+    op_id = data.get('id')
+    existente = None
+    if op_id and str(op_id).isdigit() and int(op_id) > 0:
+        existente = c.execute('SELECT id FROM tipos_operacao WHERE id = ?', (int(op_id),)).fetchone()
+    if not existente:
+        existente = c.execute('SELECT id FROM tipos_operacao WHERE LOWER(TRIM(nome_operacao)) = LOWER(TRIM(?))', (nome,)).fetchone()
     
     tp_nf = str(data.get('tp_nf', '0'))
     id_dest = str(data.get('id_dest', '3'))
@@ -1819,14 +1824,18 @@ def save_tipo_operacao():
     regime_tributario = str(data.get('regime_tributario', 'SUSPENSAO')).strip().upper()
     t_pag = str(data.get('t_pag', '90')).strip()
 
+    target_id = None
     if existente:
+        target_id = existente['id']
         c.execute('''
             UPDATE tipos_operacao SET
+                nome_operacao = ?,
                 cfop_padrao = ?, tp_nf = ?, id_dest = ?, orig_padrao = ?, csosn_icms = ?, c_enq_ipi = ?,
                 cst_ipi = ?, p_ipi = ?, aliquota_ii = ?, cst_pis = ?, p_pis = ?,
                 cst_cofins = ?, p_cofins = ?, inf_cpl_padrao = ?, regime_tributario = ?, t_pag = ?
-            WHERE nome_operacao = ?
+            WHERE id = ?
         ''', (
+            nome,
             data.get('cfop_padrao', ''),
             tp_nf,
             id_dest,
@@ -1843,11 +1852,11 @@ def save_tipo_operacao():
             data.get('inf_cpl_padrao', ''),
             regime_tributario,
             t_pag,
-            nome
+            target_id
         ))
     else:
         max_ordem = c.execute("SELECT COALESCE(MAX(ordem), 0) + 1 FROM tipos_operacao").fetchone()[0]
-        c.execute('''
+        cur_ins = c.execute('''
             INSERT INTO tipos_operacao (
                 nome_operacao, cfop_padrao, tp_nf, id_dest, orig_padrao, csosn_icms, c_enq_ipi,
                 cst_ipi, p_ipi, aliquota_ii, cst_pis, p_pis, cst_cofins, p_cofins, inf_cpl_padrao,
@@ -1873,10 +1882,16 @@ def save_tipo_operacao():
             t_pag,
             max_ordem
         ))
+        target_id = cur_ins.lastrowid
 
     conn.commit()
     conn.close()
-    return jsonify({"status": "success", "message": f"Operação '{nome}' salva com sucesso!"})
+    return jsonify({
+        "status": "success",
+        "id": target_id,
+        "nome_operacao": nome,
+        "message": f"Operação '{nome}' salva com sucesso!"
+    })
 
 @app.route('/api/operacoes/reordenar', methods=['POST'])
 def reordenar_operacoes():
