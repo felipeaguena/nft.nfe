@@ -126,6 +126,10 @@
             if (!c.apelido) c.apelido = c.nome || k;
         });
 
+        window.regimesConfigCache = regimesConfigCache;
+        window.getRegimesConfigCache = function() { return regimesConfigCache || REGIMES_FALLBACK; };
+        window.REGIMES_FALLBACK = REGIMES_FALLBACK;
+
         atualizarTodosSelectsEnquadramento(regimesConfigCache);
         return regimesConfigCache;
     }
@@ -259,6 +263,20 @@
         modalDiv.tabIndex = -1;
         modalDiv.setAttribute('aria-hidden', 'true');
         modalDiv.setAttribute('data-bs-backdrop', 'static');
+        modalDiv.style.zIndex = '1070';
+
+        modalDiv.addEventListener('shown.bs.modal', function () {
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            if (backdrops.length > 1) {
+                backdrops[backdrops.length - 1].style.zIndex = '1065';
+            }
+        });
+        modalDiv.addEventListener('hidden.bs.modal', function () {
+            const modalItens = document.getElementById('modal-aplicar-enquadramento-itens');
+            if (modalItens && modalItens.classList.contains('show')) {
+                document.body.classList.add('modal-open');
+            }
+        });
 
         modalDiv.innerHTML = `
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -438,8 +456,15 @@
 
         const modalEl = document.getElementById('modal-config-regimes');
         if (modalEl && window.bootstrap && window.bootstrap.Modal) {
+            modalEl.style.zIndex = '1070';
             const m = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
             m.show();
+            setTimeout(() => {
+                const backdrops = document.querySelectorAll('.modal-backdrop');
+                if (backdrops.length > 1) {
+                    backdrops[backdrops.length - 1].style.zIndex = '1065';
+                }
+            }, 30);
         }
     };
 
@@ -1155,19 +1180,37 @@
             item.style.cursor = 'pointer';
             item.style.transition = 'all 0.15s ease-in-out';
 
-            // Badge de regime/enquadramento
+            // Badge de regime/enquadramento padronizada
             let regimeBadge = '';
-            const reg = (op.regime_tributario || '').toUpperCase();
-            if (reg === 'SUSPENSAO') {
-                regimeBadge = '<span class="badge bg-secondary-subtle text-secondary" style="font-size: 10px;">Suspensão</span>';
-            } else if (reg === 'ISENCAO') {
-                regimeBadge = '<span class="badge bg-success-subtle text-success" style="font-size: 10px;">Isenção</span>';
-            } else if (reg === 'RECOLHIMENTO') {
-                regimeBadge = '<span class="badge bg-primary-subtle text-primary" style="font-size: 10px;">Recolhimento</span>';
-            } else if (reg === 'IMUNIDADE') {
-                regimeBadge = '<span class="badge bg-info-subtle text-info" style="font-size: 10px;">Imunidade</span>';
-            } else if (reg) {
-                regimeBadge = `<span class="badge bg-light text-dark border" style="font-size: 10px;">${reg}</span>`;
+            const regRaw = (op.regime_tributario || '').trim();
+            const regUpper = regRaw.toUpperCase();
+
+            let apelidoBadge = regRaw;
+            let corBadge = 'bg-secondary-subtle text-secondary border border-secondary-subtle';
+
+            const confCache = window.regimesConfigCache || regimesConfigCache;
+            if (confCache && confCache[regRaw]) {
+                apelidoBadge = confCache[regRaw].apelido || confCache[regRaw].nome || regRaw;
+            } else if (confCache && confCache[regUpper]) {
+                apelidoBadge = confCache[regUpper].apelido || confCache[regUpper].nome || regRaw;
+            } else if (REGIMES_FALLBACK && REGIMES_FALLBACK[regUpper]) {
+                apelidoBadge = REGIMES_FALLBACK[regUpper].apelido || REGIMES_FALLBACK[regUpper].nome || regRaw;
+            }
+
+            const compUpper = (apelidoBadge + ' ' + regUpper).toUpperCase();
+            if (compUpper.includes('SUSPENS') || compUpper.includes('SUSPENSAO')) {
+                corBadge = 'bg-warning-subtle text-warning-emphasis border border-warning-subtle';
+            } else if (compUpper.includes('ISENC') || compUpper.includes('ISENÇÃO') || compUpper.includes('ISENCAO')) {
+                corBadge = 'bg-success-subtle text-success-emphasis border border-success-subtle';
+            } else if (compUpper.includes('RECOLH') || compUpper.includes('RECOLHIMENTO')) {
+                corBadge = 'bg-primary-subtle text-primary border border-primary-subtle';
+            } else if (compUpper.includes('IMUN') || compUpper.includes('IMUNIDADE')) {
+                corBadge = 'bg-info-subtle text-info-emphasis border border-info-subtle';
+            }
+
+            if (apelidoBadge) {
+                const displayTxt = apelidoBadge.length > 20 ? (apelidoBadge.slice(0, 18) + '…') : apelidoBadge;
+                regimeBadge = `<span class="badge rounded-pill fw-semibold ${corBadge}" style="font-size: 10px; max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; vertical-align: middle;" title="${apelidoBadge}">${displayTxt}</span>`;
             }
 
             const tipoTxt = (op.tp_nf == '1') ? '1-Saída' : '0-Entrada';

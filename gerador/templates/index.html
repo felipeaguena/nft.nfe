@@ -408,7 +408,7 @@ Aceita exclusivamente números. Ao completar 44 dígitos, a chave é incluída n
 <div class="card border p-2 px-3 mb-0 d-flex flex-row justify-content-between align-items-center flex-wrap gap-2" id="card-resumo-heranca">
 <div class="d-flex align-items-center flex-wrap gap-3">
 <div><span class="text-muted">Operação:</span> <strong id="lbl-operacao-ativa">Nenhuma selecionada</strong></div>
-<div><span class="text-muted">Regime:</span> <span class="fw-bold text-primary" id="lbl-regime-ativo">Suspensão</span></div>
+<span id="lbl-regime-ativo" style="display:none;"></span>
 <div><span class="text-muted">Pagto:</span> <span class="fw-semibold font-monospace" id="lbl-tpag-ativo">90 - Sem Pagamento</span></div>
 <div><span class="text-muted">Tipo NF:</span> <span class="fw-semibold" id="lbl-tp-nf-ativo">-</span></div>
 <div><span class="text-muted">Destino:</span> <span class="fw-semibold" id="lbl-id-dest-ativo">-</span></div>
@@ -3820,6 +3820,32 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
         {title:"Nº Adição", field:"nAdicao", width:95, editor:"input"},
         {title:"Seq. Adição", field:"nSeqAdic", width:95, editor:"input"},
         {title:"Fabricante", field:"cFabricante", width:130, editor:"input"},
+        {
+            title: "Enquadramento",
+            field: "enquadramento",
+            width: 175,
+            editor: "list",
+            editorParams: function(cell) {
+                const configs = (typeof window.getRegimesConfigCache === 'function') ? window.getRegimesConfigCache() : (window.regimesConfigCache || {});
+                const lista = [];
+                Object.keys(configs).forEach(k => {
+                    const c = configs[k];
+                    lista.push({
+                        label: `${c.apelido || c.nome || k} (cEnq ${c.c_enq_ipi || '-'})`,
+                        value: k
+                    });
+                });
+                return { values: lista, autocomplete: true, listOnEmpty: true, clearable: true };
+            },
+            formatter: function(cell) {
+                const val = cell.getValue();
+                if (!val) return '<span class="text-muted fst-italic" style="font-size:11px;">(Padrão)</span>';
+                const configs = (typeof window.getRegimesConfigCache === 'function') ? window.getRegimesConfigCache() : (window.regimesConfigCache || {});
+                const conf = configs[val];
+                const apelido = conf ? (conf.apelido || conf.nome || val) : val;
+                return `<span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold" style="font-size:11px; max-width: 155px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; vertical-align: middle;" title="${apelido}">${apelido}</span>`;
+            }
+        },
         {title:"Origem", field:"orig", width:80, editor:"input"},
         {title:"CSOSN/CST ICMS", field:"CSOSN", width:210, editor:"list", editorParams:{values:[], autocomplete:true, listOnEmpty:true, freetext:false, clearable:true}, formatter:formatarCstCell, mutatorEdit:mutatorLimparCst},
         {title:"cEnq IPI", field:"cEnq", width:90, editor:"input"},
@@ -3827,9 +3853,10 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
         {title:"BC IPI", field:"vBC_IPI", width:100, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, mutatorEdit:mutatorLimparNumero},
         {title:"% IPI", field:"pIPI", width:90, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarAliquotaVisualBR, mutatorEdit:mutatorLimparNumero},
         {title:"V. IPI", field:"vIPI", width:95, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, mutatorEdit:mutatorLimparNumero},
-        {title:"BC II", field:"vBC_II", width:100, hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, cssClass:""},
-        {title:"Desp. Aduan.", field:"vDespAdu", width:110, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"BC II", field:"vBC_II", width:100, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"% II", field:"aliquota_ii", width:90, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarAliquotaVisualBR, mutatorEdit:mutatorLimparNumero},
         {title:"V. II", field:"vII", width:95, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"Desp. Aduan.", field:"vDespAdu", width:110, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, mutatorEdit:mutatorLimparNumero},
         {title:"V. IOF", field:"vIOF", width:95, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, mutatorEdit:mutatorLimparNumero},
         {title:"CST PIS", field:"CST_PIS", width:190, editor:"list", editorParams:{values:[], autocomplete:true, listOnEmpty:true, freetext:false, clearable:true}, formatter:formatarCstCell, mutatorEdit:mutatorLimparCst},
         {title:"BC PIS", field:"vBC_PIS", width:100, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, mutatorEdit:mutatorLimparNumero},
@@ -3898,6 +3925,142 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
             const campo = cell.getField();
             const row = cell.getRow();
             const d = row.getData();
+
+            // 1. Seleção de Enquadramento Fiscal por Item
+            if (campo === 'enquadramento') {
+                const enqKey = cell.getValue();
+                const configs = (typeof window.getRegimesConfigCache === 'function') ? window.getRegimesConfigCache() : (window.regimesConfigCache || {});
+                const conf = (enqKey && configs[enqKey]) ? configs[enqKey] : null;
+                if (conf) {
+                    const vp = parseNum(d.vProd);
+                    const vf = parseNum(d.vFrete);
+                    const vs = parseNum(d.vSeg);
+                    const vo = parseNum(d.vOutro);
+                    const baseAduaneira = vp + vf + vs + vo;
+                    const pIpi = parseNum(conf.p_ipi);
+                    const pPis = parseNum(conf.p_pis);
+                    const pCofins = parseNum(conf.p_cofins);
+                    const pII = parseNum(conf.aliquota_ii);
+
+                    const updates = { enquadramento: enqKey };
+                    if (conf.csosn_icms) updates.CSOSN = conf.csosn_icms;
+                    if (conf.c_enq_ipi) updates.cEnq = conf.c_enq_ipi;
+                    if (conf.cst_ipi) updates.CST_IPI = conf.cst_ipi;
+                    if (conf.cst_pis) updates.CST_PIS = conf.cst_pis;
+                    if (conf.cst_cofins) updates.CST_COFINS = conf.cst_cofins;
+
+                    updates.pIPI = pIpi.toFixed(2);
+                    updates.pPIS = pPis.toFixed(2);
+                    updates.pCOFINS = pCofins.toFixed(2);
+                    updates.aliquota_ii = pII.toFixed(2);
+
+                    // IPI
+                    const cstIpiStr = String(conf.cst_ipi || '').trim();
+                    const isIpiIsento = ['02', '03', '04', '05', '52', '53', '54', '55'].includes(cstIpiStr) || pIpi === 0;
+                    if (isIpiIsento && pIpi === 0) {
+                        updates.vBC_IPI = '0.00';
+                        updates.vIPI = '0.00';
+                    } else {
+                        updates.vBC_IPI = vp.toFixed(2);
+                        updates.vIPI = (vp * (pIpi / 100)).toFixed(2);
+                    }
+
+                    // PIS & COFINS
+                    const cstPisStr = String(conf.cst_pis || '').trim();
+                    const isPisIsento = ['04', '05', '06', '07', '08', '09'].includes(cstPisStr) || pPis === 0;
+                    if (isPisIsento && pPis === 0) {
+                        updates.vBC_PIS = '0.00';
+                        updates.vPIS = '0.00';
+                    } else {
+                        updates.vBC_PIS = baseAduaneira.toFixed(2);
+                        updates.vPIS = (baseAduaneira * (pPis / 100)).toFixed(2);
+                    }
+
+                    const cstCofStr = String(conf.cst_cofins || '').trim();
+                    const isCofIsento = ['04', '05', '06', '07', '08', '09'].includes(cstCofStr) || pCofins === 0;
+                    if (isCofIsento && pCofins === 0) {
+                        updates.vBC_COFINS = '0.00';
+                        updates.vCOFINS = '0.00';
+                    } else {
+                        updates.vBC_COFINS = baseAduaneira.toFixed(2);
+                        updates.vCOFINS = (baseAduaneira * (pCofins / 100)).toFixed(2);
+                    }
+
+                    // II
+                    const baseII = (vp + vf + vs).toFixed(2);
+                    updates.vBC_II = baseII;
+                    updates.vII = (pII > 0) ? (parseNum(baseII) * (pII / 100)).toFixed(2) : '0.00';
+
+                    row.update(updates);
+                }
+            }
+
+            // 2. Cálculos automáticos de Bases (BC) e Valores (V.) ao alterar alíquotas ou bases
+            if (campo === 'pIPI') {
+                const pIpiVal = parseNum(cell.getValue());
+                let bcIpi = parseNum(d.vBC_IPI);
+                const updates = {};
+                if (bcIpi <= 0 && pIpiVal > 0) {
+                    bcIpi = parseNum(d.vProd);
+                    updates.vBC_IPI = bcIpi.toFixed(2);
+                }
+                updates.vIPI = (bcIpi * (pIpiVal / 100)).toFixed(2);
+                row.update(updates);
+            } else if (campo === 'vBC_IPI') {
+                const bcIpi = parseNum(cell.getValue());
+                const pIpiVal = parseNum(d.pIPI);
+                row.update({ vIPI: (bcIpi * (pIpiVal / 100)).toFixed(2) });
+            }
+
+            if (campo === 'pPIS') {
+                const pPisVal = parseNum(cell.getValue());
+                let bcPis = parseNum(d.vBC_PIS);
+                const updates = {};
+                if (bcPis <= 0 && pPisVal > 0) {
+                    bcPis = parseNum(d.vProd) + parseNum(d.vFrete) + parseNum(d.vSeg) + parseNum(d.vOutro);
+                    updates.vBC_PIS = bcPis.toFixed(2);
+                }
+                updates.vPIS = (bcPis * (pPisVal / 100)).toFixed(2);
+                row.update(updates);
+            } else if (campo === 'vBC_PIS') {
+                const bcPis = parseNum(cell.getValue());
+                const pPisVal = parseNum(d.pPIS);
+                row.update({ vPIS: (bcPis * (pPisVal / 100)).toFixed(2) });
+            }
+
+            if (campo === 'pCOFINS') {
+                const pCofVal = parseNum(cell.getValue());
+                let bcCof = parseNum(d.vBC_COFINS);
+                const updates = {};
+                if (bcCof <= 0 && pCofVal > 0) {
+                    bcCof = parseNum(d.vProd) + parseNum(d.vFrete) + parseNum(d.vSeg) + parseNum(d.vOutro);
+                    updates.vBC_COFINS = bcCof.toFixed(2);
+                }
+                updates.vCOFINS = (bcCof * (pCofVal / 100)).toFixed(2);
+                row.update(updates);
+            } else if (campo === 'vBC_COFINS') {
+                const bcCof = parseNum(cell.getValue());
+                const pCofVal = parseNum(d.pCOFINS);
+                row.update({ vCOFINS: (bcCof * (pCofVal / 100)).toFixed(2) });
+            }
+
+            if (campo === 'aliquota_ii') {
+                const pIIVal = parseNum(cell.getValue());
+                let bcII = parseNum(d.vBC_II);
+                const updates = {};
+                if (bcII <= 0 && pIIVal > 0) {
+                    bcII = parseNum(d.vProd) + parseNum(d.vFrete) + parseNum(d.vSeg);
+                    updates.vBC_II = bcII.toFixed(2);
+                }
+                updates.vII = (bcII * (pIIVal / 100)).toFixed(2);
+                row.update(updates);
+            } else if (campo === 'vBC_II') {
+                const bcII = parseNum(cell.getValue());
+                const pIIVal = parseNum(d.aliquota_ii);
+                if (pIIVal > 0) {
+                    row.update({ vII: (bcII * (pIIVal / 100)).toFixed(2) });
+                }
+            }
 
             // Cálculo automático de Unidade e Quantidade Tributável (uTrib / qTrib / vUnTrib)
             if (campo === 'qTrib') {
@@ -3984,7 +4147,7 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
                 row.update({ vBC_II: novoBCII });
             }
 
-            if (['vProd', 'vFrete', 'vOutro', 'vIPI', 'vII', 'vPIS', 'vCOFINS', 'vBC_IPI', 'vBC_II', 'vBC_PIS', 'vBC_COFINS', 'vAFRMM', 'vDespAdu', 'qCom', 'vUnCom', 'vProd_moeda_origem', 'vUnCom_moeda_origem'].includes(campo)) {
+            if (['vProd', 'vFrete', 'vOutro', 'vSeg', 'vIPI', 'vII', 'vPIS', 'vCOFINS', 'vBC_IPI', 'vBC_II', 'vBC_PIS', 'vBC_COFINS', 'pIPI', 'pPIS', 'pCOFINS', 'aliquota_ii', 'enquadramento', 'vAFRMM', 'vDespAdu', 'qCom', 'vUnCom', 'vProd_moeda_origem', 'vUnCom_moeda_origem'].includes(campo)) {
                 recalcularTotaisDosItens(true);
                 atualizarBadgesRateioEItens();
             }
