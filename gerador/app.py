@@ -527,12 +527,15 @@ def format_datetime(val):
     if not val:
         return datetime.now().strftime("%Y-%m-%dT%H:%M:%S-03:00")
     s = str(val).strip()
+    s = re.sub(r'\.\d+', '', s)
     if re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[-+]\d{2}:\d{2}$', s):
         return s
     if re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$', s):
         return s + "-03:00"
     if re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$', s):
         return s + ":00-03:00"
+    if re.match(r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$', s):
+        return s.replace(' ', 'T') + "-03:00"
     if re.match(r'^\d{4}-\d{2}-\d{2}$', s):
         now_time = datetime.now().strftime("%H:%M:%S")
         return f"{s}T{now_time}-03:00"
@@ -1114,7 +1117,27 @@ def build_nfe_element(cabecalho, itens, rodape):
         ET.SubElement(icms_tot, f'{{{NFE_NS}}}{k}').text = v
 
     # 6. transp
-    transp_data = rodape.get('transporte', {})
+    transp_data = dict(rodape.get('transporte') or {})
+    campos_transp = {
+        'modFrete': ['transp_modFrete', 'modFrete'],
+        'CNPJ_CPF': ['transp_CNPJ_CPF', 'transp_CNPJ', 'transp_CPF', 'CNPJ_CPF'],
+        'xNome': ['transp_xNome', 'xNome'],
+        'IE': ['transp_IE', 'IE'],
+        'xEnder': ['transp_xEnder', 'xEnder'],
+        'xMun': ['transp_xMun', 'xMun'],
+        'UF': ['transp_UF', 'UF'],
+        'qVol': ['transp_qVol', 'qVol', 'volume_quantidade'],
+        'esp': ['transp_esp', 'esp', 'volume_especie'],
+        'pesoL': ['transp_pesoL', 'pesoL', 'volume_peso_liquido'],
+        'pesoB': ['transp_pesoB', 'pesoB', 'volume_peso_bruto'],
+    }
+    for k_t, aliases_t in campos_transp.items():
+        if not transp_data.get(k_t):
+            for al_t in aliases_t:
+                val_t = cabecalho.get(al_t) or rodape.get(al_t)
+                if val_t is not None and str(val_t).strip() != '':
+                    transp_data[k_t] = val_t
+                    break
     transp_el = ET.SubElement(inf_nfe, f'{{{NFE_NS}}}transp')
     mod_frete = str(transp_data.get('modFrete') if transp_data.get('modFrete') is not None and str(transp_data.get('modFrete')).strip() != '' else '1')
     ET.SubElement(transp_el, f'{{{NFE_NS}}}modFrete').text = mod_frete
@@ -1175,7 +1198,7 @@ def build_nfe_element(cabecalho, itens, rodape):
             ET.SubElement(det_pag, f'{{{NFE_NS}}}vPag').text = format_dec(v_nf_tot, 2)
 
     # 8. infAdic
-    inf_cpl = str(rodape.get('infCpl') or '').strip()
+    inf_cpl = str(rodape.get('infCpl') or cabecalho.get('infCpl') or cabecalho.get('inf_cpl') or rodape.get('inf_cpl') or '').strip()
     if ref_nfe and len(ref_nfe) == 44:
         if ref_nfe not in inf_cpl:
             texto_ref = f"NF-e Referenciada: {ref_nfe}"
@@ -3769,14 +3792,50 @@ def generate_xml():
                 nome_sanitizado = nome_sanitizado.replace('__', '_')
             nome_arquivo = nome_sanitizado if nome_sanitizado.endswith('.xml') else f"{nome_sanitizado}.xml"
 
-        # Salva copia do XML gerado no DOWNLOADS_DIR com a chave de acesso se existir
+        # Se a nota ja possui autorizacao oficial SEFAZ ou protocolo, retorna o XML nfeProc canonico
+        if chave_calc and len(chave_calc) == 44:
+            try:
+                conn_chk = get_db_connection()
+                row_chk = conn_chk.cursor().execute(
+                    "SELECT protocolo, cstat FROM historico_sefaz WHERE REPLACE(chave_nfe, ' ', '') = ? ORDER BY id DESC LIMIT 1",
+                    (chave_calc,)
+                ).fetchone()
+                if not row_chk:
+                    row_chk = conn_chk.cursor().execute(
+                        "SELECT protocolo, cstat FROM notas_fiscais WHERE REPLACE(chave_nfe, ' ', '') = ? LIMIT 1",
+                        (chave_calc,)
+                    ).fetchone()
+                conn_chk.close()
+                if row_chk and (row_chk['protocolo'] or row_chk['cstat'] == '100'):
+                    garantir_xml_e_danfe_nota(chave_calc)
+                    xml_oficial_path = os.path.join(DOWNLOADS_DIR, f"{chave_calc}-nfe.xml")
+                    if os.path.exists(xml_oficial_path):
+                        with open(xml_oficial_path, 'r', encoding='utf-8', errors='ignore') as f_chk:
+                            c_oficial = f_chk.read()
+                            if '<protNFe' in c_oficial:
+                                nome_download_oficial = f"{ref_sanitizada} - DANFE {n_nf} - {chave_calc}.xml"
+                                return send_file(xml_oficial_path, as_attachment=True, download_name=nome_download_oficial, mimetype='application/xml')
+            except Exception as e_chk_of:
+                print(f"Aviso ao checar XML oficial em generate_xml: {e_chk_of}")
+
+        # Salva copia do XML gerado no DOWNLOADS_DIR SOMENTE se nao houver nota autorizada pre-existente
         if chave_calc and len(chave_calc) == 44:
             xml_dest = os.path.join(DOWNLOADS_DIR, f"{chave_calc}-nfe.xml")
-            try:
-                with open(xml_dest, 'wb') as f_dest:
-                    f_dest.write(final_xml)
-            except Exception as e_f:
-                print(f"Aviso ao salvar XML no DOWNLOADS_DIR: {e_f}")
+            sobrescrever_dest = True
+            if os.path.exists(xml_dest):
+                try:
+                    with open(xml_dest, 'r', encoding='utf-8', errors='ignore') as f_chk_dest:
+                        txt_dest = f_chk_dest.read()
+                        if '<protNFe' in txt_dest:
+                            sobrescrever_dest = False
+                except Exception:
+                    pass
+            if sobrescrever_dest:
+                try:
+                    with open(xml_dest, 'wb') as f_dest:
+                        f_dest.write(final_xml)
+                except Exception as e_f:
+                    print(f"Aviso ao salvar XML no DOWNLOADS_DIR: {e_f}")
 
             # Registra/atualiza no banco de notas_fiscais garantindo presenca no relatorio
             try:
@@ -5157,11 +5216,16 @@ def garantir_xml_e_danfe_nota(chave, retorno_sefaz=None):
             (chave_limpa,)
         ).fetchone()
         if h_row and h_row['protocolo']:
+            dh_hist = ''
+            if h_row['xml_retorno']:
+                m_dh = re.search(r'<dhRecbto>(.*?)</dhRecbto>', h_row['xml_retorno'])
+                if m_dh:
+                    dh_hist = m_dh.group(1).strip()
             retorno_sefaz = {
                 'cstat': h_row['cstat'] or '100',
                 'xmotivo': h_row['xmotivo'] or 'Autorizado o uso da NF-e',
                 'protocolo_autorizacao': h_row['protocolo'],
-                'data_autorizacao': '',
+                'data_autorizacao': dh_hist,
                 'eventos': []
             }
         else:
@@ -5207,8 +5271,7 @@ def garantir_xml_e_danfe_nota(chave, retorno_sefaz=None):
                     for el in ide.xpath("./*[local-name()='nNF']"): el.text = n_nf
                     for el in ide.xpath("./*[local-name()='serie']"): el.text = serie_nf
                     for el in ide.xpath("./*[local-name()='tpAmb']"): el.text = tp_amb
-                    if dh_aut:
-                        for el in ide.xpath("./*[local-name()='dhEmi']"): el.text = dh_aut
+                    # Mantem dhEmi original da emissao da NF-e (nao sobrescreve com dh_aut)
                     if tipo_operacao:
                         for el in ide.xpath("./*[local-name()='natOp']"): el.text = tipo_operacao
 
@@ -5273,27 +5336,52 @@ def garantir_xml_e_danfe_nota(chave, retorno_sefaz=None):
                             inf_ad_el = etree.SubElement(det_el, "{http://www.portalfiscal.inf.br/nfe}infAdProd")
                             inf_ad_el.text = f"DI: {di_encontrada} Adicao: {idx_det:03d} Item: 001"
 
+            if not dh_aut:
+                for el in root.xpath("//*[local-name()='dhRecbto']"):
+                    if el.text and el.text.strip():
+                        dh_aut = el.text.strip()
+                        break
+            # Garante digest_value valido de 28 caracteres extraido do XML assinado
+            if not dig_val:
+                for dv in root.xpath("//*[local-name()='DigestValue']"):
+                    if dv.text and dv.text.strip():
+                        dig_val = dv.text.strip()
+                        break
+            if not dig_val:
+                inf_nodes = root.xpath("//*[local-name()='infNFe']")
+                if inf_nodes:
+                    dig_val = base64.b64encode(hashlib.sha1(etree.tostring(inf_nodes[0], method="c14n")).digest()).decode('utf-8')
+
+            dh_recbto_fmt = format_datetime(dh_aut)
+            prot_aut_fmt = prot_aut or "135260000000000"
+
             prot_el = etree.Element("{http://www.portalfiscal.inf.br/nfe}protNFe", versao="4.00")
             inf_prot = etree.SubElement(prot_el, "{http://www.portalfiscal.inf.br/nfe}infProt")
+            inf_prot.attrib['Id'] = f"Id{prot_aut_fmt}"
             etree.SubElement(inf_prot, "{http://www.portalfiscal.inf.br/nfe}tpAmb").text = tp_amb
             etree.SubElement(inf_prot, "{http://www.portalfiscal.inf.br/nfe}verAplic").text = "SP_NFE_PL009_V4"
             etree.SubElement(inf_prot, "{http://www.portalfiscal.inf.br/nfe}chNFe").text = chave_limpa
-            etree.SubElement(inf_prot, "{http://www.portalfiscal.inf.br/nfe}dhRecbto").text = dh_aut or datetime.now().isoformat()
-            etree.SubElement(inf_prot, "{http://www.portalfiscal.inf.br/nfe}nProt").text = prot_aut or "135260000000000"
+            etree.SubElement(inf_prot, "{http://www.portalfiscal.inf.br/nfe}dhRecbto").text = dh_recbto_fmt
+            etree.SubElement(inf_prot, "{http://www.portalfiscal.inf.br/nfe}nProt").text = prot_aut_fmt
             etree.SubElement(inf_prot, "{http://www.portalfiscal.inf.br/nfe}digVal").text = dig_val
             etree.SubElement(inf_prot, "{http://www.portalfiscal.inf.br/nfe}cStat").text = cstat_aut
             etree.SubElement(inf_prot, "{http://www.portalfiscal.inf.br/nfe}xMotivo").text = xmotivo_aut
 
             if root.tag.endswith('NFe'):
-                nfe_proc = etree.Element("{http://www.portalfiscal.inf.br/nfe}nfeProc", versao="4.00")
+                nfe_proc = etree.Element("{http://www.portalfiscal.inf.br/nfe}nfeProc", versao="4.00", nsmap={None: "http://www.portalfiscal.inf.br/nfe"})
                 nfe_proc.append(root)
                 nfe_proc.append(prot_el)
                 final_xml_root = nfe_proc
+            elif root.tag.endswith('nfeProc'):
+                for p in root.xpath("./*[local-name()='protNFe']"):
+                    root.remove(p)
+                root.append(prot_el)
+                final_xml_root = root
             else:
                 root.append(prot_el)
                 final_xml_root = root
 
-            final_xml_bytes = etree.tostring(final_xml_root, encoding='utf-8')
+            final_xml_bytes = etree.tostring(final_xml_root, encoding='utf-8', xml_declaration=True)
             with open(xml_path, 'wb') as fx:
                 fx.write(final_xml_bytes)
         except Exception as e_proc:
@@ -5408,19 +5496,19 @@ def garantir_xml_e_danfe_nota(chave, retorno_sefaz=None):
         <infCpl>{ref_interna}{cpl_eventos}</infCpl>
       </infAdic>
     </infNFe>
-    <protNFe versao="4.00">
-      <infProt>
-        <tpAmb>{tp_amb}</tpAmb>
-        <verAplic>SP_NFE_PL009_V4</verAplic>
-        <chNFe>{chave_limpa}</chNFe>
-        <dhRecbto>{dh_aut or datetime.now().isoformat()}</dhRecbto>
-        <nProt>{prot_aut or "135260000000000"}</nProt>
-        <digVal>{dig_val}</digVal>
-        <cStat>{cstat_aut}</cStat>
-        <xMotivo>{xmotivo_aut}</xMotivo>
-      </infProt>
-    </protNFe>
   </NFe>
+  <protNFe versao="4.00">
+    <infProt Id="Id{prot_aut or '135260000000000'}">
+      <tpAmb>{tp_amb}</tpAmb>
+      <verAplic>SP_NFE_PL009_V4</verAplic>
+      <chNFe>{chave_limpa}</chNFe>
+      <dhRecbto>{format_datetime(dh_aut)}</dhRecbto>
+      <nProt>{prot_aut or "135260000000000"}</nProt>
+      <digVal>{dig_val}</digVal>
+      <cStat>{cstat_aut}</cStat>
+      <xMotivo>{xmotivo_aut}</xMotivo>
+    </infProt>
+  </protNFe>
 </nfeProc>'''
         with open(xml_path, 'w', encoding='utf-8') as fx:
             fx.write(xml_canonico)
@@ -5791,6 +5879,13 @@ def download_xml(chave):
     chave = _sanitizar_chave_nfe_download(chave)
     if not chave:
         return jsonify({"error": "Chave de acesso inválida. Deve conter exatamente 44 dígitos numéricos."}), 400
+
+    # Garante sincronizacao e geracao no formato canonico nfeProc oficial SEFAZ
+    try:
+        garantir_xml_e_danfe_nota(chave)
+    except Exception as e_gar:
+        print(f"Aviso ao garantir XML padrao SEFAZ para {chave}: {e_gar}")
+
     xml_path = os.path.join(DOWNLOADS_DIR, f"{chave}-nfe.xml")
 
     # 1. Tenta baixar do Cloudflare R2
