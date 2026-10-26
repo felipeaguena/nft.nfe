@@ -2006,15 +2006,22 @@ def get_config_regimes_tributarios():
             dados = json.loads(row['valor'])
             for reg, conf in REGIMES_TRIBUTARIOS_DEFAULT.items():
                 if reg not in dados:
-                    dados[reg] = conf
-                else:
-                    for k, v in conf.items():
-                        if k not in dados[reg]:
-                            dados[reg][k] = v
+                    dados[reg] = dict(conf)
+            for k, conf in dados.items():
+                if not conf.get('apelido'):
+                    conf['apelido'] = conf.get('nome') or k
+                if not conf.get('codigo'):
+                    conf['codigo'] = k
             return jsonify({"status": "success", "regimes": dados})
         except Exception:
             pass
-    return jsonify({"status": "success", "regimes": REGIMES_TRIBUTARIOS_DEFAULT})
+    res = {}
+    for k, conf in REGIMES_TRIBUTARIOS_DEFAULT.items():
+        c = dict(conf)
+        if not c.get('apelido'):
+            c['apelido'] = c.get('nome') or k
+        res[k] = c
+    return jsonify({"status": "success", "regimes": res})
 
 @app.route('/api/config/regimes_tributarios', methods=['POST'])
 def save_config_regimes_tributarios():
@@ -2026,11 +2033,17 @@ def save_config_regimes_tributarios():
         return jsonify({"status": "error", "message": "Dados de regimes inválidos"}), 400
 
     merged = {}
-    for reg_key in ('SUSPENSAO', 'ISENCAO', 'RECOLHIMENTO', 'IMUNIDADE'):
-        base = dict(REGIMES_TRIBUTARIOS_DEFAULT[reg_key])
-        if reg_key in novos_regimes and isinstance(novos_regimes[reg_key], dict):
-            for k, v in novos_regimes[reg_key].items():
-                base[k] = v
+    for reg_key, reg_val in novos_regimes.items():
+        if not isinstance(reg_val, dict):
+            continue
+        base = {}
+        if reg_key in REGIMES_TRIBUTARIOS_DEFAULT:
+            base = dict(REGIMES_TRIBUTARIOS_DEFAULT[reg_key])
+        base.update(reg_val)
+        if not base.get('apelido'):
+            base['apelido'] = base.get('nome') or reg_key
+        if not base.get('codigo'):
+            base['codigo'] = reg_key
         merged[reg_key] = base
 
     conn = get_db_connection()

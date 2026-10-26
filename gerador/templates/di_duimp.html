@@ -1521,19 +1521,10 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
 <i data-lucide="percent"></i>
 <span>Zerar Impostos</span>
 </button>
-<div class="dropdown d-inline-block me-1">
-    <button class="btn-nft fw-bold d-flex align-items-center gap-1 dropdown-toggle" type="button" id="dropdownEnquadramentoItens" data-bs-toggle="dropdown" aria-expanded="false" title="Aplicar Enquadramento Fiscal a todos os itens">
-        <i data-lucide="shield-check"></i>
-        <span>Enquadramento Fiscal</span>
-    </button>
-    <ul class="dropdown-menu shadow" aria-labelledby="dropdownEnquadramentoItens" style="font-size: 13px;">
-        <li><h6 class="dropdown-header text-uppercase" style="font-size: 11px;">Aplicar Regime aos Itens</h6></li>
-        <li><a class="dropdown-item d-flex align-items-center gap-2 py-2" href="javascript:void(0)" onclick="aplicarRegimeAosItensComConfirmacao('SUSPENSAO')"><strong>Suspensão de Tributos</strong> <small class="text-muted ms-auto">CST 50 / 08</small></a></li>
-        <li><a class="dropdown-item d-flex align-items-center gap-2 py-2" href="javascript:void(0)" onclick="aplicarRegimeAosItensComConfirmacao('ISENCAO')"><strong>Isenção de Tributos</strong> <small class="text-muted ms-auto">CST 40 / 07</small></a></li>
-        <li><a class="dropdown-item d-flex align-items-center gap-2 py-2" href="javascript:void(0)" onclick="aplicarRegimeAosItensComConfirmacao('RECOLHIMENTO')"><strong>Recolhimento Regular</strong> <small class="text-muted ms-auto">CST 00 / 01</small></a></li>
-        <li><a class="dropdown-item d-flex align-items-center gap-2 py-2" href="javascript:void(0)" onclick="aplicarRegimeAosItensComConfirmacao('IMUNIDADE')"><strong>Imunidade / Reexportação</strong> <small class="text-muted ms-auto">CST 41 / 08</small></a></li>
-    </ul>
-</div>
+<button class="btn-nft fw-bold d-flex align-items-center gap-1 me-1 shadow-sm" type="button" onclick="abrirModalAplicarEnquadramentoItens()" title="Aplicar Enquadramento Fiscal aos itens da nota">
+    <i data-lucide="shield-check"></i>
+    <span>Enquadramento Fiscal</span>
+</button>
 <button class="btn-nft me-1 fw-bold d-flex align-items-center gap-1" onclick="abrirPainelRateio()" title="Ir para Parâmetros de Rateio e Câmbio PTAX">
 <i data-lucide="scale"></i>
 <span>Rateio &amp; PTAX</span>
@@ -4530,6 +4521,10 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
     }
 
     async function aplicarRegimeAosItensComConfirmacao(regime) {
+        if (typeof window.abrirModalAplicarEnquadramentoItens === 'function') {
+            await window.abrirModalAplicarEnquadramentoItens();
+            return;
+        }
         const itens = (itensCache && Array.isArray(itensCache) && itensCache.length > 0)
             ? itensCache
             : ((typeof itensTable !== 'undefined' && itensTable) ? itensTable.getData() : (window.itensCache || []));
