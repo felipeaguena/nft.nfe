@@ -2201,9 +2201,15 @@ def salvar_rascunho():
         if rascunho_id:
             try:
                 rascunho_id = int(rascunho_id)
-                row_check = c.execute("SELECT id FROM rascunhos WHERE id = ?", (rascunho_id,)).fetchone()
+                row_check = c.execute("SELECT id, referencia_interna FROM rascunhos WHERE id = ?", (rascunho_id,)).fetchone()
                 if row_check:
-                    is_update = True
+                    ref_existente = (row_check['referencia_interna'] or '').strip()
+                    # Proteção contra cruzamento indevido: se a referência informada for diferente da referência já salva neste rascunho,
+                    # não sobrescreve o rascunho anterior (salva como um novo rascunho para não corromper outras referências)
+                    if referencia_interna and ref_existente and referencia_interna.upper().replace(' ', '') != ref_existente.upper().replace(' ', ''):
+                        is_update = False
+                    else:
+                        is_update = True
             except (ValueError, TypeError):
                 is_update = False
 
@@ -5097,22 +5103,22 @@ def garantir_xml_e_danfe_nota(chave, retorno_sefaz=None):
         if row and row['xml_envio']:
             base_xml = row['xml_envio']
 
-    # 4. Busca no histórico SEFAZ pelo número da NF-e (ex: <nNF>899</nNF>)
+    # 4. Busca no histórico SEFAZ por chave exata ou por nNF casado com o CNPJ do emitente
     if not base_xml:
         row = c.execute(
-            "SELECT xml_envio FROM historico_sefaz WHERE xml_envio LIKE ? AND xml_envio IS NOT NULL ORDER BY id DESC LIMIT 1",
-            (f"%<nNF>{n_nf}</nNF>%",)
+            "SELECT xml_envio FROM historico_sefaz WHERE xml_envio LIKE ? AND xml_envio LIKE ? AND xml_envio IS NOT NULL ORDER BY id DESC LIMIT 1",
+            (f"%<nNF>{n_nf}</nNF>%", f"%<CNPJ>{cnpj_emit}</CNPJ>%")
         ).fetchone()
         if row and row['xml_envio']:
             base_xml = row['xml_envio']
 
-    # 5. Busca nos rascunhos vinculados à chave ou pelo número da nota
+    # 5. Busca nos rascunhos vinculados à chave exata (ou mesma referência interna e nNF)
     if not base_xml:
         try:
             r_rows = c.execute("SELECT * FROM rascunhos ORDER BY id DESC").fetchall()
             for r_row in r_rows:
                 r_chave = (r_row['chave_acesso'] or '').replace(' ', '')
-                if r_chave == chave_limpa or (len(r_chave) >= 34 and str(int(r_chave[25:34])) == n_nf):
+                if r_chave == chave_limpa:
                     nome_arq = r_row['caminho_arquivo_isolado']
                     if nome_arq:
                         p_json = os.path.join(RASCUNHOS_DIR, nome_arq)
@@ -5130,7 +5136,7 @@ def garantir_xml_e_danfe_nota(chave, retorno_sefaz=None):
         except Exception:
             pass
 
-    # 6. Busca na pasta downloads por qualquer XML com o mesmo nNF
+    # 6. Busca na pasta downloads por qualquer XML com a mesma chave ou com o mesmo nNF e CNPJ emitente
     if not base_xml and os.path.exists(DOWNLOADS_DIR):
         for fname in os.listdir(DOWNLOADS_DIR):
             if fname.endswith('-nfe.xml'):
@@ -5138,7 +5144,7 @@ def garantir_xml_e_danfe_nota(chave, retorno_sefaz=None):
                 try:
                     with open(fpath, 'r', encoding='utf-8', errors='ignore') as fx:
                         txt = fx.read()
-                        if f"<nNF>{n_nf}</nNF>" in txt:
+                        if f"<nNF>{n_nf}</nNF>" in txt and f"<CNPJ>{cnpj_emit}</CNPJ>" in txt:
                             base_xml = txt
                             break
                 except Exception:
@@ -5177,10 +5183,10 @@ def garantir_xml_e_danfe_nota(chave, retorno_sefaz=None):
     eventos_sefaz = (retorno_sefaz or {}).get('eventos') or []
     tp_amb = str((retorno_sefaz or {}).get('tpAmb') or '1')
 
-    # Dados de notas_fiscais
+    # Dados de notas_fiscais (casado estritamente por chave_nfe para evitar cruzamentos)
     nf_row = c.execute(
-        "SELECT referencia_interna, tipo_operacao, valor_total FROM notas_fiscais WHERE REPLACE(COALESCE(chave_nfe, ''), ' ', '') = ? OR numero_nfe = ? LIMIT 1",
-        (chave_limpa, n_nf)
+        "SELECT referencia_interna, tipo_operacao, valor_total FROM notas_fiscais WHERE REPLACE(COALESCE(chave_nfe, ''), ' ', '') = ? LIMIT 1",
+        (chave_limpa,)
     ).fetchone()
     ref_interna = nf_row['referencia_interna'] if nf_row and nf_row['referencia_interna'] else ''
     tipo_operacao = nf_row['tipo_operacao'] if nf_row and nf_row['tipo_operacao'] else ''
@@ -5898,10 +5904,10 @@ def sync_and_get_notas_fiscais(conn):
             existing_map[ch_clean] = dict(er)
 
     def find_reference(chave, xml_str):
-        # 1. Match direto em rascunhos por chave
+        # 1. Match direto em rascunhos por chave exata (evita cruzamento com notas diferentes)
         for r in rascunhos_rows:
             r_chave = (r['chave_acesso'] or '').replace(' ', '')
-            if r_chave and (chave in r_chave or r_chave in chave):
+            if r_chave and chave == r_chave:
                 if r['referencia_interna']:
                     return r['referencia_interna'].strip()
         
@@ -5923,20 +5929,7 @@ def sync_and_get_notas_fiscais(conn):
             except Exception:
                 pass
 
-        # 3. Match rascunho por número nNF contido na chave (dígitos 25..34)
-        try:
-            if len(chave) >= 34:
-                chave_nnf = str(int(chave[25:34]))
-                for r in rascunhos_rows:
-                    r_chave = (r['chave_acesso'] or '').replace(' ', '')
-                    if len(r_chave) >= 34:
-                        r_nnf = str(int(r_chave[25:34]))
-                        if r_nnf == chave_nnf and r['referencia_interna']:
-                            return r['referencia_interna'].strip()
-        except Exception:
-            pass
-            
-        return "-"
+        return "-" 
 
     # 3. Agrupa histórico da SEFAZ
     hist_rows = c.execute('SELECT * FROM historico_sefaz ORDER BY id ASC').fetchall()

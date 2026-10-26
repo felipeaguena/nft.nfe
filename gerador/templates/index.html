@@ -1770,6 +1770,35 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
     }
 
     function calcularChaveAcessoDinamica() {
+        // Se a nota já foi autorizada ou cancelada na SEFAZ ou está bloqueada, a chave de acesso é IMUTÁVEL
+        if (window._chaveAcessoBloqueada) {
+            return;
+        }
+
+        const linhasHist = document.querySelectorAll('#tbody-historico-sefaz tr');
+        let chaveAutorizadaRegistrada = '';
+        for (const l of linhasHist) {
+            const txt = (l.innerText || '').toLowerCase();
+            if (txt.includes('100') || txt.includes('101') || txt.includes('135') || txt.includes('autoriz') || txt.includes('cancel')) {
+                const cells = l.querySelectorAll('td');
+                for (const td of cells) {
+                    const c = td.innerText.replace(/\D/g, '').trim();
+                    if (c.length === 44) {
+                        chaveAutorizadaRegistrada = c;
+                        break;
+                    }
+                }
+                if (chaveAutorizadaRegistrada) break;
+            }
+        }
+
+        if (chaveAutorizadaRegistrada) {
+            window._chaveAcessoBloqueada = true;
+            setVal('chaveAcesso', chaveAutorizadaRegistrada);
+            setVal('chaveAcessoDisplay', chaveAutorizadaRegistrada.replace(/(\d{4})/g, '$1 ').trim());
+            return;
+        }
+
         const cUF = obterCodigoUF();
         setVal('cUF', cUF);
 
@@ -5443,6 +5472,11 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
     }
 
     function definirReferenciaInterna(val) {
+        if (window._refRascunhoCarregado && val && val.trim().toUpperCase() !== window._refRascunhoCarregado.toUpperCase()) {
+            // Se o usuário alterou a referência, desvincula do ID anterior para não sobrescrever rascunho alheio
+            window.idRascunhoAtual = null;
+            window._chaveAcessoBloqueada = false;
+        }
         const v = val || '';
         setVal('referenciaInterna', v);
         setVal('referencia_interna', v);
@@ -6009,10 +6043,19 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
 
             // 5. Restaura status de identificação e chave de acesso
             window.idRascunhoAtual = rascunho.id;
+            window._refRascunhoCarregado = (rascunho.referencia_interna || '').trim();
             atualizarCamposIdentificacao(getVal('tpNF'), getVal('idDest'));
             atualizarEstadoInscricaoEstadual();
             atualizarTipoDocumentoDestinatario();
-            calcularChaveAcessoDinamica();
+            
+            // Restaura chave de acesso original se válida (44 dígitos), evitando recálculo indevido
+            const chaveSalva = (rascunho.chave_acesso || (dados.cabecalho ? (dados.cabecalho.chaveAcesso || dados.cabecalho.chaveAcessoDisplay) : '') || '').replace(/\D/g, '').trim();
+            if (chaveSalva.length === 44) {
+                setVal('chaveAcesso', chaveSalva);
+                setVal('chaveAcessoDisplay', chaveSalva.replace(/(\d{4})/g, '$1 ').trim());
+            } else {
+                calcularChaveAcessoDinamica();
+            }
             atualizarBadgeRefNFe((getVal('refNFe') || '').length);
             if (typeof verificarAvisoRefNFeOperacao === 'function') {
                 verificarAvisoRefNFeOperacao();

@@ -815,30 +815,60 @@ function atualizarTabelaHistorico(retorno, chave, ambiente = 2, acaoOrigem = '')
 }
 window.atualizarTabelaHistorico = atualizarTabelaHistorico;
 
+function extrairDadosAutorizacaoSefaz() {
+    let chaveAutorizada = '';
+    let protocoloAutorizado = '';
+    let nnfAutorizada = '';
+
+    const linhasHist = document.querySelectorAll('#tbody-historico-sefaz tr');
+    for (const l of linhasHist) {
+        const txtLinha = (l.innerText || '').toLowerCase();
+        // Verifica se a linha indica autorização legítima da SEFAZ
+        if (txtLinha.includes('100') || txtLinha.includes('autoriz')) {
+            const cells = l.querySelectorAll('td');
+            // Procura a chave de 44 dígitos nesta linha
+            for (const td of cells) {
+                const cand = td.innerText.replace(/\D/g, '').trim();
+                if (cand.length === 44) {
+                    chaveAutorizada = cand;
+                    break;
+                }
+            }
+            // Procura o protocolo nesta mesma linha autorizada
+            const mProt = l.innerText.match(/P:\s*(\d{10,20})/) || l.innerText.match(/\b(135\d{12})\b/);
+            if (mProt) {
+                protocoloAutorizado = mProt[1];
+            }
+            if (cells.length >= 2) {
+                const candNnf = cells[1].innerText.replace(/\D/g, '').trim();
+                if (candNnf) nnfAutorizada = candNnf;
+            }
+            if (chaveAutorizada && protocoloAutorizado) break;
+        }
+    }
+
+    return {
+        chave: chaveAutorizada,
+        protocolo: protocoloAutorizado,
+        nnf: nnfAutorizada
+    };
+}
+window.extrairDadosAutorizacaoSefaz = extrairDadosAutorizacaoSefaz;
+
 async function solicitarCartaCorrecao(ambiente = 2) {
     const isHomolog = (Number(ambiente) === 2);
     const ambNome = isHomolog ? 'Homologação' : 'Produção';
     const btnId = isHomolog ? 'btn-cce-sefaz-homolog' : 'btn-cce-sefaz-prod';
 
-    // 1. Tenta obter a chave autorizada do histórico da SEFAZ na tela
-    let chave = '';
-    const linhasHist = document.querySelectorAll('#tbody-historico-sefaz tr');
-    for (const l of linhasHist) {
-        const txtStatus = (l.querySelector('td:nth-child(5)')?.innerText || l.innerText || '');
-        if (txtStatus.includes('100') || txtStatus.toLowerCase().includes('autoriz')) {
-            const tdChave = l.querySelector('td:nth-child(4)');
-            if (tdChave) {
-                const cand = tdChave.innerText.replace(/\D/g, '').trim();
-                if (cand.length === 44) {
-                    chave = cand;
-                    break;
-                }
-            }
-        }
-    }
+    // 1. Obtém dados autorizados casados da SEFAZ
+    const dadosAut = extrairDadosAutorizacaoSefaz();
+    let chave = dadosAut.chave;
 
-    // 2. Se não encontrou no histórico autorizado, pega do campo da tela
+    // 2. Fallback para chave em tela se não houver histórico
     if (!chave || chave.length !== 44) {
+        chave = (document.getElementById('chaveAcessoDisplay')?.value || (typeof getVal === 'function' ? getVal('chaveAcesso') : '') || '').replace(/\D/g, '').trim();
+    }
+if (!chave || chave.length !== 44) {
         chave = (document.getElementById('chaveAcessoDisplay')?.value || getVal('chaveAcesso') || '').replace(/\D/g, '').trim();
     }
 
@@ -981,26 +1011,22 @@ async function solicitarCancelarNfe(ambiente = 2) {
     const ambNome = isHomolog ? 'Homologação' : 'Produção';
     const btnId = isHomolog ? 'btn-cancelar-sefaz-homolog' : 'btn-cancelar-sefaz-prod';
 
-    // 1. Tenta obter a chave autorizada do histórico da SEFAZ na tela
-    let chave = '';
-    const linhasHist = document.querySelectorAll('#tbody-historico-sefaz tr');
-    for (const l of linhasHist) {
-        const txtStatus = (l.querySelector('td:nth-child(5)')?.innerText || l.innerText || '');
-        if (txtStatus.includes('100') || txtStatus.toLowerCase().includes('autoriz')) {
-            const tdChave = l.querySelector('td:nth-child(4)');
-            if (tdChave) {
-                const cand = tdChave.innerText.replace(/\D/g, '').trim();
-                if (cand.length === 44) {
-                    chave = cand;
-                    break;
-                }
-            }
-        }
-    }
+    // 1. Obtém a Chave e o Protocolo de Autorização CASADOS diretamente do histórico da SEFAZ
+    const dadosAut = extrairDadosAutorizacaoSefaz();
+    let chave = dadosAut.chave;
+    let protocolo = dadosAut.protocolo;
 
-    // 2. Se não encontrou no histórico autorizado, pega do campo da tela
-    if (!chave || chave.length !== 44) {
-        chave = (document.getElementById('chaveAcessoDisplay')?.value || getVal('chaveAcesso') || '').replace(/\D/g, '').trim();
+    // Se a nota já foi autorizada na SEFAZ, o casamento chave-protocolo é PRIORITÁRIO e IMUTÁVEL.
+    // Qualquer alteração em campos do formulário na tela NÃO PODE alterar o número da chave registrada!
+    if (chave) {
+        window._chaveAcessoBloqueada = true;
+        if (typeof setVal === 'function') {
+            setVal('chaveAcesso', chave);
+            setVal('chaveAcessoDisplay', chave.replace(/(\d{4})/g, '$1 ').trim());
+        }
+    } else {
+        // Fallback apenas se não houver histórico na tela
+        chave = (document.getElementById('chaveAcessoDisplay')?.value || (typeof getVal === 'function' ? getVal('chaveAcesso') : '') || '').replace(/\D/g, '').trim();
     }
 
     if (!chave || chave.length !== 44) {
@@ -1028,31 +1054,35 @@ async function solicitarCancelarNfe(ambiente = 2) {
         });
         return;
     }
+
+    // Se o protocolo já foi obtido casado da SEFAZ, utiliza diretamente com confirmação transparente
+    if (!protocolo) {
+        let protocoloSugerido = '';
+        const linhas = document.querySelectorAll('#tbody-historico-sefaz tr');
+        linhas.forEach(l => {
+            const txt = l.innerText || '';
+            const m = txt.match(/P:\s*(\d{10,20})/) || txt.match(/\b(135\d{12})\b/);
+            if (m) protocoloSugerido = m[1];
+        });
+        
+        protocolo = await window.nftPrompt(
+            `Informe o número do Protocolo de Autorização da NF-e (15 dígitos) em ${ambNome}:`,
+            protocoloSugerido,
+            {
+                title: `Protocolo de Autorização (${ambNome})`,
+                icon: 'file-text',
+                type: 'primary',
+                maxlength: 20,
+                minlength: 10,
+                placeholder: 'Ex: 135260009186901',
+                hint: 'Informe o número do protocolo retornado pela SEFAZ no momento da autorização.',
+                confirmText: 'Continuar'
+            }
+        );
+        if (!protocolo) return;
+        protocolo = protocolo.replace(/\D/g, '').trim();
+    }
     
-    let protocoloSugerido = '';
-    const linhas = document.querySelectorAll('#tbody-historico-sefaz tr');
-    linhas.forEach(l => {
-        const txt = l.innerText || '';
-        const m = txt.match(/P:\s*(\d{10,20})/);
-        if (m) protocoloSugerido = m[1];
-    });
-    
-    let protocolo = await window.nftPrompt(
-        `Informe o número do Protocolo de Autorização da NF-e (15 dígitos) em ${ambNome}:`,
-        protocoloSugerido,
-        {
-            title: `Protocolo de Autorização (${ambNome})`,
-            icon: 'file-text',
-            type: 'primary',
-            maxlength: 20,
-            minlength: 10,
-            placeholder: 'Ex: 135260009186901',
-            hint: 'Informe o número do protocolo retornado pela SEFAZ no momento da autorização.',
-            confirmText: 'Continuar'
-        }
-    );
-    if (!protocolo) return;
-    protocolo = protocolo.replace(/\D/g, '').trim();
     if (!protocolo) {
         await window.nftAlert('O número do Protocolo de Autorização é obrigatório para cancelamento perante o Fisco.', {
             type: 'warning',
@@ -1091,7 +1121,7 @@ async function solicitarCancelarNfe(ambiente = 2) {
     
     const confirma = await window.nftConfirm(
         `ATENÇÃO: Deseja realmente CANCELAR a NF-e em ${ambNome.toUpperCase()} na SEFAZ?\n\n` +
-        `• Chave: ${chave}\n` +
+        `• Chave da NF-e (casada na SEFAZ): ${chave}\n` +
         `• Protocolo: ${protocolo}\n` +
         `• Justificativa (${justificativaLimpa.length} caracteres):\n"${justificativaLimpa}"\n\n` +
         `Esta operação é IRREVERSÍVEL. O cancelamento será homologado perante o Fisco.`,

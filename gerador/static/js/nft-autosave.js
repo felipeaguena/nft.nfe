@@ -107,33 +107,53 @@
             itens = window.itensCache;
         }
 
-        // Captura Histórico SEFAZ
+        // Captura Histórico SEFAZ (alinhado com as 8 colunas da tabela)
         const sefazHistory = [];
         const rows = document.querySelectorAll('#tbody-historico-sefaz tr');
         rows.forEach(tr => {
             const cells = tr.querySelectorAll('td');
-            if (cells.length >= 7) {
-                sefazHistory.push({
-                    data: cells[0].innerHTML,
-                    ambiente: cells[1].innerHTML,
-                    arquivos: cells[2].innerHTML,
-                    chave: cells[3].innerHTML,
-                    status: cells[4].innerHTML,
-                    motivo: cells[5].innerHTML,
-                    motivoTitle: cells[5].getAttribute('title') || '',
-                    protocolo: cells[6].innerHTML
-                });
-            } else if (cells.length === 6) {
-                sefazHistory.push({
-                    data: cells[0].innerHTML,
-                    ambiente: cells[1].innerHTML,
-                    arquivos: '',
-                    chave: cells[2].innerHTML,
-                    status: cells[3].innerHTML,
-                    motivo: cells[4].innerHTML,
-                    motivoTitle: cells[4].getAttribute('title') || '',
-                    protocolo: cells[5].innerHTML
-                });
+            if (cells.length >= 8) {
+                const rawChave = cells[4].innerText.replace(/\D/g, '').trim();
+                const rawNnf = cells[1].innerText.trim();
+                const rawMotivo = cells[6].innerText.trim();
+                const motivoTitle = cells[6].getAttribute('title') || rawMotivo;
+                const rawProt = cells[7].innerText.trim();
+                const rawStatus = cells[5].innerText.trim();
+                const rawAmb = cells[2].innerText.trim();
+                if (rawChave || rawStatus || rawMotivo) {
+                    sefazHistory.push({
+                        data: cells[0].innerText.trim(),
+                        nnf: rawNnf,
+                        ambiente: rawAmb,
+                        arquivos: '',
+                        chave: rawChave,
+                        status: rawStatus,
+                        motivo: rawMotivo,
+                        motivoTitle: motivoTitle,
+                        protocolo: rawProt
+                    });
+                }
+            } else if (cells.length === 7) {
+                const rawChave = cells[3].innerText.replace(/\D/g, '').trim();
+                const rawNnf = rawChave.length >= 34 ? String(parseInt(rawChave.substring(25, 34), 10)) : '';
+                const rawMotivo = cells[5].innerText.trim();
+                const motivoTitle = cells[5].getAttribute('title') || rawMotivo;
+                const rawProt = cells[6].innerText.trim();
+                const rawStatus = cells[4].innerText.trim();
+                const rawAmb = cells[1].innerText.trim();
+                if (rawChave || rawStatus || rawMotivo) {
+                    sefazHistory.push({
+                        data: cells[0].innerText.trim(),
+                        nnf: rawNnf,
+                        ambiente: rawAmb,
+                        arquivos: '',
+                        chave: rawChave,
+                        status: rawStatus,
+                        motivo: rawMotivo,
+                        motivoTitle: motivoTitle,
+                        protocolo: rawProt
+                    });
+                }
             }
         });
 
@@ -364,33 +384,48 @@
                             
                         if (norm) {
                             tr.innerHTML = `
-                                <td class="align-middle">${norm.data}</td>
-                                <td class="align-middle">${norm.ambienteHtml}</td>
+                                <td class="align-middle text-nowrap">${norm.data}</td>
+                                <td class="align-middle text-center"><span class="badge bg-light text-dark border font-monospace px-2 py-1 fw-bold" style="font-size: 11px;">${norm.nnf}</span></td>
+                                <td class="align-middle text-center">${norm.ambienteHtml}</td>
                                 <td class="text-center align-middle">${norm.arquivosHtml}</td>
-                                <td class="text-start align-middle font-monospace" style="font-size: 11px;">${norm.chave}</td>
-                                <td class="align-middle">${norm.cstatHtml}</td>
+                                <td class="text-center align-middle">${norm.chaveHtml}</td>
+                                <td class="align-middle text-center">${norm.cstatHtml}</td>
                                 <td class="text-start align-middle" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${norm.motivoTitle}">
                                     ${norm.motivo}
                                 </td>
-                                <td class="align-middle" style="font-size: 11px;">${norm.protocolo}</td>
+                                <td class="align-middle text-center" style="font-size: 11px;">${norm.protocolo}</td>
                             `;
                         } else {
+                            const rawCh = String(item.chave || '').replace(/<[^>]*>?/gm, '').trim();
+                            const nnfVal = item.nnf || (rawCh.length >= 34 ? String(parseInt(rawCh.substring(25, 34), 10)) : '-');
                             tr.innerHTML = `
-                                <td>${item.data || ''}</td>
-                                <td>${item.ambiente || ''}</td>
+                                <td class="align-middle text-nowrap">${item.data || ''}</td>
+                                <td class="align-middle text-center"><span class="badge bg-light text-dark border font-monospace px-2 py-1 fw-bold" style="font-size: 11px;">${nnfVal}</span></td>
+                                <td class="align-middle text-center">${item.ambiente || ''}</td>
                                 <td class="text-center align-middle">${item.arquivos || '-'}</td>
-                                <td class="text-start" style="font-size: 11px;">${item.chave || ''}</td>
-                                <td>${item.status || ''}</td>
-                                <td class="text-start" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.motivoTitle || ''}">
+                                <td class="text-center align-middle">${typeof window.renderChaveComBotaoCopiar === 'function' ? window.renderChaveComBotaoCopiar(rawCh) : rawCh}</td>
+                                <td class="align-middle text-center">${item.status || ''}</td>
+                                <td class="text-start align-middle" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.motivoTitle || ''}">
                                     ${item.motivo || ''}
                                 </td>
-                                <td>${item.protocolo || ''}</td>
+                                <td class="align-middle text-center" style="font-size: 11px;">${item.protocolo || ''}</td>
                             `;
                         }
                         tbody.appendChild(tr);
                     });
                     if (typeof window.sanitizarTabelaHistoricoSefaz === 'function') {
                         window.sanitizarTabelaHistoricoSefaz();
+                    } else if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                        lucide.createIcons();
+                    }
+                    // Se o histórico contém nota autorizada ou cancelada, bloqueia recálculo da chave de acesso
+                    const temNotaHomologada = (sessionData.sefaz_history || []).some(h => {
+                        const s = String(h.status || '');
+                        const m = String(h.motivo || '').toLowerCase();
+                        return s.includes('100') || s.includes('101') || s.includes('135') || m.includes('autoriz') || m.includes('cancel');
+                    });
+                    if (temNotaHomologada) {
+                        window._chaveAcessoBloqueada = true;
                     }
                 }
             }
