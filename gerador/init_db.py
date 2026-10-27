@@ -102,8 +102,8 @@ def init_db(target_db_path=None):
     operacoes_iniciais = [
         (
             'ADMISSÃO TEMPORÁRIA',
-            '3930', '0', '3', '1', '400', '108', '55', 0.0, 0.0, '08', 0.0, '08', 0.0,
-            'ADMISSAO TEMPORARIA DE CARGAS AO AMPARO DA IN RFB 1600/2016. SUSPENSAO DE TRIBUTOS FEDERAIS E ESTADUAIS (ICMS, IPI, PIS E COFINS).',
+            '3930', '0', '3', '1', '400', '160', '55', 0.0, 0.0, '08', 0.0, '08', 0.0,
+            'ADMISSAO TEMPORARIA DE CARGAS AO AMPARO DA IN RFB 1600/2016. SUSPENSAO DE TRIBUTOS FEDERAIS E ESTADUAIS (ICMS, IPI, PIS E COFINS). IPI SUSPENSO CONFORME ART. 2o DA IN 1361/2013 (CENQ 160).',
             'SUSPENSAO', '90'
         ),
         (
@@ -120,38 +120,38 @@ def init_db(target_db_path=None):
         ),
         (
             'REMESSA PARA FEIRA',
-            '5914', '1', '1', '1', '400', '107', '55', 0.0, 0.0, '08', 0.0, '08', 0.0,
-            'REMESSA DE MERCADORIA OU BEM PARA EXPOSICAO OU FEIRA. SUSPENSAO DO ICMS NOS TERMOS DO ART. 319 DO RICMS/00 E CONVENIO ICMS 30/90. IPI SUSPENSO CONFORME ART. 43, INCISO II DO DECRETO 7.212/2010 (RIPI).',
+            '5914', '1', '1', '1', '400', '102', '55', 0.0, 0.0, '08', 0.0, '08', 0.0,
+            'REMESSA DE MERCADORIA OU BEM PARA EXPOSICAO OU FEIRA. SUSPENSAO DO ICMS NOS TERMOS DO ART. 319 DO RICMS/00 E CONVENIO ICMS 30/90. IPI SUSPENSO CONFORME ART. 43, INCISO II DO DECRETO 7.212/2010 (RIPI - CENQ 102).',
             'SUSPENSAO', '90'
         ),
         (
             'REMESSA PARA FEIRAS INTERESTADUAIS',
-            '6914', '1', '2', '1', '400', '107', '55', 0.0, 0.0, '08', 0.0, '08', 0.0,
-            'REMESSA PARA FEIRAS INTERESTADUAIS. SUSPENSAO DO ICMS CONFORME CONVENIO ICMS 30/90. IPI SUSPENSO CONFORME ART. 43, INCISO II DO DECRETO 7.212/2010 (RIPI).',
+            '6914', '1', '2', '1', '400', '102', '55', 0.0, 0.0, '08', 0.0, '08', 0.0,
+            'REMESSA PARA FEIRAS INTERESTADUAIS. SUSPENSAO DO ICMS CONFORME CONVENIO ICMS 30/90. IPI SUSPENSO CONFORME ART. 43, INCISO II DO DECRETO 7.212/2010 (RIPI - CENQ 102).',
             'SUSPENSAO', '90'
         ),
         (
             'RETORNO DE FEIRA',
-            '1914', '0', '1', '1', '400', '107', '05', 0.0, 0.0, '08', 0.0, '08', 0.0,
-            'RETORNO DE MERCADORIA OU BEM REMETIDO PARA EXPOSICAO OU FEIRA. SUSPENSAO DO ICMS CONFORME CONVENIO ICMS 30/90. IPI SUSPENSO CONFORME ART. 43 DO RIPI.',
+            '1914', '0', '1', '1', '400', '102', '05', 0.0, 0.0, '08', 0.0, '08', 0.0,
+            'RETORNO DE MERCADORIA OU BEM REMETIDO PARA EXPOSICAO OU FEIRA. SUSPENSAO DO ICMS CONFORME CONVENIO ICMS 30/90. IPI SUSPENSO CONFORME ART. 43 DO RIPI (CENQ 102).',
             'SUSPENSAO', '90'
         ),
         (
             'RETORNO DE FEIRAS INTERESTADUAIS',
-            '2914', '0', '2', '1', '400', '107', '05', 0.0, 0.0, '08', 0.0, '08', 0.0,
-            'RETORNO DE MERCADORIA OU BEM REMETIDO PARA EXPOSICAO OU FEIRA INTERESTADUAL. SUSPENSAO DO ICMS CONFORME CONVENIO ICMS 30/90. IPI SUSPENSO CONFORME ART. 43 DO RIPI.',
+            '2914', '0', '2', '1', '400', '102', '05', 0.0, 0.0, '08', 0.0, '08', 0.0,
+            'RETORNO DE MERCADORIA OU BEM REMETIDO PARA EXPOSICAO OU FEIRA INTERESTADUAL. SUSPENSAO DO ICMS CONFORME CONVENIO ICMS 30/90. IPI SUSPENSO CONFORME ART. 43 DO RIPI (CENQ 102).',
             'SUSPENSAO', '90'
         ),
         (
             'REEXPORTAÇÃO DE ADMISSÃO TEMPORÁRIA',
-            '7930', '1', '3', '1', '300', '999', '55', 0.0, 0.0, '08', 0.0, '08', 0.0,
-            'REEXPORTACAO DE MERCADORIAS ADMITIDAS TEMPORARIAMENTE NO PAIS AO AMPARO DA IN RFB 1600/2016. EXTINCAO DO REGIME ADUANEIRO ESPECIAL. MERCADORIA IMUNE/NAO TRIBUTADA.',
+            '7930', '1', '3', '1', '300', '002', '54', 0.0, 0.0, '08', 0.0, '08', 0.0,
+            'REEXPORTACAO DE MERCADORIAS ADMITIDAS TEMPORARIAMENTE NO PAIS AO AMPARO DA IN RFB 1600/2016. EXTINCAO DO REGIME ADUANEIRO ESPECIAL. PRODUTOS INDUSTRIALIZADOS DESTINADOS AO EXTERIOR COM IMUNIDADE (ART. 18, II DO DECRETO 7.212/2010 - CENQ 002).',
             'IMUNIDADE', '90'
         ),
         (
             'OUTRAS REEXPORTAÇÕES',
-            '7949', '1', '3', '1', '300', '999', '55', 0.0, 0.0, '08', 0.0, '08', 0.0,
-            'OUTROS TIPOS DE REEXPORTACAO DE CARGAS AO EXTERIOR. MERCADORIA IMUNE/NAO TRIBUTADA.',
+            '7949', '1', '3', '1', '300', '002', '54', 0.0, 0.0, '08', 0.0, '08', 0.0,
+            'OUTROS TIPOS DE REEXPORTACAO DE CARGAS AO EXTERIOR. IMUNIDADE TRIBUTARIA CONSTITUCIONAL DE EXPORTACAO (ART. 18, II DO DECRETO 7.212/2010 - CENQ 002).',
             'IMUNIDADE', '90'
         )
     ]
@@ -272,6 +272,44 @@ def init_db(target_db_path=None):
             ''', cst)
         except sqlite3.IntegrityError:
             pass
+
+    # 3.1 Tabela Oficial de Enquadramentos do IPI (cEnq - Anexo XIV NT 2015.002 / RIPI Decreto 7.212/2010)
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS tabela_cenq_ipi (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            codigo TEXT NOT NULL UNIQUE,
+            grupo TEXT NOT NULL,
+            descricao TEXT NOT NULL,
+            nome_resumido TEXT DEFAULT '',
+            csts_relacionados TEXT,
+            codigo_descricao TEXT
+        )
+    ''')
+    c.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_cenq_codigo ON tabela_cenq_ipi(codigo)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_cenq_grupo ON tabela_cenq_ipi(grupo)')
+
+    json_cenq_path = os.path.join(os.path.dirname(__file__), 'tabela_cenq_ipi.json')
+    if os.path.exists(json_cenq_path):
+        import json
+        try:
+            with open(json_cenq_path, 'r', encoding='utf-8') as f_cenq:
+                itens_cenq = json.load(f_cenq)
+                for it in itens_cenq:
+                    cod = it['codigo'].strip()
+                    grp = it['grupo'].strip()
+                    desc = it['descricao'].strip()
+                    resumo = it.get('nome_resumido', '').strip()
+                    csts = it.get('csts_relacionados', '').strip()
+                    cod_desc = it.get('codigo_descricao', f"{cod} - {resumo or desc}").strip()
+                    try:
+                        c.execute('''
+                            INSERT OR REPLACE INTO tabela_cenq_ipi (codigo, grupo, descricao, nome_resumido, csts_relacionados, codigo_descricao)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                        ''', (cod, grp, desc, resumo, csts, cod_desc))
+                    except Exception:
+                        pass
+        except Exception as e_cenq:
+            print(f"Aviso ao carregar tabela_cenq_ipi.json: {e_cenq}")
 
     # 4. Tabela de Rascunhos Salvos
     c.execute('''

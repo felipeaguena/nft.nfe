@@ -266,7 +266,7 @@ def get_db_connection():
                 conn.commit()
             
             tables = [t[0] for t in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
-            if 'tabela_csts' not in tables or 'tabela_paises' not in tables or 'tabela_municipios' not in tables or 'tabela_feiras' not in tables or 'tabela_locais_entrega' not in tables:
+            if 'tabela_csts' not in tables or 'tabela_paises' not in tables or 'tabela_municipios' not in tables or 'tabela_feiras' not in tables or 'tabela_locais_entrega' not in tables or 'tabela_cenq_ipi' not in tables:
                 import init_db
                 init_db.init_db()
 
@@ -1786,6 +1786,57 @@ def api_get_csts():
         _CSTS_MEM_CACHE[tipo] = res
     return jsonify({"status": "success", "csts": res})
 
+_CENQ_MEM_CACHE = None
+
+@app.route('/api/cenq_ipi', methods=['GET'])
+def api_get_cenq_ipi():
+    global _CENQ_MEM_CACHE
+    grupo = request.args.get('grupo', '').strip()
+    if not grupo and _CENQ_MEM_CACHE is not None:
+        return jsonify({"status": "success", "cenq": _CENQ_MEM_CACHE, "total": len(_CENQ_MEM_CACHE)})
+
+    res = []
+    try:
+        conn = get_db_connection()
+        c = conn.cursor()
+        if grupo:
+            c.execute('SELECT codigo, grupo, descricao, nome_resumido, csts_relacionados, codigo_descricao FROM tabela_cenq_ipi WHERE grupo = ? ORDER BY CAST(codigo AS INTEGER) ASC, codigo ASC', (grupo,))
+        else:
+            c.execute('SELECT codigo, grupo, descricao, nome_resumido, csts_relacionados, codigo_descricao FROM tabela_cenq_ipi ORDER BY CAST(codigo AS INTEGER) ASC, codigo ASC')
+        rows = c.fetchall()
+        conn.close()
+
+        for r in rows:
+            res.append({
+                'codigo': r['codigo'],
+                'grupo': r['grupo'],
+                'descricao': r['descricao'],
+                'nome_resumido': r['nome_resumido'] if 'nome_resumido' in r.keys() else '',
+                'csts_relacionados': r['csts_relacionados'],
+                'codigo_descricao': r['codigo_descricao'] or f"{r['codigo']} - {r['descricao']}"
+            })
+    except Exception as e_cenq_db:
+        print(f"Aviso ao consultar tabela_cenq_ipi no DB: {e_cenq_db}. Usando fallback JSON.")
+        json_path = os.path.join(os.path.dirname(__file__), 'tabela_cenq_ipi.json')
+        if os.path.exists(json_path):
+            with open(json_path, 'r', encoding='utf-8') as f:
+                raw_items = json.load(f)
+                for item in raw_items:
+                    if not grupo or item.get('grupo', '').lower() == grupo.lower():
+                        res.append({
+                            'codigo': item['codigo'],
+                            'grupo': item['grupo'],
+                            'descricao': item['descricao'],
+                            'nome_resumido': item.get('nome_resumido', ''),
+                            'csts_relacionados': item.get('csts_relacionados', ''),
+                            'codigo_descricao': item.get('codigo_descricao', f"{item['codigo']} - {item['descricao']}")
+                        })
+
+    if not grupo and res:
+        _CENQ_MEM_CACHE = res
+
+    return jsonify({"status": "success", "cenq": res, "total": len(res)})
+
 # === ROTAS: TIPOS DE NOTA / OPERAÇÃO ===
 @app.route('/tipos_operacao', methods=['GET'])
 def get_tipos_operacao():
@@ -2063,7 +2114,7 @@ REGIMES_TRIBUTARIOS_DEFAULT = {
         "tp_nf": "0",
         "id_dest": "3",
         "csosn_icms": "400",
-        "c_enq_ipi": "108",
+        "c_enq_ipi": "160",
         "cst_ipi": "55",
         "p_ipi": 0.00,
         "aliquota_ii": 0.00,
@@ -2072,7 +2123,7 @@ REGIMES_TRIBUTARIOS_DEFAULT = {
         "cst_cofins": "08",
         "p_cofins": 0.00,
         "t_pag": "90",
-        "inf_cpl_padrao": "ADMISSAO TEMPORARIA DE CARGAS AO AMPARO DA IN RFB 1600/2016. SUSPENSAO DE TRIBUTOS FEDERAIS E ESTADUAIS (ICMS, IPI, PIS E COFINS). IPI SUSPENSO CONFORME ART. 43, INCISO I DO DECRETO 7.212/2010 (RIPI)."
+        "inf_cpl_padrao": "ADMISSAO TEMPORARIA DE CARGAS AO AMPARO DA IN RFB 1600/2016. SUSPENSAO DE TRIBUTOS FEDERAIS E ESTADUAIS (ICMS, IPI, PIS E COFINS). IPI SUSPENSO CONFORME ART. 2o DA IN 1361/2013 (CENQ 160)."
     },
     "ISENCAO": {
         "codigo": "ISENCAO",
@@ -2123,8 +2174,8 @@ REGIMES_TRIBUTARIOS_DEFAULT = {
         "tp_nf": "1",
         "id_dest": "3",
         "csosn_icms": "400",
-        "c_enq_ipi": "999",
-        "cst_ipi": "55",
+        "c_enq_ipi": "002",
+        "cst_ipi": "54",
         "p_ipi": 0.00,
         "aliquota_ii": 0.00,
         "cst_pis": "08",
@@ -2132,7 +2183,7 @@ REGIMES_TRIBUTARIOS_DEFAULT = {
         "cst_cofins": "08",
         "p_cofins": 0.00,
         "t_pag": "90",
-        "inf_cpl_padrao": "REEXPORTACAO DE MERCADORIA SOB REGIME ADUANEIRO ESPECIAL DE ADMISSAO TEMPORARIA. IMUNIDADE TRIBUTARIA CONSTITUCIONAL DE EXPORTACAO (ART. 153, PAR. 3, III DA CF/88)."
+        "inf_cpl_padrao": "REEXPORTACAO DE MERCADORIA SOB REGIME ADUANEIRO ESPECIAL DE ADMISSAO TEMPORARIA. IMUNIDADE TRIBUTARIA CONSTITUCIONAL DE EXPORTACAO (ART. 153, PAR. 3, III DA CF/88 E ART. 18, II DO DECRETO 7.212/2010 - CENQ 002)."
     }
 }
 

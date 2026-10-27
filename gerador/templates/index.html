@@ -19,7 +19,7 @@
 <link href="https://unpkg.com/tabulator-tables@5.5.0/dist/css/tabulator_bootstrap5.min.css" rel="stylesheet"/>
 <script src="https://unpkg.com/tabulator-tables@5.5.0/dist/js/tabulator.min.js"></script>
 <script defer src="/static/js/nft-sidebar.js?v=2.7"></script>
-<script defer src="/static/js/nft-item-modal.js?v=1.0"></script>
+<script defer src="/static/js/nft-item-modal.js?v=1.1"></script>
 <script defer src="/static/js/nft-analise-rascunho.js?v=1.0"></script>
 <script defer src="/static/js/nft-exportacao.js?v=1.0"></script>
 <script defer src="/static/js/nft-regex-visual.js?v=1.0"></script>
@@ -3619,6 +3619,10 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
 
     // Zerar Impostos (II, IPI, PIS, COFINS) de todos os itens com confirmação de alteração de dados
     async function zerarImpostosTodosItensComConfirmacao() {
+        if (typeof window.abrirModalZerarImpostos === 'function') {
+            await window.abrirModalZerarImpostos();
+            return;
+        }
         const itens = (itensCache && Array.isArray(itensCache) && itensCache.length > 0)
             ? itensCache
             : ((typeof itensTable !== 'undefined' && itensTable) ? itensTable.getData() : (window.itensCache || []));
@@ -3809,27 +3813,47 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
         {
             title: "Enquadramento",
             field: "enquadramento",
-            width: 175,
+            width: 185,
             editor: "list",
             editorParams: function(cell) {
                 const configs = (typeof window.getRegimesConfigCache === 'function') ? window.getRegimesConfigCache() : (window.regimesConfigCache || {});
                 const lista = [];
                 Object.keys(configs).forEach(k => {
                     const c = configs[k];
+                    const cfopTxt = c.cfop_padrao ? `(${c.cfop_padrao}) ` : '(----) ';
                     lista.push({
-                        label: `${c.apelido || c.nome || k} (cEnq ${c.c_enq_ipi || '-'})`,
+                        label: `${cfopTxt}${c.apelido || c.nome || k}`,
                         value: k
                     });
                 });
-                return { values: lista, autocomplete: true, listOnEmpty: true, clearable: true };
+                return { values: lista, autocomplete: true, listOnEmpty: true, freetext: false, clearable: false };
             },
             formatter: function(cell) {
-                const val = cell.getValue();
-                if (!val) return '<span class="text-muted fst-italic" style="font-size:11px;">(Padrão)</span>';
+                let val = cell.getValue();
                 const configs = (typeof window.getRegimesConfigCache === 'function') ? window.getRegimesConfigCache() : (window.regimesConfigCache || {});
+                const row = cell.getRow ? cell.getRow() : null;
+                const d = row ? row.getData() : {};
+                const opRegime = document.getElementById('op_regime')?.value;
+
+                // Preenchimento automático com base nas configurações pré-definidas (sem exibir '(Padrão)')
+                if (!val || !configs[val]) {
+                    if (opRegime && configs[opRegime]) {
+                        val = opRegime;
+                    } else if (configs['SUSPENSAO']) {
+                        val = 'SUSPENSAO';
+                    } else {
+                        val = Object.keys(configs)[0] || 'SUSPENSAO';
+                    }
+                    if (d && d.enquadramento !== val) {
+                        d.enquadramento = val;
+                    }
+                }
+
                 const conf = configs[val];
+                const cfopTxt = conf && conf.cfop_padrao ? `(${conf.cfop_padrao}) ` : '(----) ';
                 const apelido = conf ? (conf.apelido || conf.nome || val) : val;
-                return `<span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold" style="font-size:11px; max-width: 155px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; vertical-align: middle;" title="${apelido}">${apelido}</span>`;
+                const labelTxt = `${cfopTxt}${apelido}`;
+                return `<span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold" style="font-size:11px; max-width: 175px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; vertical-align: middle;" title="${labelTxt}">${labelTxt}</span>`;
             }
         },
         {title:"Origem", field:"orig", width:80, editor:"input"},
@@ -3918,65 +3942,13 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
                 const configs = (typeof window.getRegimesConfigCache === 'function') ? window.getRegimesConfigCache() : (window.regimesConfigCache || {});
                 const conf = (enqKey && configs[enqKey]) ? configs[enqKey] : null;
                 if (conf) {
-                    const vp = parseNum(d.vProd);
-                    const vf = parseNum(d.vFrete);
-                    const vs = parseNum(d.vSeg);
-                    const vo = parseNum(d.vOutro);
-                    const baseAduaneira = vp + vf + vs + vo;
-                    const pIpi = parseNum(conf.p_ipi);
-                    const pPis = parseNum(conf.p_pis);
-                    const pCofins = parseNum(conf.p_cofins);
-                    const pII = parseNum(conf.aliquota_ii);
-
                     const updates = { enquadramento: enqKey };
                     if (conf.csosn_icms) updates.CSOSN = conf.csosn_icms;
                     if (conf.c_enq_ipi) updates.cEnq = conf.c_enq_ipi;
                     if (conf.cst_ipi) updates.CST_IPI = conf.cst_ipi;
                     if (conf.cst_pis) updates.CST_PIS = conf.cst_pis;
                     if (conf.cst_cofins) updates.CST_COFINS = conf.cst_cofins;
-
-                    updates.pIPI = pIpi.toFixed(2);
-                    updates.pPIS = pPis.toFixed(2);
-                    updates.pCOFINS = pCofins.toFixed(2);
-                    updates.aliquota_ii = pII.toFixed(2);
-
-                    // IPI
-                    const cstIpiStr = String(conf.cst_ipi || '').trim();
-                    const isIpiIsento = ['02', '03', '04', '05', '52', '53', '54', '55'].includes(cstIpiStr) || pIpi === 0;
-                    if (isIpiIsento && pIpi === 0) {
-                        updates.vBC_IPI = '0.00';
-                        updates.vIPI = '0.00';
-                    } else {
-                        updates.vBC_IPI = vp.toFixed(2);
-                        updates.vIPI = (vp * (pIpi / 100)).toFixed(2);
-                    }
-
-                    // PIS & COFINS
-                    const cstPisStr = String(conf.cst_pis || '').trim();
-                    const isPisIsento = ['04', '05', '06', '07', '08', '09'].includes(cstPisStr) || pPis === 0;
-                    if (isPisIsento && pPis === 0) {
-                        updates.vBC_PIS = '0.00';
-                        updates.vPIS = '0.00';
-                    } else {
-                        updates.vBC_PIS = baseAduaneira.toFixed(2);
-                        updates.vPIS = (baseAduaneira * (pPis / 100)).toFixed(2);
-                    }
-
-                    const cstCofStr = String(conf.cst_cofins || '').trim();
-                    const isCofIsento = ['04', '05', '06', '07', '08', '09'].includes(cstCofStr) || pCofins === 0;
-                    if (isCofIsento && pCofins === 0) {
-                        updates.vBC_COFINS = '0.00';
-                        updates.vCOFINS = '0.00';
-                    } else {
-                        updates.vBC_COFINS = baseAduaneira.toFixed(2);
-                        updates.vCOFINS = (baseAduaneira * (pCofins / 100)).toFixed(2);
-                    }
-
-                    // II
-                    const baseII = (vp + vf + vs).toFixed(2);
-                    updates.vBC_II = baseII;
-                    updates.vII = (pII > 0) ? (parseNum(baseII) * (pII / 100)).toFixed(2) : '0.00';
-
+                    // Alíquotas e valores que já estão no item são rigorosamente preservados
                     row.update(updates);
                 }
             }
@@ -4669,6 +4641,21 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
             await aplicarRegimeAosItensComConfirmacao(regime);
         }
     }
+
+    async function abrirModalAplicarEnquadramentoItens() {
+        if (typeof window.abrirModalAplicarEnquadramentoItens === 'function' && window.abrirModalAplicarEnquadramentoItens !== abrirModalAplicarEnquadramentoItens) {
+            return await window.abrirModalAplicarEnquadramentoItens();
+        }
+        const modalEl = document.getElementById('modal-aplicar-enquadramento-itens');
+        if (modalEl) {
+            const bModal = (window.bootstrap && window.bootstrap.Modal) ? window.bootstrap.Modal : (typeof bootstrap !== 'undefined' ? bootstrap.Modal : null);
+            if (bModal) {
+                const m = (typeof bModal.getOrCreateInstance === 'function') ? bModal.getOrCreateInstance(modalEl) : new bModal(modalEl);
+                m.show();
+            }
+        }
+    }
+    window.abrirModalAplicarEnquadramentoItens = abrirModalAplicarEnquadramentoItens;
 
     async function aplicarRegimeAosItensComConfirmacao(regime) {
         if (typeof window.abrirModalAplicarEnquadramentoItens === 'function') {
@@ -7007,7 +6994,7 @@ Utilizada para decodificar a chave privada na assinatura e transmissão de docum
 <script src="/static/js/nft-autosave.js?v=2.9"></script>
 <script src="/static/js/nft-shortcuts.js?v=1.0"></script>
 <script src="/static/js/nft-sefaz.js?v=2.9"></script>
-<script src="/static/js/nft-operacoes-manager.js?v=3.0"></script>
+<script src="/static/js/nft-operacoes-manager.js?v=3.1"></script>
 <script>
         document.addEventListener('input', function (e) {
             if (e.target.classList.contains('mask-cnpj-cpf')) {

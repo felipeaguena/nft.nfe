@@ -1047,6 +1047,9 @@
             vUnCom: vUnCom.toFixed(4),
             vProd: vProd,
             indTot: "1",
+            enquadramento: (itemIndex !== null && itemIndex !== undefined && itemIndex >= 0 && window.itensCache && window.itensCache[itemIndex] && window.itensCache[itemIndex].enquadramento)
+                ? window.itensCache[itemIndex].enquadramento
+                : (document.getElementById('op_regime')?.value || 'SUSPENSAO'),
             vFrete: formatNum(document.getElementById('m_item_vFrete').value, 2),
             vSeg: formatNum(document.getElementById('m_item_vSeg').value, 2),
             vDesc: formatNum(document.getElementById('m_item_vDesc').value, 2),
@@ -1246,10 +1249,12 @@
         }
     };
 
-    // Função global de zerar impostos (II, IPI, PIS, COFINS) de todos os itens com confirmação
-    if (!window.zerarImpostosTodosItensComConfirmacao) {
-        window.zerarImpostosTodosItensComConfirmacao = async function () {
-            const lista = getListaItensAtual();
+    // Função global de zerar impostos (II, IPI, PIS, COFINS) dos itens com suporte a modal de escopo (Todos vs Selecionados)
+    window.zerarImpostosTodosItensComConfirmacao = async function () {
+        if (typeof window.abrirModalZerarImpostos === 'function') {
+            return await window.abrirModalZerarImpostos();
+        }
+        const lista = getListaItensAtual();
             if (!lista || lista.length === 0) {
                 if (window.nftAlert) {
                     await window.nftAlert("Nenhum item carregado na grade para zerar impostos.", {
@@ -1315,7 +1320,6 @@
                 });
             }
         };
-    }
 
     // APLICA REGIME FISCAL ESPECÍFICO AOS CAMPOS DO ITEM NA MODAL
     window.aplicarRegimeAoItemModal = function (regime) {
@@ -1338,7 +1342,7 @@
             if (elIpi) {
                 elIpi.value = (cfop.startsWith('1') || cfop.startsWith('2')) ? '05' : '55';
             }
-            document.getElementById('m_item_cEnq').value = (cfop === '3930') ? '108' : (['5914', '6914', '1914', '2914'].includes(cfop) ? '107' : '108');
+            document.getElementById('m_item_cEnq').value = (cfop === '3930') ? '160' : (['5914', '6914', '1914', '2914'].includes(cfop) ? '102' : '160');
             document.getElementById('m_item_vBC_IPI').value = '0.00';
             document.getElementById('m_item_pIPI').value = '0.00';
             document.getElementById('m_item_vIPI').value = '0.00';

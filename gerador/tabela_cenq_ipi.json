@@ -1,0 +1,1034 @@
+[
+  {
+    "codigo": "001",
+    "grupo": "Imunidade",
+    "descricao": "Livros, jornais, periódicos e o papel destinado à sua impressão – Art. 18 Inciso I do Decreto 7.212/2010",
+    "csts_relacionados": "CST 04 (Entrada imune) e 54 (Saída imune) – códigos de 001 a 099",
+    "nome_resumido": "Livros jornais e periódicos",
+    "codigo_descricao": "001 - Livros jornais e periódicos"
+  },
+  {
+    "codigo": "002",
+    "grupo": "Imunidade",
+    "descricao": "Produtos industrializados destinados ao exterior – Art. 18 Inciso II do Decreto 7.212/2010",
+    "csts_relacionados": "CST 04 (Entrada imune) e 54 (Saída imune) – códigos de 001 a 099",
+    "nome_resumido": "Produtos destinados ao exterior",
+    "codigo_descricao": "002 - Produtos destinados ao exterior"
+  },
+  {
+    "codigo": "003",
+    "grupo": "Imunidade",
+    "descricao": "Ouro, definido em lei como ativo financeiro ou instrumento cambial – Art. 18 Inciso III do Decreto 7.212/2010",
+    "csts_relacionados": "CST 04 (Entrada imune) e 54 (Saída imune) – códigos de 001 a 099",
+    "nome_resumido": "Ouro como ativo financeiro",
+    "codigo_descricao": "003 - Ouro como ativo financeiro"
+  },
+  {
+    "codigo": "004",
+    "grupo": "Imunidade",
+    "descricao": "Energia elétrica, derivados de petróleo, combustíveis e minerais do País – Art. 18 Inciso IV do Decreto 7.212/2010",
+    "csts_relacionados": "CST 04 (Entrada imune) e 54 (Saída imune) – códigos de 001 a 099",
+    "nome_resumido": "Energia elétrica e combustíveis",
+    "codigo_descricao": "004 - Energia elétrica e combustíveis"
+  },
+  {
+    "codigo": "005",
+    "grupo": "Imunidade",
+    "descricao": "Exportação de produtos nacionais – sem saída do território brasileiro – venda para empresa sediada no exterior – atividades de pesquisa ou lavra de jazidas de petróleo e de gás natural – Art. 19 Inciso I do Decreto 7.212/2010",
+    "csts_relacionados": "CST 04 (Entrada imune) e 54 (Saída imune) – códigos de 001 a 099",
+    "nome_resumido": "Exportação petróleo e gás",
+    "codigo_descricao": "005 - Exportação petróleo e gás"
+  },
+  {
+    "codigo": "006",
+    "grupo": "Imunidade",
+    "descricao": "Exportação de produtos nacionais – sem saída do território brasileiro – venda para empresa sediada no exterior – incorporados a produto final exportado para o Brasil – Art. 19 Inciso II do Decreto 7.212/2010",
+    "csts_relacionados": "CST 04 (Entrada imune) e 54 (Saída imune) – códigos de 001 a 099",
+    "nome_resumido": "Exportação produto final Brasil",
+    "codigo_descricao": "006 - Exportação produto final Brasil"
+  },
+  {
+    "codigo": "007",
+    "grupo": "Imunidade",
+    "descricao": "Exportação de produtos nacionais – sem saída do território brasileiro – venda para órgão ou entidade de governo estrangeiro ou organismo internacional de que o Brasil seja membro, para ser entregue, no País, à ordem do comprador – Art. 19 Inciso III do Decreto 7.212/2010",
+    "csts_relacionados": "CST 04 (Entrada imune) e 54 (Saída imune) – códigos de 001 a 099",
+    "nome_resumido": "Exportação organismo internacional",
+    "codigo_descricao": "007 - Exportação organismo internacional"
+  },
+  {
+    "codigo": "101",
+    "grupo": "Suspensão",
+    "descricao": "Óleo de menta em bruto, produzido por lavradores – Art. 43 Inciso I do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Óleo de menta bruto",
+    "codigo_descricao": "101 - Óleo de menta bruto"
+  },
+  {
+    "codigo": "102",
+    "grupo": "Suspensão",
+    "descricao": "Produtos remetidos à exposição em feiras de amostras e promoções semelhantes – Art. 43 Inciso II do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Feiras e exposições",
+    "codigo_descricao": "102 - Feiras e exposições"
+  },
+  {
+    "codigo": "103",
+    "grupo": "Suspensão",
+    "descricao": "Produtos remetidos a depósitos fechados ou armazéns-gerais, bem assim aqueles devolvidos ao remetente – Art. 43 Inciso III do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Depósitos fechados e armazéns",
+    "codigo_descricao": "103 - Depósitos fechados e armazéns"
+  },
+  {
+    "codigo": "104",
+    "grupo": "Suspensão",
+    "descricao": "Produtos industrializados, que com matérias-primas (MP), produtos intermediários (PI) e material de embalagem (ME) importados submetidos a regime aduaneiro especial (drawback – suspensão/isenção), remetidos diretamente a empresas industriais exportadoras – Art. 43 Inciso IV do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Drawback empresa exportadora",
+    "codigo_descricao": "104 - Drawback empresa exportadora"
+  },
+  {
+    "codigo": "105",
+    "grupo": "Suspensão",
+    "descricao": "Produtos, destinados à exportação, que saiam do estabelecimento industrial para empresas comerciais exportadoras, com o fim específico de exportação – Art. 43, Inciso V, alínea “a” do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Remessa empresa comercial exportadora",
+    "codigo_descricao": "105 - Remessa empresa comercial exportadora"
+  },
+  {
+    "codigo": "106",
+    "grupo": "Suspensão",
+    "descricao": "Produtos, destinados à exportação, que saiam do estabelecimento industrial para recintos alfandegados onde se processe o despacho aduaneiro de exportação – Art. 43, Inciso V, alíneas “b” do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Remessa recinto alfandegado exportação",
+    "codigo_descricao": "106 - Remessa recinto alfandegado exportação"
+  },
+  {
+    "codigo": "107",
+    "grupo": "Suspensão",
+    "descricao": "Produtos, destinados à exportação, que saiam do estabelecimento industrial para outros locais onde se processe o despacho aduaneiro de exportação – Art. 43, Inciso V, alíneas “c” do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Remessa outros locais exportação",
+    "codigo_descricao": "107 - Remessa outros locais exportação"
+  },
+  {
+    "codigo": "108",
+    "grupo": "Suspensão",
+    "descricao": "Matérias-primas (MP), produtos intermediários (PI) e material de embalagem (ME) destinados ao executor de industrialização por encomenda – Art. 43 Inciso VI do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Insumos para industrialização encomenda",
+    "codigo_descricao": "108 - Insumos para industrialização encomenda"
+  },
+  {
+    "codigo": "109",
+    "grupo": "Suspensão",
+    "descricao": "Produtos industrializados por encomenda remetidos ao estabelecimento de origem – Art. 43 Inciso VII do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Retorno industrialização por encomenda",
+    "codigo_descricao": "109 - Retorno industrialização por encomenda"
+  },
+  {
+    "codigo": "110",
+    "grupo": "Suspensão",
+    "descricao": "Matérias-primas ou produtos intermediários remetidos para emprego em operação industrial realizada pelo remetente fora do estabelecimento – Art. 43 Inciso VIII do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Insumos fora do estabelecimento",
+    "codigo_descricao": "110 - Insumos fora do estabelecimento"
+  },
+  {
+    "codigo": "111",
+    "grupo": "Suspensão",
+    "descricao": "Veículo, aeronave ou embarcação destinados a emprego em provas de engenharia pelo fabricante – Art. 43 Inciso IX do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Provas de engenharia fabricante",
+    "codigo_descricao": "111 - Provas de engenharia fabricante"
+  },
+  {
+    "codigo": "112",
+    "grupo": "Suspensão",
+    "descricao": "Produtos remetidos, para industrialização ou comércio, de um para outro estabelecimento da mesma firma – Art. 43 Inciso X do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Transferência entre estabelecimentos",
+    "codigo_descricao": "112 - Transferência entre estabelecimentos"
+  },
+  {
+    "codigo": "113",
+    "grupo": "Suspensão",
+    "descricao": "Bens do ativo permanente remetidos a outro estabelecimento da mesma firma, para serem utilizados no processo industrial do recebedor – Art. 43 Inciso XI do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Ativo permanente processo industrial",
+    "codigo_descricao": "113 - Ativo permanente processo industrial"
+  },
+  {
+    "codigo": "114",
+    "grupo": "Suspensão",
+    "descricao": "Bens do ativo permanente remetidos a outro estabelecimento, para serem utilizados no processo industrial de produtos encomendados pelo remetente – Art. 43 Inciso XII do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Ativo permanente encomenda remetente",
+    "codigo_descricao": "114 - Ativo permanente encomenda remetente"
+  },
+  {
+    "codigo": "115",
+    "grupo": "Suspensão",
+    "descricao": "Partes e peças destinadas ao reparo de produtos com defeito de fabricação, quando a operação for executada gratuitamente, em virtude de garantia – Art. 43 Inciso XIII do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Peças para reparo garantia",
+    "codigo_descricao": "115 - Peças para reparo garantia"
+  },
+  {
+    "codigo": "116",
+    "grupo": "Suspensão",
+    "descricao": "Matérias-primas (MP), produtos intermediários (PI) e material de embalagem (ME) de fabricação nacional, vendidos a estabelecimento industrial, para industrialização de produtos destinados à exportação ou a estabelecimento comercial, para industrialização em outro estabelecimento da mesma firma ou de terceiro, de produto destinado à exportação – Art. 43 Inciso XIV do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Insumos produtos para exportação",
+    "codigo_descricao": "116 - Insumos produtos para exportação"
+  },
+  {
+    "codigo": "117",
+    "grupo": "Suspensão",
+    "descricao": "Produtos para emprego ou consumo na industrialização ou elaboração de produto a ser exportado, adquiridos no mercado interno ou importados – Art. 43 Inciso XV do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Insumos elaboração produto exportado",
+    "codigo_descricao": "117 - Insumos elaboração produto exportado"
+  },
+  {
+    "codigo": "118",
+    "grupo": "Suspensão",
+    "descricao": "Bebidas alcoólicas e demais produtos de produção nacional acondicionados em recipientes de capacidade superior ao limite máximo permitido para venda a varejo – Art. 44 do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Bebidas alcoólicas a granel",
+    "codigo_descricao": "118 - Bebidas alcoólicas a granel"
+  },
+  {
+    "codigo": "119",
+    "grupo": "Suspensão",
+    "descricao": "Produtos classificados NCM 21.06.90.10 Ex 02, 22.01, 22.02, exceto os Ex 01 e Ex 02 do Código 22.02.90.00 e 22.03 saídos de estabelecimento industrial destinado a comercial equiparado a industrial – Art. 45 Inciso I do Decreto7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Bebidas outros estabelecimentos",
+    "codigo_descricao": "119 - Bebidas outros estabelecimentos"
+  },
+  {
+    "codigo": "120",
+    "grupo": "Suspensão",
+    "descricao": "Produtos classificados NCM 21.06.90.10 Ex 02, 22.01, 22.02, exceto os Ex 01 e Ex 02 do Código 22.02.90.00 e 22.03 saídos de estabelecimento comercial equiparado a industrial destinado a equiparado a industrial – Art. 45 Inciso II do Decreto7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Bebidas saída varejista atacadista",
+    "codigo_descricao": "120 - Bebidas saída varejista atacadista"
+  },
+  {
+    "codigo": "121",
+    "grupo": "Suspensão",
+    "descricao": "Produtos classificados NCM 21.06.90.10 Ex 02, 22.01, 22.02, exceto os Ex 01 e Ex 02 do Código 22.02.90.00 e 22.03 saídos de importador destinado a equiparado a industrial – Art. 45 Inciso III do Decreto7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Bebidas insumos para industrialização",
+    "codigo_descricao": "121 - Bebidas insumos para industrialização"
+  },
+  {
+    "codigo": "122",
+    "grupo": "Suspensão",
+    "descricao": "Matérias-primas (MP), produtos intermediários (PI) e material de embalagem (ME) destinados a estabelecimento que se dedique à elaboração de produtos classificados nos códigos previstos no art. 25 da Lei 10.684/2003 – Art. 46 Inciso I do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Insumos bens de capital",
+    "codigo_descricao": "122 - Insumos bens de capital"
+  },
+  {
+    "codigo": "123",
+    "grupo": "Suspensão",
+    "descricao": "Matérias-primas (MP), produtos intermediários (PI) e material de embalagem (ME) adquiridos por estabelecimentos industriais fabricantes de partes e peças destinadas a estabelecimento industrial fabricante de produto classificado no Capítulo 88 da Tipi – Art. 46 Inciso II do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Insumos linha branca",
+    "codigo_descricao": "123 - Insumos linha branca"
+  },
+  {
+    "codigo": "124",
+    "grupo": "Suspensão",
+    "descricao": "Matérias-primas (MP), produtos intermediários (PI) e material de embalagem (ME) adquiridos por pessoas jurídicas preponderantemente exportadoras – Art. 46 Inciso III do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Insumos móveis e painéis",
+    "codigo_descricao": "124 - Insumos móveis e painéis"
+  },
+  {
+    "codigo": "125",
+    "grupo": "Suspensão",
+    "descricao": "Materiais e equipamentos destinados a embarcações pré-registradas ou registradas no Registro Especial Brasileira – REB quando adquiridos por estaleiros navais brasileiros – Art. 46 Inciso IV do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Materiais para embarcações registradas",
+    "codigo_descricao": "125 - Materiais para embarcações registradas"
+  },
+  {
+    "codigo": "126",
+    "grupo": "Suspensão",
+    "descricao": "Aquisição por beneficiário de regime aduaneiro suspensivo do imposto, destinado a industrialização para exportação – Art. 47 do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Regime aduaneiro suspensivo tributos",
+    "codigo_descricao": "126 - Regime aduaneiro suspensivo tributos"
+  },
+  {
+    "codigo": "127",
+    "grupo": "Suspensão",
+    "descricao": "Desembaraço de produtos de procedência estrangeira importados por lojas francas – Art. 48 Inciso I do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Importação para lojas francas",
+    "codigo_descricao": "127 - Importação para lojas francas"
+  },
+  {
+    "codigo": "128",
+    "grupo": "Suspensão",
+    "descricao": "Desembaraço de maquinas, equipamentos, veículos, aparelhos e instrumentos sem similar nacional importados por empresas nacionais de engenharia, destinados à execução de obras no exterior – Art. 48 Inciso II do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Desembaraço bens de capital",
+    "codigo_descricao": "128 - Desembaraço bens de capital"
+  },
+  {
+    "codigo": "129",
+    "grupo": "Suspensão",
+    "descricao": "Desembaraço de produtos de procedência estrangeira com saída de repartições aduaneiras com suspensão do Imposto de Importação – Art. 48 Inciso III do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Desembaraço saída repartição aduaneira",
+    "codigo_descricao": "129 - Desembaraço saída repartição aduaneira"
+  },
+  {
+    "codigo": "130",
+    "grupo": "Suspensão",
+    "descricao": "Desembaraço de matérias-primas, produtos intermediários e materiais de embalagem, importados diretamente por estabelecimento de que tratam os incisos I a III do caput do Decreto 7.212/2010 – Art. 48 Inciso IV do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Desembaraço insumos para exportação",
+    "codigo_descricao": "130 - Desembaraço insumos para exportação"
+  },
+  {
+    "codigo": "131",
+    "grupo": "Suspensão",
+    "descricao": "Remessa de produtos para a ZFM destinados ao seu consumo interno, utilização ou industrialização – Art. 84 do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Remessa ZFM consumo interno",
+    "codigo_descricao": "131 - Remessa ZFM consumo interno"
+  },
+  {
+    "codigo": "132",
+    "grupo": "Suspensão",
+    "descricao": "Remessa de produtos para a ZFM destinados à exportação – Art. 85 Inciso I do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Remessa ZFM para exportação",
+    "codigo_descricao": "132 - Remessa ZFM para exportação"
+  },
+  {
+    "codigo": "133",
+    "grupo": "Suspensão",
+    "descricao": "Produtos que, antes de sua remessa à ZFM, forem enviados pelo seu fabricante a outro estabelecimento, para industrialização adicional, por conta e ordem do destinatário – Art. 85 Inciso II do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Remessa entrepostos da ZFM",
+    "codigo_descricao": "133 - Remessa entrepostos da ZFM"
+  },
+  {
+    "codigo": "134",
+    "grupo": "Suspensão",
+    "descricao": "Desembaraço de produtos de procedência estrangeira importados pela ZFM quando ali consumidos ou utilizados, exceto armas, munições, fumo, bebidas alcoólicas e automóveis de passageiros. – Art. 86 do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Desembaraço importação pela ZFM",
+    "codigo_descricao": "134 - Desembaraço importação pela ZFM"
+  },
+  {
+    "codigo": "135",
+    "grupo": "Suspensão",
+    "descricao": "Remessa de produtos para a Amazônia Ocidental destinados ao seu consumo interno ou utilização – Art. 96 do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Remessa para Amazônia Ocidental",
+    "codigo_descricao": "135 - Remessa para Amazônia Ocidental"
+  },
+  {
+    "codigo": "136",
+    "grupo": "Suspensão",
+    "descricao": "Entrada de produtos estrangeiros na Área de Livre Comércio de Tabatinga – ALCT destinados ao seu consumo interno ou utilização – Art. 106 do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Livre Comércio de Tabatinga",
+    "codigo_descricao": "136 - Livre Comércio de Tabatinga"
+  },
+  {
+    "codigo": "137",
+    "grupo": "Suspensão",
+    "descricao": "Entrada de produtos estrangeiros na Área de Livre Comércio de Guajará-Mirim – ALCGM destinados ao seu consumo interno ou utilização – Art. 109 do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Livre Comércio Guajará-Mirim",
+    "codigo_descricao": "137 - Livre Comércio Guajará-Mirim"
+  },
+  {
+    "codigo": "138",
+    "grupo": "Suspensão",
+    "descricao": "Entrada de produtos estrangeiros nas Áreas de Livre Comércio de Boa Vista – ALCBV e Bomfim – ALCB destinados a seu consumo interno ou utilização – Art. 112 do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Livre Comércio Boa Vista",
+    "codigo_descricao": "138 - Livre Comércio Boa Vista"
+  },
+  {
+    "codigo": "139",
+    "grupo": "Suspensão",
+    "descricao": "Entrada de produtos estrangeiros na Área de Livre Comércio de Macapá e Santana – ALCMS destinados a seu consumo interno ou utilização – Art. 116 do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Livre Comércio Macapá Santana",
+    "codigo_descricao": "139 - Livre Comércio Macapá Santana"
+  },
+  {
+    "codigo": "140",
+    "grupo": "Suspensão",
+    "descricao": "Entrada de produtos estrangeiros nas Áreas de Livre Comércio de Brasiléia – ALCB e de Cruzeiro do Sul – ALCCS destinados a seu consumo interno ou utilização – Art. 119 do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Livre Comércio Brasiléia Cruzeiro",
+    "codigo_descricao": "140 - Livre Comércio Brasiléia Cruzeiro"
+  },
+  {
+    "codigo": "141",
+    "grupo": "Suspensão",
+    "descricao": "Remessa para Zona de Processamento de Exportação – ZPE – Art. 121 do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Remessa para ZPE",
+    "codigo_descricao": "141 - Remessa para ZPE"
+  },
+  {
+    "codigo": "142",
+    "grupo": "Suspensão",
+    "descricao": "Setor Automotivo – Desembaraço aduaneiro, chassis e outros – regime aduaneiro especial industrialização 87.01 a 87.05 – Art. 136, I do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Automotivo regime aduaneiro especial",
+    "codigo_descricao": "142 - Automotivo regime aduaneiro especial"
+  },
+  {
+    "codigo": "143",
+    "grupo": "Suspensão",
+    "descricao": "Setor Automotivo – Do estabelecimento industrial produtos 87.01 a 87.05 da TIPI – mercado interno – empresa comercial atacadista controlada por PJ encomendante do exterior. – Art. 136, II do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Automotivo industrialização por encomenda",
+    "codigo_descricao": "143 - Automotivo industrialização por encomenda"
+  },
+  {
+    "codigo": "144",
+    "grupo": "Suspensão",
+    "descricao": "Setor Automotivo – Do estabelecimento industrial – chassis e outros classificados nas posições 84.29, 84.32, 84.33, 87.01 a 87.06 e 87.11 da TIPI. – Art. 136, III do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Automotivo insumos de terceiros",
+    "codigo_descricao": "144 - Automotivo insumos de terceiros"
+  },
+  {
+    "codigo": "145",
+    "grupo": "Suspensão",
+    "descricao": "Setor Automotivo – Desembaraço aduaneiro, chassis e outros classificados nas posições 84.29, 84.32, 84.33, 87.01 a 87.06 e 87.11 da TIPI quando importados diretamente por estabelecimento industrial – Art. 136, IV do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Automotivo faturamento direto montadora",
+    "codigo_descricao": "145 - Automotivo faturamento direto montadora"
+  },
+  {
+    "codigo": "146",
+    "grupo": "Suspensão",
+    "descricao": "Setor Automotivo – do estabelecimento industrial matérias-primas, os produtos intermediários e os materiais de embalagem, adquiridos por fabricantes, preponderantemente, de componentes, chassis e outros classificados nos Códigos 84.29, 8432.40.00, 8432.80.00, 8433.20, 8433.30.00, 8433.40.00, 8433.5 e 87.01 a 87.06 da TIPI – Art. 136, V do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Automotivo tratores e colheitadeiras",
+    "codigo_descricao": "146 - Automotivo tratores e colheitadeiras"
+  },
+  {
+    "codigo": "147",
+    "grupo": "Suspensão",
+    "descricao": "Setor Automotivo – Desembaraço aduaneiro, as matérias-primas, os produtos intermediários e os materiais de embalagem, importados diretamente por fabricantes, preponderantemente, de componentes, chassis e outros classificados nos Códigos 84.29, 8432.40.00, 8432.80.00, 8433.20, 8433.30.00, 8433.40.00, 8433.5 e 87.01 a 87.06 da TIPI – Art. 136, VI do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "REIDI infraestrutura e transportes",
+    "codigo_descricao": "147 - REIDI infraestrutura e transportes"
+  },
+  {
+    "codigo": "148",
+    "grupo": "Suspensão",
+    "descricao": "Bens de Informática e Automação – matérias-primas, os produtos intermediários e os materiais de embalagem, quando adquiridos por estabelecimentos industriais fabricantes dos referidos bens. – Art. 148 do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "REPENEC petróleo e petroquímica",
+    "codigo_descricao": "148 - REPENEC petróleo e petroquímica"
+  },
+  {
+    "codigo": "149",
+    "grupo": "Suspensão",
+    "descricao": "Reporto – Saída de Estabelecimento de máquinas e outros quando adquiridos por beneficiários do REPORTO – Art. 166, I do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "RETAERO indústria aeroespacial",
+    "codigo_descricao": "149 - RETAERO indústria aeroespacial"
+  },
+  {
+    "codigo": "150",
+    "grupo": "Suspensão",
+    "descricao": "Reporto – Desembaraço aduaneiro de máquinas e outros quando adquiridos por beneficiários do REPORTO – Art. 166, II do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "RECOPI papel para imprensa",
+    "codigo_descricao": "150 - RECOPI papel para imprensa"
+  },
+  {
+    "codigo": "151",
+    "grupo": "Suspensão",
+    "descricao": "Repes – Desembaraço aduaneiro – bens sem similar nacional importados por beneficiários do REPES – Art. 171 do Decreto 7.212/2010",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "RECINE indústria cinematográfica",
+    "codigo_descricao": "151 - RECINE indústria cinematográfica"
+  },
+  {
+    "codigo": "152",
+    "grupo": "Suspensão",
+    "descricao": "Recine – Saída para beneficiário do regime – Art. 14, III da Lei 12.599/2012",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "REICOMP redes de computadores",
+    "codigo_descricao": "152 - REICOMP redes de computadores"
+  },
+  {
+    "codigo": "153",
+    "grupo": "Suspensão",
+    "descricao": "Recine – Desembaraço aduaneiro por beneficiário do regime – Art. 14, IV da Lei 12.599/2012",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "REIF indústria ferroviária nacional",
+    "codigo_descricao": "153 - REIF indústria ferroviária nacional"
+  },
+  {
+    "codigo": "154",
+    "grupo": "Suspensão",
+    "descricao": "Reif – Saída para beneficiário do regime – Lei 12.794/1013, art. 8, III",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "RETID tecnologia de defesa",
+    "codigo_descricao": "154 - RETID tecnologia de defesa"
+  },
+  {
+    "codigo": "155",
+    "grupo": "Suspensão",
+    "descricao": "Reif – Desembaraço aduaneiro por beneficiário do regime – Lei 12.794/1013, art. 8, IV",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Desperdícios e sucatas industriais",
+    "codigo_descricao": "155 - Desperdícios e sucatas industriais"
+  },
+  {
+    "codigo": "156",
+    "grupo": "Suspensão",
+    "descricao": "Repnbl-Redes – Saída para beneficiário do regime – Lei nº 12.715/2012, art. 30, II",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Embalagens e recipientes bebidas",
+    "codigo_descricao": "156 - Embalagens e recipientes bebidas"
+  },
+  {
+    "codigo": "157",
+    "grupo": "Suspensão",
+    "descricao": "Recompe – Saída de matérias-primas e produtos intermediários para beneficiários do regime – Decreto nº 7.243/2010, art. 5º, I",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Cosméticos e higiene pessoal",
+    "codigo_descricao": "157 - Cosméticos e higiene pessoal"
+  },
+  {
+    "codigo": "158",
+    "grupo": "Suspensão",
+    "descricao": "Recompe – Saída de matérias-primas e produtos intermediários destinados a industrialização de equipamentos – Programa Estímulo Universidade-Empresa – Apoio à Inovação – Decreto nº 7.243/2010, art. 5º, III",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Embarcações e materiais navais",
+    "codigo_descricao": "158 - Embarcações e materiais navais"
+  },
+  {
+    "codigo": "159",
+    "grupo": "Suspensão",
+    "descricao": "Rio 2016 – Produtos nacionais, duráveis, uso e consumo dos eventos, adquiridos pelas pessoas jurídicas mencionadas no § 2o do art. 4o da Lei nº 12.780/2013 – Lei nº 12.780/2013, Art. 13",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Drawback suspensão integrado",
+    "codigo_descricao": "159 - Drawback suspensão integrado"
+  },
+  {
+    "codigo": "160",
+    "grupo": "Suspensão",
+    "descricao": "Regime Especial de Admissão Temporária nos Termos do Art. 2o da IN 1361/2013",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Admissão Temporária IN 1361",
+    "codigo_descricao": "160 - Admissão Temporária IN 1361"
+  },
+  {
+    "codigo": "161",
+    "grupo": "Suspensão",
+    "descricao": "Regime Especial de Admissão Temporária nos termos do art. 5o da IN 1361/2013",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Entreposto aduaneiro na importação",
+    "codigo_descricao": "161 - Entreposto aduaneiro na importação"
+  },
+  {
+    "codigo": "162",
+    "grupo": "Suspensão",
+    "descricao": "Regime Especial de Admissão Temporária nos termos do art. 7o da IN 1361/2013 (Suspensão com pagamento de tributos diferidos até a duração do regime, limitado a 100% do valor original)",
+    "csts_relacionados": "CST 05 (Entrada com suspensão) e 55 (Saída com suspensão) – códigos de 101 a 199",
+    "nome_resumido": "Entreposto industrial RECOF",
+    "codigo_descricao": "162 - Entreposto industrial RECOF"
+  },
+  {
+    "codigo": "301",
+    "grupo": "Isenção",
+    "descricao": "Produtos industrializados por instituições de educação ou de assistência social, destinados a uso próprio ou a distribuição gratuita a seus educandos ou assistidos – Art. 54 Inciso I do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Amostras grátis diminuto valor",
+    "codigo_descricao": "301 - Amostras grátis diminuto valor"
+  },
+  {
+    "codigo": "302",
+    "grupo": "Isenção",
+    "descricao": "Produtos industrializados por estabelecimentos públicos e autárquicos da União, dos Estados, do Distrito Federal e dos Municípios, não destinados a comércio – Art. 54 Inciso II do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Mala direta e propaganda",
+    "codigo_descricao": "302 - Mala direta e propaganda"
+  },
+  {
+    "codigo": "303",
+    "grupo": "Isenção",
+    "descricao": "Amostras de produtos para distribuição gratuita, de diminuto ou nenhum valor comercial – Art. 54 Inciso III do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Prospectos e cartazes turísticos",
+    "codigo_descricao": "303 - Prospectos e cartazes turísticos"
+  },
+  {
+    "codigo": "304",
+    "grupo": "Isenção",
+    "descricao": "Amostras de tecidos sem valor comercial – Art. 54 Inciso IV do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Caixas e embalagens usadas",
+    "codigo_descricao": "304 - Caixas e embalagens usadas"
+  },
+  {
+    "codigo": "305",
+    "grupo": "Isenção",
+    "descricao": "Pés isolados de calçados – Art. 54 Inciso V do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Peças para embarcações aeronaves",
+    "codigo_descricao": "305 - Peças para embarcações aeronaves"
+  },
+  {
+    "codigo": "306",
+    "grupo": "Isenção",
+    "descricao": "Aeronaves de uso militar e suas partes e peças, vendidas à União – Art. 54 Inciso VI do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Material bélico Forças Armadas",
+    "codigo_descricao": "306 - Material bélico Forças Armadas"
+  },
+  {
+    "codigo": "307",
+    "grupo": "Isenção",
+    "descricao": "Caixões funerários – Art. 54 Inciso VII do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Produtos agrícolas artesanais próprios",
+    "codigo_descricao": "307 - Produtos agrícolas artesanais próprios"
+  },
+  {
+    "codigo": "308",
+    "grupo": "Isenção",
+    "descricao": "Papel destinado à impressão de músicas – Art. 54 Inciso VIII do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Roupas e calçados tropeiro",
+    "codigo_descricao": "308 - Roupas e calçados tropeiro"
+  },
+  {
+    "codigo": "309",
+    "grupo": "Isenção",
+    "descricao": "Panelas e outros artefatos semelhantes, de uso doméstico, de fabricação rústica, de pedra ou barro bruto – Art. 54 Inciso IX do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Artefatos domésticos fabricação caseira",
+    "codigo_descricao": "309 - Artefatos domésticos fabricação caseira"
+  },
+  {
+    "codigo": "310",
+    "grupo": "Isenção",
+    "descricao": "Chapéus, roupas e proteção, de couro, próprios para tropeiros – Art. 54 Inciso X do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Chapéus e roupas tropeiro",
+    "codigo_descricao": "310 - Chapéus e roupas tropeiro"
+  },
+  {
+    "codigo": "311",
+    "grupo": "Isenção",
+    "descricao": "Material bélico, de uso privativo das Forças Armadas, vendido à União – Art. 54 Inciso XI do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Material bélico vendido União",
+    "codigo_descricao": "311 - Material bélico vendido União"
+  },
+  {
+    "codigo": "312",
+    "grupo": "Isenção",
+    "descricao": "Automóvel adquirido diretamente a fabricante nacional, pelas missões diplomáticas e repartições consulares de caráter permanente, ou seus integrantes, bem assim pelas representações internacionais ou regionais de que o Brasil seja membro, e seus funcionários, peritos, técnicos e consultores, de nacionalidade estrangeira, que exerçam funções de caráter permanente – Art. 54 Inciso XII do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Automóveis missões diplomáticas estrangeiras",
+    "codigo_descricao": "312 - Automóveis missões diplomáticas estrangeiras"
+  },
+  {
+    "codigo": "313",
+    "grupo": "Isenção",
+    "descricao": "Veículo de fabricação nacional adquirido por funcionário das missões diplomáticas acreditadas junto ao Governo Brasileiro – Art. 54 Inciso XIII do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Veículos diplomatas e consulados",
+    "codigo_descricao": "313 - Veículos diplomatas e consulados"
+  },
+  {
+    "codigo": "314",
+    "grupo": "Isenção",
+    "descricao": "Produtos nacionais saídos diretamente para Lojas Francas – Art. 54 Inciso XIV do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Venda direta lojas francas",
+    "codigo_descricao": "314 - Venda direta lojas francas"
+  },
+  {
+    "codigo": "315",
+    "grupo": "Isenção",
+    "descricao": "Materiais e equipamentos destinados a Itaipu Binacional – Art. 54 Inciso XV do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Equipamentos Itaipu Binacional",
+    "codigo_descricao": "315 - Equipamentos Itaipu Binacional"
+  },
+  {
+    "codigo": "316",
+    "grupo": "Isenção",
+    "descricao": "Produtos Importados por missões diplomáticas, consulados ou organismo internacional – Art. 54 Inciso XVI do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Importação corpo diplomático consular",
+    "codigo_descricao": "316 - Importação corpo diplomático consular"
+  },
+  {
+    "codigo": "317",
+    "grupo": "Isenção",
+    "descricao": "Bagagem de passageiros desembaraçada com isenção do II. – Art. 54 Inciso XVII do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Bagagem passageiros isenção II",
+    "codigo_descricao": "317 - Bagagem passageiros isenção II"
+  },
+  {
+    "codigo": "318",
+    "grupo": "Isenção",
+    "descricao": "Bagagem de passageiros desembaraçada com pagamento do II. – Art. 54 Inciso XVIII do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Bagagem passageiros tributada II",
+    "codigo_descricao": "318 - Bagagem passageiros tributada II"
+  },
+  {
+    "codigo": "319",
+    "grupo": "Isenção",
+    "descricao": "Remessas postais internacionais sujeitas a tributação simplificada. – Art. 54 Inciso XIX do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Remessas postais internacionais simplificadas",
+    "codigo_descricao": "319 - Remessas postais internacionais simplificadas"
+  },
+  {
+    "codigo": "320",
+    "grupo": "Isenção",
+    "descricao": "Máquinas e outros destinados à pesquisa científica e tecnológica – Art. 54 Inciso XX do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Máquinas pesquisa científica tecnológica",
+    "codigo_descricao": "320 - Máquinas pesquisa científica tecnológica"
+  },
+  {
+    "codigo": "321",
+    "grupo": "Isenção",
+    "descricao": "Produtos de procedência estrangeira, isentos do II conforme Lei nº 8032/1990. – Art. 54 Inciso XXI do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Produtos estrangeiros isenção II",
+    "codigo_descricao": "321 - Produtos estrangeiros isenção II"
+  },
+  {
+    "codigo": "322",
+    "grupo": "Isenção",
+    "descricao": "Produtos de procedência estrangeira utilizados em eventos esportivos – Art. 54 Inciso XXII do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Bens eventos esportivos internacionais",
+    "codigo_descricao": "322 - Bens eventos esportivos internacionais"
+  },
+  {
+    "codigo": "323",
+    "grupo": "Isenção",
+    "descricao": "Veículos automotores, máquinas, equipamentos, bem assim suas partes e peças separadas, destinadas à utilização nas atividades dos Corpos de Bombeiros – Art. 54 Inciso XXIII do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Máquinas e veículos especiais",
+    "codigo_descricao": "323 - Máquinas e veículos especiais"
+  },
+  {
+    "codigo": "324",
+    "grupo": "Isenção",
+    "descricao": "Produtos importados para consumo em congressos, feiras e exposições – Art. 54 Inciso XXIV do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Consumo feiras congressos internacionais",
+    "codigo_descricao": "324 - Consumo feiras congressos internacionais"
+  },
+  {
+    "codigo": "325",
+    "grupo": "Isenção",
+    "descricao": "Bens de informática, Matéria Prima, produtos intermediários e embalagem destinados a Urnas eletrônicas – TSE – Art. 54 Inciso XXV do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Bens de informática insumos",
+    "codigo_descricao": "325 - Bens de informática insumos"
+  },
+  {
+    "codigo": "326",
+    "grupo": "Isenção",
+    "descricao": "Materiais, equipamentos, máquinas, aparelhos e instrumentos, bem assim os respectivos acessórios, sobressalentes e ferramentas, que os acompanhem, destinados à construção do Gasoduto Brasil – Bolívia – Art. 54 Inciso XXVI do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Aparelhos e equipamentos hospitalares",
+    "codigo_descricao": "326 - Aparelhos e equipamentos hospitalares"
+  },
+  {
+    "codigo": "327",
+    "grupo": "Isenção",
+    "descricao": "Partes, peças e componentes, adquiridos por estaleiros navais brasileiros, destinados ao emprego na conservação, modernização, conversão ou reparo de embarcações registradas no Registro Especial Brasileiro – REB – Art. 54 Inciso XXVII do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Peças para estaleiros navais",
+    "codigo_descricao": "327 - Peças para estaleiros navais"
+  },
+  {
+    "codigo": "328",
+    "grupo": "Isenção",
+    "descricao": "Aparelhos transmissores e receptores de radiotelefonia e radiotelegrafia; veículos para patrulhamento policial; armas e munições, destinados a órgãos de segurança pública da União, dos Estados e do Distrito Federal – Art. 54 Inciso XXVIII do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Transmissores receptores de rádio",
+    "codigo_descricao": "328 - Transmissores receptores de rádio"
+  },
+  {
+    "codigo": "329",
+    "grupo": "Isenção",
+    "descricao": "Automóveis de passageiros de fabricação nacional destinados à utilização como táxi adquiridos por motoristas profissionais – Art. 55 Inciso I do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Automóveis para uso táxi",
+    "codigo_descricao": "329 - Automóveis para uso táxi"
+  },
+  {
+    "codigo": "330",
+    "grupo": "Isenção",
+    "descricao": "Automóveis de passageiros de fabricação nacional destinados à utilização como táxi por impedidos de exercer atividade por destruição, furto ou roubo do veículo adquiridos por motoristas profissionais. – Art. 55 Inciso II do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Automóveis cooperativas de táxi",
+    "codigo_descricao": "330 - Automóveis cooperativas de táxi"
+  },
+  {
+    "codigo": "331",
+    "grupo": "Isenção",
+    "descricao": "Automóveis de passageiros de fabricação nacional destinados à utilização como táxi adquiridos por cooperativas de trabalho. – Art. 55 Inciso II do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Automóveis para transporte escolar",
+    "codigo_descricao": "331 - Automóveis para transporte escolar"
+  },
+  {
+    "codigo": "332",
+    "grupo": "Isenção",
+    "descricao": "Automóveis de passageiros de fabricação nacional, destinados a pessoas portadoras de deficiência física, visual, mental severa ou profunda, ou autistas – Art. 55 Inciso IV do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Automóveis pessoas com deficiência",
+    "codigo_descricao": "332 - Automóveis pessoas com deficiência"
+  },
+  {
+    "codigo": "333",
+    "grupo": "Isenção",
+    "descricao": "Produtos estrangeiros, recebidos em doação de representações diplomáticas estrangeiras sediadas no País, vendidos em feiras, bazares e eventos semelhantes por entidades beneficentes – Art. 67 do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Doações representações diplomáticas leilão",
+    "codigo_descricao": "333 - Doações representações diplomáticas leilão"
+  },
+  {
+    "codigo": "334",
+    "grupo": "Isenção",
+    "descricao": "Produtos industrializados na Zona Franca de Manaus – ZFM, destinados ao seu consumo interno – Art. 81 Inciso I do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Produtos fabricados na ZFM",
+    "codigo_descricao": "334 - Produtos fabricados na ZFM"
+  },
+  {
+    "codigo": "335",
+    "grupo": "Isenção",
+    "descricao": "Produtos industrializados na ZFM, por estabelecimentos com projetos aprovados pela SUFRAMA, destinados a comercialização em qualquer outro ponto do Território Nacional Art. 81 Inciso II do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "ZFM projetos aprovados SUFRAMA",
+    "codigo_descricao": "335 - ZFM projetos aprovados SUFRAMA"
+  },
+  {
+    "codigo": "336",
+    "grupo": "Isenção",
+    "descricao": "Produtos nacionais destinados à entrada na ZFM, para seu consumo interno, utilização ou industrialização, ou ainda, para serem remetidos, por intermédio de seus entrepostos, à Amazônia Ocidental – Art. 81 Inciso III do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Nacionais entrada na ZFM",
+    "codigo_descricao": "336 - Nacionais entrada na ZFM"
+  },
+  {
+    "codigo": "337",
+    "grupo": "Isenção",
+    "descricao": "Produtos industrializados por estabelecimentos com projetos aprovados pela SUFRAMA, consumidos ou utilizados na Amazônia Ocidental, ou adquiridos através da ZFM ou de seus entrepostos na referida região – Art. 95 Inciso I do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Amazônia Ocidental projetos aprovados",
+    "codigo_descricao": "337 - Amazônia Ocidental projetos aprovados"
+  },
+  {
+    "codigo": "338",
+    "grupo": "Isenção",
+    "descricao": "Produtos de procedência estrangeira, relacionados na legislação, oriundos da ZFM e que derem entrada na Amazônia Ocidental para ali serem consumidos ou utilizados: – Art. 95 Inciso II do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Produtos estrangeiros saída ZFM",
+    "codigo_descricao": "338 - Produtos estrangeiros saída ZFM"
+  },
+  {
+    "codigo": "339",
+    "grupo": "Isenção",
+    "descricao": "Produtos elaborados com matérias-primas agrícolas e extrativas vegetais de produção regional, por estabelecimentos industriais localizados na Amazônia Ocidental, com projetos aprovados pela SUFRAMA – Art. 95 Inciso III do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Matérias-primas agrícolas regionais ZFM",
+    "codigo_descricao": "339 - Matérias-primas agrícolas regionais ZFM"
+  },
+  {
+    "codigo": "340",
+    "grupo": "Isenção",
+    "descricao": "Produtos industrializados em Área de Livre Comércio – Art. 105 do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Industrializados Área Livre Comércio",
+    "codigo_descricao": "340 - Industrializados Área Livre Comércio"
+  },
+  {
+    "codigo": "341",
+    "grupo": "Isenção",
+    "descricao": "Produtos nacionais ou nacionalizados, destinados à entrada na Área de Livre Comércio de Tabatinga – ALCT – Art. 107 do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Entrada Área Livre Tabatinga",
+    "codigo_descricao": "341 - Entrada Área Livre Tabatinga"
+  },
+  {
+    "codigo": "342",
+    "grupo": "Isenção",
+    "descricao": "Produtos nacionais ou nacionalizados, destinados à entrada na Área de Livre Comércio de Guajará-Mirim – ALCGM – Art. 110 do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Entrada Área Livre Guajará-Mirim",
+    "codigo_descricao": "342 - Entrada Área Livre Guajará-Mirim"
+  },
+  {
+    "codigo": "343",
+    "grupo": "Isenção",
+    "descricao": "Produtos nacionais ou nacionalizados, destinados à entrada nas Áreas de Livre Comércio de Boa Vista – ALCBV e Bonfim – ALCB – Art. 113 do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Entrada Área Livre Boa Vista",
+    "codigo_descricao": "343 - Entrada Área Livre Boa Vista"
+  },
+  {
+    "codigo": "344",
+    "grupo": "Isenção",
+    "descricao": "Produtos nacionais ou nacionalizados, destinados à entrada na Área de Livre Comércio de Macapá e Santana – ALCMS – Art. 117 do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Entrada Área Livre Macapá",
+    "codigo_descricao": "344 - Entrada Área Livre Macapá"
+  },
+  {
+    "codigo": "345",
+    "grupo": "Isenção",
+    "descricao": "Produtos nacionais ou nacionalizados, destinados à entrada nas Áreas de Livre Comércio de Brasiléia – ALCB e de Cruzeiro do Sul – ALCCS – Art. 120 do Decreto 7.212/2010",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Entrada Área Livre Brasiléia",
+    "codigo_descricao": "345 - Entrada Área Livre Brasiléia"
+  },
+  {
+    "codigo": "346",
+    "grupo": "Isenção",
+    "descricao": "Recompe – equipamentos de informática – de beneficiário do regime para escolas das redes públicas de ensino federal, estadual, distrital, municipal ou nas escolas sem fins lucrativos de atendimento a pessoas com deficiência – Decreto nº 7.243/2010, art. 7º",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "RECOMPE equipamentos informática escolas",
+    "codigo_descricao": "346 - RECOMPE equipamentos informática escolas"
+  },
+  {
+    "codigo": "347",
+    "grupo": "Isenção",
+    "descricao": "Rio 2016 – Importação de materiais para os jogos (medalhas, troféus, impressos, bens não duráveis, etc.) – Lei nº 12.780/2013, Art. 4º, §1º, I",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Rio 2016 materiais jogos",
+    "codigo_descricao": "347 - Rio 2016 materiais jogos"
+  },
+  {
+    "codigo": "348",
+    "grupo": "Isenção",
+    "descricao": "Rio 2016 – Suspensão convertida em Isenção – Lei nº 12.780/2013, Art. 6º, I",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Rio 2016 conversão suspensão",
+    "codigo_descricao": "348 - Rio 2016 conversão suspensão"
+  },
+  {
+    "codigo": "349",
+    "grupo": "Isenção",
+    "descricao": "Rio 2016 – Empresas vinculadas ao CIO – Lei nº 12.780/2013, Art. 9º, I, d",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Rio 2016 empresas vinculadas",
+    "codigo_descricao": "349 - Rio 2016 empresas vinculadas"
+  },
+  {
+    "codigo": "350",
+    "grupo": "Isenção",
+    "descricao": "Rio 2016 – Saída de produtos importados pelo RIO 2016 – Lei nº 12.780/2013, Art. 10, I, d",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Rio 2016 produtos importados",
+    "codigo_descricao": "350 - Rio 2016 produtos importados"
+  },
+  {
+    "codigo": "351",
+    "grupo": "Isenção",
+    "descricao": "Rio 2016 – Produtos nacionais, não duráveis, uso e consumo dos eventos, adquiridos pelas pessoas jurídicas mencionadas no § 2o do art. 4o da Lei nº 12.780/2013, Art. 12",
+    "csts_relacionados": "CST 02 (Entrada isenta) e 52 (Saída isenta) – códigos de 301 a 399",
+    "nome_resumido": "Rio 2016 bens não duráveis",
+    "codigo_descricao": "351 - Rio 2016 bens não duráveis"
+  },
+  {
+    "codigo": "601",
+    "grupo": "Redução",
+    "descricao": "Equipamentos e outros destinados à pesquisa e ao desenvolvimento tecnológico – Art. 72 do Decreto 7.212/2010",
+    "csts_relacionados": "601 a 608 – para redução",
+    "nome_resumido": "Pesquisa desenvolvimento tecnológico redução",
+    "codigo_descricao": "601 - Pesquisa desenvolvimento tecnológico redução"
+  },
+  {
+    "codigo": "602",
+    "grupo": "Redução",
+    "descricao": "Equipamentos e outros destinados à empresas habilitadas no PDTI e PDTA utilizados em pesquisa e ao desenvolvimento tecnológico – Art. 73 do Decreto 7.212/2010",
+    "csts_relacionados": "601 a 608 – para redução",
+    "nome_resumido": "Empresas habilitadas PDTI PDTA",
+    "codigo_descricao": "602 - Empresas habilitadas PDTI PDTA"
+  },
+  {
+    "codigo": "603",
+    "grupo": "Redução",
+    "descricao": "Microcomputadores e outros de até R$11.000,00, unidades de disco, circuitos, etc, destinados a bens de informática ou automação. Centro-Oeste SUDAM SUDENE – Art. 142, I do Decreto 7.212/2010",
+    "csts_relacionados": "601 a 608 – para redução",
+    "nome_resumido": "Informática até 11k Centro-Oeste",
+    "codigo_descricao": "603 - Informática até 11k Centro-Oeste"
+  },
+  {
+    "codigo": "604",
+    "grupo": "Redução",
+    "descricao": "Microcomputadores e outros de até R$11.000,00, unidades de disco, circuitos, etc, destinados a bens de informática ou automação. – Art. 142, I do Decreto 7.212/2010",
+    "csts_relacionados": "601 a 608 – para redução",
+    "nome_resumido": "Informática até 11k Geral",
+    "codigo_descricao": "604 - Informática até 11k Geral"
+  },
+  {
+    "codigo": "605",
+    "grupo": "Redução",
+    "descricao": "Bens de informática não incluídos no art. 142 do Decreto 7.212/2010 – Produzidos no CentroOeste, SUDAM, SUDENE – Art. 143, I do Decreto 7.212/2010",
+    "csts_relacionados": "601 a 608 – para redução",
+    "nome_resumido": "Informática SUDAM SUDENE Centro-Oeste",
+    "codigo_descricao": "605 - Informática SUDAM SUDENE Centro-Oeste"
+  },
+  {
+    "codigo": "606",
+    "grupo": "Redução",
+    "descricao": "Bens de informática não incluídos no art. 142 do Decreto 7.212/2010 – Art. 143, II do Decreto 7.212/2010",
+    "csts_relacionados": "601 a 608 – para redução",
+    "nome_resumido": "Bens informática demais regiões",
+    "codigo_descricao": "606 - Bens informática demais regiões"
+  },
+  {
+    "codigo": "607",
+    "grupo": "Redução",
+    "descricao": "Padis – Art. 150 do Decreto 7.212/2010",
+    "csts_relacionados": "601 a 608 – para redução",
+    "nome_resumido": "PADIS semicondutores e displays",
+    "codigo_descricao": "607 - PADIS semicondutores e displays"
+  },
+  {
+    "codigo": "608",
+    "grupo": "Redução",
+    "descricao": "Patvd – Art. 158 do Decreto 7.212/2010",
+    "csts_relacionados": "601 a 608 – para redução",
+    "nome_resumido": "PATVD televisão digital",
+    "codigo_descricao": "608 - PATVD televisão digital"
+  },
+  {
+    "codigo": "999",
+    "grupo": "Outros",
+    "descricao": "Tributação normal IPI; Outros;",
+    "csts_relacionados": "601 a 608 – para redução",
+    "nome_resumido": "Tributação Normal ou Outros",
+    "codigo_descricao": "999 - Tributação Normal ou Outros"
+  }
+]
