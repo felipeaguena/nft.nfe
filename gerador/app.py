@@ -3684,21 +3684,20 @@ def validar_dados_nfe(cabecalho, itens, rodape, referencia_interna=''):
                         "mensagem": f"Item #{n_item}: Quantidade tributável (qTrib) zerada ou em branco."
                     })
 
-            # Validação rigorosa: nenhuma nota de importação ou reexportação pode sair sem DI
-            if cfop.startswith('3') or cfop.startswith('7'):
-                n_di_check = str(it.get('nDI') or cabecalho.get('import_nDI') or cabecalho.get('nDI') or '').strip()
-                if not n_di_check:
-                    inf_cpl_b = str(cabecalho.get('infCpl') or '')
-                    if 'DI:' in inf_cpl_b:
-                        m_b = re.search(r'DI:\s*([0-9\/\-]+)', inf_cpl_b)
-                        if m_b: n_di_check = m_b.group(1)
-                if not n_di_check:
-                    erros.append({
-                        "categoria": "Importação / Regime Aduaneiro",
-                        "aba": "3. Itens da Nota",
-                        "campo": f"Item #{n_item} - Nº DI/DUIMP",
-                        "mensagem": f"Item #{n_item}: Nenhuma nota pode ser emitida sem a identificação da DI/DUIMP e Adição correspondente."
-                    })
+            # Validação rigorosa: todas as notas fiscais emitidas precisam ter DI/DUIMP identificada nos itens
+            n_di_check = str(it.get('nDI') or cabecalho.get('import_nDI') or cabecalho.get('nDI') or '').strip()
+            if not n_di_check:
+                inf_cpl_b = str(cabecalho.get('infCpl') or '')
+                if 'DI:' in inf_cpl_b:
+                    m_b = re.search(r'DI:\s*([0-9\/\-]+)', inf_cpl_b)
+                    if m_b: n_di_check = m_b.group(1)
+            if not n_di_check:
+                erros.append({
+                    "categoria": "Documento de Importação (DI/DUIMP)",
+                    "aba": "3. Itens da Nota",
+                    "campo": f"Item #{n_item} - Nº DI/DUIMP",
+                    "mensagem": f"Item #{n_item}: Nenhuma nota fiscal pode ser emitida sem a identificação do Documento de Importação (DI/DUIMP) e Adição correspondente."
+                })
 
     # 2. Identificação da NF-e (ide)
     n_nf = str(cabecalho.get('nNF') or '').strip()

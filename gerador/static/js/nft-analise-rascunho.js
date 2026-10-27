@@ -145,7 +145,15 @@
                 verProc: getVal('verProc') || '4.01_sebrae_b057',
                 exporta_UFSaidaPais: getVal('exporta_UFSaidaPais'),
                 exporta_xLocExporta: getVal('exporta_xLocExporta'),
-                exporta_xLocDespacho: getVal('exporta_xLocDespacho')
+                exporta_xLocDespacho: getVal('exporta_xLocDespacho'),
+                import_nDI: getVal('import_nDI'),
+                import_dDI: getVal('import_dDI'),
+                import_cExportador: getVal('import_cExportador'),
+                import_tpViaTransp: getVal('import_tpViaTransp') || '1',
+                import_tpIntermedio: getVal('import_tpIntermedio') || '1',
+                import_UFDesemb: getVal('import_UFDesemb'),
+                import_xLocDesemb: getVal('import_xLocDesemb'),
+                import_dDesemb: getVal('import_dDesemb')
             },
             referencia_interna: (typeof window.obterReferenciaInterna === 'function' ? window.obterReferenciaInterna() : (getVal('referenciaInterna') || getVal('referencia_interna') || '')).trim(),
             itens: itensLimpos,
