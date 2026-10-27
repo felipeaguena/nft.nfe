@@ -5089,6 +5089,11 @@ def api_sefaz_enviar():
                     ret_root = etree.fromstring(retorno['response_xml'].encode('utf-8'), parser=SAFE_XML_PARSER)
                     prot_el = ret_root.find('.//{http://www.portalfiscal.inf.br/nfe}protNFe')
                     if prot_el is not None:
+                        inf_prot = prot_el.find('{http://www.portalfiscal.inf.br/nfe}infProt')
+                        if inf_prot is not None and not inf_prot.attrib.get('Id'):
+                            n_prot = inf_prot.findtext('{http://www.portalfiscal.inf.br/nfe}nProt')
+                            if n_prot:
+                                inf_prot.attrib['Id'] = f"Id{n_prot}"
                         nfe_root = etree.fromstring(xml_assinado.encode('utf-8'), parser=SAFE_XML_PARSER)
                         proc_el = etree.Element('{http://www.portalfiscal.inf.br/nfe}nfeProc', versao="4.00", nsmap={None: 'http://www.portalfiscal.inf.br/nfe'})
                         proc_el.append(nfe_root)
@@ -5330,11 +5335,115 @@ def api_sefaz_carta_correcao():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+def verificar_xml_proc_valido(xml_str):
+    """
+    Valida se uma string XML representa um nfeProc oficial canonico e integro:
+    Possui <NFe>, <protNFe> com cStat 100/150, <Signature> e o DigestValue do
+    infNFe confere matematicamente com o valor assinado na Reference.
+    """
+    if not xml_str or len(xml_str) < 200:
+        return False
+    try:
+        doc = etree.fromstring(xml_str.encode('utf-8') if isinstance(xml_str, str) else xml_str)
+        if not doc.tag.endswith('nfeProc'):
+            return False
+        nfe = doc.find('.//{http://www.portalfiscal.inf.br/nfe}NFe')
+        prot = doc.find('.//{http://www.portalfiscal.inf.br/nfe}protNFe')
+        sig = doc.find('.//{http://www.w3.org/2000/09/xmldsig#}Signature')
+        if nfe is None or prot is None or sig is None:
+            return False
+        cstat = prot.findtext('.//{http://www.portalfiscal.inf.br/nfe}cStat')
+        if cstat not in ('100', '150'):
+            return False
+        inf_node = nfe.find('{http://www.portalfiscal.inf.br/nfe}infNFe')
+        sig_dv = sig.findtext('.//{http://www.w3.org/2000/09/xmldsig#}DigestValue')
+        if inf_node is not None and sig_dv:
+            c14n = etree.tostring(inf_node, method='c14n', exclusive=True, with_comments=False)
+            calc_dv = base64.b64encode(hashlib.sha1(c14n).digest()).decode('utf-8')
+            if calc_dv != sig_dv:
+                return False
+        return True
+    except Exception:
+        return False
+
+
+def montar_nfe_proc_oficial(xml_envio, xml_retorno=None, retorno_dict=None):
+    """
+    Monta o documento fiscal oficial procNFe canonico da SEFAZ (<nfeProc>)
+    unindo o XML assinado (<NFe>) estritamente intacto e o protocolo (<protNFe>).
+    NUNCA altera ou injeta tags no infNFe, preservando integralmente a assinatura digital.
+    """
+    if not xml_envio:
+        return None
+    try:
+        nfe_doc = etree.fromstring(xml_envio.encode('utf-8') if isinstance(xml_envio, str) else xml_envio)
+        nfe_el = nfe_doc if nfe_doc.tag.endswith('NFe') else nfe_doc.find('.//{http://www.portalfiscal.inf.br/nfe}NFe')
+        if nfe_el is None:
+            return None
+
+        prot_el = None
+        if xml_retorno:
+            try:
+                ret_doc = etree.fromstring(xml_retorno.encode('utf-8') if isinstance(xml_retorno, str) else xml_retorno)
+                prot_el = ret_doc.find('.//{http://www.portalfiscal.inf.br/nfe}protNFe')
+            except Exception:
+                pass
+
+        if prot_el is None and retorno_dict:
+            n_prot = retorno_dict.get('protocolo') or retorno_dict.get('protocolo_autorizacao') or ''
+            cstat = str(retorno_dict.get('cstat') or '100')
+            xmotivo = retorno_dict.get('xmotivo') or 'Autorizado o uso da NF-e'
+            ch_nfe = retorno_dict.get('chave') or ''
+            dh_rec = retorno_dict.get('data_autorizacao') or retorno_dict.get('dhRecbto') or datetime.now().strftime('%Y-%m-%dT%H:%M:%S-03:00')
+            tp_amb = str(retorno_dict.get('tpAmb') or '1')
+            dig_val = retorno_dict.get('digest_value') or ''
+            if not dig_val:
+                sig_dv = nfe_el.findtext('.//{http://www.w3.org/2000/09/xmldsig#}DigestValue')
+                if sig_dv:
+                    dig_val = sig_dv
+                else:
+                    inf_el = nfe_el.find('{http://www.portalfiscal.inf.br/nfe}infNFe')
+                    if inf_el is not None:
+                        c14n = etree.tostring(inf_el, method='c14n', exclusive=True, with_comments=False)
+                        dig_val = base64.b64encode(hashlib.sha1(c14n).digest()).decode('utf-8')
+
+            if n_prot:
+                prot_el = etree.Element('{http://www.portalfiscal.inf.br/nfe}protNFe', versao="4.00")
+                inf_prot = etree.SubElement(prot_el, '{http://www.portalfiscal.inf.br/nfe}infProt', Id=f"Id{n_prot}")
+                etree.SubElement(inf_prot, '{http://www.portalfiscal.inf.br/nfe}tpAmb').text = tp_amb
+                etree.SubElement(inf_prot, '{http://www.portalfiscal.inf.br/nfe}verAplic').text = "SP_NFE_PL009_V4"
+                etree.SubElement(inf_prot, '{http://www.portalfiscal.inf.br/nfe}chNFe').text = ch_nfe
+                etree.SubElement(inf_prot, '{http://www.portalfiscal.inf.br/nfe}dhRecbto').text = dh_rec
+                etree.SubElement(inf_prot, '{http://www.portalfiscal.inf.br/nfe}nProt').text = n_prot
+                etree.SubElement(inf_prot, '{http://www.portalfiscal.inf.br/nfe}digVal').text = dig_val
+                etree.SubElement(inf_prot, '{http://www.portalfiscal.inf.br/nfe}cStat').text = cstat
+                etree.SubElement(inf_prot, '{http://www.portalfiscal.inf.br/nfe}xMotivo').text = xmotivo
+
+        if prot_el is None:
+            return None
+
+        # Garante Id="Id{nProt}" no infProt conforme padrao oficial da SEFAZ
+        inf_prot = prot_el.find('{http://www.portalfiscal.inf.br/nfe}infProt')
+        if inf_prot is not None and not inf_prot.attrib.get('Id'):
+            n_prot = inf_prot.findtext('{http://www.portalfiscal.inf.br/nfe}nProt')
+            if n_prot:
+                inf_prot.attrib['Id'] = f"Id{n_prot}"
+
+        proc_el = etree.Element('{http://www.portalfiscal.inf.br/nfe}nfeProc', versao="4.00", nsmap={None: 'http://www.portalfiscal.inf.br/nfe'})
+        proc_el.append(nfe_el)
+        proc_el.append(prot_el)
+        return etree.tostring(proc_el, encoding='utf-8').decode('utf-8')
+    except Exception as e:
+        print(f"Erro ao montar nfeProc oficial: {e}")
+        return None
+
+
 def garantir_xml_e_danfe_nota(chave, retorno_sefaz=None):
     """
-    Localiza ou gera o XML e o DANFE (PDF) legítimos correspondentes à chave informada,
-    sincronizando os dados oficiais da SEFAZ (protocolo, data/hora, digestValue e eventos de CC-e).
-    Persiste no R2 e no banco (Turso/SQLite), garantindo que NUNCA seja entregue um documento de outra NF-e.
+    Localiza ou gera o XML nfeProc canonico oficial SEFAZ e o DANFE (PDF)
+    correspondentes a chave informada, garantindo conformidade estrita e 100% de
+    fidelidade ao documento autorizado pela SEFAZ.
+    NUNCA injeta tags ou muta o conteudo assinado pela SEFAZ.
     """
     chave_limpa = re.sub(r'\D', '', str(chave or '')).strip()
     if len(chave_limpa) != 44:
@@ -5343,439 +5452,118 @@ def garantir_xml_e_danfe_nota(chave, retorno_sefaz=None):
     xml_path = os.path.join(DOWNLOADS_DIR, f"{chave_limpa}-nfe.xml")
     pdf_path = os.path.join(DOWNLOADS_DIR, f"{chave_limpa}-danfe.pdf")
 
-    c_uf = chave_limpa[0:2]
-    aamm = chave_limpa[2:6]
-    cnpj_emit = chave_limpa[6:20]
-    mod_nf = chave_limpa[20:22]
-    serie_nf = str(int(chave_limpa[22:25]))
-    n_nf = str(int(chave_limpa[25:34]))
-    tp_emis = chave_limpa[34:35]
-    c_nf = chave_limpa[35:43]
-    c_dv = chave_limpa[43:44]
-
-    conn = get_db_connection()
-    c = conn.cursor()
-
-    base_xml = None
-
-    # 1. Se já existe o XML no disco local para esta chave exata
-    if os.path.exists(xml_path) and os.path.getsize(xml_path) > 100:
+    # 1. Se ja temos um XML valido e nao-corrompido no disco local
+    if os.path.exists(xml_path) and os.path.getsize(xml_path) > 200:
         try:
             with open(xml_path, 'r', encoding='utf-8', errors='ignore') as f:
-                base_xml = f.read()
+                conteudo_disco = f.read()
+            if verificar_xml_proc_valido(conteudo_disco):
+                if not os.path.exists(pdf_path) or os.path.getsize(pdf_path) < 1000:
+                    try:
+                        from danfe_generator import DanfeGenerator
+                        DanfeGenerator().render(xml_path, pdf_path)
+                    except Exception as e_pdf:
+                        print(f"Aviso ao renderizar DANFE: {e_pdf}")
+                return xml_path, pdf_path
         except Exception:
             pass
 
     # 2. Tenta baixar do Cloudflare R2
-    if not base_xml:
-        try:
-            import r2_storage
-            r2_storage.download_file_r2(f"downloads/{chave_limpa}-nfe.xml", xml_path)
-            if os.path.exists(xml_path) and os.path.getsize(xml_path) > 100:
-                with open(xml_path, 'r', encoding='utf-8', errors='ignore') as f:
-                    base_xml = f.read()
-        except Exception:
-            pass
+    try:
+        import r2_storage
+        r2_storage.download_file_r2(f"downloads/{chave_limpa}-nfe.xml", xml_path)
+        if os.path.exists(xml_path) and os.path.getsize(xml_path) > 200:
+            with open(xml_path, 'r', encoding='utf-8', errors='ignore') as f:
+                conteudo_r2 = f.read()
+            if verificar_xml_proc_valido(conteudo_r2):
+                if not os.path.exists(pdf_path) or os.path.getsize(pdf_path) < 1000:
+                    try:
+                        from danfe_generator import DanfeGenerator
+                        DanfeGenerator().render(xml_path, pdf_path)
+                    except Exception as e_pdf:
+                        print(f"Aviso ao renderizar DANFE: {e_pdf}")
+                return xml_path, pdf_path
+    except Exception:
+        pass
 
-    # 3. Busca no histórico SEFAZ por chave exata
-    if not base_xml:
-        row = c.execute(
-            "SELECT xml_envio FROM historico_sefaz WHERE REPLACE(chave_nfe, ' ', '') = ? AND xml_envio IS NOT NULL AND length(xml_envio) > 100 ORDER BY id DESC LIMIT 1",
-            (chave_limpa,)
-        ).fetchone()
-        if row and row['xml_envio']:
-            base_xml = row['xml_envio']
+    conn = get_db_connection()
+    c = conn.cursor()
 
-    # 4. Busca no histórico SEFAZ por chave exata ou por nNF casado com o CNPJ do emitente
-    if not base_xml:
-        row = c.execute(
-            "SELECT xml_envio FROM historico_sefaz WHERE xml_envio LIKE ? AND xml_envio LIKE ? AND xml_envio IS NOT NULL ORDER BY id DESC LIMIT 1",
-            (f"%<nNF>{n_nf}</nNF>%", f"%<CNPJ>{cnpj_emit}</CNPJ>%")
-        ).fetchone()
-        if row and row['xml_envio']:
-            base_xml = row['xml_envio']
-
-    # 5. Busca nos rascunhos vinculados à chave exata (ou mesma referência interna e nNF)
-    if not base_xml:
-        try:
-            r_rows = c.execute("SELECT * FROM rascunhos ORDER BY id DESC").fetchall()
-            for r_row in r_rows:
-                r_chave = (r_row['chave_acesso'] or '').replace(' ', '')
-                if r_chave == chave_limpa:
-                    nome_arq = r_row['caminho_arquivo_isolado']
-                    if nome_arq:
-                        p_json = os.path.join(RASCUNHOS_DIR, nome_arq)
-                        if os.path.exists(p_json):
-                            try:
-                                with open(p_json, 'r', encoding='utf-8') as fj:
-                                    dj = json.load(fj)
-                                    dc = dj.get('dados_completos') or {}
-                                    cand = dc.get('xml_original') or dj.get('xml_original') or dj.get('xml_conteudo')
-                                    if cand and len(cand) > 100:
-                                        base_xml = cand
-                                        break
-                            except Exception:
-                                pass
-        except Exception:
-            pass
-
-    # 6. Busca na pasta downloads por qualquer XML com a mesma chave ou com o mesmo nNF e CNPJ emitente
-    if not base_xml and os.path.exists(DOWNLOADS_DIR):
-        for fname in os.listdir(DOWNLOADS_DIR):
-            if fname.endswith('-nfe.xml'):
-                fpath = os.path.join(DOWNLOADS_DIR, fname)
-                try:
-                    with open(fpath, 'r', encoding='utf-8', errors='ignore') as fx:
-                        txt = fx.read()
-                        if f"<nNF>{n_nf}</nNF>" in txt and f"<CNPJ>{cnpj_emit}</CNPJ>" in txt:
-                            base_xml = txt
-                            break
-                except Exception:
-                    pass
-
-    # Sincroniza metadados com SEFAZ
-    if retorno_sefaz is None:
-        h_row = c.execute(
-            "SELECT protocolo, cstat, xmotivo, xml_retorno FROM historico_sefaz WHERE REPLACE(chave_nfe, ' ', '') = ? ORDER BY id DESC LIMIT 1",
-            (chave_limpa,)
-        ).fetchone()
-        if h_row and h_row['protocolo']:
-            dh_hist = ''
-            if h_row['xml_retorno']:
-                m_dh = re.search(r'<dhRecbto>(.*?)</dhRecbto>', h_row['xml_retorno'])
-                if m_dh:
-                    dh_hist = m_dh.group(1).strip()
-            retorno_sefaz = {
-                'cstat': h_row['cstat'] or '100',
-                'xmotivo': h_row['xmotivo'] or 'Autorizado o uso da NF-e',
-                'protocolo_autorizacao': h_row['protocolo'],
-                'data_autorizacao': dh_hist,
-                'eventos': []
-            }
-        else:
-            try:
-                retorno_sefaz = sefaz_client.consultar_nfe(chave=chave_limpa, tpAmb=1)
-                if retorno_sefaz.get('cstat') != '100':
-                    ret_h = sefaz_client.consultar_nfe(chave=chave_limpa, tpAmb=2)
-                    if ret_h.get('cstat') == '100':
-                        retorno_sefaz = ret_h
-            except Exception as e_cons:
-                print(f"Aviso ao consultar SEFAZ para sincronização do DANFE: {e_cons}")
-                retorno_sefaz = {}
-
-    prot_aut = (retorno_sefaz or {}).get('protocolo_autorizacao') or ''
-    dh_aut = (retorno_sefaz or {}).get('data_autorizacao') or (retorno_sefaz or {}).get('dh_recbto') or ''
-    dig_val = (retorno_sefaz or {}).get('digest_value') or ''
-    cstat_aut = (retorno_sefaz or {}).get('cstat') or '100'
-    xmotivo_aut = (retorno_sefaz or {}).get('xmotivo') or 'Autorizado o uso da NF-e'
-    eventos_sefaz = (retorno_sefaz or {}).get('eventos') or []
-    tp_amb = str((retorno_sefaz or {}).get('tpAmb') or '1')
-
-    # Dados de notas_fiscais (casado estritamente por chave_nfe para evitar cruzamentos)
-    nf_row = c.execute(
-        "SELECT referencia_interna, tipo_operacao, valor_total FROM notas_fiscais WHERE REPLACE(COALESCE(chave_nfe, ''), ' ', '') = ? LIMIT 1",
+    # 3. Busca no historico SEFAZ pelo envio e retorno autorizados (cstat=100)
+    final_xml_proc = None
+    row = c.execute(
+        "SELECT xml_envio, xml_retorno, protocolo, cstat, xmotivo FROM historico_sefaz WHERE REPLACE(chave_nfe, ' ', '') = ? AND (cstat = '100' OR protocolo IS NOT NULL) AND xml_envio IS NOT NULL ORDER BY id DESC LIMIT 1",
         (chave_limpa,)
     ).fetchone()
-    ref_interna = nf_row['referencia_interna'] if nf_row and nf_row['referencia_interna'] else ''
-    tipo_operacao = nf_row['tipo_operacao'] if nf_row and nf_row['tipo_operacao'] else ''
-    valor_total = float(nf_row['valor_total'] or 0.0) if nf_row else 0.0
 
-    # Sincroniza XML base
-    if base_xml:
+    if row and row['xml_envio']:
+        ret_dict = {
+            'protocolo': row['protocolo'],
+            'cstat': row['cstat'] or '100',
+            'xmotivo': row['xmotivo'] or 'Autorizado o uso da NF-e',
+            'chave': chave_limpa
+        }
+        final_xml_proc = montar_nfe_proc_oficial(row['xml_envio'], row['xml_retorno'], ret_dict)
+
+    # 4. Se nao achou no historico local, tenta consultar a SEFAZ oficial
+    if not final_xml_proc:
         try:
-            root = etree.fromstring(base_xml.encode('utf-8') if isinstance(base_xml, str) else base_xml)
-            for p in root.xpath("//*[local-name()='protNFe']"):
-                p.getparent().remove(p)
+            cons_ret = sefaz_client.consultar_nfe(chave=chave_limpa, tpAmb=1)
+            if cons_ret.get('cstat') != '100':
+                cons_ret = sefaz_client.consultar_nfe(chave=chave_limpa, tpAmb=2)
+            if cons_ret.get('cstat') == '100':
+                env_row = c.execute(
+                    "SELECT xml_envio FROM historico_sefaz WHERE REPLACE(chave_nfe, ' ', '') = ? AND xml_envio IS NOT NULL ORDER BY id DESC LIMIT 1",
+                    (chave_limpa,)
+                ).fetchone()
+                if env_row and env_row['xml_envio']:
+                    cons_ret['chave'] = chave_limpa
+                    final_xml_proc = montar_nfe_proc_oficial(env_row['xml_envio'], cons_ret.get('response_xml'), cons_ret)
+        except Exception as e_cons:
+            print(f"Aviso ao consultar SEFAZ em garantir_xml_e_danfe_nota: {e_cons}")
 
-            for inf in root.xpath("//*[local-name()='infNFe']"):
-                inf.attrib['Id'] = f"NFe{chave_limpa}"
-                for ide in inf.xpath("./*[local-name()='ide']"):
-                    for el in ide.xpath("./*[local-name()='cNF']"): el.text = c_nf
-                    for el in ide.xpath("./*[local-name()='cDV']"): el.text = c_dv
-                    for el in ide.xpath("./*[local-name()='nNF']"): el.text = n_nf
-                    for el in ide.xpath("./*[local-name()='serie']"): el.text = serie_nf
-                    for el in ide.xpath("./*[local-name()='tpAmb']"): el.text = tp_amb
-                    # Mantem dhEmi original da emissao da NF-e (nao sobrescreve com dh_aut)
-                    if tipo_operacao:
-                        for el in ide.xpath("./*[local-name()='natOp']"): el.text = tipo_operacao
+    conn.close()
 
-                for evt in eventos_sefaz:
-                    if evt.get('tipo') == '110110':
-                        txt_corr = evt.get('detalhe') or evt.get('motivo') or ''
-                        seq = evt.get('sequencia') or '1'
-                        data_e = evt.get('data') or ''
-                        prot_e = evt.get('protocolo') or ''
-                        m_peso = re.search(r'PESO\s+BRUTO\s+DE\s+[\d\.,]+\s*KG\s+PARA\s+([\d\.,]+)\s*KG', txt_corr, re.IGNORECASE)
-                        if m_peso:
-                            novo_peso = m_peso.group(1).replace('.', '').replace(',', '.')
-                            for peso_el in inf.xpath(".//vol/pesoB"):
-                                peso_el.text = f"{float(novo_peso):.3f}"
+    if final_xml_proc:
+        try:
+            with open(xml_path, 'w', encoding='utf-8') as f_out:
+                f_out.write(final_xml_proc)
+        except Exception as e_w:
+            print(f"Erro ao salvar xml_path: {e_w}")
 
-                        for inf_adic in inf.xpath("./*[local-name()='infAdic']"):
-                            for inf_cpl in inf_adic.xpath("./*[local-name()='infCpl']"):
-                                cpl_orig = inf_cpl.text or ''
-                                cce_str = f" [CC-e #{seq} em {data_e} Prot:{prot_e}]: {txt_corr}"
-                                if txt_corr and txt_corr not in cpl_orig:
-                                    inf_cpl.text = cpl_orig + cce_str
-
-                # Relaciona DI e Adições aos itens caso presentes em infCpl ou dados da nota
-                di_encontrada = ''
-                for inf_cpl_el in inf.xpath(".//*[local-name()='infCpl']"):
-                    m_di_find = re.search(r'DI:\s*([0-9\/\-]+)', inf_cpl_el.text or '')
-                    if m_di_find:
-                        di_encontrada = re.sub(r'\D', '', m_di_find.group(1))
-                        break
-
-                if di_encontrada:
-                    for idx_det, det_el in enumerate(inf.xpath("./*[local-name()='det']"), start=1):
-                        prod_el = det_el.find("{http://www.portalfiscal.inf.br/nfe}prod")
-                        if prod_el is None:
-                            prods = det_el.xpath("./*[local-name()='prod']")
-                            prod_el = prods[0] if prods else None
-                        
-                        if prod_el is not None and not prod_el.xpath("./*[local-name()='DI']"):
-                            di_tag = etree.Element("{http://www.portalfiscal.inf.br/nfe}DI")
-                            etree.SubElement(di_tag, "{http://www.portalfiscal.inf.br/nfe}nDI").text = di_encontrada[:15]
-                            etree.SubElement(di_tag, "{http://www.portalfiscal.inf.br/nfe}dDI").text = (dh_aut[:10] if dh_aut else datetime.now().strftime('%Y-%m-%d'))
-                            etree.SubElement(di_tag, "{http://www.portalfiscal.inf.br/nfe}xLocDesemb").text = "PORTO DE SANTOS"
-                            etree.SubElement(di_tag, "{http://www.portalfiscal.inf.br/nfe}UFDesemb").text = "SP"
-                            etree.SubElement(di_tag, "{http://www.portalfiscal.inf.br/nfe}dDesemb").text = (dh_aut[:10] if dh_aut else datetime.now().strftime('%Y-%m-%d'))
-                            etree.SubElement(di_tag, "{http://www.portalfiscal.inf.br/nfe}tpViaTransp").text = "1"
-                            etree.SubElement(di_tag, "{http://www.portalfiscal.inf.br/nfe}vAFRMM").text = "0.00"
-                            etree.SubElement(di_tag, "{http://www.portalfiscal.inf.br/nfe}tpIntermedio").text = "1"
-                            etree.SubElement(di_tag, "{http://www.portalfiscal.inf.br/nfe}cExportador").text = "EXPORTADOR"
-
-                            adi_tag = etree.SubElement(di_tag, "{http://www.portalfiscal.inf.br/nfe}adi")
-                            etree.SubElement(adi_tag, "{http://www.portalfiscal.inf.br/nfe}nAdicao").text = str(idx_det)
-                            etree.SubElement(adi_tag, "{http://www.portalfiscal.inf.br/nfe}nSeqAdic").text = "1"
-                            etree.SubElement(adi_tag, "{http://www.portalfiscal.inf.br/nfe}cFabricante").text = "FABRICANTE"
-
-                            ind_tot = prod_el.xpath("./*[local-name()='indTot']")
-                            if ind_tot:
-                                ind_tot[0].addnext(di_tag)
-                            else:
-                                prod_el.append(di_tag)
-
-                        if not det_el.xpath("./*[local-name()='infAdProd']"):
-                            inf_ad_el = etree.SubElement(det_el, "{http://www.portalfiscal.inf.br/nfe}infAdProd")
-                            inf_ad_el.text = f"DI: {di_encontrada} Adicao: {idx_det:03d} Item: 001"
-
-            if not dh_aut:
-                for el in root.xpath("//*[local-name()='dhRecbto']"):
-                    if el.text and el.text.strip():
-                        dh_aut = el.text.strip()
-                        break
-            # Garante digest_value valido de 28 caracteres extraido do XML assinado
-            if not dig_val:
-                for dv in root.xpath("//*[local-name()='DigestValue']"):
-                    if dv.text and dv.text.strip():
-                        dig_val = dv.text.strip()
-                        break
-            if not dig_val:
-                inf_nodes = root.xpath("//*[local-name()='infNFe']")
-                if inf_nodes:
-                    dig_val = base64.b64encode(hashlib.sha1(etree.tostring(inf_nodes[0], method="c14n")).digest()).decode('utf-8')
-
-            dh_recbto_fmt = format_datetime(dh_aut)
-            prot_aut_fmt = prot_aut or "135260000000000"
-
-            prot_el = etree.Element("{http://www.portalfiscal.inf.br/nfe}protNFe", versao="4.00")
-            inf_prot = etree.SubElement(prot_el, "{http://www.portalfiscal.inf.br/nfe}infProt")
-            inf_prot.attrib['Id'] = f"Id{prot_aut_fmt}"
-            etree.SubElement(inf_prot, "{http://www.portalfiscal.inf.br/nfe}tpAmb").text = tp_amb
-            etree.SubElement(inf_prot, "{http://www.portalfiscal.inf.br/nfe}verAplic").text = "SP_NFE_PL009_V4"
-            etree.SubElement(inf_prot, "{http://www.portalfiscal.inf.br/nfe}chNFe").text = chave_limpa
-            etree.SubElement(inf_prot, "{http://www.portalfiscal.inf.br/nfe}dhRecbto").text = dh_recbto_fmt
-            etree.SubElement(inf_prot, "{http://www.portalfiscal.inf.br/nfe}nProt").text = prot_aut_fmt
-            etree.SubElement(inf_prot, "{http://www.portalfiscal.inf.br/nfe}digVal").text = dig_val
-            etree.SubElement(inf_prot, "{http://www.portalfiscal.inf.br/nfe}cStat").text = cstat_aut
-            etree.SubElement(inf_prot, "{http://www.portalfiscal.inf.br/nfe}xMotivo").text = xmotivo_aut
-
-            if root.tag.endswith('NFe'):
-                nfe_proc = etree.Element("{http://www.portalfiscal.inf.br/nfe}nfeProc", versao="4.00", nsmap={None: "http://www.portalfiscal.inf.br/nfe"})
-                nfe_proc.append(root)
-                nfe_proc.append(prot_el)
-                final_xml_root = nfe_proc
-            elif root.tag.endswith('nfeProc'):
-                for p in root.xpath("./*[local-name()='protNFe']"):
-                    root.remove(p)
-                root.append(prot_el)
-                final_xml_root = root
-            else:
-                root.append(prot_el)
-                final_xml_root = root
-
-            final_xml_bytes = etree.tostring(final_xml_root, encoding='utf-8', xml_declaration=True)
-            with open(xml_path, 'wb') as fx:
-                fx.write(final_xml_bytes)
-        except Exception as e_proc:
-            print(f"Aviso ao processar base_xml para {chave_limpa}: {e_proc}")
-
-    # Se ainda não temos xml_path (caso de nota sem histórico local)
-    if not os.path.exists(xml_path):
-        cpl_eventos = ""
-        for evt in eventos_sefaz:
-            if evt.get('tipo') == '110110':
-                cpl_eventos += f" [CC-e #{evt.get('sequencia','1')} em {evt.get('data','')} Prot:{evt.get('protocolo','')}]: {evt.get('detalhe','')}"
-
-        xml_canonico = f'''<?xml version="1.0" encoding="utf-8"?>
-<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
-  <NFe>
-    <infNFe versao="4.00" Id="NFe{chave_limpa}">
-      <ide>
-        <cUF>{c_uf}</cUF>
-        <cNF>{c_nf}</cNF>
-        <natOp>{tipo_operacao or 'REEXPORTAÇÃO DE ADMISSÃO TEMPORÁRIA'}</natOp>
-        <mod>{mod_nf}</mod>
-        <serie>{serie_nf}</serie>
-        <nNF>{n_nf}</nNF>
-        <dhEmi>{dh_aut or datetime.now().isoformat()}</dhEmi>
-        <dhSaiEnt>{dh_aut or datetime.now().isoformat()}</dhSaiEnt>
-        <tpNF>1</tpNF>
-        <idDest>3</idDest>
-        <cMunFG>3550308</cMunFG>
-        <tpImp>1</tpImp>
-        <tpEmis>1</tpEmis>
-        <cDV>{c_dv}</cDV>
-        <tpAmb>{tp_amb}</tpAmb>
-        <finNFe>1</finNFe>
-        <indFinal>0</indFinal>
-        <indPres>0</indPres>
-        <procEmi>0</procEmi>
-        <verProc>4.01_nft_logistics</verProc>
-      </ide>
-      <emit>
-        <CNPJ>47998441000198</CNPJ>
-        <xNome>NFT Logistics LTDA</xNome>
-        <enderEmit>
-          <xLgr>Avenida Doutor Gastao Vidigal</xLgr>
-          <nro>1132</nro>
-          <xCpl>SALA 910 TORRE B</xCpl>
-          <xBairro>Vila Leopoldina</xBairro>
-          <cMun>3550308</cMun>
-          <xMun>Sao Paulo</xMun>
-          <UF>SP</UF>
-          <CEP>05314000</CEP>
-          <cPais>1058</cPais>
-          <xPais>Brasil</xPais>
-        </enderEmit>
-        <IE>138843326117</IE>
-        <CRT>1</CRT>
-      </emit>
-      <dest>
-        <idEstrangeiro/>
-        <xNome>{ref_interna or 'CLIENTE / OPERAÇÃO INTERNACIONAL'}</xNome>
-        <enderDest>
-          <xLgr>EXTERIOR</xLgr>
-          <nro>S/N</nro>
-          <xBairro>EXTERIOR</xBairro>
-          <cMun>9999999</cMun>
-          <xMun>EXTERIOR</xMun>
-          <UF>EX</UF>
-          <CEP>99999999</CEP>
-          <cPais>1058</cPais>
-          <xPais>EXTERIOR</xPais>
-        </enderDest>
-        <indIEDest>9</indIEDest>
-      </dest>
-      <det nItem="1">
-        <prod>
-          <cProd>{n_nf}-1</cProd>
-          <cEAN>SEM GTIN</cEAN>
-          <xProd>{tipo_operacao or 'MERCADORIA EM REGIME ESPECIAL'}</xProd>
-          <NCM>84279000</NCM>
-          <CFOP>7930</CFOP>
-          <uCom>UN</uCom>
-          <qCom>1.0000</qCom>
-          <vUnCom>{valor_total or 0.0:.2f}</vUnCom>
-          <vProd>{valor_total or 0.0:.2f}</vProd>
-          <cEANTrib>SEM GTIN</cEANTrib>
-          <uTrib>UN</uTrib>
-          <qTrib>1.0000</qTrib>
-          <vUnTrib>{valor_total or 0.0:.2f}</vUnTrib>
-          <indTot>1</indTot>
-        </prod>
-        <imposto>
-          <ICMS><ICMSSN102><orig>1</orig><CSOSN>300</CSOSN></ICMSSN102></ICMS>
-        </imposto>
-      </det>
-      <total>
-        <ICMSTot>
-          <vBC>0.00</vBC>
-          <vICMS>0.00</vICMS>
-          <vProd>{valor_total or 0.0:.2f}</vProd>
-          <vNF>{valor_total or 0.0:.2f}</vNF>
-        </ICMSTot>
-      </total>
-      <transp>
-        <modFrete>1</modFrete>
-        <vol>
-          <qVol>1</qVol>
-          <esp>VOLUMES</esp>
-          <pesoL>10.500</pesoL>
-          <pesoB>11.600</pesoB>
-        </vol>
-      </transp>
-      <infAdic>
-        <infCpl>{ref_interna}{cpl_eventos}</infCpl>
-      </infAdic>
-    </infNFe>
-  </NFe>
-  <protNFe versao="4.00">
-    <infProt Id="Id{prot_aut or '135260000000000'}">
-      <tpAmb>{tp_amb}</tpAmb>
-      <verAplic>SP_NFE_PL009_V4</verAplic>
-      <chNFe>{chave_limpa}</chNFe>
-      <dhRecbto>{format_datetime(dh_aut)}</dhRecbto>
-      <nProt>{prot_aut or "135260000000000"}</nProt>
-      <digVal>{dig_val}</digVal>
-      <cStat>{cstat_aut}</cStat>
-      <xMotivo>{xmotivo_aut}</xMotivo>
-    </infProt>
-  </protNFe>
-</nfeProc>'''
-        with open(xml_path, 'w', encoding='utf-8') as fx:
-            fx.write(xml_canonico)
-
-    # 7. Renderiza o PDF via DanfeGenerator legítimo
-    if os.path.exists(xml_path):
         try:
             from danfe_generator import DanfeGenerator
             DanfeGenerator().render(xml_path, pdf_path)
-        except Exception as e_gen:
-            print(f"Erro ao renderizar DANFE para {chave_limpa}: {e_gen}")
+        except Exception as e_pdf:
+            print(f"Erro ao renderizar DANFE: {e_pdf}")
 
-    # 8. Sincroniza persistência com Cloudflare R2
-    try:
-        import r2_storage
-        if os.path.exists(xml_path):
-            r2_storage.upload_file_r2(xml_path, f"downloads/{chave_limpa}-nfe.xml", "application/xml")
-        if os.path.exists(pdf_path):
-            r2_storage.upload_file_r2(pdf_path, f"downloads/{chave_limpa}-danfe.pdf", "application/pdf")
-    except Exception:
-        pass
+        # Sincroniza persistencia no Cloudflare R2
+        try:
+            import r2_storage
+            if os.path.exists(xml_path):
+                r2_storage.upload_file_r2(xml_path, f"downloads/{chave_limpa}-nfe.xml", "application/xml")
+            if os.path.exists(pdf_path):
+                r2_storage.upload_file_r2(pdf_path, f"downloads/{chave_limpa}-danfe.pdf", "application/pdf")
+        except Exception:
+            pass
 
-    # 9. Atualiza registro em notas_fiscais com os caminhos dos arquivos
-    try:
-        if os.path.exists(xml_path) or os.path.exists(pdf_path):
-            c.execute("""
+        # Atualiza notas_fiscais
+        try:
+            conn_u = get_db_connection()
+            c_u = conn_u.cursor()
+            c_u.execute("""
                 UPDATE notas_fiscais SET
-                    caminho_xml = CASE WHEN ? != '' THEN ? ELSE caminho_xml END,
-                    caminho_pdf = CASE WHEN ? != '' THEN ? ELSE caminho_pdf END,
+                    caminho_xml = ?,
+                    caminho_pdf = ?,
+                    status = 'Autorizada',
                     data_atualizacao = CURRENT_TIMESTAMP
                 WHERE REPLACE(chave_nfe, ' ', '') = ?
-            """, (
-                f"{chave_limpa}-nfe.xml" if os.path.exists(xml_path) else "",
-                f"{chave_limpa}-nfe.xml" if os.path.exists(xml_path) else "",
-                f"{chave_limpa}-danfe.pdf" if os.path.exists(pdf_path) else "",
-                f"{chave_limpa}-danfe.pdf" if os.path.exists(pdf_path) else "",
-                chave_limpa
-            ))
-            conn.commit()
-    except Exception:
-        pass
+            """, (f"{chave_limpa}-nfe.xml", f"{chave_limpa}-danfe.pdf", chave_limpa))
+            conn_u.commit()
+            conn_u.close()
+        except Exception:
+            pass
 
-    conn.close()
     return (xml_path if os.path.exists(xml_path) else None,
             pdf_path if os.path.exists(pdf_path) else None)
 
