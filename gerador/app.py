@@ -1073,26 +1073,31 @@ def build_nfe_element(cabecalho, itens, rodape):
     total_el = ET.SubElement(inf_nfe, f'{{{NFE_NS}}}total')
     icms_tot = ET.SubElement(total_el, f'{{{NFE_NS}}}ICMSTot')
     
-    v_prod_tot = tot_data.get('vProd') or f"{total_prod:.2f}"
-    v_frete_tot = tot_data.get('vFrete') or f"{total_frete:.2f}"
-    v_seg_tot = tot_data.get('vSeg') or f"{total_seg:.2f}"
-    v_desc_tot = tot_data.get('vDesc') or f"{total_desc:.2f}"
-    v_outro_tot = tot_data.get('vOutro') or f"{total_outro:.2f}"
-    v_ii_tot = tot_data.get('vII') or f"{total_ii:.2f}"
-    v_ipi_tot = tot_data.get('vIPI') or f"{total_ipi:.2f}"
-    v_pis_tot = tot_data.get('vPIS') or f"{total_pis:.2f}"
-    v_cofins_tot = tot_data.get('vCOFINS') or f"{total_cofins:.2f}"
+    # SEFAZ exige que vProd, vII, vIPI, vPIS e vCOFINS correspondam EXATAMENTE ao somatório dos itens (Regras W07, W11, W12, W13, W14)
+    v_prod_tot = f"{total_prod:.2f}"
+    v_frete_tot = f"{total_frete:.2f}" if total_frete > 0 else format_dec(tot_data.get('vFrete'), 2)
+    v_seg_tot = f"{total_seg:.2f}" if total_seg > 0 else format_dec(tot_data.get('vSeg'), 2)
+    v_desc_tot = f"{total_desc:.2f}" if total_desc > 0 else format_dec(tot_data.get('vDesc'), 2)
+    v_outro_tot = f"{total_outro:.2f}" if total_outro > 0 else format_dec(tot_data.get('vOutro'), 2)
+    v_ii_tot = f"{total_ii:.2f}"
+    v_ipi_tot = f"{total_ipi:.2f}"
+    v_pis_tot = f"{total_pis:.2f}"
+    v_cofins_tot = f"{total_cofins:.2f}"
     
-    # Calculate vNF
-    v_nf_val = tot_data.get('vNF') or rodape.get('vNF')
-    if not v_nf_val or is_zero(v_nf_val):
-        v_nf_calc = (float(format_dec(v_prod_tot, 2)) - float(format_dec(v_desc_tot, 2)) +
-                     float(format_dec(v_frete_tot, 2)) + float(format_dec(v_seg_tot, 2)) +
-                     float(format_dec(v_outro_tot, 2)) + float(format_dec(v_ii_tot, 2)) +
-                     float(format_dec(v_ipi_tot, 2)))
-        v_nf_tot = f"{v_nf_calc:.2f}"
-    else:
-        v_nf_tot = format_dec(v_nf_val, 2)
+    # Calculate vNF rigorosamente pela Regra W16-10 da SEFAZ
+    v_bc_tot = float(format_dec(tot_data.get('vBC'), 2))
+    v_icms_tot = float(format_dec(tot_data.get('vICMS'), 2))
+    v_icms_deson = float(format_dec(tot_data.get('vICMSDeson'), 2))
+    v_st_tot = float(format_dec(tot_data.get('vST'), 2))
+    v_fcp_st_tot = float(format_dec(tot_data.get('vFCPST'), 2))
+    v_ipi_devol_tot = float(format_dec(tot_data.get('vIPIDevol'), 2))
+
+    v_nf_calc = (float(v_prod_tot) - float(v_desc_tot) - v_icms_deson +
+                 v_st_tot + v_fcp_st_tot +
+                 float(v_frete_tot) + float(v_seg_tot) + float(v_outro_tot) +
+                 float(v_ii_tot) + float(v_ipi_tot) + v_ipi_devol_tot)
+    v_nf_calc = max(0.0, v_nf_calc)
+    v_nf_tot = f"{v_nf_calc:.2f}"
         
     for k, v in [
         ('vBC', format_dec(tot_data.get('vBC'), 2)),

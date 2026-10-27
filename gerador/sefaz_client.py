@@ -367,6 +367,130 @@ def sanitizar_xml_para_envio(xml_string, tpAmb=2):
         inf_nfe.attrib['Id'] = f"NFe{chave44}"
         chave_atual = chave44
 
+    # Garante estrita concordancia entre somatorio dos itens e o grupo <total><ICMSTot>
+    # (Evita Rejeicao 602 - PIS, 603 - COFINS, 538 - IPI, 534 - II, 531 - vProd, 535/610 - vNF)
+    total_node = inf_nfe.find('{http://www.portalfiscal.inf.br/nfe}total')
+    if total_node is not None:
+        icms_tot = total_node.find('{http://www.portalfiscal.inf.br/nfe}ICMSTot')
+        if icms_tot is not None:
+            sum_vprod = 0.0
+            sum_vfrete = 0.0
+            sum_vseg = 0.0
+            sum_vdesc = 0.0
+            sum_voutro = 0.0
+            sum_vii = 0.0
+            sum_vipi = 0.0
+            sum_vpis = 0.0
+            sum_vcofins = 0.0
+
+            for det in inf_nfe.findall('{http://www.portalfiscal.inf.br/nfe}det'):
+                prod_el = det.find('{http://www.portalfiscal.inf.br/nfe}prod')
+                if prod_el is not None:
+                    try: sum_vprod += float(prod_el.findtext('{http://www.portalfiscal.inf.br/nfe}vProd') or 0.0)
+                    except (ValueError, TypeError): pass
+                    try: sum_vfrete += float(prod_el.findtext('{http://www.portalfiscal.inf.br/nfe}vFrete') or 0.0)
+                    except (ValueError, TypeError): pass
+                    try: sum_vseg += float(prod_el.findtext('{http://www.portalfiscal.inf.br/nfe}vSeg') or 0.0)
+                    except (ValueError, TypeError): pass
+                    try: sum_vdesc += float(prod_el.findtext('{http://www.portalfiscal.inf.br/nfe}vDesc') or 0.0)
+                    except (ValueError, TypeError): pass
+                    try: sum_voutro += float(prod_el.findtext('{http://www.portalfiscal.inf.br/nfe}vOutro') or 0.0)
+                    except (ValueError, TypeError): pass
+
+                imp_el = det.find('{http://www.portalfiscal.inf.br/nfe}imposto')
+                if imp_el is not None:
+                    ii_v = imp_el.findtext('.//{http://www.portalfiscal.inf.br/nfe}II/{http://www.portalfiscal.inf.br/nfe}vII')
+                    if ii_v:
+                        try: sum_vii += float(ii_v)
+                        except (ValueError, TypeError): pass
+                    ipi_v = imp_el.findtext('.//{http://www.portalfiscal.inf.br/nfe}IPI//{http://www.portalfiscal.inf.br/nfe}vIPI')
+                    if ipi_v:
+                        try: sum_vipi += float(ipi_v)
+                        except (ValueError, TypeError): pass
+                    pis_v = imp_el.findtext('.//{http://www.portalfiscal.inf.br/nfe}PIS//{http://www.portalfiscal.inf.br/nfe}vPIS')
+                    if pis_v:
+                        try: sum_vpis += float(pis_v)
+                        except (ValueError, TypeError): pass
+                    cof_v = imp_el.findtext('.//{http://www.portalfiscal.inf.br/nfe}COFINS//{http://www.portalfiscal.inf.br/nfe}vCOFINS')
+                    if cof_v:
+                        try: sum_vcofins += float(cof_v)
+                        except (ValueError, TypeError): pass
+
+            # Atualiza vPIS (Regra W13-10 / Rejeicao 602)
+            v_pis_el = icms_tot.find('{http://www.portalfiscal.inf.br/nfe}vPIS')
+            if v_pis_el is not None:
+                v_pis_el.text = f"{sum_vpis:.2f}"
+            else:
+                etree.SubElement(icms_tot, '{http://www.portalfiscal.inf.br/nfe}vPIS').text = f"{sum_vpis:.2f}"
+
+            # Atualiza vCOFINS (Regra W14-10 / Rejeicao 603)
+            v_cof_el = icms_tot.find('{http://www.portalfiscal.inf.br/nfe}vCOFINS')
+            if v_cof_el is not None:
+                v_cof_el.text = f"{sum_vcofins:.2f}"
+            else:
+                etree.SubElement(icms_tot, '{http://www.portalfiscal.inf.br/nfe}vCOFINS').text = f"{sum_vcofins:.2f}"
+
+            # Atualiza vIPI (Regra W12-10 / Rejeicao 538)
+            v_ipi_el = icms_tot.find('{http://www.portalfiscal.inf.br/nfe}vIPI')
+            if v_ipi_el is not None:
+                v_ipi_el.text = f"{sum_vipi:.2f}"
+            else:
+                etree.SubElement(icms_tot, '{http://www.portalfiscal.inf.br/nfe}vIPI').text = f"{sum_vipi:.2f}"
+
+            # Atualiza vII (Regra W11-10 / Rejeicao 534)
+            v_ii_el = icms_tot.find('{http://www.portalfiscal.inf.br/nfe}vII')
+            if v_ii_el is not None:
+                v_ii_el.text = f"{sum_vii:.2f}"
+            else:
+                etree.SubElement(icms_tot, '{http://www.portalfiscal.inf.br/nfe}vII').text = f"{sum_vii:.2f}"
+
+            # Atualiza vProd se houver soma calculada dos itens
+            if sum_vprod > 0:
+                v_prod_tot_el = icms_tot.find('{http://www.portalfiscal.inf.br/nfe}vProd')
+                if v_prod_tot_el is not None:
+                    v_prod_tot_el.text = f"{sum_vprod:.2f}"
+
+            # Recalcula vNF segundo a Regra W16-10 da SEFAZ
+            def _get_f(tag):
+                el = icms_tot.find(f'{{http://www.portalfiscal.inf.br/nfe}}{tag}')
+                try: return float(el.text) if (el is not None and el.text) else 0.0
+                except (ValueError, TypeError): return 0.0
+
+            v_prod_cur = _get_f('vProd') or sum_vprod
+            v_desc_cur = _get_f('vDesc') or sum_vdesc
+            v_deson_cur = _get_f('vICMSDeson')
+            v_st_cur = _get_f('vST')
+            v_fcpst_cur = _get_f('vFCPST')
+            v_frete_cur = _get_f('vFrete') or sum_vfrete
+            v_seg_cur = _get_f('vSeg') or sum_vseg
+            v_outro_cur = _get_f('vOutro') or sum_voutro
+            v_ii_cur = sum_vii
+            v_ipi_cur = sum_vipi
+            v_ipidevol_cur = _get_f('vIPIDevol')
+
+            v_nf_calc = (v_prod_cur - v_desc_cur - v_deson_cur + v_st_cur + v_fcpst_cur +
+                         v_frete_cur + v_seg_cur + v_outro_cur + v_ii_cur + v_ipi_cur + v_ipidevol_cur)
+            v_nf_calc = max(0.0, v_nf_calc)
+            v_nf_str = f"{v_nf_calc:.2f}"
+
+            v_nf_el = icms_tot.find('{http://www.portalfiscal.inf.br/nfe}vNF')
+            if v_nf_el is not None:
+                v_nf_el.text = v_nf_str
+            else:
+                etree.SubElement(icms_tot, '{http://www.portalfiscal.inf.br/nfe}vNF').text = v_nf_str
+
+            # Ajusta vPag em <pag><detPag> para manter conformidade com vNF
+            pag_node = inf_nfe.find('{http://www.portalfiscal.inf.br/nfe}pag')
+            if pag_node is not None:
+                for det_pag in pag_node.findall('{http://www.portalfiscal.inf.br/nfe}detPag'):
+                    t_pag_el = det_pag.find('{http://www.portalfiscal.inf.br/nfe}tPag')
+                    v_pag_el = det_pag.find('{http://www.portalfiscal.inf.br/nfe}vPag')
+                    if t_pag_el is not None and v_pag_el is not None:
+                        if t_pag_el.text == '90':
+                            v_pag_el.text = '0.00'
+                        elif len(pag_node.findall('{http://www.portalfiscal.inf.br/nfe}detPag')) == 1:
+                            v_pag_el.text = v_nf_str
+
     for el in doc.iter():
         if el.text and el.text.isspace(): el.text = None
         if el.tail and el.tail.isspace(): el.tail = None

@@ -2052,8 +2052,17 @@ Aceita exclusivamente números. Ao completar 44 dígitos, a chave é incluída n
             somaOutro += parseNum(item.vOutro);
             somaIPI += parseNum(item.vIPI);
             somaII += parseNum(item.vII);
-            somaPIS += parseNum(item.vPIS);
-            somaCOFINS += parseNum(item.vCOFINS);
+
+            const cstPis = String(item.CST_PIS || '').replace(/\D/g, '').padStart(2, '0');
+            const cstCof = String(item.CST_COFINS || '').replace(/\D/g, '').padStart(2, '0');
+
+            // Regras SEFAZ W13 e W14: CSTs 04 a 09 sao isentas/nao tributadas/suspensas e nao geram vPIS/vCOFINS
+            if (!['04', '05', '06', '07', '08', '09'].includes(cstPis)) {
+                somaPIS += parseNum(item.vPIS);
+            }
+            if (!['04', '05', '06', '07', '08', '09'].includes(cstCof)) {
+                somaCOFINS += parseNum(item.vCOFINS);
+            }
         });
 
         setVal('tot_vProd', formatarNumeroVisualBR(somaProd.toFixed(2), 2, 2));
@@ -5543,6 +5552,10 @@ Aceita exclusivamente números. Ao completar 44 dígitos, a chave é incluída n
             if (!conf) {
                 return;
             }
+        }
+
+        if (typeof recalcularTotaisDosItens === 'function') {
+            recalcularTotaisDosItens(true);
         }
 
         const payload = {
