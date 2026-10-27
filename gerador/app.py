@@ -548,6 +548,9 @@ def format_date(val):
     s = str(val).strip()
     if 'T' in s:
         return s.split('T')[0]
+    m_br = re.match(r'^(\d{2})[/-](\d{2})[/-](\d{4})$', s)
+    if m_br:
+        return f"{m_br.group(3)}-{m_br.group(2)}-{m_br.group(1)}"
     if len(s) == 8 and s.isdigit():
         return f"{s[0:4]}-{s[4:6]}-{s[6:8]}"
     if re.match(r'^\d{4}-\d{2}-\d{2}$', s):
@@ -892,38 +895,74 @@ def build_nfe_element(cabecalho, itens, rodape):
             
         ET.SubElement(prod, f'{{{NFE_NS}}}indTot').text = '1'
         
-        # DI: gerado para importação (CFOP 3.xxx) ou reexportação (CFOP 7.930) com busca automática de fallback
+        # DI: gerado para qualquer operação onde houver DI informada no item, no cabeçalho ou nas observações
         n_di = str(item.get('nDI') or cabecalho.get('import_nDI') or cabecalho.get('nDI') or '').strip()
         if not n_di:
             inf_cpl_busca = str(cabecalho.get('infCpl') or rodape.get('infCpl') or '')
             m_di_b = re.search(r'DI:\s*([0-9\/\-]+)', inf_cpl_busca)
             if m_di_b:
-                n_di = re.sub(r'\D', '', m_di_b.group(1))
+                n_di = m_di_b.group(1).strip()
 
-        deve_gerar_di = bool(n_di) and (cfop_item.startswith('3') or cfop_item == '7930' or '7930' in cfop_item or 'REEXPORTA' in str(cabecalho.get('natOp') or '').upper())
+        deve_gerar_di = bool(n_di)
         if deve_gerar_di:
             di_el = ET.SubElement(prod, f'{{{NFE_NS}}}DI')
             ET.SubElement(di_el, f'{{{NFE_NS}}}nDI').text = n_di[:15]
-            ET.SubElement(di_el, f'{{{NFE_NS}}}dDI').text = format_date(item.get('dDI') or cabecalho.get('import_dDI'))
-            ET.SubElement(di_el, f'{{{NFE_NS}}}xLocDesemb').text = str(item.get('xLocDesemb') or cabecalho.get('import_xLocDesemb') or 'PORTO DE SANTOS')[:60]
-            ET.SubElement(di_el, f'{{{NFE_NS}}}UFDesemb').text = str(item.get('UFDesemb') or cabecalho.get('import_UFDesemb') or 'SP')[:2]
-            ET.SubElement(di_el, f'{{{NFE_NS}}}dDesemb').text = format_date(item.get('dDesemb') or cabecalho.get('import_dDesemb') or item.get('dDI') or cabecalho.get('import_dDI'))
-            ET.SubElement(di_el, f'{{{NFE_NS}}}tpViaTransp').text = str(item.get('tpViaTransp') or cabecalho.get('import_tpViaTransp') or '1')
+            
+            d_di_val = item.get('dDI') or cabecalho.get('import_dDI')
+            if not d_di_val:
+                inf_cpl_busca = str(cabecalho.get('infCpl') or rodape.get('infCpl') or '')
+                m_dt = re.search(r'DI:\s*[0-9\/\-]+\s*-\s*([0-9]{2}[\/\-][0-9]{2}[\/\-][0-9]{4}|[0-9]{4}[\/\-][0-9]{2}[\/\-][0-9]{2})', inf_cpl_busca)
+                if m_dt:
+                    d_di_val = m_dt.group(1).strip()
+            ET.SubElement(di_el, f'{{{NFE_NS}}}dDI').text = format_date(d_di_val)
+            
+            x_loc = str(item.get('xLocDesemb') or cabecalho.get('import_xLocDesemb') or '').strip()
+            if not x_loc:
+                inf_cpl_busca = str(cabecalho.get('infCpl') or rodape.get('infCpl') or '')
+                m_loc = re.search(r'LOCAL DE DESEMBARACO:\s*([A-Za-z0-9\s\-]+?)(?:\s{2,}|;|\.|\n|VOLUMES|$)', inf_cpl_busca, re.IGNORECASE)
+                if m_loc:
+                    x_loc = m_loc.group(1).strip()
+            if not x_loc:
+                x_loc = 'PORTO DE SANTOS'
+            ET.SubElement(di_el, f'{{{NFE_NS}}}xLocDesemb').text = x_loc[:60]
+            
+            uf_desemb = str(item.get('UFDesemb') or cabecalho.get('import_UFDesemb') or '').strip().upper()
+            if not uf_desemb:
+                if any(k in x_loc.upper() for k in ('SANTOS', 'BARUERI', 'CAMPINAS', 'VIRACOPOS', 'GUARULHOS', 'SP')):
+                    uf_desemb = 'SP'
+                elif any(k in x_loc.upper() for k in ('ITAGUAI', 'GALEAO', 'RIO', 'RJ')):
+                    uf_desemb = 'RJ'
+                elif any(k in x_loc.upper() for k in ('PARANAGUA', 'CURITIBA', 'PR')):
+                    uf_desemb = 'PR'
+                elif any(k in x_loc.upper() for k in ('ITAJAI', 'NAVEGANTES', 'SC')):
+                    uf_desemb = 'SC'
+                else:
+                    uf_desemb = 'SP'
+            ET.SubElement(di_el, f'{{{NFE_NS}}}UFDesemb').text = uf_desemb[:2]
+            
+            d_desemb_val = item.get('dDesemb') or cabecalho.get('import_dDesemb') or d_di_val
+            ET.SubElement(di_el, f'{{{NFE_NS}}}dDesemb').text = format_date(d_desemb_val)
+            
+            tp_via = str(item.get('tpViaTransp') or cabecalho.get('import_tpViaTransp') or '1').strip()
+            ET.SubElement(di_el, f'{{{NFE_NS}}}tpViaTransp').text = tp_via
             
             v_afrmm = format_dec(item.get('vAFRMM'), 2)
-            via_transp_final = str(item.get('tpViaTransp') or cabecalho.get('import_tpViaTransp') or '1')
-            if not is_zero(v_afrmm) or via_transp_final == '1':
+            if not is_zero(v_afrmm) or tp_via == '1':
                 ET.SubElement(di_el, f'{{{NFE_NS}}}vAFRMM').text = v_afrmm
                 
-            ET.SubElement(di_el, f'{{{NFE_NS}}}tpIntermedio').text = str(item.get('tpIntermedio') or cabecalho.get('import_tpIntermedio') or '1')
-            ET.SubElement(di_el, f'{{{NFE_NS}}}cExportador').text = str(item.get('cExportador') or cabecalho.get('import_cExportador') or cabecalho.get('dest_xNome') or 'EXPORTADOR')[:60]
+            tp_interm = str(item.get('tpIntermedio') or cabecalho.get('import_tpIntermedio') or '1').strip()
+            ET.SubElement(di_el, f'{{{NFE_NS}}}tpIntermedio').text = tp_interm
+            
+            c_exp = str(item.get('cExportador') or cabecalho.get('import_cExportador') or cabecalho.get('dest_xNome') or 'EXPORTADOR').strip()
+            ET.SubElement(di_el, f'{{{NFE_NS}}}cExportador').text = c_exp[:60]
             
             adi_el = ET.SubElement(di_el, f'{{{NFE_NS}}}adi')
             raw_adic = re.sub(r'\D', '', str(item.get('nAdicao') or idx)).lstrip('0')
-            ET.SubElement(adi_el, f'{{{NFE_NS}}}nAdicao').text = raw_adic if raw_adic else '1'
+            ET.SubElement(adi_el, f'{{{NFE_NS}}}nAdicao').text = raw_adic if raw_adic else str(idx)
             raw_seq = re.sub(r'\D', '', str(item.get('nSeqAdic') or '1')).lstrip('0')
             ET.SubElement(adi_el, f'{{{NFE_NS}}}nSeqAdic').text = raw_seq if raw_seq else '1'
-            ET.SubElement(adi_el, f'{{{NFE_NS}}}cFabricante').text = str(item.get('cFabricante') or item.get('cExportador') or 'FABRICANTE')[:60]
+            c_fab = str(item.get('cFabricante') or item.get('cExportador') or cabecalho.get('import_cExportador') or cabecalho.get('dest_xNome') or 'FABRICANTE').strip()
+            ET.SubElement(adi_el, f'{{{NFE_NS}}}cFabricante').text = c_fab[:60]
 
         ET.SubElement(prod, f'{{{NFE_NS}}}nItemPed').text = str(idx)
 
@@ -1061,7 +1100,7 @@ def build_nfe_element(cabecalho, itens, rodape):
 
         # Informações Adicionais do Produto (infAdProd) - exibidas na descrição do item no DANFE
         inf_ad_prod = str(item.get('infAdProd') or '').strip()
-        if not inf_ad_prod and n_di:
+        if not inf_ad_prod and n_di and not deve_gerar_di:
             raw_adic_str = re.sub(r'\D', '', str(item.get('nAdicao') or idx)).lstrip('0') or str(idx)
             raw_seq_str = re.sub(r'\D', '', str(item.get('nSeqAdic') or '1')).lstrip('0') or '1'
             inf_ad_prod = f"DI: {n_di} Adicao: {int(raw_adic_str):03d} Item: {int(raw_seq_str):03d}"

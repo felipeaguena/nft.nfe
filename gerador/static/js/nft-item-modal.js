@@ -1184,7 +1184,7 @@
         }
     };
 
-    window.repassarImportacaoParaItens = function () {
+    window.repassarImportacaoParaItens = async function () {
         const nDI = (document.getElementById('import_nDI')?.value || '').trim();
         const dDI = document.getElementById('import_dDI')?.value || '';
         const cExportador = (document.getElementById('import_cExportador')?.value || '').trim();
@@ -1199,14 +1199,38 @@
         if (!lista || lista.length === 0) {
             const msgInfo = 'ℹ️ Dados de importação gravados como padrão! Ao adicionar novos itens, esses dados serão herdados automaticamente.';
             if (typeof window.nftAlert === 'function') {
-                window.nftAlert(msgInfo, 'info');
+                await window.nftAlert(msgInfo, 'info');
             } else {
                 alert(msgInfo);
             }
             return;
         }
 
-        lista.forEach(item => {
+        const table = (typeof itensTable !== 'undefined' && itensTable) ? itensTable : window.itensTable;
+        let selecionados = (table && typeof table.getSelectedData === 'function') ? table.getSelectedData() : [];
+
+        let alvos = lista;
+        if (selecionados.length > 0 && selecionados.length < lista.length) {
+            let aplicarSoSelecionados = false;
+            if (window.nftConfirm) {
+                aplicarSoSelecionados = await window.nftConfirm(
+                    `Há ${selecionados.length} item(ns) selecionado(s) na grade.\n\nDeseja repassar os dados da Declaração de Importação (DI):\n• OK / Confirmar: Somente para os ${selecionados.length} itens selecionados\n• Cancelar: Para TODOS os ${lista.length} itens da nota`,
+                    {
+                        title: "Repassar Dados da DI",
+                        type: "question",
+                        confirmText: "Somente Selecionados",
+                        cancelText: "Todos os Itens"
+                    }
+                );
+            } else {
+                aplicarSoSelecionados = confirm(`Deseja repassar para apenas os ${selecionados.length} itens selecionados? (Clique em Cancelar para repassar para todos)`);
+            }
+            if (aplicarSoSelecionados) {
+                alvos = selecionados;
+            }
+        }
+
+        alvos.forEach(item => {
             item.nDI = nDI;
             item.dDI = dDI;
             item.cExportador = cExportador;
@@ -1219,9 +1243,9 @@
 
         aplicarListaItensAtual(lista);
 
-        const msgSucesso = `✅ Dados de importação repassados com sucesso para todos os ${lista.length} itens da nota!`;
+        const msgSucesso = `✅ Dados de importação (DI ${nDI || 'S/N'}) repassados com sucesso para ${alvos.length === lista.length ? `todos os ${lista.length}` : `${alvos.length}`} itens da nota!`;
         if (typeof window.nftAlert === 'function') {
-            window.nftAlert(msgSucesso, 'success');
+            await window.nftAlert(msgSucesso, 'success');
         } else {
             alert(msgSucesso);
         }
