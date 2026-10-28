@@ -208,7 +208,11 @@
         } else if (nome.includes('total') || nome.includes('transporte') || nome.includes('4')) {
             window.sidebarSwitchTab('rodape');
         } else if (nome.includes('tipo') || nome.includes('imposto')) {
-            window.sidebarSwitchTab('tipo-nota');
+            if (typeof window.abrirModalTipoNota === 'function') {
+                window.abrirModalTipoNota();
+            } else {
+                window.sidebarSwitchTab('tipo-nota');
+            }
         }
         
         // Fecha o modal após navegar

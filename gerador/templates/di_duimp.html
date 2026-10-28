@@ -126,7 +126,7 @@
 </a>
 </li>
 <li class="nft-sidebar-item">
-<button class="nft-sidebar-btn" data-tab="tipo-nota" onclick="sidebarSwitchTab('tipo-nota')" title="Configuração de Impostos &amp; Regras por Operação" type="button">
+<button class="nft-sidebar-btn" onclick="abrirModalTipoNota()" title="Configuração de Impostos &amp; Regras por Operação" type="button">
 <span class="sidebar-icon"><i data-lucide="settings"></i></span>
 <span class="sidebar-label">Tipo de Nota (Impostos)</span>
 </button>
@@ -267,14 +267,10 @@
 <i data-lucide="package"></i> 3. Itens da Nota (<span class="text-danger fw-bold" id="itens-badge">0</span>)
                     </button>
 </li>
-<li class="nav-item" role="presentation">
-<button class="nav-link" data-bs-target="#tipo-nota" data-bs-toggle="tab" id="tipo-nota-tab" role="tab" type="button">
-<i data-lucide="settings"></i> 4. Tipo de Nota (Impostos)
-                    </button>
-</li>
+
 <li class="nav-item" role="presentation">
 <button class="nav-link bg-success-subtle text-success fw-bold" data-bs-target="#historico-sefaz" data-bs-toggle="tab" id="historico-sefaz-tab" role="tab" type="button">
-<i data-lucide="activity"></i> 5. SEFAZ (Envio &amp; Histórico)
+<i data-lucide="activity"></i> 4. SEFAZ (Envio &amp; Histórico)
                     </button>
 </li>
 </ul>
@@ -302,10 +298,15 @@
 </div>
 <!-- SELECT DO TIPO DE OPERACAO: HERDA TUDO NOS ITENS -->
 <div class="col-md-3">
-<label class="form-label small fw-bold d-flex align-items-center gap-1" for="select_operacao">
+<div class="d-flex justify-content-between align-items-center mb-1">
+<label class="form-label small fw-bold d-flex align-items-center gap-1 mb-0" for="select_operacao">
 <i data-lucide="target" style="width: 14px; height: 14px;"></i>
 <span>Tipo de Operação</span>
 </label>
+<button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-primary fw-bold" onclick="abrirModalTipoNota()" title="Gerenciar Tipos de Nota e Regras de Impostos" style="font-size: 11px;">
+⚙️ Gerenciar
+</button>
+</div>
 <select class="form-select form-select-sm fw-bold border-success" id="select_operacao" onchange="aoSelecionarOperacao(this.value)">
 <option value="">-- Carregando operações... --</option>
 </select>
@@ -1314,178 +1315,6 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
     </div>
 </div>
 
-<!-- ABA: CONFIGURACOES > TIPO DE NOTA (CONFIGURACAO DE TRIBUTOS PADRAO POR OPERACAO) -->
-<div class="tab-pane fade" id="tipo-nota" role="tabpanel">
-<div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom flex-wrap gap-2">
-<div class="d-flex align-items-center gap-2">
-<span class="badge px-2 py-1 d-inline-flex align-items-center gap-1 bg-info-subtle text-info fw-bold"><i data-lucide="settings" style="width: 12px; height: 12px;"></i> Configurações</span>
-<span class="text-muted">/</span>
-<h6 class="mb-0 fw-bold d-inline-flex align-items-center gap-1"><i data-lucide="tag" style="width: 15px; height: 15px;"></i> Tipo de Nota (Impostos &amp; Regras Padrão por Operação)</h6>
-</div>
-<div class="d-flex align-items-center gap-2 flex-wrap">
-    <button type="button" class="btn-nft btn-nft-primary d-flex align-items-center gap-1 shadow-sm" onclick="abrirModalConfigRegimes()" title="Acessar e editar regras padrão de Suspensão, Isenção, Recolhimento e Imunidade">
-        <i data-lucide="sliders"></i>
-        <span>⚙️ Configurar Enquadramentos Fiscais</span>
-    </button>
-</div>
-</div>
-<div class="row g-3 mt-1">
-<div class="col-md-4">
-<div class="card border shadow-sm" style="min-height: 720px; display: flex; flex-direction: column;">
-<div class="card-header d-flex justify-content-between align-items-center py-2 text-secondary bg-body-tertiary">
-    <div class="d-flex align-items-center gap-2">
-        <span class="fw-bold">Operações Cadastradas</span>
-        <span class="badge bg-secondary-subtle text-secondary" id="badge-total-operacoes" style="font-size: 11px;">0</span>
-    </div>
-    <button class="btn-nft d-inline-flex align-items-center gap-1" onclick="novaOperacao()"><i data-lucide="plus" style="width: 13px; height: 13px;"></i> Nova</button>
-</div>
-<div class="card-body p-2 d-flex flex-column" style="flex: 1 1 auto;">
-    <!-- Barra de busca e filtro em tempo real -->
-    <div class="mb-2">
-        <div class="input-group input-group-sm">
-            <span class="input-group-text bg-body-tertiary"><i data-lucide="search" style="width: 14px; height: 14px;"></i></span>
-            <input type="text" id="filtro-operacoes" class="form-control" placeholder="Buscar operação ou CFOP..." oninput="filtrarOperacoesCadastradas(this.value)">
-            <button class="btn btn-outline-secondary" type="button" onclick="limparFiltroOperacoes()" title="Limpar filtro"><i data-lucide="x" style="width: 14px; height: 14px;"></i></button>
-        </div>
-        <small class="text-muted d-block mt-1 ps-1" style="font-size: 11px;">
-            <i data-lucide="move" style="width: 11px; height: 11px;"></i> Arraste as operações para reorganizar a ordem de exibição
-        </small>
-    </div>
-    <!-- Lista ampliada na vertical -->
-    <div class="list-group flex-grow-1" id="lista-operacoes" style="min-height: 580px; max-height: 680px; overflow-y: auto;">
-        <!-- Preenchido dinamicamente via JS -->
-    </div>
-</div>
-</div>
-</div>
-<div class="col-md-8">
-<div class="card border shadow-sm" style="min-height: 720px;">
-<div class="card-header d-flex justify-content-between align-items-center py-2 text-secondary bg-body-tertiary">
-<span id="titulo-form-op">Configuração da Operação:<br/> <strong id="lbl-op-nome">Nova Operação</strong></span>
-<div class="d-flex align-items-center gap-1 flex-wrap">
-<button class="btn-nft me-2" onclick="capturarImpostosDoXmlAtual()">
-<i data-lucide="download" style="width: 13px; height: 13px;"></i> Puxar Impostos do XML Atual
-</button>
-<button class="btn-nft me-2" id="btn-excluir-op" onclick="excluirOperacaoAtual()" style="display:none;">
-<i data-lucide="trash-2" style="width: 13px; height: 13px;"></i> Excluir
-</button>
-<button class="btn-nft fw-bold shadow-sm" onclick="salvarOperacao()">
-<i data-lucide="save" style="width: 13px; height: 13px;"></i> Salvar Configuração
-</button>
-</div>
-</div>
-<div class="card-body py-3">
-<form id="form-tipo-nota">
-<input id="op_id" type="hidden"/>
-<div class="row g-3">
-<div class="col-md-5">
-<label class="form-label small fw-bold">Nome da Operação (Natureza da Operação - natOp)</label>
-<input class="form-control form-control-sm text-primary fw-bold" id="op_nome" placeholder="Ex: ADMISSAO TEMPORARIA, OUTRAS ENTRADAS..." type="text"/>
-</div>
-<div class="col-md-2">
-<label class="form-label small fw-bold">CFOP Padrão</label>
-<input class="form-control form-control-sm fw-bold" id="op_cfop" placeholder="Ex: 3930, 7930, 5914" type="text"/>
-</div>
-<div class="col-md-2">
-<label class="form-label small fw-bold">Tipo da NF (tpNF)</label>
-<select class="form-select form-select-sm fw-bold" id="op_tp_nf">
-<option value="0">0 - Entrada</option>
-<option value="1">1 - Saída</option>
-</select>
-</div>
-<div class="col-md-3">
-<label class="form-label small fw-bold">Destino Operação (idDest)</label>
-<select class="form-select form-select-sm fw-bold" id="op_id_dest">
-<option value="1">1 - Interna (mesma UF)</option>
-<option value="2">2 - Interestadual</option>
-<option selected="" value="3">3 - Com exterior</option>
-</select>
-</div>
-<div class="col-md-6">
-    <div class="d-flex justify-content-between align-items-center mb-1">
-        <label class="form-label small fw-bold mb-0">Enquadramento / Regime Fiscal</label>
-        <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-primary fw-bold" onclick="abrirModalConfigRegimes()" title="Editar regras dos enquadramentos fiscais" style="font-size: 11px;">
-            ⚙️ Editar Regras
-        </button>
-    </div>
-    <select class="form-select form-select-sm fw-bold border-primary" id="op_regime" onchange="if(window.atualizarResumoRegimeForm) window.atualizarResumoRegimeForm(this.value)">
-        <option value="SUSPENSAO">Suspensão (Admissão Temp. / Feiras)</option>
-        <option value="ISENCAO">Isenção (Benefício Fiscal Legal)</option>
-        <option value="RECOLHIMENTO">Recolhimento (Tributada Regularmente)</option>
-        <option value="IMUNIDADE">Imunidade (Reexportação / Exportação)</option>
-    </select>
-    <div class="d-flex align-items-center justify-content-between mt-1 flex-wrap gap-1">
-        <small id="op_regime_info" class="text-muted fw-semibold" style="font-size: 11px;"></small>
-        <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2 d-flex align-items-center gap-1" onclick="aplicarPresetDoRegimeAoFormOperacao()" title="Preencher automaticamente os campos de ICMS, IPI, PIS, COFINS e Pagamento com as regras padrão deste Enquadramento Fiscal" style="font-size: 11px;">
-            <i data-lucide="sparkles" style="width: 12px; height: 12px;"></i>
-            <span>⚡ Preencher Campos com Regras deste Regime</span>
-        </button>
-    </div>
-</div>
-<div class="col-md-6">
-    <label class="form-label small fw-bold">Meio de Pagamento Padrão (tPag)</label>
-    <select class="form-select form-select-sm fw-bold" id="op_t_pag">
-        <option value="90">90 - Sem Pagamento (Padrão Remessas, Retornos, Admissão, Reexp.)</option>
-        <option value="99">99 - Outros (Câmbio / Internacional)</option>
-        <option value="01">01 - Dinheiro</option>
-        <option value="15">15 - Boleto Bancário</option>
-        <option value="16">16 - Depósito Bancário</option>
-        <option value="17">17 - Pagamento Instantâneo (PIX)</option>
-        <option value="03">03 - Cartão de Crédito</option>
-        <option value="04">04 - Cartão de Débito</option>
-    </select>
-</div>
-<!-- ICMS -->
-<div class="col-12"><h6 class="border-bottom pb-1 mb-1 mt-2 fw-bold">1. ICMS</h6></div>
-<div class="col-md-6">
-<label class="form-label small">Origem da Mercadoria (orig)</label>
-<select class="form-select form-select-sm" id="op_orig">
-<option value="0">0 - Nacional</option>
-<option selected="" value="1">1 - Estrangeira - Importação direta</option>
-<option value="2">2 - Estrangeira - Adquirida no mercado interno</option>
-</select>
-</div>
-<div class="col-md-6">
-<label class="form-label small">CSOSN / CST ICMS</label>
-<select class="form-select form-select-sm" id="op_csosn"></select>
-</div>
-<!-- IPI -->
-<div class="col-12"><h6 class="border-bottom pb-1 mb-1 mt-2 fw-bold">2. IPI</h6></div>
-<div class="col-md-6">
-<label class="form-label small">Código de Enquadramento (cEnq)</label>
-<input class="form-control form-control-sm" id="op_c_enq" placeholder="Ex: 102, 999" type="text"/>
-</div>
-<div class="col-md-6">
-<label class="form-label small">CST IPI</label>
-<select class="form-select form-select-sm" id="op_cst_ipi"></select>
-</div>
-<input type="hidden" id="op_p_ipi" value="0.00"/>
-<input type="hidden" id="op_aliquota_ii" value="0.00"/>
-<!-- PIS & COFINS -->
-<div class="col-12"><h6 class="border-bottom pb-1 mb-1 mt-2 fw-bold">3. PIS &amp; COFINS</h6></div>
-<div class="col-md-6">
-<label class="form-label small">CST PIS</label>
-<select class="form-select form-select-sm" id="op_cst_pis"></select>
-</div>
-<div class="col-md-6">
-<label class="form-label small">CST COFINS</label>
-<select class="form-select form-select-sm" id="op_cst_cofins"></select>
-</div>
-<input type="hidden" id="op_p_pis" value="0.00"/>
-<input type="hidden" id="op_p_cofins" value="0.00"/>
-<!-- INFORMACOES COMPLEMENTARES -->
-<div class="col-12"><h6 class="border-bottom pb-1 mb-1 mt-2 fw-bold">5. Observações Padronizadas da Operação</h6></div>
-<div class="col-12">
-<label class="form-label small">Texto Sugerido para Informações Complementares (infCpl)</label>
-<textarea class="form-control form-control-sm" id="op_inf_cpl" placeholder="Texto que será sugerido no rodapé da nota para esta operação..." rows="3"></textarea>
-</div>
-</div>
-</form>
-</div>
-</div>
-</div>
-</div>
-</div>
 <!-- ABA 2: ITENS DA NOTA (TABELA EM SEQUENCIA ESTILO GOOGLE SHEETS) -->
 <div class="tab-pane fade" id="itens" role="tabpanel">
 <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom flex-wrap gap-2">
@@ -1677,16 +1506,27 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
     window.itensCache = itensCache;
     window.operacoesCache = operacoesCache;
 
-    // Atalho para abrir a aba Tipo de Nota
-    function abrirAbaTipoNota(event) {
-        if (event) event.preventDefault();
-        if (typeof sidebarSwitchTab === "function") {
-            sidebarSwitchTab("tipo-nota");
-        } else {
-            const tabEl = document.getElementById("tipo-nota-tab");
-            if (tabEl) bootstrap.Tab.getOrCreateInstance(tabEl).show();
-        }
+    // Abre o popup/modal de Tipo de Nota (Impostos)
+    function abrirModalTipoNota() {
+        const modalEl = document.getElementById('modalTipoNota');
+        if (!modalEl) return;
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+        setTimeout(() => {
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                window.lucide.createIcons();
+            }
+        }, 120);
     }
+    window.abrirModalTipoNota = abrirModalTipoNota;
+
+    // Atalho compatível para abrir o popup Tipo de Nota
+    function abrirAbaTipoNota(event) {
+        if (event && event.preventDefault) event.preventDefault();
+        abrirModalTipoNota();
+    }
+    window.abrirAbaTipoNota = abrirAbaTipoNota;
+
 
     // Funcoes seguras para leitura e escrita de elementos do DOM (evitam crashes de null)
     function setVal(id, val) {
@@ -7210,6 +7050,199 @@ Utilizada para decodificar a chave privada na assinatura e transmissão de docum
 </div>
 </div>
 </div>
+<!-- MODAL: CONFIGURAÇÃO DE TIPO DE NOTA (IMPOSTOS & REGRAS PADRÃO POR OPERAÇÃO) -->
+<div aria-hidden="true" aria-labelledby="modalTipoNotaLabel" class="modal fade" id="modalTipoNota" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" style="max-width: 95vw; width: 1350px;">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header border-bottom py-2 px-3 bg-body-tertiary">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge px-2 py-1 d-flex align-items-center gap-1 bg-primary-subtle text-primary fw-bold">
+                        <i data-lucide="settings"></i> Configurações
+                    </span>
+                    <span class="text-muted">/</span>
+                    <h5 class="modal-title fs-6 fw-bold mb-0 d-flex align-items-center gap-2" id="modalTipoNotaLabel">
+                        <i data-lucide="tag"></i>
+                        <span>Tipo de Nota (Impostos &amp; Regras Padrão por Operação)</span>
+                    </h5>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn-nft btn-nft-primary d-flex align-items-center gap-1 shadow-sm" onclick="abrirModalConfigRegimes()" title="Acessar e editar regras padrão de Suspensão, Isenção, Recolhimento e Imunidade">
+                        <i data-lucide="sliders"></i>
+                        <span>⚙️ Enquadramentos Fiscais</span>
+                    </button>
+                    <button aria-label="Fechar" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+                </div>
+            </div>
+            <div class="modal-body p-3">
+                <div class="row g-3 mt-1">
+                    <div class="col-md-4">
+                        <div class="card border shadow-sm" style="min-height: 640px; display: flex; flex-direction: column;">
+                            <div class="card-header d-flex justify-content-between align-items-center py-2 text-secondary bg-body-tertiary">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="fw-bold">Operações Cadastradas</span>
+                                    <span class="badge bg-secondary-subtle text-secondary" id="badge-total-operacoes" style="font-size: 11px;">0</span>
+                                </div>
+                                <button class="btn-nft d-flex align-items-center gap-1" onclick="novaOperacao()"><i data-lucide="plus"></i> Nova</button>
+                            </div>
+                            <div class="card-body p-2 d-flex flex-column" style="flex: 1 1 auto;">
+                                <!-- Barra de busca e filtro em tempo real -->
+                                <div class="mb-2">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-body-tertiary"><i data-lucide="search" style="width: 14px; height: 14px;"></i></span>
+                                        <input type="text" id="filtro-operacoes" class="form-control" placeholder="Buscar operação ou CFOP..." oninput="filtrarOperacoesCadastradas(this.value)">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="limparFiltroOperacoes()" title="Limpar filtro"><i data-lucide="x" style="width: 14px; height: 14px;"></i></button>
+                                    </div>
+                                    <small class="text-muted d-block mt-1 ps-1" style="font-size: 11px;">
+                                        <i data-lucide="move" style="width: 11px; height: 11px;"></i> Arraste as operações para reorganizar a ordem de exibição
+                                    </small>
+                                </div>
+                                <!-- Lista ampliada na vertical -->
+                                <div class="list-group flex-grow-1" id="lista-operacoes" style="min-height: 520px; max-height: 580px; overflow-y: auto;">
+                                    <!-- Preenchido dinamicamente via JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card border shadow-sm" style="min-height: 640px;">
+                            <div class="card-header d-flex justify-content-between align-items-center py-2 text-secondary bg-body-tertiary">
+                                <span id="titulo-form-op">Configuração da Operação:<br/>
+                                <strong id="lbl-op-nome">Nova Operação</strong></span>
+                                <div class="d-flex align-items-center gap-1 flex-wrap">
+                                    <button class="btn-nft d-flex align-items-center gap-1" onclick="capturarImpostosDoXmlAtual()">
+                                        <i data-lucide="download"></i>
+                                        <span>Puxar Impostos do XML</span>
+                                    </button>
+                                    <button class="btn-nft d-flex align-items-center gap-1" id="btn-excluir-op" onclick="excluirOperacaoAtual()" style="display:none;">
+                                        <i data-lucide="trash-2"></i>
+                                        <span>Excluir</span>
+                                    </button>
+                                    <button class="btn-nft fw-bold d-flex align-items-center gap-1 shadow-sm" onclick="salvarOperacao()">
+                                        <i data-lucide="save"></i>
+                                        <span>Salvar Configuração</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body py-3">
+                                <form id="form-tipo-nota">
+                                    <input id="op_id" type="hidden"/>
+                                    <div class="row g-3">
+                                        <div class="col-md-5">
+                                            <label class="form-label small fw-bold">Nome da Operação (Natureza da Operação - natOp)</label>
+                                            <input class="form-control form-control-sm text-primary fw-bold" id="op_nome" placeholder="Ex: ADMISSAO TEMPORARIA, OUTRAS ENTRADAS..." type="text"/>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label small fw-bold">CFOP Padrão</label>
+                                            <input class="form-control form-control-sm fw-bold" id="op_cfop" placeholder="Ex: 3930, 7930, 5914" type="text"/>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label small fw-bold">Tipo da NF (tpNF)</label>
+                                            <select class="form-select form-select-sm fw-bold" id="op_tp_nf">
+                                                <option value="0">0 - Entrada</option>
+                                                <option value="1">1 - Saída</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small fw-bold">Destino Operação (idDest)</label>
+                                            <select class="form-select form-select-sm fw-bold" id="op_id_dest">
+                                                <option value="1">1 - Interna (mesma UF)</option>
+                                                <option value="2">2 - Interestadual</option>
+                                                <option selected="" value="3">3 - Com exterior</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <label class="form-label small fw-bold mb-0">Enquadramento / Regime Fiscal</label>
+                                                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-primary fw-bold" onclick="abrirModalConfigRegimes()" title="Editar regras dos enquadramentos fiscais" style="font-size: 11px;">
+                                                    ⚙️ Editar Regras
+                                                </button>
+                                            </div>
+                                            <select class="form-select form-select-sm fw-bold border-primary" id="op_regime" onchange="if(window.atualizarResumoRegimeForm) window.atualizarResumoRegimeForm(this.value)">
+                                                <option value="SUSPENSAO">Suspensão (Admissão Temp. / Feiras)</option>
+                                                <option value="ISENCAO">Isenção (Benefício Fiscal Legal)</option>
+                                                <option value="RECOLHIMENTO">Recolhimento (Tributada Regularmente)</option>
+                                                <option value="IMUNIDADE">Imunidade (Reexportação / Exportação)</option>
+                                            </select>
+                                            <div class="d-flex align-items-center justify-content-between mt-1 flex-wrap gap-1">
+                                                <small id="op_regime_info" class="text-muted fw-semibold" style="font-size: 11px;"></small>
+                                                <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2 d-flex align-items-center gap-1" onclick="aplicarPresetDoRegimeAoFormOperacao()" title="Preencher automaticamente os campos de ICMS, IPI, PIS, COFINS e Pagamento com as regras padrão deste Enquadramento Fiscal" style="font-size: 11px;">
+                                                    <i data-lucide="sparkles" style="width: 12px; height: 12px;"></i>
+                                                    <span>Preencher Campos com Regras deste Regime</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">Meio de Pagamento Padrão (tPag)</label>
+                                            <select class="form-select form-select-sm fw-bold" id="op_t_pag">
+                                                <option value="90">90 - Sem Pagamento (Padrão Remessas, Retornos, Admissão, Reexp.)</option>
+                                                <option value="99">99 - Outros (Câmbio / Internacional)</option>
+                                                <option value="01">01 - Dinheiro</option>
+                                                <option value="15">15 - Boleto Bancário</option>
+                                                <option value="16">16 - Depósito Bancário</option>
+                                                <option value="17">17 - Pagamento Instantâneo (PIX)</option>
+                                                <option value="03">03 - Cartão de Crédito</option>
+                                                <option value="04">04 - Cartão de Débito</option>
+                                            </select>
+                                        </div>
+                                        <!-- ICMS -->
+                                        <div class="col-12"><h6 class="border-bottom pb-1 mb-1 mt-2 fw-bold">1. ICMS</h6></div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small">Origem da Mercadoria (orig)</label>
+                                            <select class="form-select form-select-sm" id="op_orig">
+                                                <option value="0">0 - Nacional</option>
+                                                <option selected="" value="1">1 - Estrangeira - Importação direta</option>
+                                                <option value="2">2 - Estrangeira - Adquirida no mercado interno</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small">CSOSN / CST ICMS</label>
+                                            <select class="form-select form-select-sm" id="op_csosn"></select>
+                                        </div>
+                                        <!-- IPI -->
+                                        <div class="col-12"><h6 class="border-bottom pb-1 mb-1 mt-2 fw-bold">2. IPI</h6></div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small">Código de Enquadramento (cEnq)</label>
+                                            <input class="form-control form-control-sm" id="op_c_enq" placeholder="Ex: 102, 999" type="text"/>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small">CST IPI</label>
+                                            <select class="form-select form-select-sm" id="op_cst_ipi"></select>
+                                        </div>
+                                        <input type="hidden" id="op_p_ipi" value="0.00"/>
+                                        <input type="hidden" id="op_aliquota_ii" value="0.00"/>
+                                        <!-- PIS & COFINS -->
+                                        <div class="col-12"><h6 class="border-bottom pb-1 mb-1 mt-2 fw-bold">3. PIS &amp; COFINS</h6></div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small">CST PIS</label>
+                                            <select class="form-select form-select-sm" id="op_cst_pis"></select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small">CST COFINS</label>
+                                            <select class="form-select form-select-sm" id="op_cst_cofins"></select>
+                                        </div>
+                                        <input type="hidden" id="op_p_pis" value="0.00"/>
+                                        <input type="hidden" id="op_p_cofins" value="0.00"/>
+                                        <!-- INFORMACOES COMPLEMENTARES -->
+                                        <div class="col-12"><h6 class="border-bottom pb-1 mb-1 mt-2 fw-bold">5. Observações Padronizadas da Operação</h6></div>
+                                        <div class="col-12">
+                                            <label class="form-label small">Texto Sugerido para Informações Complementares (infCpl)</label>
+                                            <textarea class="form-control form-control-sm" id="op_inf_cpl" placeholder="Texto que será sugerido no rodapé da nota para esta operação..." rows="3"></textarea>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top bg-body-tertiary d-flex justify-content-between py-2 px-3">
+                <span class="small text-muted">As configurações salvas ficam gravadas no banco de dados e refletem em tempo real no preenchimento da nota.</span>
+                <button class="btn-nft" data-bs-dismiss="modal" type="button">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 </div><!-- /container-fluid -->
 <script src="/static/js/nft-autosave.js?v=2.9"></script>
 <script src="/static/js/nft-shortcuts.js?v=1.0"></script>

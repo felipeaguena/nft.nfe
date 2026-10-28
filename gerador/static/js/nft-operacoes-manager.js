@@ -321,7 +321,8 @@
         });
         modalDiv.addEventListener('hidden.bs.modal', function () {
             const modalItens = document.getElementById('modal-aplicar-enquadramento-itens');
-            if (modalItens && modalItens.classList.contains('show')) {
+            const modalTipoNota = document.getElementById('modalTipoNota');
+            if ((modalItens && modalItens.classList.contains('show')) || (modalTipoNota && modalTipoNota.classList.contains('show'))) {
                 document.body.classList.add('modal-open');
             }
         });
@@ -2235,3 +2236,20 @@
         carregarConfigRegimes();
     }
 })();
+
+
+    // Expõe atalho global para abrir o Modal de Tipo de Nota
+    window.abrirModalTipoNota = function () {
+        const modalEl = document.getElementById('modalTipoNota');
+        if (!modalEl) return;
+        const bModal = (window.bootstrap && window.bootstrap.Modal) ? window.bootstrap.Modal : (typeof bootstrap !== 'undefined' ? bootstrap.Modal : null);
+        if (bModal) {
+            const m = bModal.getOrCreateInstance(modalEl);
+            m.show();
+        }
+        setTimeout(() => {
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                window.lucide.createIcons();
+            }
+        }, 120);
+    };

@@ -315,6 +315,12 @@
 
     // Sincronização de Abas (Cabeçalho, Itens, Rodapé, Configurações)
     window.sidebarSwitchTab = function (tabKey) {
+        if (tabKey === 'tipo-nota') {
+            if (typeof window.abrirModalTipoNota === 'function') {
+                window.abrirModalTipoNota();
+                return;
+            }
+        }
         const targetTabBtn = document.getElementById(tabKey + '-tab');
         if (targetTabBtn) {
             if (window.bootstrap && bootstrap.Tab) {
