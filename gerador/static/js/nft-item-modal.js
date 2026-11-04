@@ -811,6 +811,21 @@
     // Salva a lista de itens e atualiza tabela e totais
     function aplicarListaItensAtual(novaLista, scrollToIdx = -1) {
         window.itensCache = novaLista;
+        if (typeof itensCache !== 'undefined') {
+            itensCache = novaLista;
+        }
+
+        const diGeral = (document.getElementById('import_nDI')?.value || '').trim();
+        novaLista.forEach((it, idx) => {
+            if (!it.nItem) it.nItem = String(idx + 1);
+            if (!it.nSeqAdic) it.nSeqAdic = it.nItem;
+            if (diGeral && (!it.nDI || it.nDI.trim() === '')) {
+                it.nDI = diGeral;
+            }
+            if (typeof window.montarTextoInfAdProd === 'function') {
+                it.infAdProd = window.montarTextoInfAdProd(it);
+            }
+        });
 
         let table = window.itensTable;
         if (!table && window.Tabulator) {
@@ -969,6 +984,20 @@
         document.getElementById('m_item_moeda_conversao').value = "";
         document.getElementById('m_item_taxa_conversao').value = "";
 
+        // Inicializa Informações Adicionais (infAdProd) do novo item
+        if (typeof window.montarTextoInfAdProd === 'function') {
+            document.getElementById('m_item_infAdProd').value = window.montarTextoInfAdProd({
+                nDI: elDiGeral ? elDiGeral.value : "",
+                nAdicao: "1",
+                nSeqAdic: String(proxItemNum),
+                nItem: String(proxItemNum),
+                pesoL: "",
+                infAdProd: ""
+            });
+        } else {
+            document.getElementById('m_item_infAdProd').value = "";
+        }
+
         // Ativa a primeira aba
         const tabBtn = document.getElementById('tab-item-geral-btn');
         if (tabBtn && window.bootstrap && bootstrap.Tab) {
@@ -1032,7 +1061,7 @@
         const pesoLVal = rowData.pesoL || rowData.kg_liquido || rowData.peso_liquido || "";
         if (document.getElementById('m_item_pesoL')) document.getElementById('m_item_pesoL').value = pesoLVal;
         if (document.getElementById('m_item_pesoL_adu')) document.getElementById('m_item_pesoL_adu').value = pesoLVal;
-        document.getElementById('m_item_infAdProd').value = rowData.infAdProd || (typeof window.montarTextoInfAdProd === 'function' ? window.montarTextoInfAdProd(rowData) : "");
+        document.getElementById('m_item_infAdProd').value = typeof window.montarTextoInfAdProd === 'function' ? window.montarTextoInfAdProd(rowData) : (rowData.infAdProd || "");
 
         // Tributos
         const cstIcms = rowData.CSOSN || rowData.CST_ICMS || "00";
@@ -1255,9 +1284,13 @@
             targetScrollIdx = lista.length - 1;
         }
 
-        // Re-indexa nItem sequencialmente
+        // Re-indexa nItem sequencialmente e atualiza Informações Adicionais
         lista.forEach((it, i) => {
             it.nItem = String(i + 1);
+            if (!it.nSeqAdic) it.nSeqAdic = it.nItem;
+            if (typeof window.montarTextoInfAdProd === 'function') {
+                it.infAdProd = window.montarTextoInfAdProd(it);
+            }
         });
 
         // Aplica a nova lista na grade Tabulator e nos cálculos
@@ -1386,6 +1419,56 @@
             if (destNome.value && !exp.value) {
                 exp.value = destNome.value.trim();
                 exp.dataset.autoSynced = 'true';
+            }
+        }
+
+        // Sincronização em tempo real de import_nDI com Informações Adicionais dos Itens
+        const diInput = document.getElementById('import_nDI');
+        if (diInput) {
+            if (!diInput.dataset) diInput.dataset = {};
+            if (!diInput.dataset.infAdSynced) {
+                diInput.dataset.infAdSynced = 'true';
+                const aoMudarDI = function () {
+                    if (typeof window.sincronizarInfAdProdTodosItens === 'function') {
+                        window.sincronizarInfAdProdTodosItens(true);
+                    }
+                };
+                if (typeof diInput.addEventListener === 'function') {
+                    diInput.addEventListener('input', aoMudarDI);
+                    diInput.addEventListener('change', aoMudarDI);
+                }
+            }
+        }
+
+        // Sincronização de Observações Complementares (infCpl)
+        const infCplInput = document.getElementById('infCpl');
+        if (infCplInput) {
+            if (!infCplInput.dataset) infCplInput.dataset = {};
+            if (!infCplInput.dataset.infAdSynced) {
+                infCplInput.dataset.infAdSynced = 'true';
+                if (typeof infCplInput.addEventListener === 'function') {
+                    infCplInput.addEventListener('change', function () {
+                        if (typeof window.sincronizarInfAdProdTodosItens === 'function') {
+                            window.sincronizarInfAdProdTodosItens(true);
+                        }
+                    });
+                }
+            }
+        }
+
+        // Sincronização de Peso Líquido do Transporte
+        const pesoLTransp = document.getElementById('transp_pesoL');
+        if (pesoLTransp) {
+            if (!pesoLTransp.dataset) pesoLTransp.dataset = {};
+            if (!pesoLTransp.dataset.infAdSynced) {
+                pesoLTransp.dataset.infAdSynced = 'true';
+                if (typeof pesoLTransp.addEventListener === 'function') {
+                    pesoLTransp.addEventListener('change', function () {
+                        if (typeof window.sincronizarInfAdProdTodosItens === 'function') {
+                            window.sincronizarInfAdProdTodosItens(true);
+                        }
+                    });
+                }
             }
         }
     };
@@ -1657,19 +1740,29 @@
         let nDI = String(item.nDI || document.getElementById('import_nDI')?.value || '').trim();
         if (!nDI) {
             const infCplVal = document.getElementById('infCpl')?.value || '';
-            const m = infCplVal.match(/DI:\s*([0-9\/\-]+)/i);
+            const m = infCplVal.match(/DI:\s*([0-9\/\.\-]+)/i);
             if (m) nDI = m[1].trim();
         }
 
         let nAdicao = String(item.nAdicao || '1').trim();
         let nSeqAdic = String(item.nSeqAdic || item.nItem || '1').trim();
         let pesoL = String(item.pesoL || item.kg_liquido || item.peso_liquido || '').trim();
-        let infAd = String(item.infAdProd || '').trim();
+        let pesoLNum = 0;
+        if (typeof parseNum === 'function') {
+            pesoLNum = parseNum(pesoL);
+        } else {
+            pesoLNum = parseFloat(pesoL.replace(',', '.'));
+        }
+        if (isNaN(pesoLNum)) pesoLNum = 0;
+
+        let infAd = String(item.infAdProd || '').replace(/^undefined$|^null$/i, '').trim();
 
         // Extrair qualquer texto personalizado anterior que não seja DI nem Peso
         let textoExtra = infAd;
-        textoExtra = textoExtra.replace(/DI:\s*[^;\-\n\r]+?(?:Adicao|Adição)?:?\s*\d*\s*(?:Item)?:?\s*\d*/gi, '').trim();
-        textoExtra = textoExtra.replace(/(?:Peso\s*L[ií]q(?:uido)?|Kg\s*L[ií]q(?:uido)?)\s*[:=]?\s*[\d.,]+\s*(?:kg)?/gi, '').trim();
+        textoExtra = textoExtra.replace(/DI:\s*[\w\.\/\-]+(?:\s+(?:Adicao|Adição|Adic)\s*:?\s*\d+)?(?:\s+(?:Item|Seq)\s*:?\s*\d+)?/gi, '');
+        textoExtra = textoExtra.replace(/DI:\s*[^;\-\–\—\n\r]+/gi, '');
+        textoExtra = textoExtra.replace(/(?:Peso\s*L[ií]q(?:uido)?|Kg\s*L[ií]q(?:uido)?)\s*[:=]?\s*[\d.,]+\s*(?:kg)?/gi, '');
+        textoExtra = textoExtra.replace(/[\s\-\–\—;:]{2,}/g, ' - ');
         textoExtra = textoExtra.replace(/^[\s\-\–\—;:,]+|[\s\-\–\—;:,]+$/g, '').trim();
 
         const partes = [];
@@ -1681,7 +1774,7 @@
             partes.push(`DI: ${nDI} Adicao: ${adicPad} Item: ${seqPad}`);
         }
 
-        if (pesoL && !['0', '0.00', '0.000', '0,00', '0,000'].includes(pesoL)) {
+        if (pesoLNum > 0) {
             partes.push(`Peso Liq: ${pesoL} kg`);
         }
 
@@ -1690,6 +1783,62 @@
         }
 
         return partes.join(' - ');
+    };
+
+    // === SINCRONIZAÇÃO GERAL DE INFORMAÇÕES ADICIONAIS EM TODOS OS ITENS ===
+    window.sincronizarInfAdProdTodosItens = function(redesenhar = true) {
+        let table = window.itensTable;
+        if (!table && window.Tabulator) {
+            const arr = window.Tabulator.findTable('#itens-table');
+            if (arr && arr.length > 0) table = arr[0];
+        }
+
+        let lista = [];
+        if (typeof itensCache !== 'undefined' && Array.isArray(itensCache) && itensCache.length > 0) {
+            lista = itensCache;
+        } else if (window.itensCache && Array.isArray(window.itensCache) && window.itensCache.length > 0) {
+            lista = window.itensCache;
+        } else if (table && typeof table.getData === 'function') {
+            lista = table.getData();
+        }
+
+        if (!lista || lista.length === 0) return;
+
+        const diGeral = (document.getElementById('import_nDI')?.value || '').trim();
+        let houveAlteracao = false;
+
+        lista.forEach((item, idx) => {
+            if (!item.nItem) item.nItem = String(idx + 1);
+            if (!item.nSeqAdic) item.nSeqAdic = item.nItem;
+
+            if (diGeral && (!item.nDI || item.nDI.trim() === '')) {
+                item.nDI = diGeral;
+            }
+
+            const novoTexto = window.montarTextoInfAdProd(item);
+            if (item.infAdProd !== novoTexto) {
+                item.infAdProd = novoTexto;
+                houveAlteracao = true;
+            }
+        });
+
+        if (houveAlteracao && table) {
+            const rows = (typeof table.getRows === 'function') ? table.getRows() : [];
+            if (rows && rows.length > 0) {
+                rows.forEach((r, idx) => {
+                    const rowData = r.getData();
+                    const targetItem = lista[idx] || rowData;
+                    if (rowData.infAdProd !== targetItem.infAdProd) {
+                        r.update({ infAdProd: targetItem.infAdProd });
+                    }
+                });
+            } else {
+                table.setData(lista);
+            }
+            if (redesenhar && typeof table.redraw === 'function') {
+                setTimeout(() => table.redraw(true), 30);
+            }
+        }
     };
 
     // === SUBSTITUIR UNIDADES PELOS VALORES OFICIAIS ABREVIADOS ===

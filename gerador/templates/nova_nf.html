@@ -3426,8 +3426,16 @@ Aceita exclusivamente números. Ao completar 44 dígitos, a chave é incluída n
         });
 
         itensCache = itensCache.concat(novosItens);
+        const diGeral = (document.getElementById('import_nDI')?.value || '').trim();
         itensCache.forEach((it, idx) => {
             it.nItem = String(idx + 1);
+            if (!it.nSeqAdic) it.nSeqAdic = it.nItem;
+            if (diGeral && (!it.nDI || it.nDI.trim() === '')) {
+                it.nDI = diGeral;
+            }
+            if (typeof window.montarTextoInfAdProd === 'function') {
+                it.infAdProd = window.montarTextoInfAdProd(it);
+            }
         });
 
         itensTable.setData(itensCache);
@@ -3886,6 +3894,14 @@ Aceita exclusivamente números. Ao completar 44 dígitos, a chave é incluída n
                     const novoInf = window.montarTextoInfAdProd(rowData);
                     row.update({ infAdProd: novoInf });
                 }
+            } else if (campo === 'infAdProd') {
+                if (typeof window.montarTextoInfAdProd === 'function') {
+                    const rowData = { ...d, infAdProd: cell.getValue() };
+                    const novoInf = window.montarTextoInfAdProd(rowData);
+                    if (novoInf !== cell.getValue()) {
+                        row.update({ infAdProd: novoInf });
+                    }
+                }
             } else if (campo === 'qTrib') {
                 const qTribVal = parseNum(cell.getValue());
                 const vProdVal = parseNum(d.vProd);
@@ -4107,6 +4123,9 @@ Aceita exclusivamente números. Ao completar 44 dígitos, a chave é incluída n
         const itensTabBtn = document.getElementById('itens-tab');
         if (itensTabBtn) {
             itensTabBtn.addEventListener('shown.bs.tab', function () {
+                if (typeof window.sincronizarInfAdProdTodosItens === 'function') {
+                    window.sincronizarInfAdProdTodosItens(false);
+                }
                 setTimeout(() => {
                     if (itensTable) {
                         itensTable.redraw(true);
@@ -4397,6 +4416,12 @@ Aceita exclusivamente números. Ao completar 44 dígitos, a chave é incluída n
                 });
             }
         }
+
+        itens.forEach(it => {
+            if (typeof window.montarTextoInfAdProd === 'function') {
+                it.infAdProd = window.montarTextoInfAdProd(it);
+            }
+        });
 
         if (itensTable) {
             itensTable.setData(itens);
@@ -6321,6 +6346,17 @@ Aceita exclusivamente números. Ao completar 44 dígitos, a chave é incluída n
             // 3. Restaura Tabela de Itens
             if (dados.itens && Array.isArray(dados.itens)) {
                 itensCache = dados.itens;
+                const diGeral = (document.getElementById('import_nDI')?.value || (dados.cabecalho ? dados.cabecalho.import_nDI : '') || '').trim();
+                itensCache.forEach((it, idx) => {
+                    if (!it.nItem) it.nItem = String(idx + 1);
+                    if (!it.nSeqAdic) it.nSeqAdic = it.nItem;
+                    if (diGeral && (!it.nDI || it.nDI.trim() === '')) {
+                        it.nDI = diGeral;
+                    }
+                    if (typeof window.montarTextoInfAdProd === 'function') {
+                        it.infAdProd = window.montarTextoInfAdProd(it);
+                    }
+                });
                 if (itensTable) {
                     itensTable.setData(itensCache);
                 }
