@@ -5722,7 +5722,9 @@ Aceita exclusivamente números. Ao completar 44 dígitos, a chave é incluída n
                     vPIS: mutatorLimparNumero(getVal('tot_vPIS')),
                     vCOFINS: mutatorLimparNumero(getVal('tot_vCOFINS'))
                 }
-            }
+            },
+            somente_nfe: returnTextOnly,
+            finalidade: returnTextOnly ? 'emissao' : 'geracao'
         };
 
         return fetch('/generate_xml', {

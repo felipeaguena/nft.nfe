@@ -216,8 +216,22 @@ def sanitizar_xml_para_envio(xml_string, tpAmb=2):
     doc = etree.fromstring(xml_string.encode('utf-8'))
     inf_nfe = doc.find('.//{http://www.portalfiscal.inf.br/nfe}infNFe')
     if inf_nfe is None:
+        for el in doc.iter():
+            if el.tag.split('}')[-1] == 'infNFe':
+                inf_nfe = el
+                break
+    if inf_nfe is None:
         raise ValueError("Tag <infNFe> não encontrada no XML")
         
+    # Garante que o documento raiz seja estritamente <NFe xmlns="http://www.portalfiscal.inf.br/nfe">,
+    # eliminando qualquer invólucro de lote, nfeProc, protNFe ou assinaturas residuais (elimina Rejeição 225)
+    inf_supl = doc.find('.//{http://www.portalfiscal.inf.br/nfe}infNFeSupl')
+    clean_nfe = etree.Element('{http://www.portalfiscal.inf.br/nfe}NFe', nsmap={None: 'http://www.portalfiscal.inf.br/nfe'})
+    clean_nfe.append(inf_nfe)
+    if inf_supl is not None:
+        clean_nfe.append(inf_supl)
+    doc = clean_nfe
+
     ide = inf_nfe.find('{http://www.portalfiscal.inf.br/nfe}ide')
     if ide is None:
         raise ValueError("Tag <ide> não encontrada no XML")
@@ -226,6 +240,20 @@ def sanitizar_xml_para_envio(xml_string, tpAmb=2):
     tpAmb_el = ide.find('{http://www.portalfiscal.inf.br/nfe}tpAmb')
     if tpAmb_el is not None:
         tpAmb_el.text = str(tpAmb)
+
+    # Em homologação, se houver NFref apontando para nota de produção (ou inexistente em homologação),
+    # a SEFAZ SP Homologação rejeita com 267 (Chave referenciada inexistente).
+    # Preservamos a referência em infCpl para integridade visual/DANFE e removemos a tag <NFref>
+    if tpAmb == 2:
+        for nf_ref_el in ide.findall('{http://www.portalfiscal.inf.br/nfe}NFref'):
+            ref_nfe_txt = nf_ref_el.findtext('{http://www.portalfiscal.inf.br/nfe}refNFe') or ''
+            if ref_nfe_txt:
+                inf_adic = inf_nfe.find('{http://www.portalfiscal.inf.br/nfe}infAdic')
+                if inf_adic is not None:
+                    inf_cpl = inf_adic.find('{http://www.portalfiscal.inf.br/nfe}infCpl')
+                    if inf_cpl is not None and ref_nfe_txt not in (inf_cpl.text or ''):
+                        inf_cpl.text = f"{inf_cpl.text or ''} | NF-e Referenciada: {ref_nfe_txt}".strip(' |')
+            ide.remove(nf_ref_el)
         
     # Em homologação, xNome do destinatário DEVE ser estritamente o padrão fiscal obrigatório
     dest = inf_nfe.find('{http://www.portalfiscal.inf.br/nfe}dest')
@@ -235,20 +263,27 @@ def sanitizar_xml_para_envio(xml_string, tpAmb=2):
             if xNome_dest is not None:
                 xNome_dest.text = "NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL"
         
-        # Corrige cPais para 1600 (China) ou 1058 (Brasil)
-        cPais_el = dest.find('.//{http://www.portalfiscal.inf.br/nfe}cPais')
-        if cPais_el is not None:
-            if cPais_el.text in ('160', '16'):
+        # Corrige cPais para 1600 (China) ou 1058 (Brasil) preservando ordenação estrita XSD
+        ender_dest = dest.find('{http://www.portalfiscal.inf.br/nfe}enderDest')
+        if ender_dest is not None:
+            cPais_el = ender_dest.find('{http://www.portalfiscal.inf.br/nfe}cPais')
+            xPais_el = ender_dest.find('{http://www.portalfiscal.inf.br/nfe}xPais')
+            fone_el = ender_dest.find('{http://www.portalfiscal.inf.br/nfe}fone')
+            if cPais_el is not None:
+                if cPais_el.text in ('160', '16'):
+                    cPais_el.text = '1600'
+            else:
+                cPais_el = etree.Element('{http://www.portalfiscal.inf.br/nfe}cPais')
                 cPais_el.text = '1600'
-        else:
-            ender_dest = dest.find('{http://www.portalfiscal.inf.br/nfe}enderDest')
-            if ender_dest is not None:
-                cPais_el = etree.SubElement(ender_dest, '{http://www.portalfiscal.inf.br/nfe}cPais')
-                cPais_el.text = '1600'
-                
-        xPais_el = dest.find('.//{http://www.portalfiscal.inf.br/nfe}xPais')
-        if xPais_el is not None and cPais_el is not None and cPais_el.text == '1600':
-            xPais_el.text = 'CHINA REPUBLICA POPULAR'
+                if xPais_el is not None:
+                    ender_dest.insert(list(ender_dest).index(xPais_el), cPais_el)
+                elif fone_el is not None:
+                    ender_dest.insert(list(ender_dest).index(fone_el), cPais_el)
+                else:
+                    ender_dest.append(cPais_el)
+                    
+            if xPais_el is not None and cPais_el is not None and cPais_el.text == '1600':
+                xPais_el.text = 'CHINA REPUBLICA POPULAR'
 
     # Corrige divergência de arredondamento em itens (Regras 629 e 630)
     for det in inf_nfe.findall('{http://www.portalfiscal.inf.br/nfe}det'):
@@ -626,10 +661,13 @@ def assinar_xml(xml_string):
         raise ValueError("Atributo Id não encontrado na tag <infNFe>")
 
     # Garante nó raiz NFe limpo sem prefixos ou namespaces indesejados
-    if doc.tag.endswith('NFe'):
-        nfe_root = etree.Element('{http://www.portalfiscal.inf.br/nfe}NFe', nsmap={None: 'http://www.portalfiscal.inf.br/nfe'})
-        nfe_root.append(inf_nfe)
-        doc = nfe_root
+    # e sem qualquer envoltório nfeProc, protNFe ou elementos inválidos
+    inf_supl = doc.find('.//{http://www.portalfiscal.inf.br/nfe}infNFeSupl')
+    nfe_root = etree.Element('{http://www.portalfiscal.inf.br/nfe}NFe', nsmap={None: 'http://www.portalfiscal.inf.br/nfe'})
+    nfe_root.append(inf_nfe)
+    if inf_supl is not None:
+        nfe_root.append(inf_supl)
+    doc = nfe_root
 
     # Limpar espaços e quebras entre tags
     for el in doc.iter():
@@ -693,6 +731,15 @@ def enviar_nfe(xml_assinado, uf='SP', tpAmb=2):
     if not url:
         raise ValueError(f"URL não configurada para UF {uf} e Ambiente {tpAmb}")
     
+    # Salvaguarda: garante envio exclusivo do elemento <NFe> no lote <enviNFe>
+    if '<nfeProc' in xml_assinado:
+        try:
+            d_chk = etree.fromstring(xml_assinado.encode('utf-8'))
+            nfe_node = d_chk.find('.//{http://www.portalfiscal.inf.br/nfe}NFe')
+            if nfe_node is not None:
+                xml_assinado = etree.tostring(nfe_node, encoding='utf-8').decode('utf-8')
+        except Exception:
+            pass
     xml_assinado_limpo = xml_assinado.replace('\n', '').replace('\r', '').strip()
 
     # Gera idLote dinâmico para evitar 656 - Consumo Indevido por retransmissão de lote idêntico

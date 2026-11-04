@@ -4070,8 +4070,9 @@ def generate_xml():
                 nome_sanitizado = nome_sanitizado.replace('__', '_')
             nome_arquivo = nome_sanitizado if nome_sanitizado.endswith('.xml') else f"{nome_sanitizado}.xml"
 
-        # Se a nota ja possui autorizacao oficial SEFAZ ou protocolo, retorna o XML nfeProc canonico
-        if chave_calc and len(chave_calc) == 44:
+        # Se a nota ja possui autorizacao oficial SEFAZ ou protocolo, retorna o XML nfeProc canonico (somente se não for para emissão)
+        somente_nfe = data.get('somente_nfe') or data.get('finalidade') == 'emissao'
+        if not somente_nfe and chave_calc and len(chave_calc) == 44:
             try:
                 conn_chk = get_db_connection()
                 row_chk = conn_chk.cursor().execute(
@@ -5318,6 +5319,22 @@ def api_sefaz_enviar():
         
         cstat = str(retorno.get('cstat', '')).strip()
         xmotivo = str(retorno.get('xmotivo', '')).strip()
+
+        # Se a SEFAZ retornar 204 (Duplicidade), consulta automaticamente o protocolo oficial já autorizado na SEFAZ
+        if cstat == '204' and chave and len(chave) == 44:
+            try:
+                cons_res = sefaz_client.consultar_nfe(chave, tpAmb=tpAmb)
+                if cons_res.get('cstat') == '100' or cons_res.get('protocolo_autorizacao'):
+                    retorno['cstat'] = '100'
+                    retorno['xmotivo'] = cons_res.get('xmotivo') or 'Autorizado o uso da NF-e'
+                    retorno['protocolo'] = cons_res.get('protocolo_autorizacao')
+                    if cons_res.get('raw_xml'):
+                        retorno['response_xml'] = cons_res.get('raw_xml')
+                    cstat = '100'
+                    xmotivo = retorno['xmotivo']
+            except Exception as _e_dup:
+                print(f"Aviso ao consultar duplicidade na SEFAZ: {_e_dup}")
+
         # Apenas cStat 100 é Autorizado (cStat 104 é Lote Processado, podendo conter rejeição no infProt como 225)
         # Normalização de segurança: Se vier 801 ou motivo de autorização sem rejeição, normaliza para 100
         is_autorizado = (cstat in ('100', '801') and ('autoriz' in xmotivo.lower() or cstat == '100')) or (retorno.get('status') == 'success' and 'autoriz' in xmotivo.lower() and 'rejei' not in xmotivo.lower())

@@ -5705,7 +5705,9 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
                     vPIS: mutatorLimparNumero(getVal('tot_vPIS')),
                     vCOFINS: mutatorLimparNumero(getVal('tot_vCOFINS'))
                 }
-            }
+            },
+            somente_nfe: returnTextOnly,
+            finalidade: returnTextOnly ? 'emissao' : 'geracao'
         };
 
         return fetch('/generate_xml', {
