@@ -3881,60 +3881,166 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
                 }
             }
 
-            // Atualização de Informações Adicionais (infAdProd) ao alterar DI ou Kg Líquido
-            if (campo === 'pesoL' || campo === 'nDI' || campo === 'nAdicao' || campo === 'nSeqAdic') {
+            // 3. Cálculos automáticos de Unidade, Quantidade Tributável, Kg Líquido e Informações Adicionais
+            if (campo === 'pesoL') {
+                const pesoLVal = parseNum(cell.getValue());
+                const uTribStr = String(d.uTrib || '').trim().toUpperCase();
+                const cfopStr = String(d.CFOP || '').trim();
+                const natOpStr = String((typeof getVal === 'function' ? getVal('natOp') : '') || '').toUpperCase();
+                const isReexportOuKG = (uTribStr === 'KG' || cfopStr.startsWith('7') || natOpStr.includes('REEXPORT'));
+                const updates = {};
+
+                if (isReexportOuKG) {
+                    if (!d.uTrib || d.uTrib === '') {
+                        updates.uTrib = 'KG';
+                    }
+                    if (pesoLVal > 0) {
+                        updates.qTrib = pesoLVal.toFixed(4);
+                        const vProdVal = parseNum(d.vProd);
+                        if (vProdVal > 0) {
+                            updates.vUnTrib = (vProdVal / pesoLVal).toFixed(4);
+                        }
+                    }
+                }
+
+                // Atualização automática da coluna de Informações Adicionais (infAdProd)
+                const rowData = { ...d, ...updates, pesoL: cell.getValue() };
                 if (typeof window.montarTextoInfAdProd === 'function') {
-                    const rowData = row.getData();
+                    updates.infAdProd = window.montarTextoInfAdProd(rowData);
+                }
+
+                row.update(updates);
+                cell.checkHeight();
+            } else if (campo === 'nDI' || campo === 'nAdicao' || campo === 'nSeqAdic' || campo === 'nItem') {
+                if (typeof window.montarTextoInfAdProd === 'function') {
+                    const rowData = { ...d, [campo]: cell.getValue() };
                     const novoInf = window.montarTextoInfAdProd(rowData);
                     row.update({ infAdProd: novoInf });
                 }
-            }
-
-            // Cálculo automático de Unidade e Quantidade Tributável (uTrib / qTrib / vUnTrib)
-            if (campo === 'qTrib') {
+            } else if (campo === 'qTrib') {
                 const qTribVal = parseNum(cell.getValue());
                 const vProdVal = parseNum(d.vProd);
-                const isManual = (qTribVal > 0);
-                const updates = { qTrib_manual: isManual };
+                const uTribStr = String(d.uTrib || '').trim().toUpperCase();
+                const cfopStr = String(d.CFOP || '').trim();
+                const natOpStr = String((typeof getVal === 'function' ? getVal('natOp') : '') || '').toUpperCase();
+                const isReexportOuKG = (uTribStr === 'KG' || cfopStr.startsWith('7') || natOpStr.includes('REEXPORT'));
+                const updates = { qTrib_manual: (qTribVal > 0) };
+
                 if (qTribVal > 0 && vProdVal > 0) {
                     updates.vUnTrib = (vProdVal / qTribVal).toFixed(4);
                 } else if (!cell.getValue() || cell.getValue() === '' || qTribVal <= 0) {
                     updates.vUnTrib = '';
                 }
+
+                // Se for Reexportação ou uTrib KG, sincronizar pesoL caso esteja vazio ou zerado
+                if (isReexportOuKG && qTribVal > 0) {
+                    const pesoLAtual = parseNum(d.pesoL);
+                    if (pesoLAtual <= 0) {
+                        updates.pesoL = qTribVal.toFixed(4);
+                    }
+                }
+
+                const rowData = { ...d, ...updates, qTrib: cell.getValue() };
+                if (typeof window.montarTextoInfAdProd === 'function') {
+                    updates.infAdProd = window.montarTextoInfAdProd(rowData);
+                }
+
                 row.update(updates);
                 cell.checkHeight();
+            } else if (campo === 'vUnTrib') {
+                const vUnTribVal = parseNum(cell.getValue());
+                const qTribVal = parseNum(d.qTrib);
+                if (vUnTribVal > 0 && qTribVal > 0 && (!d.vProd || parseNum(d.vProd) <= 0)) {
+                    row.update({ vProd: (vUnTribVal * qTribVal).toFixed(2) });
+                }
             } else if (campo === 'vProd') {
                 const qTribVal = parseNum(d.qTrib);
                 const vProdVal = parseNum(cell.getValue());
+                const updates = {};
                 if (qTribVal > 0 && vProdVal > 0) {
-                    const novoVUnTrib = (vProdVal / qTribVal).toFixed(4);
-                    row.update({ vUnTrib: novoVUnTrib });
+                    updates.vUnTrib = (vProdVal / qTribVal).toFixed(4);
+                }
+                const taxaAnterior = parseNum(d.taxa_conversao) || parseNum(getVal('ptax_taxa_utilizada')) || parseNum(getVal('ptax_cotacao_venda'));
+                if (taxaAnterior > 0 && vProdVal > 0) {
+                    updates.vProd_moeda_origem = (vProdVal / taxaAnterior).toFixed(2);
+                }
+                if (Object.keys(updates).length > 0) {
+                    row.update(updates);
                 }
             } else if (campo === 'uTrib') {
                 const uTribVal = String(cell.getValue() || '').trim().toUpperCase();
-                row.update({ uTrib: uTribVal });
-                if (['UN', 'PARES', 'PAR', 'PC', 'PECAS', 'PECA'].includes(uTribVal)) {
+                const updates = { uTrib: uTribVal };
+                const cfopStr = String(d.CFOP || '').trim();
+                const natOpStr = String((typeof getVal === 'function' ? getVal('natOp') : '') || '').toUpperCase();
+                const isReexportOuKG = (uTribVal === 'KG' || cfopStr.startsWith('7') || natOpStr.includes('REEXPORT'));
+
+                if (isReexportOuKG && uTribVal === 'KG') {
+                    const pesoLVal = parseNum(d.pesoL);
+                    const qTribVal = parseNum(d.qTrib);
+                    const vProdVal = parseNum(d.vProd);
+                    if (pesoLVal > 0 && (qTribVal <= 0 || !d.vUnTrib)) {
+                        updates.qTrib = pesoLVal.toFixed(4);
+                        if (vProdVal > 0) updates.vUnTrib = (vProdVal / pesoLVal).toFixed(4);
+                    } else if (qTribVal > 0 && pesoLVal <= 0) {
+                        updates.pesoL = qTribVal.toFixed(4);
+                    }
+                } else if (['UN', 'PARES', 'PAR', 'PC', 'PECAS', 'PECA'].includes(uTribVal)) {
                     const vProdVal = parseNum(d.vProd);
                     const qTribVal = parseNum(d.qCom);
                     const novoVUnTrib = (vProdVal > 0 && qTribVal > 0) ? (vProdVal / qTribVal).toFixed(4) : (d.vUnCom || '');
-                    row.update({ qTrib: d.qCom, vUnTrib: novoVUnTrib });
+                    updates.qTrib = d.qCom;
+                    updates.vUnTrib = novoVUnTrib;
                 } else if (['M3', 'M2', 'METRO', 'LT'].includes(uTribVal) && String(d.uCom || '').trim().toUpperCase() !== uTribVal) {
                     if (d.qTrib === d.qCom) {
-                        row.update({ qTrib: '', vUnTrib: '' });
+                        updates.qTrib = '';
+                        updates.vUnTrib = '';
+                    }
+                }
+                const rowData = { ...d, ...updates, uTrib: uTribVal };
+                if (typeof window.montarTextoInfAdProd === 'function') {
+                    updates.infAdProd = window.montarTextoInfAdProd(rowData);
+                }
+                row.update(updates);
+            } else if (campo === 'CFOP') {
+                const cfopVal = String(cell.getValue() || '').trim();
+                if (cfopVal.startsWith('7')) {
+                    const updates = {};
+                    if (!d.uTrib || d.uTrib === '') {
+                        updates.uTrib = 'KG';
+                    }
+                    const pesoLVal = parseNum(d.pesoL);
+                    const qTribVal = parseNum(d.qTrib);
+                    const vProdVal = parseNum(d.vProd);
+                    if (pesoLVal > 0 && (qTribVal <= 0 || !d.vUnTrib)) {
+                        updates.qTrib = pesoLVal.toFixed(4);
+                        if (vProdVal > 0) updates.vUnTrib = (vProdVal / pesoLVal).toFixed(4);
+                    }
+                    if (Object.keys(updates).length > 0) {
+                        row.update(updates);
                     }
                 }
             } else if (campo === 'qCom' || campo === 'vUnCom') {
-                // Cálculo automático obrigatório de V. Total Prod. (vProd = qCom * vUnCom) e BC II (vBC_II = vProd + vFrete + vSeg)
                 const qComNum = parseNum(d.qCom);
                 const vUnComNum = parseNum(d.vUnCom);
                 if (qComNum > 0 && vUnComNum > 0) {
                     const novoVProd = (qComNum * vUnComNum).toFixed(2);
-                    const qTribVal = parseNum(d.qTrib);
+                    let qTribVal = parseNum(d.qTrib);
+                    const pesoLVal = parseNum(d.pesoL);
+                    const uTribStr = String(d.uTrib || '').trim().toUpperCase();
+                    const cfopStr = String(d.CFOP || '').trim();
+                    const natOpStr = String((typeof getVal === 'function' ? getVal('natOp') : '') || '').toUpperCase();
+                    const isReexportOuKG = (uTribStr === 'KG' || cfopStr.startsWith('7') || natOpStr.includes('REEXPORT'));
+
+                    if (isReexportOuKG && pesoLVal > 0 && qTribVal <= 0) {
+                        qTribVal = pesoLVal;
+                    }
+
                     const vFreteNum = parseNum(d.vFrete);
                     const vSegNum = parseNum(d.vSeg);
                     const novoBCII = (parseNum(novoVProd) + vFreteNum + vSegNum).toFixed(2);
                     const updates = { vProd: novoVProd, vBC_II: novoBCII };
                     if (qTribVal > 0) {
+                        updates.qTrib = qTribVal.toFixed(4);
                         updates.vUnTrib = (parseNum(novoVProd) / qTribVal).toFixed(4);
                     }
                     const taxaAnterior = parseNum(d.taxa_conversao) || parseNum(getVal('ptax_taxa_utilizada')) || parseNum(getVal('ptax_cotacao_venda'));
@@ -4181,6 +4287,18 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
 
             // Casos específicos por unidade tributável:
             if (uTribOficial === 'KG') {
+                const pesoLItem = parseNum(it.pesoL || it.kg_liquido || it.peso_liquido);
+                if (pesoLItem > 0) {
+                    it.qTrib = pesoLItem.toFixed(4);
+                    if (vProdNum > 0) {
+                        it.vUnTrib = (vProdNum / pesoLItem).toFixed(4);
+                    }
+                    if (typeof window.montarTextoInfAdProd === 'function') {
+                        it.infAdProd = window.montarTextoInfAdProd(it);
+                    }
+                    itensProcessados++;
+                    return;
+                }
                 itensKGIndices.push(idx);
             } else if (uTribOficial === 'PARES' || uTribOficial === 'PAR') {
                 // "se for Pares, que puxe de quantidade comercializada e assim por diantes"
@@ -4236,6 +4354,12 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
                     const vProdNum = parseNum(it.vProd);
                     const qTribNum = parseNum(it.qTrib);
                     it.vUnTrib = (vProdNum > 0 && qTribNum > 0) ? (vProdNum / qTribNum).toFixed(4) : '';
+                    if (!it.pesoL || parseNum(it.pesoL) <= 0) {
+                        it.pesoL = it.qTrib;
+                    }
+                    if (typeof window.montarTextoInfAdProd === 'function') {
+                        it.infAdProd = window.montarTextoInfAdProd(it);
+                    }
                     itensProcessados++;
                 });
             } else {
@@ -5236,6 +5360,21 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
                 const vu = parseNum(it.vUnCom);
                 if (q > 0 && vu > 0) it.vProd = (q * vu).toFixed(2);
                 it.vBC_II = (parseNum(it.vProd) + parseNum(it.vFrete) + parseNum(it.vSeg)).toFixed(2);
+                const uTribStr = String(it.uTrib || '').trim().toUpperCase();
+                const cfopStr = String(it.CFOP || '').trim();
+                const pesoLVal = parseNum(it.pesoL || it.kg_liquido || it.peso_liquido);
+                if ((uTribStr === 'KG' || cfopStr.startsWith('7')) && pesoLVal > 0) {
+                    it.pesoL = pesoLVal.toFixed(4);
+                    if (!it.qTrib || parseNum(it.qTrib) <= 0) {
+                        it.qTrib = pesoLVal.toFixed(4);
+                    }
+                    if (parseNum(it.vProd) > 0 && (!it.vUnTrib || parseNum(it.vUnTrib) <= 0)) {
+                        it.vUnTrib = (parseNum(it.vProd) / pesoLVal).toFixed(4);
+                    }
+                }
+                if (typeof window.montarTextoInfAdProd === 'function') {
+                    it.infAdProd = window.montarTextoInfAdProd(it);
+                }
             });
             document.getElementById('itens-badge').innerText = itensCache.length;
             
@@ -5351,11 +5490,27 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
             if (cfopAtivoExcel) {
                 itensCache.forEach(it => { it.CFOP = cfopAtivoExcel; });
             }
-            itensCache.forEach(it => {
+            itensCache.forEach((it, idx) => {
+                if (!it.nItem) it.nItem = String(idx + 1);
                 const q = parseNum(it.qCom);
                 const vu = parseNum(it.vUnCom);
                 if (q > 0 && vu > 0) it.vProd = (q * vu).toFixed(2);
                 it.vBC_II = (parseNum(it.vProd) + parseNum(it.vFrete) + parseNum(it.vSeg)).toFixed(2);
+                const uTribStr = String(it.uTrib || '').trim().toUpperCase();
+                const cfopStr = String(it.CFOP || '').trim();
+                const pesoLVal = parseNum(it.pesoL || it.kg_liquido || it.peso_liquido);
+                if ((uTribStr === 'KG' || cfopStr.startsWith('7')) && pesoLVal > 0) {
+                    it.pesoL = pesoLVal.toFixed(4);
+                    if (!it.qTrib || parseNum(it.qTrib) <= 0) {
+                        it.qTrib = pesoLVal.toFixed(4);
+                    }
+                    if (parseNum(it.vProd) > 0 && (!it.vUnTrib || parseNum(it.vUnTrib) <= 0)) {
+                        it.vUnTrib = (parseNum(it.vProd) / pesoLVal).toFixed(4);
+                    }
+                }
+                if (typeof window.montarTextoInfAdProd === 'function') {
+                    it.infAdProd = window.montarTextoInfAdProd(it);
+                }
             });
             document.getElementById('itens-badge').innerText = itensCache.length;
             if (itensTable) {

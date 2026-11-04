@@ -601,12 +601,30 @@
             const outroEl = document.getElementById(outroId);
             if (outroEl && outroEl.value !== pesoVal) outroEl.value = pesoVal;
 
+            const uTribVal = (document.getElementById('m_item_uTrib')?.value || '').trim().toUpperCase();
+            const cfopVal = (document.getElementById('m_item_CFOP')?.value || '').trim();
+            const isReexportOuKG = (uTribVal === 'KG' || cfopVal.startsWith('7'));
+
+            if (isReexportOuKG) {
+                const pesoNum = parseNum(pesoVal);
+                const qTribEl = document.getElementById('m_item_qTrib');
+                const vUnTribEl = document.getElementById('m_item_vUnTrib');
+                const vProdVal = parseNum(document.getElementById('m_item_vProd')?.value);
+                if (pesoNum > 0) {
+                    if (qTribEl) qTribEl.value = pesoNum.toFixed(4);
+                    if (vProdVal > 0 && vUnTribEl) {
+                        vUnTribEl.value = (vProdVal / pesoNum).toFixed(4);
+                    }
+                }
+            }
+
             const infAdEl = document.getElementById('m_item_infAdProd');
             if (infAdEl && typeof window.montarTextoInfAdProd === 'function') {
                 const itemTemp = {
                     nDI: document.getElementById('m_item_nDI')?.value,
                     nAdicao: document.getElementById('m_item_nAdicao')?.value,
                     nSeqAdic: document.getElementById('m_item_nSeqAdic')?.value,
+                    nItem: document.getElementById('modalItemBadgeNum')?.textContent?.replace('#', ''),
                     pesoL: pesoVal,
                     infAdProd: infAdEl.value
                 };
@@ -629,6 +647,7 @@
                             nDI: document.getElementById('m_item_nDI')?.value,
                             nAdicao: document.getElementById('m_item_nAdicao')?.value,
                             nSeqAdic: document.getElementById('m_item_nSeqAdic')?.value,
+                            nItem: document.getElementById('modalItemBadgeNum')?.textContent?.replace('#', ''),
                             pesoL: document.getElementById('m_item_pesoL')?.value,
                             infAdProd: infAdEl.value
                         };
@@ -637,6 +656,38 @@
                 });
             }
         });
+
+        const qTribInputEl = document.getElementById('m_item_qTrib');
+        if (qTribInputEl) {
+            qTribInputEl.addEventListener('input', function() {
+                const qTribNum = parseNum(qTribInputEl.value);
+                const vProdVal = parseNum(document.getElementById('m_item_vProd')?.value);
+                const vUnTribEl = document.getElementById('m_item_vUnTrib');
+                if (qTribNum > 0 && vProdVal > 0 && vUnTribEl) {
+                    vUnTribEl.value = (vProdVal / qTribNum).toFixed(4);
+                }
+                const uTribVal = (document.getElementById('m_item_uTrib')?.value || '').trim().toUpperCase();
+                const cfopVal = (document.getElementById('m_item_CFOP')?.value || '').trim();
+                if ((uTribVal === 'KG' || cfopVal.startsWith('7')) && qTribNum > 0) {
+                    const pL1 = document.getElementById('m_item_pesoL');
+                    const pL2 = document.getElementById('m_item_pesoL_adu');
+                    if (pL1 && parseNum(pL1.value) <= 0) pL1.value = qTribNum.toFixed(4);
+                    if (pL2 && parseNum(pL2.value) <= 0) pL2.value = qTribNum.toFixed(4);
+                }
+                const infAdEl = document.getElementById('m_item_infAdProd');
+                if (infAdEl && typeof window.montarTextoInfAdProd === 'function') {
+                    const itemTemp = {
+                        nDI: document.getElementById('m_item_nDI')?.value,
+                        nAdicao: document.getElementById('m_item_nAdicao')?.value,
+                        nSeqAdic: document.getElementById('m_item_nSeqAdic')?.value,
+                        nItem: document.getElementById('modalItemBadgeNum')?.textContent?.replace('#', ''),
+                        pesoL: document.getElementById('m_item_pesoL')?.value,
+                        infAdProd: infAdEl.value
+                    };
+                    infAdEl.value = window.montarTextoInfAdProd(itemTemp);
+                }
+            });
+        }
 
         // Botão copiar comercial para tributável
         const btnCopiar = document.getElementById('btn-copiar-com-para-trib');
@@ -1604,6 +1655,12 @@
     window.montarTextoInfAdProd = function(item) {
         if (!item) return "";
         let nDI = String(item.nDI || document.getElementById('import_nDI')?.value || '').trim();
+        if (!nDI) {
+            const infCplVal = document.getElementById('infCpl')?.value || '';
+            const m = infCplVal.match(/DI:\s*([0-9\/\-]+)/i);
+            if (m) nDI = m[1].trim();
+        }
+
         let nAdicao = String(item.nAdicao || '1').trim();
         let nSeqAdic = String(item.nSeqAdic || item.nItem || '1').trim();
         let pesoL = String(item.pesoL || item.kg_liquido || item.peso_liquido || '').trim();
@@ -1611,8 +1668,7 @@
 
         // Extrair qualquer texto personalizado anterior que não seja DI nem Peso
         let textoExtra = infAd;
-        textoExtra = textoExtra.replace(/DI:\s*[^;\-
-]+(?:Adicao|Adição)?:?\s*\d*\s*(?:Item)?:?\s*\d*/gi, '').trim();
+        textoExtra = textoExtra.replace(/DI:\s*[^;\-\n\r]+?(?:Adicao|Adição)?:?\s*\d*\s*(?:Item)?:?\s*\d*/gi, '').trim();
         textoExtra = textoExtra.replace(/(?:Peso\s*L[ií]q(?:uido)?|Kg\s*L[ií]q(?:uido)?)\s*[:=]?\s*[\d.,]+\s*(?:kg)?/gi, '').trim();
         textoExtra = textoExtra.replace(/^[\s\-\–\—;:,]+|[\s\-\–\—;:,]+$/g, '').trim();
 
@@ -1727,7 +1783,14 @@
                 if (alterouItem) itensAlterados++;
             });
 
-            table.setData(itens);
+            await table.setData(itens);
+            window.itensCache = itens;
+            if (typeof itensCache !== 'undefined') {
+                itensCache = itens;
+            }
+            if (typeof table.redraw === 'function') {
+                table.redraw(true);
+            }
             if (window.triggerAutoSave) window.triggerAutoSave();
 
             let msg = '';
