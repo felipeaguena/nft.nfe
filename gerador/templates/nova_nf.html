@@ -125,6 +125,12 @@
 </a>
 </li>
 <li class="nft-sidebar-item">
+<a class="nft-sidebar-btn" href="/unidades_tributaveis" title="Unidades Tributáveis & Abreviações">
+<span class="sidebar-icon"><i data-lucide="scale"></i></span>
+<span class="sidebar-label">Unidades Tributáveis</span>
+</a>
+</li>
+<li class="nft-sidebar-item">
 <button class="nft-sidebar-btn" onclick="abrirModalTipoNota()" title="Configuração de Impostos &amp; Regras por Operação" type="button">
 <span class="sidebar-icon"><i data-lucide="settings"></i></span>
 <span class="sidebar-label">Tipo de Nota (Impostos)</span>
@@ -1314,6 +1320,10 @@ Aceita exclusivamente números. Ao completar 44 dígitos, a chave é incluída n
     <i data-lucide="globe"></i>
     <span>Repassar DI</span>
 </button>
+<button class="btn-nft fw-bold d-flex align-items-center gap-1 me-1 shadow-sm" type="button" onclick="substituirUnidadesPorAbreviadas()" title="Padronizar e substituir nomes de unidades pelos códigos abreviados oficiais (ex: Peças -> PC, Unidade -> UN, Quilograma -> KG)">
+    <i data-lucide="wand-2"></i>
+    <span>Abreviar Un. Trib.</span>
+</button>
 <button class="btn-nft me-1 fw-bold d-flex align-items-center gap-1" onclick="abrirPainelRateio()" title="Ir para Parâmetros de Rateio e Câmbio PTAX">
 <i data-lucide="scale"></i>
 <span>Rateio &amp; PTAX</span>
@@ -1778,9 +1788,9 @@ Aceita exclusivamente números. Ao completar 44 dígitos, a chave é incluída n
         if (isManual) {
             if (cellEl) {
                 cellEl.classList.add('cell-qtrib-manual');
-                cellEl.title = "Quantidade Tributável editada manualmente (fixada e protegida contra recálculo automático)";
+                cellEl.title = "Quantidade Tributável editada manualmente";
             }
-            return `<span class="d-inline-flex align-items-center justify-content-end w-100 gap-1"><span>${valVisual}</span><span class="badge-manual-qtrib" title="Editada manualmente"><i data-lucide="edit-3" style="width: 9px; height: 9px;"></i> manual</span></span>`;
+            return `<span class="fw-bold" style="color: #b45309;">${valVisual}</span>`;
         } else {
             if (cellEl) {
                 cellEl.classList.remove('cell-qtrib-manual');
@@ -3612,9 +3622,11 @@ Aceita exclusivamente números. Ao completar 44 dígitos, a chave é incluída n
         {title:"V. Total (Moeda)", field:"vProd_moeda_origem", width:125, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, mutatorEdit:mutatorLimparNumero, cssClass:"font-monospace fw-bold text-info"},
         {title:"Moeda Conv.", field:"moeda_conversao", width:85, hozAlign:"center", headerHozAlign:"center", cssClass:"font-monospace fw-semibold text-secondary"},
         {title:"Câmbio Utilizado", field:"taxa_conversao", width:125, hozAlign:"right", headerHozAlign:"right", formatter:formatarUnitarioVisualBR, cssClass:"font-monospace text-secondary"},
-        {title:"Un. Trib.", field:"uTrib", width:85, editor:"input"},
-        {title:"Qtd. Trib.", field:"qTrib", width:115, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarQTribVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"Un. Trib.", field:"uTrib", width:85, editor:"input", hozAlign:"center", headerHozAlign:"center"},
+        {title:"Qtd. Trib.", field:"qTrib", width:110, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarQTribVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"Kg Líquido", field:"pesoL", width:110, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarQtdVisualBR, mutatorEdit:mutatorLimparNumero},
         {title:"V. Unit. Trib.", field:"vUnTrib", width:120, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarUnitarioVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"Informações Adicionais", field:"infAdProd", width:260, editor:"input"},
         {title:"Frete", field:"vFrete", width:95, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, mutatorEdit:mutatorLimparNumero},
         {title:"Outras Desp.", field:"vOutro", width:105, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, mutatorEdit:mutatorLimparNumero},
         {title:"Nº DI", field:"nDI", width:125, editor:"input"},
@@ -3835,6 +3847,15 @@ Aceita exclusivamente números. Ao completar 44 dígitos, a chave é incluída n
                 const pIIVal = parseNum(d.aliquota_ii);
                 if (pIIVal > 0) {
                     row.update({ vII: (bcII * (pIIVal / 100)).toFixed(2) });
+                }
+            }
+
+            // Atualização de Informações Adicionais (infAdProd) ao alterar DI ou Kg Líquido
+            if (campo === 'pesoL' || campo === 'nDI' || campo === 'nAdicao' || campo === 'nSeqAdic') {
+                if (typeof window.montarTextoInfAdProd === 'function') {
+                    const rowData = row.getData();
+                    const novoInf = window.montarTextoInfAdProd(rowData);
+                    row.update({ infAdProd: novoInf });
                 }
             }
 

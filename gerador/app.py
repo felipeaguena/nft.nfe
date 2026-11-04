@@ -1100,7 +1100,22 @@ def build_nfe_element(cabecalho, itens, rodape):
 
         # Informações Adicionais do Produto (infAdProd) - exibidas na descrição do item no DANFE
         inf_ad_prod = str(item.get('infAdProd') or '').strip()
-        if not inf_ad_prod and n_di and not deve_gerar_di:
+        peso_l_item = str(item.get('pesoL') or item.get('kg_liquido') or item.get('peso_liquido') or '').strip()
+        tem_peso = peso_l_item and peso_l_item not in ('0', '0.00', '0.000', '0,00', '0,000')
+        if n_di and 'DI:' not in inf_ad_prod:
+            raw_adic_str = re.sub(r'\D', '', str(item.get('nAdicao') or idx)).lstrip('0') or str(idx)
+            raw_seq_str = re.sub(r'\D', '', str(item.get('nSeqAdic') or '1')).lstrip('0') or '1'
+            di_txt = f"DI: {n_di} Adicao: {int(raw_adic_str):03d} Item: {int(raw_seq_str):03d}"
+            partes_inf = [di_txt]
+            if tem_peso and 'Peso Liq' not in inf_ad_prod and 'Kg Liq' not in inf_ad_prod and 'Peso Líq' not in inf_ad_prod:
+                partes_inf.append(f"Peso Liq: {peso_l_item} kg")
+            if inf_ad_prod:
+                partes_inf.append(inf_ad_prod)
+            inf_ad_prod = " - ".join(partes_inf)
+        elif tem_peso and 'Peso Liq' not in inf_ad_prod and 'Kg Liq' not in inf_ad_prod and 'Peso Líq' not in inf_ad_prod:
+            peso_txt = f"Peso Liq: {peso_l_item} kg"
+            inf_ad_prod = f"{inf_ad_prod} - {peso_txt}" if inf_ad_prod else peso_txt
+        elif not inf_ad_prod and n_di:
             raw_adic_str = re.sub(r'\D', '', str(item.get('nAdicao') or idx)).lstrip('0') or str(idx)
             raw_seq_str = re.sub(r'\D', '', str(item.get('nSeqAdic') or '1')).lstrip('0') or '1'
             inf_ad_prod = f"DI: {n_di} Adicao: {int(raw_adic_str):03d} Item: {int(raw_seq_str):03d}"
@@ -3241,6 +3256,7 @@ def process_di_xml(root):
                 "cExportador": fornecedor,
                 "cFabricante": fabricante,
                 "nAdicao": numero_adicao, "nSeqAdic": numero_seq,
+                "infAdProd": f"DI: {numero_di} Adicao: {int(numero_adicao):03d} Item: {int(numero_seq):03d}",
             }
             itens.append(item_obj)
             idx += 1
@@ -4201,7 +4217,22 @@ def import_excel():
         if not rows:
             return jsonify({"itens": []})
         
-        headers = [str(col).strip() if col is not None else f"col_{idx}" for idx, col in enumerate(rows[0])]
+        raw_headers = [str(col).strip() if col is not None else f"col_{idx}" for idx, col in enumerate(rows[0])]
+        headers = []
+        for idx, h_raw in enumerate(raw_headers):
+            h_norm = re.sub(r'[^a-zA-Z0-9]', '', h_raw).lower()
+            if h_norm in ('kgliquido', 'pesoliquido', 'pesol', 'pesoliq', 'kg', 'peso'):
+                headers.append('pesoL')
+            elif h_norm in ('infadprod', 'informacoesadicionais', 'informacoesadicionaisdoproduto', 'infoadicional'):
+                headers.append('infAdProd')
+            elif h_norm in ('utrib', 'untrib', 'unidadetributavel'):
+                headers.append('uTrib')
+            elif h_norm in ('qtrib', 'qtdtrib', 'quantidadetributavel'):
+                headers.append('qTrib')
+            elif h_norm in ('vuntrib', 'vunittrib', 'valorunitariotributavel'):
+                headers.append('vUnTrib')
+            else:
+                headers.append(h_raw)
         itens = []
         for row in rows[1:]:
             if all(v is None or str(v).strip() == "" for v in row):
@@ -4366,6 +4397,182 @@ def api_ncm_unidades_tributaveis():
 
     conn.close()
     return jsonify(mapa)
+
+# === ROTAS: UNIDADES TRIBUTÁVEIS & ABREVIAÇÕES (uTrib / uCom) ===
+
+@app.route('/unidades_tributaveis')
+def unidades_tributaveis_view():
+    return render_template('unidades_tributaveis.html')
+
+@app.route('/api/unidades_tributaveis', methods=['GET', 'POST'])
+def api_unidades_tributaveis():
+    conn = get_db_connection()
+    c = conn.cursor()
+    if request.method == 'GET':
+        rows = c.execute("SELECT id, codigo, descricao, variacoes, ativo, ordem FROM tabela_unidades_tributaveis ORDER BY ordem ASC, codigo ASC").fetchall()
+        lista = []
+        for r in rows:
+            vars_raw = r['variacoes']
+            try:
+                vars_list = json.loads(vars_raw) if isinstance(vars_raw, str) else (vars_raw or [])
+            except:
+                vars_list = [v.strip() for v in str(vars_raw).split(',') if v.strip()]
+            lista.append({
+                'id': r['id'],
+                'codigo': r['codigo'],
+                'descricao': r['descricao'],
+                'variacoes': vars_list,
+                'ativo': r['ativo'],
+                'ordem': r['ordem']
+            })
+        conn.close()
+        return jsonify(lista)
+
+    # POST: Criar nova unidade
+    data = request.get_json(silent=True) or {}
+    codigo = str(data.get('codigo') or '').strip().upper()
+    descricao = str(data.get('descricao') or '').strip()
+    if not codigo or not descricao:
+        conn.close()
+        return jsonify({'error': 'Código e Descrição são obrigatórios'}), 400
+
+    vars_val = data.get('variacoes', [])
+    if isinstance(vars_val, str):
+        vars_list = [v.strip().upper() for v in vars_val.split(',') if v.strip()]
+    elif isinstance(vars_val, list):
+        vars_list = [str(v).strip().upper() for v in vars_val if str(v).strip()]
+    else:
+        vars_list = [codigo]
+    if codigo not in vars_list:
+        vars_list.append(codigo)
+
+    ordem = int(data.get('ordem') or 0)
+    ativo = int(data.get('ativo', 1))
+
+    try:
+        c.execute("""
+            INSERT INTO tabela_unidades_tributaveis (codigo, descricao, variacoes, ativo, ordem)
+            VALUES (?, ?, ?, ?, ?)
+        """, (codigo, descricao, json.dumps(vars_list, ensure_ascii=False), ativo, ordem))
+        conn.commit()
+        novo_id = c.lastrowid
+        conn.close()
+        return jsonify({'id': novo_id, 'codigo': codigo, 'descricao': descricao, 'variacoes': vars_list, 'ativo': ativo, 'ordem': ordem}), 201
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': f'Erro ao cadastrar unidade: {str(e)}'}), 500
+
+@app.route('/api/unidades_tributaveis/<int:uid>', methods=['PUT', 'DELETE'])
+def api_unidades_tributaveis_item(uid):
+    conn = get_db_connection()
+    c = conn.cursor()
+    if request.method == 'DELETE':
+        try:
+            c.execute("DELETE FROM tabela_unidades_tributaveis WHERE id = ?", (uid,))
+            conn.commit()
+            conn.close()
+            return jsonify({'success': True, 'id': uid})
+        except Exception as e:
+            conn.close()
+            return jsonify({'error': str(e)}), 500
+
+    # PUT
+    data = request.get_json(silent=True) or {}
+    codigo = str(data.get('codigo') or '').strip().upper()
+    descricao = str(data.get('descricao') or '').strip()
+    vars_val = data.get('variacoes')
+
+    # Se apenas variações foram enviadas
+    if vars_val is not None and not codigo and not descricao:
+        if isinstance(vars_val, str):
+            vars_list = [v.strip().upper() for v in vars_val.split(',') if v.strip()]
+        elif isinstance(vars_val, list):
+            vars_list = [str(v).strip().upper() for v in vars_val if str(v).strip()]
+        else:
+            vars_list = []
+        try:
+            c.execute("UPDATE tabela_unidades_tributaveis SET variacoes = ? WHERE id = ?", (json.dumps(vars_list, ensure_ascii=False), uid))
+            conn.commit()
+            conn.close()
+            return jsonify({'success': True, 'id': uid, 'variacoes': vars_list})
+        except Exception as e:
+            conn.close()
+            return jsonify({'error': str(e)}), 500
+
+    if not codigo or not descricao:
+        conn.close()
+        return jsonify({'error': 'Código e Descrição são obrigatórios'}), 400
+
+    if isinstance(vars_val, str):
+        vars_list = [v.strip().upper() for v in vars_val.split(',') if v.strip()]
+    elif isinstance(vars_val, list):
+        vars_list = [str(v).strip().upper() for v in vars_val if str(v).strip()]
+    else:
+        vars_list = [codigo]
+
+    ordem = int(data.get('ordem') or 0)
+    ativo = int(data.get('ativo', 1))
+
+    try:
+        c.execute("""
+            UPDATE tabela_unidades_tributaveis
+            SET codigo = ?, descricao = ?, variacoes = ?, ativo = ?, ordem = ?
+            WHERE id = ?
+        """, (codigo, descricao, json.dumps(vars_list, ensure_ascii=False), ativo, ordem, uid))
+        conn.commit()
+        conn.close()
+        return jsonify({'id': uid, 'codigo': codigo, 'descricao': descricao, 'variacoes': vars_list, 'ativo': ativo, 'ordem': ordem})
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/unidades_tributaveis/reset_padrao', methods=['POST'])
+def api_unidades_tributaveis_reset():
+    conn = get_db_connection()
+    c = conn.cursor()
+    UNIDADES_PADRAO = [
+        ('PC', 'Peça', ['PECA', 'PECAS', 'PEÇA', 'PEÇAS', 'PC', 'PCS', 'PÇ', 'PÇS', 'PCO', 'PCOS'], 1),
+        ('UN', 'Unidade', ['UNIDADE', 'UNIDADES', 'UNID', 'UNIDS', 'UND', 'UN'], 2),
+        ('KG', 'Quilograma', ['QUILOGRAMA', 'QUILOGRAMAS', 'KILO', 'KILOS', 'QUILO', 'QUILOS', 'KG', 'KGS', 'KL'], 3),
+        ('PAR', 'Par', ['PAR', 'PARES', 'PR', 'PRS'], 4),
+        ('CX', 'Caixa', ['CAIXA', 'CAIXAS', 'CX', 'CXS', 'BOX', 'CXA'], 5),
+        ('M', 'Metro', ['METRO', 'METROS', 'M', 'MT', 'MTR', 'MTRS'], 6),
+        ('M2', 'Metro Quadrado', ['METRO QUADRADO', 'METROS QUADRADOS', 'M2', 'M²', 'MT2', 'MQ'], 7),
+        ('M3', 'Metro Cúbico', ['METRO CUBICO', 'METROS CUBICOS', 'METRO CÚBICO', 'METROS CÚBICOS', 'M3', 'M³', 'MT3'], 8),
+        ('L', 'Litro', ['LITRO', 'LITROS', 'L', 'LT', 'LTS', 'LIT', 'LITS'], 9),
+        ('MIL', 'Milheiro', ['MILHEIRO', 'MILHEIROS', 'MIL', 'MLH'], 10),
+        ('TON', 'Tonelada', ['TONELADA', 'TONELADAS', 'TON', 'TONS', 'T', 'TNS'], 11),
+        ('JG', 'Jogo', ['JOGO', 'JOGOS', 'JG', 'JGS', 'SET', 'JGS.'], 12),
+        ('RL', 'Rolo', ['ROLO', 'ROLOS', 'RL', 'RLS', 'ROL'], 13),
+        ('PCT', 'Pacote', ['PACOTE', 'PACOTES', 'PCT', 'PCTS', 'PCK', 'PKG', 'PACK'], 14),
+        ('DZ', 'Dúzia', ['DUZIA', 'DUZIAS', 'DÚZIA', 'DÚZIAS', 'DZ', 'DZS'], 15),
+        ('G', 'Grama', ['GRAMA', 'GRAMAS', 'G', 'GR', 'GRS', 'GRM', 'GRMS'], 16),
+        ('SC', 'Saco', ['SACO', 'SACOS', 'SC', 'SCS', 'SAC', 'BAG'], 17),
+        ('TB', 'Tubo / Tambor', ['TUBO', 'TUBOS', 'TAMBOR', 'TAMBORES', 'TB', 'TBS'], 18),
+        ('FR', 'Frasco', ['FRASCO', 'FRASCOS', 'FR', 'FRS', 'BOT', 'FRASCO(S)'], 19),
+        ('AMP', 'Ampola', ['AMPOLA', 'AMPOLAS', 'AMP', 'AMPS'], 20),
+        ('BOB', 'Bobina', ['BOBINA', 'BOBINAS', 'BOB', 'BOBS'], 21),
+        ('BD', 'Balde', ['BALDE', 'BALDES', 'BD', 'BDS', 'BAL'], 22),
+        ('GL', 'Galão', ['GALAO', 'GALAOS', 'GALÃO', 'GALÕES', 'GL', 'GLS', 'GAL'], 23),
+        ('FD', 'Fardo', ['FARDO', 'FARDOS', 'FD', 'FDS'], 24),
+        ('CJ', 'Conjunto', ['CONJUNTO', 'CONJUNTOS', 'CJ', 'CJS', 'CNJ'], 25),
+        ('CRT', 'Cartela', ['CARTELA', 'CARTELAS', 'CRT', 'CRTS', 'BLISTER'], 26),
+        ('BAR', 'Barra', ['BARRA', 'BARRAS', 'BAR', 'BARS'], 27),
+        ('LT', 'Lata', ['LATA', 'LATAS', 'LT', 'LTS', 'CAN'], 28),
+        ('KWH', 'Quilowatt-Hora', ['QUILOWATT-HORA', 'QUILOWATT HORA', 'KWH', 'KW/H'], 29)
+    ]
+    for cod, desc, vars_l, ord_val in UNIDADES_PADRAO:
+        c.execute("""
+            INSERT INTO tabela_unidades_tributaveis (codigo, descricao, variacoes, ativo, ordem)
+            VALUES (?, ?, ?, 1, ?)
+            ON CONFLICT(codigo) DO UPDATE SET
+                descricao = excluded.descricao,
+                variacoes = excluded.variacoes,
+                ordem = excluded.ordem
+        """, (cod, desc, json.dumps(vars_l, ensure_ascii=False), ord_val))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True, 'message': 'Unidades restauradas com sucesso!'})
 
 @app.route('/localidades')
 def localidades_view():

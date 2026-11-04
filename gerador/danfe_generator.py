@@ -271,6 +271,7 @@ class DanfeGenerator:
             itens.append({
                 "cProd": c_prod,
                 "xProd": x_prod,
+                "infAdProd": find_txt(det, "nfe:infAdProd"),
                 "NCM": ncm,
                 "orig_csosn": f"{orig}/{cst_csosn}" if cst_csosn else orig,
                 "CFOP": cfop,
@@ -535,6 +536,18 @@ class DanfeGenerator:
                     cur_line = w
             if cur_line:
                 x_prod_lines.append(cur_line)
+
+            if it.get("infAdProd"):
+                cur_inf = ""
+                for w in str(it["infAdProd"]).strip().split(" "):
+                    if len(cur_inf + " " + w) <= 35:
+                        cur_inf = (cur_inf + " " + w).strip()
+                    else:
+                        if cur_inf:
+                            x_prod_lines.append(cur_inf)
+                        cur_inf = w
+                if cur_inf:
+                    x_prod_lines.append(cur_inf)
 
             # Imprimir linha 1 das colunas
             page.insert_text(fitz.Point(15.8, y_item), it["cProd"][:10], fontsize=5.0, fontname="Helvetica")

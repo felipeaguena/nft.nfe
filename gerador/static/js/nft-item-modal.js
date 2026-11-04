@@ -148,8 +148,12 @@
                                                 <label class="form-label small mb-1">V. Unitário R$ (vUnCom) <span class="text-danger">*</span></label>
                                                 <input type="number" step="0.0001" class="form-control form-control-sm text-end font-monospace fw-semibold" id="m_item_vUnCom" value="0.0000">
                                             </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label small mb-1 fw-bold text-success">Total do Produto R$ (vProd)</label>
+                                            <div class="col-md-2">
+                                                <label class="form-label small mb-1 fw-bold text-primary">Kg Líquido</label>
+                                                <input type="number" step="0.001" class="form-control form-control-sm text-end font-monospace fw-semibold" id="m_item_pesoL" placeholder="0.000">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label small mb-1 fw-bold text-success">Total do Produto R$</label>
                                                 <input type="text" class="form-control form-control-sm text-end font-monospace fw-bold bg-success-subtle text-success border-success-subtle" id="m_item_vProd" readonly value="0.00">
                                             </div>
                                         </div>
@@ -366,9 +370,13 @@
                                                 <label class="form-label small mb-1">Un. Trib (uTrib)</label>
                                                 <input type="text" class="form-control form-control-sm text-uppercase text-center font-monospace" id="m_item_uTrib" value="UN" maxlength="6">
                                             </div>
-                                            <div class="col-md-3">
+                                            <div class="col-md-2">
                                                 <label class="form-label small mb-1">Qtd. Trib (qTrib)</label>
                                                 <input type="number" step="0.0001" class="form-control form-control-sm text-end font-monospace" id="m_item_qTrib" value="1.0000">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label small mb-1 fw-bold text-primary">Kg Líquido</label>
+                                                <input type="number" step="0.001" class="form-control form-control-sm text-end font-monospace" id="m_item_pesoL_adu" placeholder="0.000">
                                             </div>
                                             <div class="col-md-3">
                                                 <label class="form-label small mb-1">V. Unit. Trib (vUnTrib)</label>
@@ -587,6 +595,49 @@
         if (qComEl) qComEl.addEventListener('input', () => recalcularTotalItemModal(true));
         if (vUnComEl) vUnComEl.addEventListener('input', () => recalcularTotalItemModal(true));
 
+        function syncPesoL(origem) {
+            const pesoVal = (document.getElementById(origem)?.value || '').trim();
+            const outroId = origem === 'm_item_pesoL' ? 'm_item_pesoL_adu' : 'm_item_pesoL';
+            const outroEl = document.getElementById(outroId);
+            if (outroEl && outroEl.value !== pesoVal) outroEl.value = pesoVal;
+
+            const infAdEl = document.getElementById('m_item_infAdProd');
+            if (infAdEl && typeof window.montarTextoInfAdProd === 'function') {
+                const itemTemp = {
+                    nDI: document.getElementById('m_item_nDI')?.value,
+                    nAdicao: document.getElementById('m_item_nAdicao')?.value,
+                    nSeqAdic: document.getElementById('m_item_nSeqAdic')?.value,
+                    pesoL: pesoVal,
+                    infAdProd: infAdEl.value
+                };
+                infAdEl.value = window.montarTextoInfAdProd(itemTemp);
+            }
+        }
+
+        const pLEl1 = document.getElementById('m_item_pesoL');
+        if (pLEl1) pLEl1.addEventListener('input', () => syncPesoL('m_item_pesoL'));
+        const pLEl2 = document.getElementById('m_item_pesoL_adu');
+        if (pLEl2) pLEl2.addEventListener('input', () => syncPesoL('m_item_pesoL_adu'));
+
+        ['m_item_nDI', 'm_item_nAdicao', 'm_item_nSeqAdic'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', () => {
+                    const infAdEl = document.getElementById('m_item_infAdProd');
+                    if (infAdEl && typeof window.montarTextoInfAdProd === 'function') {
+                        const itemTemp = {
+                            nDI: document.getElementById('m_item_nDI')?.value,
+                            nAdicao: document.getElementById('m_item_nAdicao')?.value,
+                            nSeqAdic: document.getElementById('m_item_nSeqAdic')?.value,
+                            pesoL: document.getElementById('m_item_pesoL')?.value,
+                            infAdProd: infAdEl.value
+                        };
+                        infAdEl.value = window.montarTextoInfAdProd(itemTemp);
+                    }
+                });
+            }
+        });
+
         // Botão copiar comercial para tributável
         const btnCopiar = document.getElementById('btn-copiar-com-para-trib');
         if (btnCopiar) {
@@ -801,6 +852,8 @@
         document.getElementById('m_item_vDesc').value = "0.00";
         document.getElementById('m_item_vOutro').value = "0.00";
         document.getElementById('m_item_infAdProd').value = "";
+        if (document.getElementById('m_item_pesoL')) document.getElementById('m_item_pesoL').value = "";
+        if (document.getElementById('m_item_pesoL_adu')) document.getElementById('m_item_pesoL_adu').value = "";
 
         // Tributos padrão
         const selCsosn = document.getElementById('m_item_CSOSN');
@@ -925,7 +978,10 @@
         document.getElementById('m_item_vSeg').value = formatNum(rowData.vSeg, 2);
         document.getElementById('m_item_vDesc').value = formatNum(rowData.vDesc, 2);
         document.getElementById('m_item_vOutro').value = formatNum(rowData.vOutro, 2);
-        document.getElementById('m_item_infAdProd').value = rowData.infAdProd || "";
+        const pesoLVal = rowData.pesoL || rowData.kg_liquido || rowData.peso_liquido || "";
+        if (document.getElementById('m_item_pesoL')) document.getElementById('m_item_pesoL').value = pesoLVal;
+        if (document.getElementById('m_item_pesoL_adu')) document.getElementById('m_item_pesoL_adu').value = pesoLVal;
+        document.getElementById('m_item_infAdProd').value = rowData.infAdProd || (typeof window.montarTextoInfAdProd === 'function' ? window.montarTextoInfAdProd(rowData) : "");
 
         // Tributos
         const cstIcms = rowData.CSOSN || rowData.CST_ICMS || "00";
@@ -1054,7 +1110,14 @@
             vSeg: formatNum(document.getElementById('m_item_vSeg').value, 2),
             vDesc: formatNum(document.getElementById('m_item_vDesc').value, 2),
             vOutro: formatNum(document.getElementById('m_item_vOutro').value, 2),
-            infAdProd: document.getElementById('m_item_infAdProd').value || "",
+            pesoL: (document.getElementById('m_item_pesoL') ? document.getElementById('m_item_pesoL').value : '') || '',
+            infAdProd: document.getElementById('m_item_infAdProd').value || (typeof window.montarTextoInfAdProd === 'function' ? window.montarTextoInfAdProd({
+                nDI: document.getElementById('m_item_nDI')?.value,
+                nAdicao: document.getElementById('m_item_nAdicao')?.value,
+                nSeqAdic: document.getElementById('m_item_nSeqAdic')?.value,
+                pesoL: document.getElementById('m_item_pesoL')?.value,
+                infAdProd: ''
+            }) : ""),
 
             // ICMS
             CSOSN: csosnVal,
@@ -1239,6 +1302,9 @@
             item.UFDesemb = UFDesemb;
             item.xLocDesemb = xLocDesemb;
             item.dDesemb = dDesemb;
+            if (typeof window.montarTextoInfAdProd === 'function') {
+                item.infAdProd = window.montarTextoInfAdProd(item);
+            }
         });
 
         aplicarListaItensAtual(lista);
@@ -1533,4 +1599,128 @@
         }
         window.inicializarSincronizacaoImportacao();
     }
+
+    // === PADRONIZAÇÃO DE INFORMAÇÕES ADICIONAIS DO PRODUTO (infAdProd) ===
+    window.montarTextoInfAdProd = function(item) {
+        if (!item) return "";
+        let nDI = String(item.nDI || document.getElementById('import_nDI')?.value || '').trim();
+        let nAdicao = String(item.nAdicao || '1').trim();
+        let nSeqAdic = String(item.nSeqAdic || item.nItem || '1').trim();
+        let pesoL = String(item.pesoL || item.kg_liquido || item.peso_liquido || '').trim();
+        let infAd = String(item.infAdProd || '').trim();
+
+        // Extrair qualquer texto personalizado anterior que não seja DI nem Peso
+        let textoExtra = infAd;
+        textoExtra = textoExtra.replace(/DI:\s*[^;\-
+]+(?:Adicao|Adição)?:?\s*\d*\s*(?:Item)?:?\s*\d*/gi, '').trim();
+        textoExtra = textoExtra.replace(/(?:Peso\s*L[ií]q(?:uido)?|Kg\s*L[ií]q(?:uido)?)\s*[:=]?\s*[\d.,]+\s*(?:kg)?/gi, '').trim();
+        textoExtra = textoExtra.replace(/^[\s\-\–\—;:,]+|[\s\-\–\—;:,]+$/g, '').trim();
+
+        const partes = [];
+        if (nDI) {
+            const rawAdic = nAdicao.replace(/\D/g, '').replace(/^0+/, '') || '1';
+            const rawSeq = nSeqAdic.replace(/\D/g, '').replace(/^0+/, '') || '1';
+            const adicPad = String(rawAdic).padStart(3, '0');
+            const seqPad = String(rawSeq).padStart(3, '0');
+            partes.push(`DI: ${nDI} Adicao: ${adicPad} Item: ${seqPad}`);
+        }
+
+        if (pesoL && !['0', '0.00', '0.000', '0,00', '0,000'].includes(pesoL)) {
+            partes.push(`Peso Liq: ${pesoL} kg`);
+        }
+
+        if (textoExtra) {
+            partes.push(textoExtra);
+        }
+
+        return partes.join(' - ');
+    };
+
+    // === SUBSTITUIR UNIDADES PELOS VALORES OFICIAIS ABREVIADOS ===
+    window.substituirUnidadesPorAbreviadas = async function() {
+        try {
+            let table = window.itensTable;
+            if (!table && window.Tabulator) {
+                const arr = window.Tabulator.findTable('#itens-table');
+                if (arr && arr.length > 0) table = arr[0];
+            }
+            if (!table) {
+                alert('Tabela de itens não encontrada!');
+                return;
+            }
+
+            const itens = table.getData();
+            if (!itens || itens.length === 0) {
+                if (window.nftAlert) {
+                    await window.nftAlert('Nenhum item na tabela para abreviar unidades.', 'info');
+                } else {
+                    alert('Nenhum item na tabela para abreviar unidades.');
+                }
+                return;
+            }
+
+            const res = await fetch('/api/unidades_tributaveis');
+            if (!res.ok) throw new Error('Não foi possível obter a tabela de unidades tributáveis.');
+            const unidadesConfig = await res.json();
+
+            function normalizar(txt) {
+                if (!txt) return '';
+                return String(txt)
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^a-zA-Z0-9]/g, '')
+                    .trim()
+                    .toUpperCase();
+            }
+
+            const mapaVariacoes = {};
+            unidadesConfig.forEach(u => {
+                const codOficial = String(u.codigo).trim().toUpperCase();
+                mapaVariacoes[normalizar(codOficial)] = codOficial;
+                if (Array.isArray(u.variacoes)) {
+                    u.variacoes.forEach(v => {
+                        const norm = normalizar(v);
+                        if (norm) mapaVariacoes[norm] = codOficial;
+                    });
+                }
+            });
+
+            let substituidos = 0;
+            itens.forEach(item => {
+                let alterou = false;
+                if (item.uTrib) {
+                    const normTrib = normalizar(item.uTrib);
+                    if (mapaVariacoes[normTrib] && item.uTrib !== mapaVariacoes[normTrib]) {
+                        item.uTrib = mapaVariacoes[normTrib];
+                        alterou = true;
+                    }
+                }
+                if (item.uCom) {
+                    const normCom = normalizar(item.uCom);
+                    if (mapaVariacoes[normCom] && item.uCom !== mapaVariacoes[normCom]) {
+                        item.uCom = mapaVariacoes[normCom];
+                        alterou = true;
+                    }
+                }
+                if (alterou) substituidos++;
+            });
+
+            table.setData(itens);
+            if (window.triggerAutoSave) window.triggerAutoSave();
+
+            const msg = substituidos > 0
+                ? `✅ Sucesso! Unidades abreviadas em ${substituidos} item(ns) conforme o padrão oficial SEFAZ (ex: Peças ➔ PC, Unidade ➔ UN).`
+                : `ℹ️ Todas as unidades já estão nos padrões abreviados oficiais! (Nenhuma alteração necessária).`;
+
+            if (window.nftAlert) {
+                await window.nftAlert(msg, substituidos > 0 ? 'success' : 'info');
+            } else {
+                alert(msg);
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Erro ao abreviar unidades: ' + e.message);
+        }
+    };
+
 })();

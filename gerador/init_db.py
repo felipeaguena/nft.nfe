@@ -607,6 +607,56 @@ def init_db(target_db_path=None):
         )
     ''')
 
+    # 11. Tabela de Unidades Tributáveis e Abreviadas (uTrib / uCom)
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS tabela_unidades_tributaveis (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            codigo TEXT UNIQUE NOT NULL,
+            descricao TEXT NOT NULL,
+            variacoes TEXT NOT NULL,
+            ativo INTEGER DEFAULT 1,
+            ordem INTEGER DEFAULT 0
+        )
+    ''')
+
+    import json
+    unidades_iniciais = [
+        ('PC', 'Peça', ['PECA', 'PECAS', 'PEÇA', 'PEÇAS', 'PC', 'PCS', 'PÇ', 'PÇS', 'PCO', 'PCOS'], 1),
+        ('UN', 'Unidade', ['UNIDADE', 'UNIDADES', 'UNID', 'UNIDS', 'UND', 'UN'], 2),
+        ('KG', 'Quilograma', ['QUILOGRAMA', 'QUILOGRAMAS', 'KILO', 'KILOS', 'QUILO', 'QUILOS', 'KG', 'KGS', 'KL'], 3),
+        ('PAR', 'Par', ['PAR', 'PARES', 'PR', 'PRS'], 4),
+        ('CX', 'Caixa', ['CAIXA', 'CAIXAS', 'CX', 'CXS', 'BOX', 'CXA'], 5),
+        ('M', 'Metro', ['METRO', 'METROS', 'M', 'MT', 'MTR', 'MTRS'], 6),
+        ('M2', 'Metro Quadrado', ['METRO QUADRADO', 'METROS QUADRADOS', 'M2', 'M²', 'MT2', 'MQ'], 7),
+        ('M3', 'Metro Cúbico', ['METRO CUBICO', 'METROS CUBICOS', 'METRO CÚBICO', 'METROS CÚBICOS', 'M3', 'M³', 'MT3'], 8),
+        ('L', 'Litro', ['LITRO', 'LITROS', 'L', 'LT', 'LTS', 'LIT', 'LITS'], 9),
+        ('MIL', 'Milheiro', ['MILHEIRO', 'MILHEIROS', 'MIL', 'MLH'], 10),
+        ('TON', 'Tonelada', ['TONELADA', 'TONELADAS', 'TON', 'TONS', 'T', 'TNS'], 11),
+        ('JG', 'Jogo', ['JOGO', 'JOGOS', 'JG', 'JGS', 'SET', 'JGS.'], 12),
+        ('RL', 'Rolo', ['ROLO', 'ROLOS', 'RL', 'RLS', 'ROL'], 13),
+        ('PCT', 'Pacote', ['PACOTE', 'PACOTES', 'PCT', 'PCTS', 'PCK', 'PKG', 'PACK'], 14),
+        ('DZ', 'Dúzia', ['DUZIA', 'DUZIAS', 'DÚZIA', 'DÚZIAS', 'DZ', 'DZS'], 15),
+        ('G', 'Grama', ['GRAMA', 'GRAMAS', 'G', 'GR', 'GRS', 'GRM', 'GRMS'], 16),
+        ('SC', 'Saco', ['SACO', 'SACOS', 'SC', 'SCS', 'SAC', 'BAG'], 17),
+        ('TB', 'Tubo / Tambor', ['TUBO', 'TUBOS', 'TAMBOR', 'TAMBORES', 'TB', 'TBS'], 18),
+        ('FR', 'Frasco', ['FRASCO', 'FRASCOS', 'FR', 'FRS', 'BOT', 'FRASCO(S)'], 19),
+        ('AMP', 'Ampola', ['AMPOLA', 'AMPOLAS', 'AMP', 'AMPS'], 20),
+        ('BOB', 'Bobina', ['BOBINA', 'BOBINAS', 'BOB', 'BOBS'], 21),
+        ('BD', 'Balde', ['BALDE', 'BALDES', 'BD', 'BDS', 'BAL'], 22),
+        ('GL', 'Galão', ['GALAO', 'GALAOS', 'GALÃO', 'GALÕES', 'GL', 'GLS', 'GAL'], 23),
+        ('FD', 'Fardo', ['FARDO', 'FARDOS', 'FD', 'FDS'], 24),
+        ('CJ', 'Conjunto', ['CONJUNTO', 'CONJUNTOS', 'CJ', 'CJS', 'CNJ'], 25),
+        ('CRT', 'Cartela', ['CARTELA', 'CARTELAS', 'CRT', 'CRTS', 'BLISTER'], 26),
+        ('BAR', 'Barra', ['BARRA', 'BARRAS', 'BAR', 'BARS'], 27),
+        ('LT', 'Lata', ['LATA', 'LATAS', 'LT', 'LTS', 'CAN'], 28),
+        ('KWH', 'Quilowatt-Hora', ['QUILOWATT-HORA', 'QUILOWATT HORA', 'KWH', 'KW/H'], 29)
+    ]
+    for cod, desc, vars_l, ord_val in unidades_iniciais:
+        c.execute('''
+            INSERT OR IGNORE INTO tabela_unidades_tributaveis (codigo, descricao, variacoes, ativo, ordem)
+            VALUES (?, ?, ?, 1, ?)
+        ''', (cod, desc, json.dumps(vars_l, ensure_ascii=False), ord_val))
+
     conn.commit()
     conn.close()
     print("Banco de dados inicializado com sucesso!")
