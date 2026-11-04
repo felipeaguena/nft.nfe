@@ -2241,7 +2241,10 @@
     // Expõe atalho global para abrir o Modal de Tipo de Nota
     window.abrirModalTipoNota = function () {
         const modalEl = document.getElementById('modalTipoNota');
-        if (!modalEl) return;
+        if (!modalEl) {
+            window.location.href = '/rascunho?abrir_tipo_nota=1';
+            return;
+        }
         const bModal = (window.bootstrap && window.bootstrap.Modal) ? window.bootstrap.Modal : (typeof bootstrap !== 'undefined' ? bootstrap.Modal : null);
         if (bModal) {
             const m = bModal.getOrCreateInstance(modalEl);

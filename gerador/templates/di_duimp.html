@@ -1104,14 +1104,14 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
 <div class="col-md-6">
 <label class="form-label small mb-1">Tipo de Contribuinte (ICMS)</label>
 <select class="form-select form-select-sm" id="dest_indIEDest" onchange="atualizarEstadoInscricaoEstadual()">
-<option value="1">Contribuinte</option>
+<option selected="" value="1">Contribuinte</option>
 <option value="2">Isento de Contribuição</option>
-<option selected="" value="9">Não Contribuinte</option>
+<option value="9">Não Contribuinte</option>
 </select>
 </div>
 <div class="col-md-6">
 <label class="form-label small mb-1">Inscrição Estadual (IE)</label>
-<input class="form-control form-control-sm bg-light" disabled="" id="dest_IE" placeholder="Apenas p/ Contribuinte ICMS" type="text"/>
+<input class="form-control form-control-sm" id="dest_IE" placeholder="Inscrição Estadual" type="text"/>
 </div>
 <div class="col-md-5">
 <label class="form-label small mb-1">Logradouro (xLgr)</label>
@@ -1350,9 +1350,9 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
     <i data-lucide="globe"></i>
     <span>Repassar DI</span>
 </button>
-<button class="btn-nft fw-bold d-flex align-items-center gap-1 me-1 shadow-sm" type="button" onclick="substituirUnidadesPorAbreviadas()" title="Padronizar e substituir nomes de unidades pelos códigos abreviados oficiais (ex: Peças -> PC, Unidade -> UN, Quilograma -> KG)">
+<button class="btn-nft fw-bold d-flex align-items-center gap-1 me-1 shadow-sm" type="button" onclick="substituirUnidadesPorAbreviadas()" title="Padronizar e substituir nomes de unidades pelos códigos abreviados oficiais (Un. Trib. e Un. Com. com confirmação)">
     <i data-lucide="wand-2"></i>
-    <span>Abreviar Un. Trib.</span>
+    <span>Abreviar Unidades</span>
 </button>
 <button class="btn-nft me-1 fw-bold d-flex align-items-center gap-1" onclick="abrirPainelRateio()" title="Ir para Parâmetros de Rateio e Câmbio PTAX">
 <i data-lucide="scale"></i>
@@ -5327,7 +5327,8 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
             if (tpDocVal !== 'Estrangeiro') {
                 setVal('dest_CNPJ_CPF', c.dest_CNPJ_CPF);
             }
-            setVal('dest_indIEDest', c.dest_indIEDest || '9');
+            setVal('dest_indIEDest', c.dest_indIEDest || '1');
+            if (window.atualizarEstadoInscricaoEstadual) atualizarEstadoInscricaoEstadual();
             setVal('dest_IE', c.dest_IE || '');
             atualizarEstadoInscricaoEstadual();
             setVal('dest_xLgr', c.dest_xLgr);
@@ -6643,6 +6644,10 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
             if (getVal('dest_xMun') === 'EXTERIOR') setVal('dest_xMun', '');
             if (getVal('dest_cMun') === '9999999') setVal('dest_cMun', '');
             if (getVal('idDest') === '3') setVal('idDest', '1');
+            if (getVal('dest_indIEDest') === '9' && !getVal('dest_IE')) {
+                setVal('dest_indIEDest', '1');
+                if (window.atualizarEstadoInscricaoEstadual) atualizarEstadoInscricaoEstadual();
+            }
         } else {
             if (lbl) {
                 lbl.className = 'badge bg-warning text-dark font-monospace';
@@ -6653,6 +6658,7 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
             setVal('dest_cMun', '9999999');
             setVal('dest_xMun', 'EXTERIOR');
             setVal('dest_indIEDest', '9');
+            if (window.atualizarEstadoInscricaoEstadual) atualizarEstadoInscricaoEstadual();
             setVal('dest_IE', '');
             const elIE = document.getElementById('dest_IE');
             if (elIE) elIE.disabled = true;
@@ -7483,9 +7489,28 @@ Utilizada para decodificar a chave privada na assinatura e transmissão de docum
                 document.getElementById('dest_cPais').value = emp.cpais || '1058';
                 
                 const indIE = document.getElementById('dest_indIEDest');
-                if(indIE) {
-                    indIE.value = emp.ind_ie || '9';
-                    if(window.atualizarEstadoInscricaoEstadual) atualizarEstadoInscricaoEstadual();
+                let indIeVal = '1';
+                if (emp.ind_ie) {
+                    indIeVal = String(emp.ind_ie);
+                } else if (emp.uf === 'EX' || (emp.cpais && emp.cpais !== '1058') || (!docLimpo && emp.tipo === 'Exportador')) {
+                    indIeVal = '9';
+                } else {
+                    indIeVal = '1';
+                }
+                if (indIE) {
+                    indIE.value = indIeVal;
+                }
+                if (window.atualizarEstadoInscricaoEstadual) {
+                    atualizarEstadoInscricaoEstadual();
+                }
+                const elIe = document.getElementById('dest_IE');
+                if (elIe) {
+                    elIe.value = emp.ie || '';
+                    if (indIeVal === '1') {
+                        elIe.disabled = false;
+                        elIe.classList.remove('bg-light');
+                        elIe.placeholder = 'Inscrição Estadual';
+                    }
                 }
 
                 const expEl = document.getElementById('import_cExportador');

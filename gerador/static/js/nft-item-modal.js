@@ -1685,35 +1685,67 @@
                 }
             });
 
-            let substituidos = 0;
+            // Popup de confirmação antes de alterar as unidades comercializadas (Un. Com.)
+            let alterarUnCom = false;
+            if (window.nftConfirm) {
+                alterarUnCom = await window.nftConfirm(
+                    "Deseja aplicar a padronização oficial de abreviações também nas Unidades Comercializadas (Un. Com.)?\n\n• Sim: Padroniza tanto 'Un. Trib.' quanto 'Un. Com.'\n• Não: Padroniza apenas 'Un. Trib.' (mantém 'Un. Com.' original)",
+                    {
+                        title: "Padronizar Unidades Fiscais e Comerciais",
+                        confirmText: "Sim, padronizar Un. Com.",
+                        cancelText: "Apenas Un. Trib.",
+                        type: "info",
+                        icon: "scale"
+                    }
+                );
+            } else {
+                alterarUnCom = confirm("Deseja aplicar a padronização de abreviações também nas Unidades Comercializadas (Un. Com.)?\n\nOK = Sim (Un. Trib e Un. Com)\nCancelar = Apenas Un. Trib");
+            }
+
+            let alteradosTrib = 0;
+            let alteradosCom = 0;
+            let itensAlterados = 0;
+
             itens.forEach(item => {
-                let alterou = false;
+                let alterouItem = false;
                 if (item.uTrib) {
                     const normTrib = normalizar(item.uTrib);
                     if (mapaVariacoes[normTrib] && item.uTrib !== mapaVariacoes[normTrib]) {
                         item.uTrib = mapaVariacoes[normTrib];
-                        alterou = true;
+                        alteradosTrib++;
+                        alterouItem = true;
                     }
                 }
-                if (item.uCom) {
+                if (alterarUnCom && item.uCom) {
                     const normCom = normalizar(item.uCom);
                     if (mapaVariacoes[normCom] && item.uCom !== mapaVariacoes[normCom]) {
                         item.uCom = mapaVariacoes[normCom];
-                        alterou = true;
+                        alteradosCom++;
+                        alterouItem = true;
                     }
                 }
-                if (alterou) substituidos++;
+                if (alterouItem) itensAlterados++;
             });
 
             table.setData(itens);
             if (window.triggerAutoSave) window.triggerAutoSave();
 
-            const msg = substituidos > 0
-                ? `✅ Sucesso! Unidades abreviadas em ${substituidos} item(ns) conforme o padrão oficial SEFAZ (ex: Peças ➔ PC, Unidade ➔ UN).`
-                : `ℹ️ Todas as unidades já estão nos padrões abreviados oficiais! (Nenhuma alteração necessária).`;
+            let msg = '';
+            if (itensAlterados > 0) {
+                const detalhes = [];
+                detalhes.push(`• Un. Trib.: ${alteradosTrib} alteração(ões)`);
+                if (alterarUnCom) {
+                    detalhes.push(`• Un. Com.: ${alteradosCom} alteração(ões)`);
+                } else {
+                    detalhes.push(`• Un. Com.: Mantido original (sem alteração)`);
+                }
+                msg = `✅ Sucesso! Unidades abreviadas em ${itensAlterados} item(ns) conforme o padrão oficial SEFAZ:\n\n${detalhes.join('\n')}`;
+            } else {
+                msg = `ℹ️ Todas as unidades verificadas já estão nos padrões abreviados oficiais! (Nenhuma alteração necessária).`;
+            }
 
             if (window.nftAlert) {
-                await window.nftAlert(msg, substituidos > 0 ? 'success' : 'info');
+                await window.nftAlert(msg, itensAlterados > 0 ? 'success' : 'info');
             } else {
                 alert(msg);
             }

@@ -474,7 +474,7 @@
             if (id === 'dest_cPais') { el.value = '1058'; return; }
             if (id === 'dest_xPais') { el.value = 'Brasil'; return; }
             if (id === 'dest_tpDoc') { el.value = 'CNPJ'; return; }
-            if (id === 'dest_indIEDest') { el.value = '9'; return; }
+            if (id === 'dest_indIEDest') { el.value = '1'; return; }
             if (id === 'tpNF') { el.value = isDI ? '0' : '1'; return; }
             if (id === 'idDest') { el.value = isDI ? '3' : '1'; return; }
             if (id.startsWith('tot_') || id.startsWith('rateio_')) {

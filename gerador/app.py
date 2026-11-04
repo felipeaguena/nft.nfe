@@ -799,7 +799,7 @@ def build_nfe_element(cabecalho, itens, rodape):
         ET.SubElement(ender_dest, f'{{{NFE_NS}}}CEP').text = cep_dest
         ET.SubElement(ender_dest, f'{{{NFE_NS}}}cPais').text = '1058'
         ET.SubElement(ender_dest, f'{{{NFE_NS}}}xPais').text = 'Brasil'
-        ind_ie = str(cabecalho.get('dest_indIEDest') or '9')
+        ind_ie = str(cabecalho.get('dest_indIEDest') or '1')
         ET.SubElement(dest, f'{{{NFE_NS}}}indIEDest').text = ind_ie
         ie_val = str(cabecalho.get('dest_IE') or '').strip()
         if ind_ie == '1' and ie_val:
@@ -3393,7 +3393,7 @@ def upload_xml():
             "dest_xNome": get_text(dest, 'xNome'),
             "dest_CNPJ_CPF": get_text(dest, 'CNPJ') or get_text(dest, 'CPF') or get_text(dest, 'idEstrangeiro'),
             "dest_idEstrangeiro": get_text(dest, 'idEstrangeiro'),
-            "dest_indIEDest": get_text(dest, 'indIEDest') or "9",
+            "dest_indIEDest": get_text(dest, 'indIEDest') or ("1" if get_text(dest, 'IE') else "1"),
             "dest_IE": get_text(dest, 'IE') or "",
             "dest_xLgr": get_text(dest, 'xLgr'),
             "dest_nro": get_text(dest, 'nro'),

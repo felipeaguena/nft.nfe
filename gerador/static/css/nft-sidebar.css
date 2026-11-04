@@ -4,8 +4,8 @@
    ========================================================================== */
 
 :root {
-  --sidebar-w: 260px;
-  --sidebar-w-collapsed: 68px;
+  --sidebar-w: 232px;
+  --sidebar-w-collapsed: 54px;
   --sidebar-transition: 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -60,14 +60,14 @@ body.sidebar-collapsed .nft-sidebar:hover {
 
 /* 3. Cabeçalho */
 .nft-sidebar-header {
-  height: 64px;
-  padding: 0 0.85rem;
+  height: 48px;
+  padding: 0 0.65rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .sidebar-brand-link {
@@ -81,8 +81,8 @@ body.sidebar-collapsed .nft-sidebar:hover {
 }
 
 .sidebar-brand-logo-wrap {
-  width: 34px;
-  height: 34px;
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -98,27 +98,27 @@ body.sidebar-collapsed .nft-sidebar:hover {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 .sidebar-brand-title {
   font-weight: 800;
-  font-size: 0.95rem;
+  font-size: 0.84rem;
   color: var(--heading);
   letter-spacing: -0.02em;
 }
 
 .sidebar-brand-badge {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.60rem;
   font-weight: 700;
   color: var(--success);
   text-transform: uppercase;
 }
 
 .sidebar-toggle-btn {
-  width: 32px;
-  height: 32px;
+  width: 26px;
+  height: 26px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--surface-secondary);
@@ -132,6 +132,12 @@ body.sidebar-collapsed .nft-sidebar:hover {
   padding: 0;
 }
 
+.sidebar-toggle-btn i,
+.sidebar-toggle-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
 .sidebar-toggle-btn:hover {
   background: var(--primary-subtle);
   border-color: var(--primary);
@@ -143,7 +149,7 @@ body.sidebar-collapsed .nft-sidebar:hover {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0.6rem 0;
+  padding: 0.35rem 0;
 }
 
 .nft-sidebar-body::-webkit-scrollbar {
@@ -157,21 +163,21 @@ body.sidebar-collapsed .nft-sidebar:hover {
 
 .sidebar-section-title {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.62rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--muted-foreground);
-  padding: 0.9rem 1rem 0.35rem 1rem;
+  padding: 0.55rem 0.75rem 0.2rem 0.75rem;
 }
 
 .nft-sidebar-nav {
   list-style: none;
-  padding: 0 0.5rem;
+  padding: 0 0.35rem;
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.15rem;
 }
 
 .nft-sidebar-item {
@@ -182,14 +188,14 @@ body.sidebar-collapsed .nft-sidebar:hover {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.55rem 0.75rem;
-  border-radius: var(--radius-md);
+  gap: 0.5rem;
+  padding: 0.38rem 0.55rem;
+  border-radius: var(--radius-sm);
   border: 1px solid transparent;
   background: transparent;
   color: var(--foreground);
   text-decoration: none !important;
-  font-size: 0.86rem;
+  font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.18s ease;
@@ -210,13 +216,19 @@ body.sidebar-collapsed .nft-sidebar:hover {
 }
 
 .nft-sidebar-btn .sidebar-icon {
-  font-size: 1.15rem;
-  width: 24px;
-  height: 24px;
+  font-size: 0.95rem;
+  width: 18px;
+  height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+}
+
+.nft-sidebar-btn .sidebar-icon i,
+.nft-sidebar-btn .sidebar-icon svg {
+  width: 14px;
+  height: 14px;
 }
 
 .sidebar-label {
@@ -240,11 +252,11 @@ body.sidebar-collapsed .nft-sidebar:hover {
 
 /* 5. Rodapé da Sidebar */
 .nft-sidebar-footer {
-  padding: 0.65rem 0.6rem;
+  padding: 0.45rem 0.5rem;
   border-top: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.25rem;
   background: var(--surface);
   flex-shrink: 0;
 }
@@ -255,23 +267,38 @@ body.sidebar-collapsed .nft-sidebar:hover {
 }
 
 .sidebar-footer-btn {
-  height: 38px;
-  min-height: 38px;
+  height: 32px;
+  min-height: 32px;
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  padding: 0 0.75rem;
-  border-radius: var(--radius-md);
+  gap: 0.5rem;
+  padding: 0 0.6rem;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--surface-secondary);
   color: var(--foreground);
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
   text-decoration: none !important;
+}
+
+.sidebar-footer-btn .sidebar-icon {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-footer-btn .sidebar-icon i,
+.sidebar-footer-btn .sidebar-icon svg {
+  width: 14px;
+  height: 14px;
 }
 
 .sidebar-footer-btn:hover {
@@ -330,8 +357,9 @@ body.sidebar-collapsed .nft-sidebar:hover {
 
 .sidebar-footer-btn.theme-toggle-btn,
 .sidebar-footer-btn.user-toggle-btn {
-  width: 38px;
-  min-width: 38px;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
   padding: 0;
   justify-content: center;
   flex-shrink: 0;
@@ -341,8 +369,8 @@ body.sidebar-collapsed .nft-sidebar:hover {
 .sidebar-footer-btn.theme-toggle-btn svg,
 .sidebar-footer-btn.user-toggle-btn i,
 .sidebar-footer-btn.user-toggle-btn svg {
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
 }
 
 .sidebar-footer-btn.user-toggle-btn {
@@ -359,8 +387,8 @@ body.sidebar-collapsed .nft-sidebar:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.3rem 0.5rem 0 0.5rem;
-  font-size: 0.7rem;
+  padding: 0.2rem 0.35rem 0 0.35rem;
+  font-size: 0.65rem;
   color: var(--muted-foreground);
   font-family: var(--font-mono);
 }
@@ -385,10 +413,10 @@ body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-footer-actions {
 }
 
 body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-footer-actions .sidebar-footer-btn {
-  width: 38px !important;
-  min-width: 38px !important;
-  height: 38px !important;
-  min-height: 38px !important;
+  width: 32px !important;
+  min-width: 32px !important;
+  height: 32px !important;
+  min-height: 32px !important;
   padding: 0 !important;
   margin: 0 auto !important;
   justify-content: center !important;

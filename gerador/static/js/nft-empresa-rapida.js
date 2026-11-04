@@ -762,18 +762,34 @@
             elDoc.value = emp.cnpj_cpf || '';
         }
 
-        // Indicador de IE e Inscrição Estadual
+        // Indicador de IE e Inscrição Estadual (Padrão Contribuinte '1')
         const elIndIe = document.getElementById('dest_indIEDest');
-        if (elIndIe) {
-            elIndIe.value = emp.ind_ie || '9';
-            if (typeof window.atualizarEstadoInscricaoEstadual === 'function') {
-                window.atualizarEstadoInscricaoEstadual();
-            }
+        const elIe = document.getElementById('dest_IE');
+
+        let indIeVal = '1';
+        if (emp.ind_ie) {
+            indIeVal = String(emp.ind_ie);
+        } else if (emp.uf === 'EX' || emp.tipo === 'Exportador') {
+            indIeVal = '9';
+        } else {
+            indIeVal = '1';
         }
 
-        const elIe = document.getElementById('dest_IE');
+        if (elIndIe) {
+            elIndIe.value = indIeVal;
+        }
+
+        if (typeof window.atualizarEstadoInscricaoEstadual === 'function') {
+            window.atualizarEstadoInscricaoEstadual();
+        }
+
         if (elIe) {
             elIe.value = emp.ie || '';
+            if (indIeVal === '1') {
+                elIe.disabled = false;
+                elIe.classList.remove('bg-light');
+                elIe.placeholder = 'Inscrição Estadual';
+            }
         }
 
         // Endereço

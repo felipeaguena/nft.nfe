@@ -494,3 +494,34 @@
         initSidebarState();
     }
 })();
+
+    // Abre o Modal de Tipo de Nota (Impostos) ou redireciona para a tela principal
+    window.abrirModalTipoNota = function () {
+        const modalEl = document.getElementById('modalTipoNota');
+        if (!modalEl) {
+            window.location.href = '/rascunho?abrir_tipo_nota=1';
+            return;
+        }
+        const bModal = (window.bootstrap && window.bootstrap.Modal) ? window.bootstrap.Modal : (typeof bootstrap !== 'undefined' ? bootstrap.Modal : null);
+        if (bModal) {
+            const m = bModal.getOrCreateInstance(modalEl);
+            m.show();
+        }
+        setTimeout(() => {
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                window.lucide.createIcons();
+            }
+        }, 120);
+    };
+
+    // Auto-abertura se vier com o parâmetro abrir_tipo_nota=1
+    try {
+        const _params = new URLSearchParams(window.location.search);
+        if (_params.get('abrir_tipo_nota') === '1') {
+            setTimeout(() => {
+                if (typeof window.abrirModalTipoNota === 'function') {
+                    window.abrirModalTipoNota();
+                }
+            }, 400);
+        }
+    } catch (e) {}

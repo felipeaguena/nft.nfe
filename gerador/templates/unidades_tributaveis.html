@@ -158,6 +158,12 @@
                 </a>
             </li>
             <li class="nft-sidebar-item">
+                <button class="nft-sidebar-btn" onclick="abrirModalTipoNota()" title="Configuração de Impostos &amp; Operações" type="button">
+                    <span class="sidebar-icon"><i data-lucide="settings"></i></span>
+                    <span class="sidebar-label">Tipo de Nota (Impostos)</span>
+                </button>
+            </li>
+            <li class="nft-sidebar-item">
                 <a class="nft-sidebar-btn active" href="/unidades_tributaveis" title="Unidades Tributáveis & Abreviações">
                     <span class="sidebar-icon"><i data-lucide="scale"></i></span>
                     <span class="sidebar-label">Unidades Tributáveis</span>
@@ -181,41 +187,37 @@
     </div>
 </aside>
 
-<!-- CONTEÚDO PRINCIPAL -->
-<main class="nft-main-content">
-    <div class="container-fluid py-4 px-md-4">
-        <!-- CABEÇALHO DA PÁGINA -->
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-            <div>
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb mb-1" style="font-size: 13px;">
-                        <li class="breadcrumb-item"><a href="/" class="text-decoration-none">Início</a></li>
-                        <li class="breadcrumb-item">Configurações</li>
-                        <li class="breadcrumb-item active" aria-current="page">Unidades Tributáveis</li>
-                    </ol>
-                </nav>
-                <h2 class="h4 fw-bold mb-0 d-flex align-items-center gap-2">
-                    <i data-lucide="scale" class="text-primary"></i>
-                    Unidades Tributáveis &amp; Abreviações
-                </h2>
-                <p class="text-secondary small mb-0 mt-1">
-                    Padronize e gerencie os códigos abreviados oficiais (uTrib e uCom) da SEFAZ/Siscomex e suas variações aceitas para substituição automática nos itens.
-                </p>
+<!-- ÁREA PRINCIPAL DE CONTEÚDO (DESLOCADA PELA SIDEBAR, PADRÃO DO SITE) -->
+<div class="nft-main-wrapper">
+    <div class="container-fluid px-4 py-3">
+        <!-- Top Header Card -->
+        <div class="d-flex justify-content-between align-items-center mb-3 bg-white p-3 rounded shadow-sm border flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn-nft d-lg-none" onclick="document.body.classList.toggle('sidebar-mobile-open')" title="Abrir Menu" type="button">
+                    <i data-lucide="menu" style="width: 16px; height: 16px;"></i>
+                </button>
+                <div>
+                    <h4 class="mb-0 fw-bold d-flex align-items-center gap-2">
+                        <i class="text-primary" data-lucide="scale"></i>
+                        <span>Unidades Tributáveis &amp; Abreviações</span>
+                    </h4>
+                    <small class="text-muted">Padronize códigos abreviados oficiais (uTrib e uCom) da SEFAZ/Siscomex e suas variações aceitas para substituição nos itens</small>
+                </div>
             </div>
             <div class="d-flex align-items-center gap-2 flex-wrap">
                 <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 shadow-sm" onclick="restaurarPadraoOficial()">
                     <i data-lucide="rotate-ccw" style="width: 14px; height: 14px;"></i>
-                    Restaurar Padrão SEFAZ
+                    <span>Restaurar Padrão SEFAZ</span>
                 </button>
                 <button type="button" class="btn btn-primary btn-sm d-flex align-items-center gap-1 shadow-sm fw-semibold" onclick="abrirModalNovaUnidade()">
                     <i data-lucide="plus-circle" style="width: 15px; height: 15px;"></i>
-                    Nova Unidade
+                    <span>Nova Unidade</span>
                 </button>
             </div>
         </div>
 
         <!-- CARDS DE ESTATÍSTICAS / INFORMAÇÕES -->
-        <div class="row g-3 mb-4">
+        <div class="row g-3 mb-3">
             <div class="col-sm-6 col-lg-3">
                 <div class="card border shadow-sm p-3 rounded-3 h-100 bg-body">
                     <div class="d-flex justify-content-between align-items-center">
@@ -224,7 +226,7 @@
                             <h3 class="fw-bold mb-0 mt-1" id="stat-total-unidades">0</h3>
                         </div>
                         <div class="rounded-3 p-2 bg-primary-subtle text-primary">
-                            <i data-lucide="layers" style="width: 24px; height: 24px;"></i>
+                            <i data-lucide="layers" style="width: 22px; height: 22px;"></i>
                         </div>
                     </div>
                 </div>
@@ -237,7 +239,7 @@
                             <h3 class="fw-bold mb-0 mt-1 text-info" id="stat-total-variacoes">0</h3>
                         </div>
                         <div class="rounded-3 p-2 bg-info-subtle text-info">
-                            <i data-lucide="tags" style="width: 24px; height: 24px;"></i>
+                            <i data-lucide="tags" style="width: 22px; height: 22px;"></i>
                         </div>
                     </div>
                 </div>
@@ -247,10 +249,10 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <span class="text-secondary small fw-semibold">Padrão SEFAZ / Siscomex</span>
-                            <h3 class="fw-bold mb-0 mt-1 text-success fs-5">Tabela Única</h3>
+                            <h3 class="fw-bold mb-0 mt-1 text-success fs-6">Tabela Única</h3>
                         </div>
                         <div class="rounded-3 p-2 bg-success-subtle text-success">
-                            <i data-lucide="shield-check" style="width: 24px; height: 24px;"></i>
+                            <i data-lucide="shield-check" style="width: 22px; height: 22px;"></i>
                         </div>
                     </div>
                 </div>
@@ -260,10 +262,10 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <span class="text-secondary small fw-semibold">Substituição Inteligente</span>
-                            <h3 class="fw-bold mb-0 mt-1 text-warning fs-5">Automática / Botão</h3>
+                            <h3 class="fw-bold mb-0 mt-1 text-warning fs-6">Trib. &amp; Comercial</h3>
                         </div>
                         <div class="rounded-3 p-2 bg-warning-subtle text-warning">
-                            <i data-lucide="wand-2" style="width: 24px; height: 24px;"></i>
+                            <i data-lucide="wand-2" style="width: 22px; height: 22px;"></i>
                         </div>
                     </div>
                 </div>
@@ -309,7 +311,7 @@
             </div>
         </div>
     </div>
-</main>
+</div>
 
 <!-- MODAL: EDITAR VARIAÇÕES DE UMA UNIDADE -->
 <div class="modal fade" id="modalEditarVariacoes" tabindex="-1" aria-labelledby="modalEditarVariacoesLabel" aria-hidden="true">
@@ -326,7 +328,7 @@
                 <input type="hidden" id="m_var_unidade_id"/>
                 <div class="alert alert-info py-2 px-3 small d-flex align-items-center gap-2 mb-3">
                     <i data-lucide="info" style="width: 18px; height: 18px; flex-shrink: 0;"></i>
-                    <span>Sempre que qualquer uma dessas variações for encontrada no item (ex: na coluna "Un. Trib." ou "Un. Com."), ela será substituída automaticamente pelo código oficial <strong><span id="m_var_codigo_text">PC</span></strong>.</span>
+                    <span>Sempre que qualquer uma dessas variações for encontrada no item (na coluna "Un. Trib." ou "Un. Com."), ela será substituída automaticamente pelo código oficial <strong><span id="m_var_codigo_text">PC</span></strong>.</span>
                 </div>
 
                 <div class="mb-3">
@@ -565,7 +567,6 @@
         const val = (input.value || '').trim().toUpperCase();
         if (!val) return;
 
-        // Se houver múltiplas variações separadas por vírgula
         const partes = val.split(',').map(p => p.trim().toUpperCase()).filter(p => p.length > 0);
         partes.forEach(p => {
             if (!variacoesModalAtuais.includes(p)) {
