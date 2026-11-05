@@ -89,10 +89,13 @@ class DanfeGenerator:
 
     def parse_xml(self, xml_content_or_path):
         if os.path.exists(xml_content_or_path):
-            tree = ET.parse(xml_content_or_path)
-            root = tree.getroot()
+            with open(xml_content_or_path, "rb") as f:
+                raw_bytes = f.read()
         else:
-            root = ET.fromstring(xml_content_or_path)
+            raw_bytes = xml_content_or_path.encode("utf-8") if isinstance(xml_content_or_path, str) else bytes(xml_content_or_path)
+            
+        raw_bytes = self.enriquecer_xml_para_danfe(raw_bytes)
+        root = ET.fromstring(raw_bytes)
 
         ns = {"nfe": "http://www.portalfiscal.inf.br/nfe"}
         if not root.tag.endswith("NFe") and not root.tag.endswith("nfeProc"):
@@ -373,6 +376,142 @@ class DanfeGenerator:
             print(f"Aviso ao gerar código de barras: {e_bc}")
             return None
 
+    def enriquecer_xml_para_danfe(self, xml_bytes):
+        """
+        Garante que cada item (<det>) possua as informações adicionais
+        (DI, adição, item e kg líquido/peso) para exibição visual no DANFE,
+        mesmo que o XML original da SEFAZ não tenha a tag <infAdProd>.
+        """
+        try:
+            from lxml import etree as _etree
+            root = _etree.fromstring(xml_bytes)
+            ns = {'nfe': 'http://www.portalfiscal.inf.br/nfe'}
+            
+            # 1. Busca DI global no infCpl caso itens não tenham tag <DI> explícita
+            inf_cpl = root.findtext('.//nfe:infAdic/nfe:infCpl', default='', namespaces=ns)
+            m_di_global = re.search(r'DI:\s*([0-9\/\.\-]+)', inf_cpl)
+            di_global = m_di_global.group(1).strip() if m_di_global else ""
+
+            # 2. Busca se há dados complementares no banco (rascunhos) pela chave
+            chave_nfe = ""
+            inf_nfe = root.find('.//nfe:infNFe', ns)
+            if inf_nfe is not None:
+                chave_nfe = re.sub(r'\D', '', inf_nfe.attrib.get('Id', ''))
+            
+            itens_db_map = {}
+            if chave_nfe and len(chave_nfe) == 44:
+                try:
+                    from app import get_db_connection
+                    import json
+                    conn = get_db_connection()
+                    c = conn.cursor()
+                    r_rasc = c.execute(
+                        "SELECT payload_json FROM rascunhos WHERE REPLACE(chave_acesso, ' ', '') = ? ORDER BY id DESC LIMIT 1",
+                        (chave_nfe,)
+                    ).fetchone()
+                    if not r_rasc and len(chave_nfe) >= 34:
+                        n_nf_num = str(int(chave_nfe[25:34]))
+                        r_rasc = c.execute(
+                            "SELECT payload_json FROM rascunhos WHERE REPLACE(referencia_interna, ' ', '') LIKE ? OR payload_json LIKE ? ORDER BY id DESC LIMIT 1",
+                            (f"%{n_nf_num}%", f"%\"nNF\": \"{n_nf_num}\"%")
+                        ).fetchone()
+                    conn.close()
+                    if r_rasc and r_rasc['payload_json']:
+                        p_data = json.loads(r_rasc['payload_json'])
+                        dc_itens = p_data.get('dados_completos', {}).get('itens', []) or p_data.get('itens', [])
+                        for it_idx, it_obj in enumerate(dc_itens, 1):
+                            itens_db_map[it_idx] = it_obj
+                            if it_obj.get('cProd'):
+                                itens_db_map[str(it_obj['cProd']).strip()] = it_obj
+                except Exception:
+                    pass
+
+            # 3. Itera sobre cada <det> e garante a informação adicional
+            dets = root.findall('.//nfe:det', ns)
+            modificado = False
+            for idx, det in enumerate(dets, 1):
+                c_prod = det.findtext('.//nfe:cProd', default='', namespaces=ns).strip()
+                prod_el = det.find('nfe:prod', ns)
+                if prod_el is None:
+                    continue
+
+                it_db = itens_db_map.get(idx) or itens_db_map.get(c_prod) or {}
+
+                # Extrai DI do XML
+                n_di = det.findtext('.//nfe:DI/nfe:nDI', default='', namespaces=ns).strip()
+                n_adic = det.findtext('.//nfe:DI/nfe:adi/nfe:nAdicao', default='', namespaces=ns).strip()
+                n_seq = det.findtext('.//nfe:DI/nfe:adi/nfe:nSeqAdic', default='', namespaces=ns).strip()
+
+                if it_db.get('infAdProd') and 'DI:' in it_db['infAdProd']:
+                    inf_db_txt = it_db['infAdProd']
+                    m_di_b = re.search(r'DI:\s*([0-9\/\.\-]+)', inf_db_txt)
+                    m_ad_b = re.search(r'Adic(?:ao|ão)?:\s*(\d+)', inf_db_txt, re.I)
+                    m_it_b = re.search(r'Item:\s*(\d+)', inf_db_txt, re.I)
+                    if m_di_b: n_di = m_di_b.group(1).strip()
+                    if m_ad_b: n_adic = m_ad_b.group(1).strip()
+                    if m_it_b: n_seq = m_it_b.group(1).strip()
+
+                if not n_di:
+                    n_di = str(it_db.get('nDI') or di_global or '').strip()
+                if not n_adic:
+                    n_adic = str(it_db.get('nAdicao') or '').strip()
+                if not n_seq:
+                    n_seq = str(it_db.get('nSeqAdic') or det.attrib.get('nItem') or idx).strip()
+
+                peso_l = str(it_db.get('pesoL') or it_db.get('kg_liquido') or it_db.get('peso_liquido') or '').strip()
+                if not peso_l:
+                    u_trib = det.findtext('.//nfe:uTrib', default='', namespaces=ns).strip().upper()
+                    if u_trib == 'KG':
+                        q_trib = det.findtext('.//nfe:qTrib', default='', namespaces=ns).strip()
+                        if q_trib and float(q_trib or 0) > 0:
+                            peso_l = q_trib
+
+                inf_ad_el = det.find('nfe:infAdProd', ns)
+                inf_ad_txt = inf_ad_el.text.strip() if (inf_ad_el is not None and inf_ad_el.text) else ""
+                inf_db = str(it_db.get('infAdProd') or '').strip()
+
+                partes = []
+                if n_di:
+                    raw_adic = re.sub(r'\D', '', n_adic).lstrip('0') or '1'
+                    raw_seq = re.sub(r'\D', '', n_seq).lstrip('0') or str(idx)
+                    di_str = f"DI: {n_di} Adicao: {int(raw_adic):03d} Item: {int(raw_seq):03d}"
+                    partes.append(di_str)
+
+                if peso_l and peso_l not in ('0', '0.00', '0.000', '0,00', '0,000'):
+                    peso_fmt = peso_l.replace(',', '.')
+                    try:
+                        peso_fmt = f"{float(peso_fmt):.3f}"
+                    except Exception:
+                        pass
+                    partes.append(f"Peso Liq: {peso_fmt} kg")
+
+                texto_extra = inf_ad_txt or inf_db
+                if texto_extra:
+                    t_limpo = texto_extra
+                    t_limpo = re.sub(r'DI:\s*[\w\.\/\-]+(?:\s+(?:Adicao|Adição|Adic)\s*:?\s*\d+)?(?:\s+(?:Item|Seq)\s*:?\s*\d+)?', '', t_limpo, flags=re.I)
+                    t_limpo = re.sub(r'(?:Peso\s*L[ií]q(?:uido)?|Kg\s*L[ií]q(?:uido)?)\s*[:=]?\s*[\d.,]+\s*(?:kg)?', '', t_limpo, flags=re.I)
+                    t_limpo = re.sub(r'[\s\-\–\—;:]{2,}', ' - ', t_limpo).strip(' -;:,')
+                    if t_limpo and t_limpo not in partes:
+                        partes.append(t_limpo)
+
+                if partes:
+                    final_inf_ad = " - ".join(partes)
+                    if inf_ad_el is not None:
+                        if inf_ad_el.text != final_inf_ad:
+                            inf_ad_el.text = final_inf_ad
+                            modificado = True
+                    else:
+                        new_inf = _etree.SubElement(det, '{http://www.portalfiscal.inf.br/nfe}infAdProd')
+                        new_inf.text = final_inf_ad
+                        modificado = True
+
+            if modificado:
+                return _etree.tostring(root, encoding='utf-8')
+            return xml_bytes
+        except Exception as e_enrich:
+            print(f"Aviso ao enriquecer XML para DANFE: {e_enrich}")
+            return xml_bytes
+
     def render(self, xml_path_or_content, output_pdf_path):
         if HAS_BFR:
             try:
@@ -389,6 +528,9 @@ class DanfeGenerator:
                         xml_bytes = xml_path_or_content.encode("utf-8")
                 else:
                     xml_bytes = bytes(xml_path_or_content)
+
+                # Enriquecimento visual para DANFE: garante informações adicionais em cada item
+                xml_bytes = self.enriquecer_xml_para_danfe(xml_bytes)
 
                 is_cancelada = bool(
                     b'<cStat>101</cStat>' in xml_bytes

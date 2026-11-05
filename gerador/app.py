@@ -1101,6 +1101,8 @@ def build_nfe_element(cabecalho, itens, rodape):
         # Informações Adicionais do Produto (infAdProd) - exibidas na descrição do item no DANFE
         inf_ad_prod = str(item.get('infAdProd') or '').strip()
         peso_l_item = str(item.get('pesoL') or item.get('kg_liquido') or item.get('peso_liquido') or '').strip()
+        if not peso_l_item and str(item.get('uTrib') or '').upper() == 'KG':
+            peso_l_item = str(item.get('qTrib') or '').strip()
         tem_peso = peso_l_item and peso_l_item not in ('0', '0.00', '0.000', '0,00', '0,000')
         if n_di and 'DI:' not in inf_ad_prod:
             raw_adic_str = re.sub(r'\D', '', str(item.get('nAdicao') or idx)).lstrip('0') or str(idx)
@@ -5700,7 +5702,7 @@ def montar_nfe_proc_oficial(xml_envio, xml_retorno=None, retorno_dict=None):
         return None
 
 
-def garantir_xml_e_danfe_nota(chave, retorno_sefaz=None):
+def garantir_xml_e_danfe_nota(chave, retorno_sefaz=None, forcar_render=False):
     """
     Localiza ou gera o XML nfeProc canonico oficial SEFAZ e o DANFE (PDF)
     correspondentes a chave informada, garantindo conformidade estrita e 100% de
@@ -5720,10 +5722,17 @@ def garantir_xml_e_danfe_nota(chave, retorno_sefaz=None):
             with open(xml_path, 'r', encoding='utf-8', errors='ignore') as f:
                 conteudo_disco = f.read()
             if verificar_xml_proc_valido(conteudo_disco):
-                if not os.path.exists(pdf_path) or os.path.getsize(pdf_path) < 1000:
+                if forcar_render or not os.path.exists(pdf_path) or os.path.getsize(pdf_path) < 1000:
                     try:
                         from danfe_generator import DanfeGenerator
                         DanfeGenerator().render(xml_path, pdf_path)
+                        if forcar_render:
+                            try:
+                                import r2_storage
+                                if os.path.exists(pdf_path):
+                                    r2_storage.upload_file_r2(pdf_path, f"downloads/{chave_limpa}-danfe.pdf", "application/pdf")
+                            except Exception:
+                                pass
                     except Exception as e_pdf:
                         print(f"Aviso ao renderizar DANFE: {e_pdf}")
                 return xml_path, pdf_path
@@ -5738,10 +5747,17 @@ def garantir_xml_e_danfe_nota(chave, retorno_sefaz=None):
             with open(xml_path, 'r', encoding='utf-8', errors='ignore') as f:
                 conteudo_r2 = f.read()
             if verificar_xml_proc_valido(conteudo_r2):
-                if not os.path.exists(pdf_path) or os.path.getsize(pdf_path) < 1000:
+                if forcar_render or not os.path.exists(pdf_path) or os.path.getsize(pdf_path) < 1000:
                     try:
                         from danfe_generator import DanfeGenerator
                         DanfeGenerator().render(xml_path, pdf_path)
+                        if forcar_render:
+                            try:
+                                import r2_storage
+                                if os.path.exists(pdf_path):
+                                    r2_storage.upload_file_r2(pdf_path, f"downloads/{chave_limpa}-danfe.pdf", "application/pdf")
+                            except Exception:
+                                pass
                     except Exception as e_pdf:
                         print(f"Aviso ao renderizar DANFE: {e_pdf}")
                 return xml_path, pdf_path
@@ -6141,7 +6157,7 @@ def download_pdf(chave):
     chave = _sanitizar_chave_nfe_download(chave)
     if not chave:
         return jsonify({"error": "Chave de acesso inválida. Deve conter exatamente 44 dígitos numéricos."}), 400
-    xml_path, pdf_path = garantir_xml_e_danfe_nota(chave)
+    xml_path, pdf_path = garantir_xml_e_danfe_nota(chave, forcar_render=True)
             
     if pdf_path and os.path.exists(pdf_path):
         nome_download = f"{obter_nome_padrao_arquivo(chave, xml_path)}.pdf"
@@ -6194,7 +6210,7 @@ def download_zip(chave):
     chave = _sanitizar_chave_nfe_download(chave)
     if not chave:
         return jsonify({"error": "Chave de acesso inválida. Deve conter exatamente 44 dígitos numéricos."}), 400
-    xml_path, pdf_path = garantir_xml_e_danfe_nota(chave)
+    xml_path, pdf_path = garantir_xml_e_danfe_nota(chave, forcar_render=True)
     zip_path = os.path.join(DOWNLOADS_DIR, f"{chave}-arquivos.zip")
     nome_padrao = obter_nome_padrao_arquivo(chave, xml_path)
 
