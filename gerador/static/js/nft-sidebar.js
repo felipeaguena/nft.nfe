@@ -120,6 +120,7 @@
 
     window.logoutSistema = async function() {
         try {
+            sessionStorage.removeItem('nft_auth_user');
             await fetch('/api/auth/logout', { method: 'POST' });
         } catch(e) {}
         window.location.href = '/login';
@@ -495,6 +496,42 @@
     }
 })();
 
+    // Abre o Modal de Rascunhos Salvos na tela atual ou redireciona
+    window.abrirRascunhosOuRedirecionar = function () {
+        if (typeof window.abrirModalListaRascunhos === 'function') {
+            window.abrirModalListaRascunhos();
+            return;
+        }
+        const modalEl = document.getElementById('modalListaRascunhos');
+        if (modalEl) {
+            const bModal = (window.bootstrap && window.bootstrap.Modal) ? window.bootstrap.Modal : (typeof bootstrap !== 'undefined' ? bootstrap.Modal : null);
+            if (bModal) {
+                const m = bModal.getOrCreateInstance(modalEl);
+                m.show();
+            }
+            if (typeof window.carregarListaRascunhos === 'function') {
+                window.carregarListaRascunhos();
+            }
+            return;
+        }
+        // Se a página atual não possuir o modal de rascunhos (ex: relatórios, empresas, portal), redireciona para a tela de rascunhos abrindo o modal
+        window.location.href = '/rascunho?abrir_rascunhos=1';
+    };
+
+    // Auto-carregamento do contador de rascunhos para a sidebar
+    window.atualizarContadorRascunhosSidebar = async function () {
+        try {
+            const resp = await fetch('/api/rascunhos');
+            const data = await resp.json();
+            const total = (data.rascunhos || []).length;
+            document.querySelectorAll('.badge-counter-rascunhos').forEach(el => {
+                el.innerText = total;
+            });
+            const badgeSidebar = document.getElementById('sidebar-rascunhos-badge');
+            if (badgeSidebar) badgeSidebar.innerText = total;
+        } catch (e) {}
+    };
+
     // Abre o Modal de Tipo de Nota (Impostos) ou redireciona para a tela principal
     window.abrirModalTipoNota = function () {
         const modalEl = document.getElementById('modalTipoNota');
@@ -525,3 +562,754 @@
             }, 400);
         }
     } catch (e) {}
+
+
+
+// === 3. BUSCA RÁPIDA NA SIDEBAR, ATALHO '/' E SINCRONIZAÇÃO DE TOPBAR ===
+document.addEventListener('DOMContentLoaded', function () {
+    // 1. Busca Instantânea na Sidebar
+    const searchInput = document.getElementById('nftSidebarSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase().trim();
+            const items = document.querySelectorAll('.nft-sidebar-item');
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (!query || text.includes(query)) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    }
+
+    // 2. Atalho Teclado '/' para focar a busca
+    document.addEventListener('keydown', function(e) {
+        if (e.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+            const searchInput = document.getElementById('nftSidebarSearch');
+            if (searchInput) {
+                e.preventDefault();
+                searchInput.focus();
+                searchInput.select();
+            }
+        }
+    });
+
+    // 3. Sincronização do Breadcrumb do Topbar com a Referência Interna
+    const refInput = document.getElementById('referenciaInterna');
+    const topbarRef = document.getElementById('topbar-titulo-modulo');
+    if (refInput && topbarRef) {
+        if (refInput.value && refInput.value.trim()) {
+            topbarRef.textContent = refInput.value.trim();
+        }
+        refInput.addEventListener('input', function() {
+            topbarRef.textContent = this.value.trim() || 'NFT2600300-I REEXP';
+        });
+    }
+});
+
+
+// === 4. GERENCIADOR DE CERTIFICADOS DIGITAIS A1 (MODAL, SIDEBAR E SINCRONIZAÇÃO COM ABA 2) ===
+
+window.carregarStatusCertificadoSidebar = async function () {
+    try {
+        const resp = await fetch('/api/certificado/status');
+        const data = await resp.json();
+        
+        const empresaEl = document.getElementById('sidebar-cert-empresa');
+        const validadeEl = document.getElementById('sidebar-cert-validade');
+        const badgeEl = document.getElementById('sidebar-cert-badge');
+
+        if (data && data.status === 'success') {
+            let nomeEmpresa = data.assunto || 'Empresa Certificada';
+            if (nomeEmpresa.includes('CN=')) {
+                let cn = nomeEmpresa.split('CN=')[1].split(',')[0].trim();
+                nomeEmpresa = cn.includes(':') ? cn.split(':')[0].trim() : cn;
+            }
+
+            let validadeFim = data.fim ? data.fim.split(' ')[0] : 'Indefinida';
+
+            if (empresaEl) {
+                empresaEl.textContent = nomeEmpresa;
+                empresaEl.title = `${nomeEmpresa} (CNPJ: ${data.cnpj || 'Identificado'})`;
+            }
+            if (validadeEl) {
+                validadeEl.textContent = validadeFim;
+            }
+            if (badgeEl) {
+                badgeEl.textContent = 'Ativo';
+                badgeEl.className = 'badge bg-success-subtle text-success small';
+            }
+
+            const aba2Container = document.getElementById('cert-info-container');
+            if (aba2Container) {
+                const emissorCurto = (data.emissor || '').includes('CN=') ? data.emissor.split('CN=')[1].split(',')[0].trim() : (data.emissor || 'Autoridade Certificadora');
+                aba2Container.innerHTML = `
+                    <div class="col-md-5">
+                        <div class="small text-muted mb-1 fw-semibold">Empresa / Titular Ativo para Emissão</div>
+                        <div class="fw-bold fs-6 text-dark text-truncate" id="aba2-cert-empresa" title="${nomeEmpresa}">
+                            <i data-lucide="building-2" style="width: 15px; height: 15px; vertical-align: -2px; color: var(--primary);"></i> ${nomeEmpresa}
+                        </div>
+                        <div class="small text-muted font-monospace mt-1">
+                            <i data-lucide="file-key" style="width: 12px; height: 12px;"></i> Arquivo: ${data.arquivo || 'Certificado A1'}
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="small text-muted mb-1 fw-semibold">CNPJ Titular</div>
+                        <div class="fw-bold font-monospace text-primary fs-6">${data.cnpj || '47.998.441/0001-98'}</div>
+                        <div class="small text-muted mt-1">Status: <span class="badge bg-success-subtle text-success fw-bold">Certificado Ativo</span></div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="small text-muted mb-1 fw-semibold">Validade do Certificado</div>
+                        <div class="fw-bold text-success">${data.fim}</div>
+                        <div class="small text-muted mt-1">Emissor: <span class="font-monospace" style="font-size: 11px;">${emissorCurto}</span></div>
+                    </div>
+                `;
+                if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                    window.lucide.createIcons();
+                }
+            }
+        } else {
+            if (empresaEl) empresaEl.textContent = 'Nenhum Certificado';
+            if (badgeEl) {
+                badgeEl.textContent = 'Pendente';
+                badgeEl.className = 'badge bg-warning-subtle text-warning small';
+            }
+        }
+    } catch (e) {
+        console.warn('Aviso ao carregar status do certificado:', e);
+    }
+};
+
+window.garantirModalGerenciarCertificados = function () {
+    let modalEl = document.getElementById('modalGerenciarCertificados');
+    if (!modalEl) {
+        const modalHtml = `
+<div class="modal fade" id="modalGerenciarCertificados" tabindex="-1" aria-labelledby="modalGerenciarCertificadosLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content shadow-lg border-0" style="border-radius: 16px; overflow: hidden;">
+      <div class="modal-header border-bottom py-3 px-4 bg-body-tertiary">
+        <div class="d-flex align-items-center gap-2">
+          <div class="p-2 rounded-3 bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+            <i data-lucide="shield-check" style="width: 20px; height: 20px;"></i>
+          </div>
+          <div>
+            <h5 class="modal-title fw-bold mb-0" id="modalGerenciarCertificadosLabel">Gerenciador de Certificados Digitais A1</h5>
+            <div class="small text-muted" style="font-size: 12px;">Instale, gerencie e selecione o certificado ativo para emissão de NF-e e SEFAZ</div>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body p-4">
+        <!-- Card do Certificado Ativo -->
+        <div class="p-3 mb-4 rounded-3 border bg-light" id="cert-modal-active-card">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="small fw-bold text-uppercase text-muted" style="letter-spacing: 0.05em; font-size: 11px;">Certificado Ativo no Momento</span>
+            <span class="badge bg-success-subtle text-success fw-bold" id="cert-modal-active-badge">Em Uso</span>
+          </div>
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+              <h6 class="fw-bold mb-1 text-dark" id="cert-modal-active-empresa">Carregando...</h6>
+              <div class="small text-muted font-monospace" id="cert-modal-active-detalhes">CNPJ: -- | Válido até: --</div>
+            </div>
+            <div class="small font-monospace text-muted" id="cert-modal-active-arquivo">Arquivo: --</div>
+          </div>
+        </div>
+
+        <!-- Seção: Certificados Instalados no Sistema -->
+        <div class="mb-4">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+              <i data-lucide="layers" style="width: 16px; height: 16px; color: var(--primary);"></i> Certificados Armazenados
+            </h6>
+            <button class="btn btn-sm btn-outline-secondary py-1 px-2 d-flex align-items-center gap-1" onclick="carregarListaCertificadosModal()" type="button" style="font-size: 11px; border-radius: 6px;">
+              <i data-lucide="refresh-cw" style="width: 12px; height: 12px;"></i> Atualizar Lista
+            </button>
+          </div>
+          <div class="table-responsive border rounded-3 bg-white">
+            <table class="table table-hover align-middle mb-0" style="font-size: 12.5px;">
+              <thead class="table-light text-muted small text-uppercase">
+                <tr>
+                  <th class="ps-3">Empresa / Titular</th>
+                  <th>CNPJ</th>
+                  <th>Validade</th>
+                  <th>Arquivo</th>
+                  <th class="text-end pe-3">Ação</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-certificados-corpo">
+                <tr>
+                  <td colspan="5" class="text-center py-3 text-muted small">Carregando certificados...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Seção: Instalar Novo Certificado Digital -->
+        <div class="border rounded-3 p-3 bg-body-tertiary">
+          <h6 class="fw-bold mb-2 text-dark d-flex align-items-center gap-2">
+            <i data-lucide="plus-circle" style="width: 16px; height: 16px; color: #16A34A;"></i> Instalar Novo Certificado Digital (.pfx / .p12)
+          </h6>
+          <div class="row g-2 align-items-end">
+            <div class="col-md-6">
+              <label class="form-label small fw-bold mb-1">Arquivo do Certificado (.pfx ou .p12) *</label>
+              <input type="file" class="form-control form-control-sm" id="inputModalNovoCertArquivo" accept=".pfx,.p12" style="height: 38px;">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-bold mb-1">Senha do Certificado *</label>
+              <div class="input-group input-group-sm" style="height: 38px;">
+                <input type="password" class="form-control" id="inputModalNovoCertSenha" placeholder="Senha do PFX" style="height: 100%;">
+                <button class="btn btn-outline-secondary" type="button" onclick="alternarVisibilidadeSenhaModal()" style="height: 100%;">
+                  <i data-lucide="eye" id="icone-olho-modal-cert" style="width: 14px; height: 14px;"></i>
+                </button>
+              </div>
+            </div>
+            <div class="col-md-2">
+              <button type="button" class="btn btn-primary btn-sm w-100 fw-bold d-flex align-items-center justify-content-center gap-1 shadow-sm" id="btnInstalarNovoCert" onclick="submeterInstalacaoNovoCertificado()" style="height: 38px; border-radius: 8px;">
+                <i data-lucide="upload" style="width: 14px; height: 14px;"></i> Instalar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-top py-2 px-4 bg-body-tertiary">
+        <button type="button" class="btn btn-sm btn-secondary fw-semibold" data-bs-dismiss="modal" style="border-radius: 8px;">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>`;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+    return document.getElementById('modalGerenciarCertificados');
+};
+
+window.abrirModalGerenciarCertificados = async function () {
+    const modalEl = window.garantirModalGerenciarCertificados();
+    const bModal = (window.bootstrap && window.bootstrap.Modal) ? window.bootstrap.Modal : (typeof bootstrap !== 'undefined' ? bootstrap.Modal : null);
+    if (bModal) {
+        const m = bModal.getOrCreateInstance(modalEl);
+        m.show();
+    }
+    await window.carregarListaCertificadosModal();
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+    }
+};
+
+window.carregarListaCertificadosModal = async function () {
+    try {
+        const resp = await fetch('/api/certificado/listar');
+        const data = await resp.json();
+        const tbody = document.getElementById('tabela-certificados-corpo');
+        if (!tbody) return;
+
+        if (!data || !data.certificados || data.certificados.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">Nenhum certificado digital cadastrado na pasta de certificados. Use o formulário abaixo para instalar.</td></tr>`;
+            return;
+        }
+
+        if (data.ativo) {
+            const activeEmpresa = document.getElementById('cert-modal-active-empresa');
+            const activeDetalhes = document.getElementById('cert-modal-active-detalhes');
+            const activeArquivo = document.getElementById('cert-modal-active-arquivo');
+            if (activeEmpresa) activeEmpresa.textContent = data.ativo.empresa || data.ativo.arquivo;
+            if (activeDetalhes) activeDetalhes.textContent = `CNPJ: ${data.ativo.cnpj || 'N/A'} | Validade até: ${data.ativo.fim || 'N/A'}`;
+            if (activeArquivo) activeArquivo.textContent = `Arquivo: ${data.ativo.arquivo}`;
+        }
+
+        let html = '';
+        data.certificados.forEach(c => {
+            const isAtivo = c.ativo;
+            const rowClass = isAtivo ? 'table-success-subtle fw-semibold' : '';
+            const statusBadge = isAtivo 
+                ? '<span class="badge bg-success text-white py-1 px-2" style="font-size: 11px;"><i data-lucide="check" style="width: 12px; height: 12px; vertical-align: -1px;"></i> Em Uso (Ativo)</span>'
+                : `<button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 fw-semibold" onclick="selecionarCertificadoParaUso('${c.arquivo}')" style="font-size: 11px; border-radius: 6px;">
+                     <i data-lucide="check-circle-2" style="width: 12px; height: 12px; vertical-align: -1px;"></i> Selecionar para Uso
+                   </button>`;
+
+            const deleteBtn = isAtivo ? '' : `
+                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1 ms-1" onclick="excluirCertificado('${c.arquivo}')" title="Excluir certificado" style="font-size: 11px; border-radius: 6px;">
+                  <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
+                </button>
+            `;
+
+            html += `
+                <tr class="${rowClass}">
+                  <td class="ps-3">
+                    <div class="fw-bold text-dark text-truncate" style="max-width: 220px;" title="${c.empresa}">
+                      <i data-lucide="shield" style="width: 13px; height: 13px; vertical-align: -1px; color: ${isAtivo ? '#16A34A' : '#64748B'};"></i> ${c.empresa}
+                    </div>
+                  </td>
+                  <td class="font-monospace small">${c.cnpj || '<span class="text-muted">Protegido</span>'}</td>
+                  <td class="small">${c.fim ? c.fim.split(' ')[0] : '<span class="text-muted">--</span>'}</td>
+                  <td class="font-monospace small text-muted text-truncate" style="max-width: 180px;" title="${c.arquivo}">${c.arquivo}</td>
+                  <td class="text-end pe-3">
+                    ${statusBadge}
+                    ${deleteBtn}
+                  </td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons();
+        }
+    } catch (e) {
+        console.error('Erro ao listar certificados no modal:', e);
+    }
+};
+
+window.selecionarCertificadoParaUso = async function (arquivo) {
+    try {
+        const resp = await fetch('/api/certificado/selecionar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ arquivo: arquivo })
+        });
+        const res = await resp.json();
+        if (res.status === 'success') {
+            await window.carregarStatusCertificadoSidebar();
+            await window.carregarListaCertificadosModal();
+            if (window.nftAlert) {
+                await window.nftAlert(res.data.message || 'Certificado selecionado e ativado com sucesso!', {
+                    title: 'Certificado Ativado!',
+                    type: 'success',
+                    icon: 'shield-check'
+                });
+            }
+        } else {
+            alert('Aviso: ' + (res.message || 'Erro ao selecionar certificado.'));
+        }
+    } catch (e) {
+        alert('Erro ao selecionar certificado: ' + e.message);
+    }
+};
+
+window.excluirCertificado = async function (arquivo) {
+    if (!confirm(`Deseja realmente remover o certificado ${arquivo} do sistema?`)) return;
+    try {
+        const resp = await fetch('/api/certificado/excluir', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ arquivo: arquivo })
+        });
+        const res = await resp.json();
+        if (res.status === 'success') {
+            await window.carregarListaCertificadosModal();
+        } else {
+            alert(res.message || 'Erro ao excluir certificado.');
+        }
+    } catch (e) {
+        alert('Erro ao excluir: ' + e.message);
+    }
+};
+
+window.alternarVisibilidadeSenhaModal = function () {
+    const input = document.getElementById('inputModalNovoCertSenha');
+    const icone = document.getElementById('icone-olho-modal-cert');
+    if (!input) return;
+    if (input.type === 'password') {
+        input.type = 'text';
+        if (icone) icone.setAttribute('data-lucide', 'eye-off');
+    } else {
+        input.type = 'password';
+        if (icone) icone.setAttribute('data-lucide', 'eye');
+    }
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+    }
+};
+
+window.submeterInstalacaoNovoCertificado = async function () {
+    const fileInput = document.getElementById('inputModalNovoCertArquivo');
+    const pwdInput = document.getElementById('inputModalNovoCertSenha');
+    const file = fileInput && fileInput.files ? fileInput.files[0] : null;
+    const senha = (pwdInput ? pwdInput.value : '').trim();
+
+    if (!file) {
+        alert('Por favor, selecione um arquivo de certificado (.pfx ou .p12).');
+        return;
+    }
+    if (!senha) {
+        alert('Por favor, informe a senha do certificado digital.');
+        pwdInput.focus();
+        return;
+    }
+
+    const btn = document.getElementById('btnInstalarNovoCert');
+    if (btn) {
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Salvando...`;
+        btn.disabled = true;
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('senha', senha);
+
+        const resp = await fetch('/api/certificado/importar', {
+            method: 'POST',
+            body: formData
+        });
+        const res = await resp.json();
+        if (!resp.ok || res.status === 'error') {
+            throw new Error(res.message || 'Erro ao instalar certificado.');
+        }
+
+        fileInput.value = '';
+        pwdInput.value = '';
+
+        await window.carregarStatusCertificadoSidebar();
+        await window.carregarListaCertificadosModal();
+
+        if (window.nftAlert) {
+            await window.nftAlert(`Certificado ${res.assunto || 'novo'} instalado e ativado com sucesso!`, {
+                title: 'Certificado Ativado!',
+                type: 'success',
+                icon: 'shield-check'
+            });
+        } else {
+            alert('Certificado instalado e ativado com sucesso!');
+        }
+    } catch (e) {
+        alert('Erro: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.innerHTML = `<i data-lucide="upload" style="width: 14px; height: 14px;"></i> Instalar`;
+            btn.disabled = false;
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                window.lucide.createIcons();
+            }
+        }
+    }
+};
+
+
+// === 5. DROPDOWN DINÂMICO DE EMPRESA EMITENTE NO TOPBAR ===
+
+window.carregarEmitentesTopbar = async function () {
+    try {
+        const resp = await fetch('/api/empresas');
+        const empresas = await resp.json();
+        const menuEl = document.getElementById('topbar-emitente-menu');
+        if (!menuEl) return;
+
+        let emitentes = empresas.filter(e => {
+            const t = (e.tipo || '').toLowerCase();
+            return t === 'emitente' || t === 'ambos' || t === 'filial' || t.includes('emit');
+        });
+
+        if (emitentes.length === 0) {
+            emitentes = empresas;
+        }
+
+        let savedId = localStorage.getItem('nft_active_emitente_id');
+        let activeEmp = emitentes.find(e => String(e.id) === String(savedId)) || emitentes[0];
+
+        if (activeEmp) {
+            window.atualizarVisualTopbarEmitente(activeEmp);
+        }
+
+        let html = `
+            <li class="dropdown-header text-uppercase small fw-bold px-3 py-1 text-muted" style="font-size: 0.72rem; letter-spacing: 0.05em;">Empresas Emitentes Cadastradas</li>
+            <li><hr class="dropdown-divider my-1"></li>
+        `;
+
+        emitentes.forEach(emp => {
+            const isSelected = activeEmp && String(emp.id) === String(activeEmp.id);
+            const apelidoStr = emp.apelido ? ` (${emp.apelido})` : '';
+            let itemLogoSrc = emp.logo_url || '';
+            const cnpjClean = (emp.cnpj_cpf || '').replace(/\D/g, '');
+            if (!itemLogoSrc && (cnpjClean === '47998441000198' || (emp.nome || '').toUpperCase().includes('NFT'))) {
+                itemLogoSrc = '/static/img/brand/NFTLogoBlackCompact.png';
+            } else if (!itemLogoSrc && emp.id) {
+                itemLogoSrc = `/api/empresas/${emp.id}/logo`;
+            }
+            const empInit = ((emp.nome || 'E').trim()[0] || 'E').toUpperCase();
+            const thumbHtml = itemLogoSrc
+                ? `<img src="${itemLogoSrc}" alt="" style="width: 26px; height: 26px; object-fit: contain; border-radius: 4px; border: 1px solid #E2E8F0; background: #fff; flex-shrink: 0;" onerror="this.outerHTML='<span class=\'badge bg-secondary-subtle text-secondary me-1 font-monospace\'>${empInit}</span>'">`
+                : `<span class="badge bg-secondary-subtle text-secondary me-1 font-monospace" style="width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px;">${empInit}</span>`;
+
+            html += `
+                <li>
+                    <a class="dropdown-item d-flex align-items-center justify-content-between py-2 px-3 ${isSelected ? 'active fw-bold' : ''}" href="javascript:void(0)" onclick="selecionarEmitenteTopbar('${emp.id}')">
+                        <div class="d-flex align-items-center gap-2" style="max-width: 250px;">
+                            ${thumbHtml}
+                            <div class="d-flex flex-column text-truncate">
+                                <span class="text-truncate" style="font-size: 12.5px;">${emp.nome}${apelidoStr}</span>
+                                <span class="text-muted font-monospace small" style="font-size: 11px;">${emp.cnpj_cpf || ''}</span>
+                            </div>
+                        </div>
+                        ${isSelected ? '<i data-lucide="check" style="width: 14px; height: 14px; color: #2563EB;"></i>' : ''}
+                    </a>
+                </li>
+            `;
+        });
+
+        html += `
+            <li><hr class="dropdown-divider my-1"></li>
+            <li>
+                <a class="dropdown-item py-1 px-3 text-primary fw-semibold small d-flex align-items-center gap-2" href="/empresas">
+                    <i data-lucide="plus-circle" style="width: 13px; height: 13px;"></i> Gerenciar Empresas...
+                </a>
+            </li>
+        `;
+
+        menuEl.innerHTML = html;
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons();
+        }
+    } catch (e) {
+        console.warn('Aviso ao carregar emitentes para o topbar:', e);
+    }
+};
+
+window.atualizarVisualTopbarEmitente = function (emp) {
+    if (!emp) return;
+    const nomeEl = document.getElementById('topbar-emitente-nome');
+    const cnpjEl = document.getElementById('topbar-emitente-cnpj');
+    if (nomeEl) {
+        nomeEl.textContent = emp.nome || 'Empresa Emitente';
+        nomeEl.title = emp.nome || '';
+    }
+    if (cnpjEl) {
+        cnpjEl.textContent = emp.cnpj_cpf || '';
+    }
+
+    // Atualiza a div com class="nft-brand-icon" substituindo a letra do nome pelo logotipo da Empresa emitente
+    const brandIcons = document.querySelectorAll('.nft-brand-icon');
+    if (brandIcons.length > 0) {
+        let logoSrc = emp.logo_url || '';
+        const cnpjClean = (emp.cnpj_cpf || '').replace(/\D/g, '');
+        const isNFT = cnpjClean === '47998441000198' || (emp.nome || '').toUpperCase().includes('NFT');
+
+        if (!logoSrc && isNFT) {
+            logoSrc = '/static/img/brand/NFTLogoBlackCompact.png';
+        } else if (!logoSrc && emp.id) {
+            logoSrc = `/api/empresas/${emp.id}/logo?v=${Date.now()}`;
+        }
+
+        const initialChar = ((emp.nome || 'N').trim()[0] || 'N').toUpperCase();
+
+        brandIcons.forEach(iconEl => {
+            if (logoSrc) {
+                iconEl.innerHTML = `<img src="${logoSrc}" alt="${emp.nome || 'Emitente'}" style="width: 100%; height: 100%; object-fit: contain; background: #ffffff; border-radius: 6px; padding: 2px;" onerror="this.onerror=null; this.parentElement.textContent='${initialChar}';">`;
+                iconEl.title = emp.nome || '';
+                iconEl.style.backgroundColor = '#FFFFFF';
+                iconEl.style.border = '1px solid #E2E8F0';
+            } else {
+                iconEl.textContent = initialChar;
+                iconEl.title = emp.nome || '';
+                iconEl.style.backgroundColor = '#0F172A';
+                iconEl.style.border = 'none';
+            }
+        });
+    }
+};
+
+window.selecionarEmitenteTopbar = async function (id) {
+    try {
+        localStorage.setItem('nft_active_emitente_id', id);
+        if (typeof window.selecionarEmpresa === 'function') {
+            window.selecionarEmpresa('emit', id);
+        }
+        await window.carregarEmitentesTopbar();
+    } catch (e) {
+        console.error('Erro ao selecionar emitente no topbar:', e);
+    }
+};
+
+// === 6. USUÁRIO AUTENTICADO NO TOPBAR & CONTROLE DE ACESSO RBAC ===
+window.carregarUsuarioAutenticadoTopbar = async function (forceFresh = false) {
+    try {
+        // 1. Aplica do cache para renderização imediata sem flicker
+        if (!forceFresh) {
+            const cachedUserStr = sessionStorage.getItem('nft_auth_user');
+            if (cachedUserStr) {
+                try {
+                    const cachedUser = JSON.parse(cachedUserStr);
+                    window.aplicarDadosUsuarioTopbar(cachedUser);
+                    window.aplicarControleAcessoRBAC(cachedUser);
+                } catch(e) {}
+            }
+        }
+
+        // 2. Sincroniza dados frescos do servidor
+        const resp = await fetch('/api/auth/me');
+        if (resp.ok) {
+            const data = await resp.json();
+            if (data.status === 'success' && data.user) {
+                sessionStorage.setItem('nft_auth_user', JSON.stringify(data.user));
+                window.aplicarDadosUsuarioTopbar(data.user);
+                window.aplicarControleAcessoRBAC(data.user);
+            }
+        }
+    } catch (e) {
+        console.warn('Aviso ao carregar dados do usuário autenticado:', e);
+    }
+};
+
+window.aplicarDadosUsuarioTopbar = function (user) {
+    if (!user) return;
+    
+    // Localiza a div do usuário autenticado no Topbar
+    const userPill = document.getElementById('topbar-user-pill') || 
+                     document.querySelector('.nft-topbar-pill[title*="Usuário"]') ||
+                     document.querySelector('.nft-topbar-pill[title*="Autenticado"]') ||
+                     document.querySelector('.nft-topbar-right .nft-topbar-pill:last-child');
+    
+    if (!userPill) return;
+
+    // Atualiza o título da div
+    const roleTitle = (user.role === 'admin') 
+        ? "Usuário Administrador Autenticado" 
+        : "Usuário Operador Autenticado";
+    userPill.setAttribute('title', roleTitle);
+
+    // Substitui o "Admin" pelo nome do usuário autenticado
+    const nomeEl = document.getElementById('topbar-user-name') || 
+                   userPill.querySelector('span');
+    if (nomeEl && user.name) {
+        nomeEl.textContent = user.name;
+        nomeEl.style.maxWidth = '150px';
+        nomeEl.style.overflow = 'hidden';
+        nomeEl.style.textOverflow = 'ellipsis';
+        nomeEl.style.whiteSpace = 'nowrap';
+        nomeEl.style.display = 'inline-block';
+        nomeEl.style.verticalAlign = 'middle';
+    }
+
+    // Atualiza a foto / avatar
+    let avatarWrap = document.getElementById('topbar-user-avatar-wrap') || 
+                     userPill.querySelector('div') || 
+                     userPill.firstElementChild;
+    
+    const initials = (user.name || user.email || 'A').split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('').toUpperCase();
+
+    if (avatarWrap) {
+        if (user.photo_url) {
+            avatarWrap.innerHTML = `
+                <img src="${user.photo_url}" alt="${user.name || 'Avatar'}" 
+                     style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; display: block; flex-shrink: 0;" 
+                     onerror="this.onerror=null; this.parentElement.innerHTML='${initials}';" />
+            `;
+            avatarWrap.style.padding = '0';
+            avatarWrap.style.overflow = 'hidden';
+            avatarWrap.style.border = '1px solid rgba(0,0,0,0.15)';
+        } else {
+            avatarWrap.innerHTML = initials;
+            avatarWrap.style.background = '#0F172A';
+            avatarWrap.style.color = '#FFFFFF';
+            avatarWrap.style.display = 'flex';
+            avatarWrap.style.alignItems = 'center';
+            avatarWrap.style.justifyContent = 'center';
+            avatarWrap.style.fontSize = '11px';
+            avatarWrap.style.fontWeight = '700';
+            avatarWrap.style.width = '24px';
+            avatarWrap.style.height = '24px';
+            avatarWrap.style.borderRadius = '50%';
+        }
+    }
+};
+
+window.aplicarControleAcessoRBAC = function (user) {
+    if (!user) return;
+    const path = window.location.pathname.toLowerCase();
+    const isAdmin = (user.role === 'admin');
+
+    if (!isAdmin) {
+        // === RESTRIÇÕES PARA OPERADOR / EMISSOR ===
+        // 1. Páginas de Configurações: Acesso somente para consulta
+        const isConfigPage = (
+            path.includes('/usuarios') ||
+            path.includes('/empresas') ||
+            path.includes('/feiras') ||
+            path.includes('/localidades') ||
+            path.includes('/unidades_tributaveis') ||
+            path.includes('/banco_ncm')
+        );
+
+        if (isConfigPage) {
+            // Desabilita ou oculta botões de criação
+            const btnNovos = document.querySelectorAll('button[onclick*="abrirModalNovo"], button[onclick*="abrirModalNova"], button[onclick*="criar"], button[onclick*="Adicionar"], button[onclick*="abrirModalCriar"]');
+            btnNovos.forEach(btn => {
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.title = 'Apenas Administradores podem adicionar novos registros de configuração.';
+            });
+
+            // Insere aviso de modo de consulta no topo
+            let alertBox = document.getElementById('nft-rbac-readonly-alert');
+            if (!alertBox) {
+                const headerContainer = document.querySelector('.container-fluid') || document.querySelector('.nft-main-wrapper');
+                if (headerContainer) {
+                    alertBox = document.createElement('div');
+                    alertBox.id = 'nft-rbac-readonly-alert';
+                    alertBox.className = 'alert alert-info d-flex align-items-center gap-2 py-2 px-3 mb-3 shadow-sm';
+                    alertBox.style.cssText = 'border-radius: 10px; font-size: 0.82rem; border-left: 4px solid #0284c7; background-color: rgba(2,132,199,0.08);';
+                    alertBox.innerHTML = `
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                        <div>
+                            <strong>Modo Consulta (Operador / Emissor):</strong> Você possui acesso para visualização das configurações. Apenas Administradores podem alterar, incluir ou excluir dados.
+                        </div>
+                    `;
+                    const firstCard = headerContainer.querySelector('.d-flex.justify-content-between') || headerContainer.firstElementChild;
+                    if (firstCard && firstCard.parentNode) {
+                        firstCard.parentNode.insertBefore(alertBox, firstCard.nextSibling);
+                    }
+                }
+            }
+
+            // Desabilita botões de edição e exclusão de tabelas
+            const desabilitarBotoesAcaoTabela = () => {
+                // Na tela de usuários, permite editar apenas o seu próprio perfil se for ele mesmo
+                const actionBtns = document.querySelectorAll('button[onclick*="excluir"], button[onclick*="delete"], button[onclick*="deletar"]');
+                actionBtns.forEach(btn => {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.4';
+                    btn.title = 'Apenas Administradores podem excluir dados de configuração.';
+                });
+            };
+            desabilitarBotoesAcaoTabela();
+            setTimeout(desabilitarBotoesAcaoTabela, 600);
+            setTimeout(desabilitarBotoesAcaoTabela, 1600);
+        }
+
+        // 2. Relatório de Notas Fiscais
+        if (path.includes('/relatorios')) {
+            const desabilitarEdicaoRelatorio = () => {
+                // Desabilita clique para editar Referência Interna
+                const refTags = document.querySelectorAll('.ref-tag');
+                refTags.forEach(tag => {
+                    tag.removeAttribute('onclick');
+                    tag.style.cursor = 'default';
+                    tag.style.pointerEvents = 'none';
+                    tag.title = 'Referência Interna (Apenas Administrador pode editar)';
+                });
+
+                // Desabilita botões de excluir/cancelar nota no relatório
+                const deleteBtns = document.querySelectorAll('button[onclick*="excluirNota"], button[onclick*="excluir_nota"]');
+                deleteBtns.forEach(btn => {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.4';
+                    btn.title = 'Apenas Administradores podem excluir ou alterar notas do relatório.';
+                });
+            };
+            desabilitarEdicaoRelatorio();
+            setTimeout(desabilitarEdicaoRelatorio, 600);
+            setTimeout(desabilitarEdicaoRelatorio, 1600);
+            setTimeout(desabilitarEdicaoRelatorio, 3000);
+        }
+    }
+};
+
+document.addEventListener('DOMContentLoaded', function () {
+    window.carregarStatusCertificadoSidebar();
+    window.carregarEmitentesTopbar();
+    window.carregarUsuarioAutenticadoTopbar();
+    window.atualizarContadorRascunhosSidebar();
+});

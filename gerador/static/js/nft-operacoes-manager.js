@@ -228,12 +228,12 @@
             const isThis = (k === codigoAtivo);
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = `list-group-item list-group-item-action py-2 px-2 border rounded mb-1 d-flex align-items-center justify-content-between text-start cfg-enq-item ${isThis ? 'active bg-primary text-white border-primary fw-bold' : ''}`;
+            btn.className = `list-group-item list-group-item-action py-2 px-2 border rounded mb-1 d-flex align-items-center justify-content-between text-start cfg-enq-item ${isThis ? 'active fw-bold' : ''}`;
             btn.setAttribute('data-codigo', k);
             btn.setAttribute('title', conf.apelido || conf.nome || k);
             btn.innerHTML = `
                 <div class="d-flex align-items-center gap-2 text-truncate" style="min-width: 0;">
-                    <span class="fw-bold font-monospace cfg-enq-cfop flex-shrink-0 ${isThis ? 'text-white' : 'text-primary'}">(${conf.cfop_padrao || '----'})</span>
+                    <span class="fw-bold font-monospace cfg-enq-cfop flex-shrink-0 text-primary">(${conf.cfop_padrao || '----'})</span>
                     <span class="text-truncate cfg-enq-txt">${conf.apelido || conf.nome || k}</span>
                 </div>
             `;
@@ -915,14 +915,12 @@
         document.querySelectorAll('#cfg_enquadramentos_lista .cfg-enq-item').forEach(el => {
             const isThis = el.getAttribute('data-codigo') === codigo;
             el.classList.toggle('active', isThis);
-            el.classList.toggle('bg-primary', isThis);
-            el.classList.toggle('text-white', isThis);
-            el.classList.toggle('border-primary', isThis);
             el.classList.toggle('fw-bold', isThis);
+            el.classList.remove('bg-primary', 'text-white', 'border-primary');
             const spanCfop = el.querySelector('span.cfg-enq-cfop');
             if (spanCfop) {
-                spanCfop.classList.toggle('text-white', isThis);
-                spanCfop.classList.toggle('text-primary', !isThis);
+                spanCfop.classList.remove('text-white');
+                spanCfop.classList.add('text-primary');
             }
         });
 

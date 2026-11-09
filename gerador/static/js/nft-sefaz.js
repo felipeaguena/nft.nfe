@@ -3,55 +3,61 @@
 
 async function verificarStatusCertificado() {
     try {
+        if (typeof window.carregarStatusCertificadoSidebar === 'function') {
+            await window.carregarStatusCertificadoSidebar();
+            return;
+        }
         const response = await fetch('/api/certificado/status');
         const data = await response.json();
         const container = document.getElementById('cert-info-container');
         if (!container) return;
         
         if (data.status === 'success') {
-            const arquivoNome = data.arquivo ? `<div class="small text-muted font-monospace mt-1"><i data-lucide="file-key" style="width: 12px; height: 12px;"></i> Arquivo: ${data.arquivo}</div>` : '';
+            let nomeEmpresa = data.assunto || 'Empresa Certificada';
+            if (nomeEmpresa.includes('CN=')) {
+                let cn = nomeEmpresa.split('CN=')[1].split(',')[0].trim();
+                nomeEmpresa = cn.includes(':') ? cn.split(':')[0].trim() : cn;
+            }
+            const emissorCurto = (data.emissor || '').includes('CN=') ? data.emissor.split('CN=')[1].split(',')[0].trim() : (data.emissor || 'Autoridade Certificadora');
             container.innerHTML = `
-                <div class="col-md-6">
-                    <div class="small text-muted mb-1">Titular / Assunto</div>
-                    <div class="fw-bold font-monospace" style="font-size: 11px;">${data.assunto}</div>
-                    ${arquivoNome}
+                <div class="col-md-5">
+                    <div class="small text-muted mb-1 fw-semibold">Empresa / Titular Ativo para Emissão</div>
+                    <div class="fw-bold fs-6 text-dark text-truncate" id="aba2-cert-empresa" title="${nomeEmpresa}">
+                        <i data-lucide="building-2" style="width: 15px; height: 15px; vertical-align: -2px; color: var(--primary);"></i> ${nomeEmpresa}
+                    </div>
+                    <div class="small text-muted font-monospace mt-1">
+                        <i data-lucide="file-key" style="width: 12px; height: 12px;"></i> Arquivo: ${data.arquivo || 'Certificado A1'}
+                    </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="small text-muted mb-1">Emissor</div>
-                    <div class="fw-bold font-monospace" style="font-size: 11px;">${data.emissor}</div>
+                <div class="col-md-3">
+                    <div class="small text-muted mb-1 fw-semibold">CNPJ Titular</div>
+                    <div class="fw-bold font-monospace text-primary fs-6">${data.cnpj || '47.998.441/0001-98'}</div>
+                    <div class="small text-muted mt-1">Status: <span class="badge bg-success-subtle text-success fw-bold">Certificado Ativo</span></div>
                 </div>
-                <div class="col-md-4 mt-2">
-                    <div class="small text-muted mb-1">CNPJ</div>
-                    <div class="fw-bold text-success">${data.cnpj || 'N/A'}</div>
-                </div>
-                <div class="col-md-4 mt-2">
-                    <div class="small text-muted mb-1">Validade Inicial</div>
-                    <div class="fw-bold">${data.inicio}</div>
-                </div>
-                <div class="col-md-4 mt-2">
-                    <div class="small text-muted mb-1">Validade Final</div>
-                    <div class="fw-bold">${data.fim}</div>
-                </div>
-                <div class="col-12 mt-2">
-                    <span class="badge bg-info-subtle text-info fw-bold"><i data-lucide="check-circle" class="me-1"></i> Certificado Válido e Pronto para Uso</span>
+                <div class="col-md-4">
+                    <div class="small text-muted mb-1 fw-semibold">Validade do Certificado</div>
+                    <div class="fw-bold text-success">${data.fim}</div>
+                    <div class="small text-muted mt-1">Emissor: <span class="font-monospace" style="font-size: 11px;">${emissorCurto}</span></div>
                 </div>
             `;
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                window.lucide.createIcons();
+            }
         } else {
             container.innerHTML = `
                 <div class="col-12">
-                    <div class="alert alert-danger py-2 px-3 mb-0 d-flex align-items-center gap-2">
+                    <div class="alert alert-warning py-2 px-3 mb-0 d-flex align-items-center gap-2">
                         <i data-lucide="alert-triangle"></i>
-                        <span>Erro ao carregar certificado: ${data.message}</span>
+                        <span>Nenhum certificado ativo no momento. Clique em "Gerenciar Certificados" para instalar.</span>
                     </div>
                 </div>
             `;
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                window.lucide.createIcons();
+            }
         }
-        if (window.lucide) lucide.createIcons();
-    } catch (e) {
-        console.error('Erro na verificação do certificado:', e);
-        if (window.nftAlert) {
-            await window.nftAlert('Ocorreu um erro ao verificar o certificado digital.', { type: 'danger', title: 'Erro de Certificado' });
-        }
+    } catch (err) {
+        console.error('Erro ao verificar certificado:', err);
     }
 }
 

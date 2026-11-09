@@ -32,6 +32,7 @@ class UsuarioCreateSchema(BaseModel):
     password: str = Field(..., min_length=6, max_length=128)
     name: str = Field(..., min_length=2, max_length=150)
     role: Optional[str] = Field(default='user', max_length=30)
+    photo_url: Optional[str] = Field(default='', max_length=1000)
 
     @field_validator('email')
     @classmethod
@@ -48,6 +49,7 @@ class UsuarioUpdateSchema(BaseModel):
     password: Optional[str] = Field(default=None, max_length=128)
     name: Optional[str] = Field(default=None, min_length=2, max_length=150)
     role: Optional[str] = Field(default=None, max_length=30)
+    photo_url: Optional[str] = Field(default=None, max_length=1000)
 
 
 class EmpresaPayloadSchema(BaseModel):
@@ -69,6 +71,7 @@ class EmpresaPayloadSchema(BaseModel):
     fone: Optional[str] = Field(default='', max_length=30)
     apelido: Optional[str] = Field(default='', max_length=100)
     ind_ie: Optional[str] = Field(default='', max_length=5)
+    logo_url: Optional[str] = Field(default='', max_length=1000)
 
 
 class TipoOperacaoPayloadSchema(BaseModel):
@@ -355,7 +358,7 @@ def authenticate_user_credentials(email: str, password: str, db_conn=None) -> Op
     if db_conn is not None:
         try:
             cur = db_conn.cursor()
-            cur.execute("SELECT id, email, password_hash, name, role FROM usuarios WHERE LOWER(email) = ? LIMIT 1", (clean_email,))
+            cur.execute("SELECT id, email, password_hash, name, role, photo_url FROM usuarios WHERE LOWER(email) = ? LIMIT 1", (clean_email,))
             row = cur.fetchone()
             if row:
                 pwd_hash = row['password_hash'] if hasattr(row, '__getitem__') else row[2]
@@ -364,12 +367,18 @@ def authenticate_user_credentials(email: str, password: str, db_conn=None) -> Op
                 user_name = row['name'] if hasattr(row, '__getitem__') else row[3]
                 user_role = row['role'] if hasattr(row, '__getitem__') else row[4]
 
+                user_photo = ''
+                try:
+                    user_photo = row['photo_url'] if hasattr(row, '__getitem__') else (row[5] if len(row) > 5 else '')
+                except Exception:
+                    pass
                 if pwd_hash and bcrypt.checkpw(clean_password.encode('utf-8'), pwd_hash.encode('utf-8')):
                     return {
                         "id": user_id,
                         "email": user_email,
                         "name": user_name,
-                        "role": user_role
+                        "role": user_role,
+                        "photo_url": user_photo or ''
                     }
         except Exception as _e_auth_db:
             pass
@@ -392,8 +401,96 @@ def authenticate_user_credentials(email: str, password: str, db_conn=None) -> Op
             "id": "admin-1",
             "email": admin_email,
             "name": "Administrador NFT Logistics",
-            "role": "admin"
+            "role": "admin",
+            "photo_url": ""
         }
     return None
 
 
+
+
+def get_current_user_from_request() -> Optional[Dict[str, Any]]:
+    """
+    Retorna os dados do usuário autenticado a partir da sessão Flask ou token JWT.
+    """
+    user_sess = session.get('user')
+    if user_sess and isinstance(user_sess, dict) and user_sess.get('id'):
+        return user_sess
+
+    # Tenta obter pelo token JWT (Cookie ou Header)
+    auth_secret = (
+        os.environ.get('AUTH_SECRET', '').strip()
+        or os.environ.get('FLASK_SECRET_KEY', '').strip()
+        or "NFTLogistics_AuthSecret_JWT_Key_Fallback_1652"
+    )
+    cookie_token = (
+        request.cookies.get('__Secure-authjs.session-token')
+        or request.cookies.get('authjs.session-token')
+        or request.cookies.get('next-auth.session-token')
+    )
+    auth_header = request.headers.get('Authorization', '').strip()
+    tok = None
+    if auth_header.startswith('Bearer '):
+        tok = auth_header[7:].strip()
+    elif cookie_token:
+        tok = cookie_token
+
+    if tok and auth_secret:
+        try:
+            payload = jwt.decode(tok, auth_secret, algorithms=['HS256', 'HS384', 'HS512'])
+            return {
+                "id": payload.get('sub') or payload.get('id'),
+                "email": payload.get('email', ''),
+                "name": payload.get('name', ''),
+                "role": payload.get('role', 'user'),
+                "photo_url": payload.get('photo_url', '')
+            }
+        except Exception:
+            pass
+
+    # Em ambiente desktop local se a flag de sessão estiver ativa
+    if session.get('user_authenticated') is True:
+        return {
+            "id": 1,
+            "email": "admin@nftlogistics.com.br",
+            "name": "Administrador NFT Logistics",
+            "role": "admin",
+            "photo_url": ""
+        }
+
+    return None
+
+
+def is_current_user_admin() -> bool:
+    """
+    Verifica se o usuário atual possui permissão de Administrador ('admin').
+    Requisições com X-Internal-API-Key também possuem privilégio administrativo.
+    """
+    internal_api_key = os.environ.get('INTERNAL_API_KEY', '').strip()
+    req_internal_key = request.headers.get('X-Internal-API-Key', '').strip()
+    if internal_api_key and req_internal_key:
+        if hmac.compare_digest(req_internal_key.encode('utf-8'), internal_api_key.encode('utf-8')):
+            return True
+
+    user = get_current_user_from_request()
+    if user and str(user.get('role', '')).lower() in ('admin', 'administrador'):
+        return True
+    return False
+
+
+def require_admin(f):
+    """
+    Decorator para restringir endpoints exclusivamente ao perfil de Administrador.
+    Operadores / Emissores recebem HTTP 403 Forbidden com mensagem clara.
+    """
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not verify_auth_token_or_internal_key():
+            return jsonify({"error": "Não autorizado. Token JWT ou sessão inválida ou ausente.", "status": "error"}), 401
+        if not is_current_user_admin():
+            return jsonify({
+                "status": "error",
+                "error": "Acesso não autorizado. Apenas Administradores podem adicionar, alterar ou excluir dados de configuração ou editar relatórios."
+            }), 403
+        return f(*args, **kwargs)
+    return decorated

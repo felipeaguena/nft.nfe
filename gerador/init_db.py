@@ -582,10 +582,14 @@ def init_db(target_db_path=None):
             password_hash TEXT NOT NULL,
             name TEXT NOT NULL,
             role TEXT NOT NULL DEFAULT 'user',
+            photo_url TEXT DEFAULT '',
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    user_cols = [col[1] for col in c.execute('PRAGMA table_info(usuarios)').fetchall()]
+    if 'photo_url' not in user_cols:
+        c.execute("ALTER TABLE usuarios ADD COLUMN photo_url TEXT DEFAULT ''")
     c.execute('''
         INSERT OR IGNORE INTO usuarios (email, password_hash, name, role)
         VALUES ('admin@nftlogistics.com.br', '$2b$12$2OEHVkbB4cpGnIXwA2Pt8.79L1jYeophfsuqrnW43CPhI4Hyw0bCK', 'Administrador NFT Logistics', 'admin')

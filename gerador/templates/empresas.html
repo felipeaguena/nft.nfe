@@ -10,8 +10,8 @@
 <!-- Bootstrap 5 CSS -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
 <!-- NFT Logistics Theme (Light & Dark) -->
-<link href="/static/css/nft-theme.css?v=3.1" rel="stylesheet"/>
-<link href="/static/css/nft-sidebar.css" rel="stylesheet"/>
+<link href="/static/css/nft-theme.css?v=4.1" rel="stylesheet"/>
+<link href="/static/css/nft-sidebar.css?v=4.3" rel="stylesheet"/>
 <script src="/static/js/theme.js"></script>
 <!-- Lucide Icons -->
 <script src="/static/js/lucide.min.js"></script>
@@ -105,7 +105,7 @@
 </style>
 </head>
 <body class="has-sidebar">
-<!-- MENU LATERAL FIXO (SIDEBAR) -->
+<!-- MENU LATERAL FIXO (SIDEBAR) NO PADRÃO DO PREVIEW -->
 <aside class="nft-sidebar" id="nftSidebar">
 <!-- 1. Cabeçalho da Sidebar -->
 <div class="nft-sidebar-header">
@@ -114,127 +114,197 @@
 <img alt="NFT" class="logo-theme-black" src="/static/img/brand/NFT%20Logo%20(3).webp"/>
 <img alt="NFT" class="logo-theme-white" src="/static/img/brand/NFT%20Logo%20(11).webp"/>
 </div>
-<div class="sidebar-brand-info">
-<span class="sidebar-brand-title">NFT Logistics</span>
-<span class="badge sidebar-brand-badge bg-info-subtle text-info fw-bold">Empresas</span>
-</div>
 </a>
 <button aria-label="Recolher / Fixar Menu" class="sidebar-toggle-btn" onclick="toggleSidebar()" title="Recolher / Fixar Menu Lateral" type="button">
-<i data-lucide="chevron-left" style="width: 14px; height: 14px;"></i>
+<i data-lucide="chevron-left"></i>
 </button>
 </div>
+
 <!-- 2. Corpo com Menus e Itens -->
 <div class="nft-sidebar-body">
-<!-- Grupo: Módulos -->
-<div class="sidebar-section-title">Módulos</div>
-<ul class="nft-sidebar-nav">
-<li class="nft-sidebar-item">
-<a class="nft-sidebar-btn" href="/" title="Portal Inicial">
-<span class="sidebar-icon"><i data-lucide="home"></i></span>
-<span class="sidebar-label">Início / Módulos</span>
-</a>
-</li>
-<li class="nft-sidebar-item">
-<a class="nft-sidebar-btn" href="/nova_nf?nova_nota=1" title="Módulo Nova NF (Sem XML)">
-<span class="sidebar-icon"><i data-lucide="file-plus-2"></i></span>
-<span class="sidebar-label">Nova NF</span>
-</a>
-</li>
-<li class="nft-sidebar-item">
-<a class="nft-sidebar-btn" href="/rascunho?nova_nota=1" title="Módulo XML Rascunho">
-<span class="sidebar-icon"><i data-lucide="file-code"></i></span>
-<span class="sidebar-label">XML Rascunho</span>
-</a>
-</li>
-<li class="nft-sidebar-item">
-<a class="nft-sidebar-btn" href="/di_duimp?nova_nota=1" title="Módulo XML da DI ou DUIMP">
-<span class="sidebar-icon"><i data-lucide="globe"></i></span>
-<span class="sidebar-label">XML da DI ou DUIMP</span>
-</a>
-</li>
-<li class="nft-sidebar-item">
-<a class="nft-sidebar-btn" href="/rascunho?abrir_rascunhos=1" title="Ver e gerenciar Rascunhos Salvos">
-<span class="sidebar-icon"><i data-lucide="folder-clock"></i></span>
-<span class="sidebar-label">Rascunhos Salvos</span>
-</a>
-</li>
-</ul>
-<!-- Grupo: Relatório -->
-<div class="sidebar-section-title">Relatório</div>
-<ul class="nft-sidebar-nav">
-<li class="nft-sidebar-item">
-<a class="nft-sidebar-btn" href="/relatorios" title="Relatório de Notas Fiscais Geradas">
-<span class="sidebar-icon"><i data-lucide="file-spreadsheet"></i></span>
-<span class="sidebar-label">Relatório</span>
-</a>
-</li>
-</ul>
-<!-- Grupo: Configurações -->
-<div class="sidebar-section-title">Configurações</div>
-<ul class="nft-sidebar-nav">
-<li class="nft-sidebar-item">
-<a class="nft-sidebar-btn active" href="/empresas" title="Gestão de Empresas e Cadastros">
-<span class="sidebar-icon"><i data-lucide="building-2"></i></span>
-<span class="sidebar-label">Empresas</span>
-</a>
-</li>
-<li class="nft-sidebar-item">
-<a class="nft-sidebar-btn" href="/banco_ncm" title="Grande Tabela NCM &amp; Impostos">
-<span class="sidebar-icon"><i data-lucide="book-open"></i></span>
-<span class="sidebar-label">Tabela NCM</span>
-</a>
-</li>
-<li class="nft-sidebar-item">
-<a class="nft-sidebar-btn" href="/localidades" title="Localidades Oficiais (BACEN, IBGE, CEPs)">
-<span class="sidebar-icon"><i data-lucide="map-pin"></i></span>
-<span class="sidebar-label">Localidades</span>
-</a>
-</li>
-<li class="nft-sidebar-item">
-<a class="nft-sidebar-btn" href="/feiras" title="Descrição da Feira (Feiras do Ano)">
-<span class="sidebar-icon"><i data-lucide="calendar-days"></i></span>
-<span class="sidebar-label">Descrição da Feira</span>
-</a>
-</li>
-<li class="nft-sidebar-item">
-<a class="nft-sidebar-btn" href="/usuarios" title="Gerenciar Usuários Autorizados">
-<span class="sidebar-icon"><i data-lucide="users"></i></span>
-<span class="sidebar-label">Usuários Autorizados</span>
-</a>
-</li>
-            <li class="nft-sidebar-item">
-                <button class="nft-sidebar-btn" onclick="abrirModalTipoNota()" title="Configuração de Impostos &amp; Operações" type="button">
-                    <span class="sidebar-icon"><i data-lucide="settings"></i></span>
-                    <span class="sidebar-label">Tipo de Nota (Impostos)</span>
-                </button>
-            </li>
-<li class="nft-sidebar-item">
-<a class="nft-sidebar-btn" href="/unidades_tributaveis" title="Unidades Tributáveis & Abreviações">
-<span class="sidebar-icon"><i data-lucide="scale"></i></span>
-<span class="sidebar-label">Unidades Tributáveis</span>
-</a>
-</li>
-</ul>
-</div>
+  <!-- Busca rápida com atalho / -->
+  <div class="nft-sidebar-search-wrap">
+    <div class="nft-sidebar-search">
+      <span class="search-icon"><i data-lucide="search" style="width: 14px; height: 14px;"></i></span>
+      <input type="text" id="nftSidebarSearch" placeholder="Buscar nota, ref, DI..." autocomplete="off">
+      <span class="search-kbd">/</span>
+    </div>
+  </div>
+
+  <!-- Grupo: Operações -->
+  <div class="nft-sidebar-group">
+    <div class="sidebar-section-title">Operações</div>
+    <ul class="nft-sidebar-nav">
+      <li class="nft-sidebar-item">
+        <a class="nft-sidebar-btn " href="/" title="Portal Inicial">
+          <span class="sidebar-icon"><i data-lucide="layout-grid"></i></span>
+          <span class="sidebar-label">Início / Módulos</span>
+        </a>
+      </li>
+      <li class="nft-sidebar-item">
+        <a class="nft-sidebar-btn " href="/nova_nf?nova_nota=1" title="Módulo Nova NF (Sem XML)">
+          <span class="sidebar-icon"><i data-lucide="file-plus-2"></i></span>
+          <span class="sidebar-label">Nova NF</span>
+        </a>
+      </li>
+      <li class="nft-sidebar-item">
+        <a class="nft-sidebar-btn " href="/rascunho?nova_nota=1" title="Módulo XML Rascunho">
+          <span class="sidebar-icon"><i data-lucide="file-code"></i></span>
+          <span class="sidebar-label">XML Rascunho</span>
+        </a>
+      </li>
+      <li class="nft-sidebar-item">
+        <a class="nft-sidebar-btn " href="/di_duimp?nova_nota=1" title="Módulo XML da DI ou DUIMP">
+          <span class="sidebar-icon"><i data-lucide="globe"></i></span>
+          <span class="sidebar-label">XML da DI ou DUIMP</span>
+        </a>
+      </li>
+      <li class="nft-sidebar-item">
+        <button class="nft-sidebar-btn" onclick="abrirRascunhosOuRedirecionar()" title="Ver e gerenciar Rascunhos Salvos" type="button">
+          <span class="sidebar-icon"><i data-lucide="folder-clock"></i></span>
+          <span class="sidebar-label">Rascunhos Salvos</span>
+          <span class="badge sidebar-badge badge-counter-rascunhos bg-info-subtle text-info fw-bold" id="sidebar-rascunhos-badge">0</span>
+        </button>
+      </li>
+      <li class="nft-sidebar-item">
+        <a class="nft-sidebar-btn " href="/relatorios" title="Relatório de Notas Fiscais Geradas">
+          <span class="sidebar-icon"><i data-lucide="file-spreadsheet"></i></span>
+          <span class="sidebar-label">Relatórios / Notas</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Grupo: Configurações -->
+  <div class="nft-sidebar-group">
+    <div class="sidebar-section-title">Configurações</div>
+    <ul class="nft-sidebar-nav">
+      <li class="nft-sidebar-item">
+        <a class="nft-sidebar-btn " href="/unidades_tributaveis" title="Unidades Tributáveis & Abreviações">
+          <span class="sidebar-icon"><i data-lucide="scale"></i></span>
+          <span class="sidebar-label">Unidades Tributáveis</span>
+        </a>
+      </li>
+      <li class="nft-sidebar-item">
+        <button class="nft-sidebar-btn" onclick="abrirModalTipoNota()" title="Configuração de Impostos &amp; Regras por Operação" type="button">
+          <span class="sidebar-icon"><i data-lucide="sliders-horizontal"></i></span>
+          <span class="sidebar-label">Tipo de Nota (Impostos)</span>
+        </button>
+      </li>
+      <li class="nft-sidebar-item">
+        <a class="nft-sidebar-btn " href="/banco_ncm" title="Grande Tabela NCM &amp; Impostos">
+          <span class="sidebar-icon"><i data-lucide="book-open"></i></span>
+          <span class="sidebar-label">Banco NCM</span>
+        </a>
+      </li>
+      <li class="nft-sidebar-item">
+        <a class="nft-sidebar-btn active" href="/empresas" title="Gestão de Empresas e Cadastros">
+          <span class="sidebar-icon"><i data-lucide="building-2"></i></span>
+          <span class="sidebar-label">Empresas</span>
+        </a>
+      </li>
+      <li class="nft-sidebar-item">
+        <a class="nft-sidebar-btn " href="/localidades" title="Localidades Oficiais (BACEN, IBGE, CEPs)">
+          <span class="sidebar-icon"><i data-lucide="map-pin"></i></span>
+          <span class="sidebar-label">Localidades</span>
+        </a>
+      </li>
+      <li class="nft-sidebar-item">
+        <a class="nft-sidebar-btn " href="/feiras" title="Descrição da Feira (Feiras do Ano)">
+          <span class="sidebar-icon"><i data-lucide="calendar-days"></i></span>
+          <span class="sidebar-label">Descrição da Feira</span>
+        </a>
+      </li>
+      <li class="nft-sidebar-item">
+        <a class="nft-sidebar-btn " href="/usuarios" title="Gerenciar Usuários Autorizados">
+          <span class="sidebar-icon"><i data-lucide="users"></i></span>
+          <span class="sidebar-label">Usuários Autorizados</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+  </div>
+
+  <!-- Card de Status do Certificado A1 no Bottom da Sidebar (Antes do Footer) -->
+  <div class="nft-sidebar-card" id="nftSidebarCertCard">
+    <div class="nft-sidebar-card-title d-flex justify-content-between align-items-center mb-1">
+      <div class="d-flex align-items-center gap-1">
+        <i data-lucide="shield-check" style="width: 15px; height: 15px; color: #16A34A; stroke-width: 1.75px;"></i>
+        <span style="font-size: 0.8rem; font-weight: 700;">Certificado Digital</span>
+      </div>
+      <span class="badge bg-success-subtle text-success small" style="font-size: 0.65rem;" id="sidebar-cert-badge">Ativo</span>
+    </div>
+    <div class="nft-sidebar-card-desc">
+      <div class="fw-bold text-truncate" id="sidebar-cert-empresa" title="NFT Logistics LTDA" style="max-width: 175px; color: #0F172A; font-size: 0.78rem;">NFT Logistics LTDA</div>
+      <div class="text-muted small mt-0" style="font-size: 0.73rem;">Válido até <strong id="sidebar-cert-validade">23/02/2027</strong></div>
+      <div class="small" style="font-size: 0.73rem;">Ambiente: <span style="color: #16A34A; font-weight: 700;">Produção</span></div>
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-primary w-100 mt-2 py-1 d-flex align-items-center justify-content-center gap-1" style="font-size: 0.75rem; border-radius: 8px; font-weight: 600;" onclick="abrirModalGerenciarCertificados()">
+      <i data-lucide="key-round" style="width: 13px; height: 13px;"></i> Gerenciar Certificados
+    </button>
+  </div>
+
 <!-- 3. Rodapé da Sidebar -->
 <div class="nft-sidebar-footer">
-<div class="sidebar-footer-actions">
-<button class="sidebar-footer-btn" onclick="logoutSistema()" title="Sair / Fazer Logout" type="button" style="color: #f59e0b !important;">
-<span class="sidebar-icon" style="color: #f59e0b !important;"><i data-lucide="log-out"></i></span>
-<span class="sidebar-footer-text" style="color: #f59e0b !important; font-weight: 700;">Sair</span>
-</button>
-<button class="sidebar-footer-btn theme-toggle-btn" onclick="toggleTheme()" title="Alternar Modo Claro / Escuro" type="button">
-<i data-lucide="moon"></i>
-</button>
-</div>
-<div class="sidebar-footer-info">
-<span>NFT Logistics</span>
-<span>v2.2</span>
-</div>
+    <div class="sidebar-footer-actions">
+        <button class="sidebar-footer-btn" onclick="logoutSistema()" title="Sair / Fazer Logout" type="button" style="color: #f59e0b !important;">
+            <span class="sidebar-icon" style="color: #f59e0b !important;"><i data-lucide="log-out"></i></span>
+            <span class="sidebar-footer-text" style="color: #f59e0b !important; font-weight: 700;">Sair</span>
+        </button>
+        <button class="sidebar-footer-btn theme-toggle-btn" onclick="toggleTheme()" title="Alternar Modo Claro / Escuro" type="button">
+            <i data-lucide="moon"></i>
+        </button>
+    </div>
+    <div class="sidebar-footer-info">
+        <span>Emissor de NFe</span>
+        <span>v3.0.0</span>
+    </div>
 </div>
 </aside>
 <!-- ÁREA PRINCIPAL DE CONTEÚDO (DESLOCADA PELA SIDEBAR) -->
 <div class="nft-main-wrapper">
+  <!-- TOPBAR MODERNA NO PADRÃO DO PREVIEW -->
+  <header class="nft-topbar">
+    <div class="nft-topbar-left">
+      <button class="btn-nft d-lg-none" onclick="document.body.classList.toggle('sidebar-mobile-open')" title="Abrir Menu" type="button" style="padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface);">
+        <i data-lucide="menu" style="width: 16px; height: 16px;"></i>
+      </button>
+      <div class="nft-brand-icon">N</div>
+      <!-- Topbar Pill Dropdown: Seleção Dinâmica de Emitente -->
+      <div class="dropdown d-inline-block" id="topbar-emitente-dropdown">
+        <div class="nft-topbar-pill" data-bs-toggle="dropdown" aria-expanded="false" title="Clique para alternar a Empresa Emitente" style="cursor: pointer;" id="topbar-emitente-pill">
+          <i data-lucide="building-2" style="width: 14px; height: 14px; color: #2563EB;"></i>
+          <span id="topbar-emitente-nome" class="fw-semibold">NFT Logistics LTDA</span>
+          <span class="pill-tag font-monospace" id="topbar-emitente-cnpj">47.998.441/0001-98</span>
+          <i data-lucide="chevron-down" style="width: 11px; height: 11px; color: #94A3B8;"></i>
+        </div>
+        <ul class="dropdown-menu shadow-lg border-0 mt-2 py-2" id="topbar-emitente-menu" style="min-width: 300px; max-height: 360px; overflow-y: auto; border-radius: 12px; z-index: 1060;">
+          <li class="dropdown-header text-uppercase small fw-bold px-3 py-1 text-muted" style="font-size: 0.72rem; letter-spacing: 0.05em;">Empresas Emitentes Cadastradas</li>
+          <li><hr class="dropdown-divider my-1"></li>
+          <li id="topbar-emitente-loading" class="px-3 py-2 text-muted small"><span class="spinner-border spinner-border-sm me-2"></span>Carregando emitentes...</li>
+        </ul>
+      </div>
+      <span class="nft-topbar-divider">/</span>
+      <div class="nft-topbar-pill" title="Módulo Atual / Referência">
+        <i data-lucide="file-text" style="width: 14px; height: 14px;"></i>
+        <span id="topbar-titulo-modulo">Empresas & Filiais</span>
+        <span class="pill-tag" style="background-color: #EFF6FF; color: #2563EB;" id="topbar-status-tag">Cadastros</span>
+        <i data-lucide="chevron-down" style="width: 11px; height: 11px; color: #94A3B8;"></i>
+      </div>
+    </div>
+    <div class="nft-topbar-right">
+      <div class="nft-status-pill success" title="Ambiente SEFAZ: Conexão ativa">
+        <span class="nft-status-dot"></span>
+        <span>SEFAZ Online</span>
+      </div>
+      <button class="nft-btn-circle" onclick="window.open('/preview-novo-layout', '_blank')" title="Central de Ajuda / Ver Preview" type="button">?</button>
+      <div class="nft-topbar-pill" id="topbar-user-pill" style="padding: 3px 10px 3px 6px; gap: 8px;" title="Usuário Administrador Autenticado">
+        <div id="topbar-user-avatar-wrap" style="width: 24px; height: 24px; border-radius: 50%; background: #0F172A; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; overflow: hidden; flex-shrink: 0;">A</div>
+        <span id="topbar-user-name" style="font-size: 12px; font-weight: 600;">Admin</span>
+        <i data-lucide="chevron-down" style="width: 11px; height: 11px; color: #94A3B8;"></i>
+      </div>
+    </div>
+  </header>
 <div class="container-fluid px-4 py-3">
 <!-- Top Header -->
 <div class="d-flex justify-content-between align-items-center mb-3 bg-white p-3 rounded shadow-sm border">
@@ -413,11 +483,9 @@
 
 <!-- Linha 4: País (8), Cód. País BACEN (4) = 12 colunas -->
 <div class="col-md-8 position-relative">
-<label class="form-label small fw-bold" for="cad_xpais">País do Emitente (Nome)</label>
-<div class="position-relative">
+<label class="form-label small fw-bold" for="cad_xpais">País (Nome)</label>
 <input autocomplete="off" class="form-control form-control-sm fw-bold" id="cad_xpais" onblur="aoPerderFocoPaisEmpresa('cad')" onfocus="aoDigitarPaisAutocompleteEmpresa('cad')" oninput="aoDigitarPaisAutocompleteEmpresa('cad')" placeholder="Digite para filtrar e selecionar o País..." type="text" value="Brasil"/>
 <div class="dropdown-menu shadow w-100 overflow-auto p-1" id="dropdown_menu_cad_xpais" style="max-height: 250px; display: none; position: absolute; z-index: 1060; top: 100%; left: 0;"></div>
-</div>
 </div>
 <div class="col-md-4">
 <label class="form-label small fw-bold" for="cad_cpais">Cód. BACEN (&lt;cPais&gt;)</label>
@@ -504,12 +572,30 @@
                     badgeClass = 'badge-cat-exportador';
                 }
                 
+                let logoThumbHtml = '';
+                if (e.logo_url) {
+                    logoThumbHtml = `<img src="${e.logo_url}" alt="Logo" class="rounded border shadow-sm me-2 flex-shrink-0" style="width: 32px; height: 32px; object-fit: contain; background: #fff;" onerror="this.style.display='none'">`;
+                } else if (tipoNormalizado === 'emitente') {
+                    logoThumbHtml = `<img src="/static/img/brand/NFTLogoBlackCompact.png" alt="Logo" class="rounded border shadow-sm me-2 flex-shrink-0" style="width: 32px; height: 32px; object-fit: contain; background: #fff;" onerror="this.style.display='none'">`;
+                } else {
+                    const init = ((e.nome || 'E').trim().substring(0, 2)).toUpperCase();
+                    logoThumbHtml = `<div class="rounded border text-secondary fw-bold me-2 flex-shrink-0 d-inline-flex align-items-center justify-content-center bg-light" style="width: 32px; height: 32px; font-size: 11px;">${init}</div>`;
+                }
+
                 const showNome = e.apelido ? `${e.nome} <br><small class="text-muted">(${e.apelido})</small>` : e.nome;
 
                 html += `
                     <tr>
                         <td><span class="badge-cat ${badgeClass}">${e.tipo || '-'}</span></td>
-                        <td class="fw-bold">${showNome}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                ${logoThumbHtml}
+                                <div>
+                                    <div class="fw-bold text-dark">${e.nome}</div>
+                                    ${e.apelido ? `<small class="text-muted">(${e.apelido})</small>` : ''}
+                                </div>
+                            </div>
+                        </td>
                         <td class="font-monospace">${e.cnpj_cpf || '-'}</td>
                         <td>${e.municipio || '-'}/${e.uf || '-'}</td>
                         <td class="text-end">
@@ -571,8 +657,157 @@
             document.getElementById('edit_localidade').value = ehExterior ? 'Exterior' : 'Brasil';
             aplicarRegrasExterior('edit', ehExterior);
 
+            carregarLogoNoModal(emp);
+
             const modal = new bootstrap.Modal(document.getElementById('modalEditarEmpresa'));
             modal.show();
+        }
+
+        
+        // === GESTÃO DO LOGOTIPO DA EMPRESA (CRUD R2 + TURSO/SQLITE) ===
+        let empresaLogoAtual = '';
+
+        function exibirLogoPreview(url) {
+            const imgEl = document.getElementById('img_edit_logo_preview');
+            const phEl = document.getElementById('ph_edit_logo_preview');
+            const btnRemover = document.getElementById('btn_edit_logo_remover');
+            
+            if (url) {
+                imgEl.src = url;
+                imgEl.style.display = 'block';
+                imgEl.classList.remove('d-none');
+                if (phEl) {
+                    phEl.classList.add('d-none');
+                    phEl.style.setProperty('display', 'none', 'important');
+                }
+                if (btnRemover) btnRemover.style.display = 'inline-flex';
+            } else {
+                imgEl.src = '';
+                imgEl.style.display = 'none';
+                imgEl.classList.add('d-none');
+                if (phEl) {
+                    phEl.classList.remove('d-none');
+                    phEl.style.setProperty('display', 'flex', 'important');
+                }
+                if (btnRemover) btnRemover.style.display = 'none';
+            }
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function carregarLogoNoModal(emp) {
+            empresaLogoAtual = emp.logo_url || '';
+            const statusEl = document.getElementById('txt_edit_logo_status');
+            if (statusEl) statusEl.innerText = '';
+
+            const tipoNorm = (emp.tipo || '').toLowerCase();
+            const ehEmitente = tipoNorm.includes('emitente');
+
+            if (empresaLogoAtual) {
+                exibirLogoPreview(empresaLogoAtual);
+            } else if (ehEmitente) {
+                const urlBusca = `/api/empresas/${emp.id}/logo?v=${Date.now()}`;
+                const testImg = new Image();
+                testImg.onload = function() {
+                    exibirLogoPreview(urlBusca);
+                };
+                testImg.onerror = function() {
+                    exibirLogoPreview('');
+                };
+                testImg.src = urlBusca;
+            } else {
+                exibirLogoPreview('');
+            }
+        }
+
+        async function aoSelecionarArquivoLogo(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+
+            const empId = document.getElementById('edit_id').value;
+            if (!empId) {
+                alert('Salve os dados da empresa antes de carregar o logotipo.');
+                return;
+            }
+
+            // Exibição instantânea e sobreposição imediata do preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                exibirLogoPreview(e.target.result);
+            };
+            reader.readAsDataURL(file);
+
+            const statusEl = document.getElementById('txt_edit_logo_status');
+            if (statusEl) statusEl.innerHTML = '<span class="text-primary fw-bold"><span class="spinner-border spinner-border-sm me-1"></span>Enviando ao R2...</span>';
+
+            const formData = new FormData();
+            formData.append('foto', file);
+
+            try {
+                const res = await fetch(`/api/empresas/${empId}/logo`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (res.ok && data.status === 'success') {
+                    empresaLogoAtual = data.logo_url;
+                    exibirLogoPreview(data.logo_url);
+                    if (statusEl) statusEl.innerHTML = '<span class="text-success fw-bold"><i data-lucide="check" style="width: 14px; height: 14px;"></i> Salvo com sucesso!</span>';
+                    if (window.lucide) lucide.createIcons();
+                    carregarEmpresas();
+                    if (typeof window.carregarEmitentesTopbar === 'function') {
+                        window.carregarEmitentesTopbar();
+                    }
+                } else {
+                    alert(data.error || 'Erro ao enviar o logotipo.');
+                    if (statusEl) statusEl.innerText = '';
+                    exibirLogoPreview(empresaLogoAtual);
+                }
+            } catch (err) {
+                alert('Erro ao enviar imagem: ' + err);
+                if (statusEl) statusEl.innerText = '';
+                exibirLogoPreview(empresaLogoAtual);
+            } finally {
+                event.target.value = '';
+            }
+        }
+
+        async function removerLogoEmpresa() {
+            const empId = document.getElementById('edit_id').value;
+            if (!empId) return;
+
+            const confirmar = await window.nftConfirm('Deseja realmente remover o logotipo oficial desta empresa?', {
+                title: 'Remover Logotipo',
+                type: 'danger',
+                confirmText: 'Sim, Remover',
+                cancelText: 'Cancelar',
+                icon: 'trash-2'
+            });
+            if (!confirmar) return;
+
+            const statusEl = document.getElementById('txt_edit_logo_status');
+            if (statusEl) statusEl.innerHTML = '<span class="text-danger">Removendo...</span>';
+
+            try {
+                const res = await fetch(`/api/empresas/${empId}/logo`, {
+                    method: 'DELETE'
+                });
+                const data = await res.json();
+                if (res.ok && data.status === 'success') {
+                    empresaLogoAtual = '';
+                    exibirLogoPreview('');
+                    if (statusEl) statusEl.innerHTML = '<span class="text-muted">Logotipo removido.</span>';
+                    carregarEmpresas();
+                    if (typeof window.carregarEmitentesTopbar === 'function') {
+                        window.carregarEmitentesTopbar();
+                    }
+                } else {
+                    alert(data.error || 'Erro ao remover logotipo.');
+                    if (statusEl) statusEl.innerText = '';
+                }
+            } catch (err) {
+                alert('Erro na requisição: ' + err);
+                if (statusEl) statusEl.innerText = '';
+            }
         }
 
         function duplicarEmpresa(id) {
@@ -1008,6 +1243,50 @@
 <div class="modal-body">
 <form id="formEditEmpresa">
 <input id="edit_id" type="hidden"/>
+
+<!-- Seção: Logotipo Oficial da Empresa (DANFE / Impressão) -->
+<h6 class="border-bottom pb-2 fw-bold text-primary mb-3 d-flex align-items-center justify-content-between">
+    <span><i data-lucide="image" class="me-2" style="width: 16px; height: 16px;"></i>Logotipo da Empresa (DANFE / Cabeçalho)</span>
+    <span class="badge bg-primary-subtle text-primary small" style="font-size: 0.72rem; font-weight: 600;">Padrão Oficial 1:1</span>
+</h6>
+<div class="card bg-light border-0 p-3 mb-4 rounded-3">
+    <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-3">
+        <!-- Preview Quadrado (com sobreposição absoluta garantida) -->
+        <div class="position-relative bg-white border rounded shadow-sm flex-shrink-0" 
+             style="width: 86px; height: 86px; min-width: 86px; max-width: 86px; overflow: hidden;" id="wrap_edit_logo_preview">
+            <!-- Placeholder com id: ph_edit_logo_preview -->
+            <div id="ph_edit_logo_preview" class="text-muted text-center p-1 d-flex flex-column align-items-center justify-content-center" 
+                 style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; font-size: 11px;">
+                <i data-lucide="image" style="width: 24px; height: 24px; stroke-width: 1.5;" class="mb-1 text-secondary"></i>
+                <span class="small fw-semibold text-secondary">1:1 Quadrado</span>
+            </div>
+            <!-- Imagem que sobrepõe completamente o placeholder quando carregada -->
+            <img id="img_edit_logo_preview" src="" alt="Logotipo" 
+                 style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; background-color: #ffffff; z-index: 2; display: none;" />
+        </div>
+
+        <!-- Controles e Instruções -->
+        <div class="flex-grow-1">
+            <div class="d-flex flex-wrap gap-2 mb-2 align-items-center">
+                <input type="file" id="input_edit_logo_file" accept="image/png,image/jpeg,image/webp" style="display: none;" onchange="aoSelecionarArquivoLogo(event)" />
+                <button type="button" class="btn-nft btn-sm fw-semibold" onclick="document.getElementById('input_edit_logo_file').click()">
+                    <i data-lucide="upload" style="width: 14px; height: 14px;" class="me-1"></i> Carregar Logotipo
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger" id="btn_edit_logo_remover" style="border-radius: 6px; font-size: 0.8rem; display: none;" onclick="removerLogoEmpresa()">
+                    <i data-lucide="trash-2" style="width: 14px; height: 14px;" class="me-1"></i> Remover
+                </button>
+                <span id="txt_edit_logo_status" class="small align-self-center"></span>
+            </div>
+            <div class="alert alert-warning py-2 px-3 mb-0 small d-flex align-items-center gap-2" style="font-size: 0.77rem; border-radius: 6px; line-height: 1.4;">
+                <i data-lucide="info" style="width: 16px; height: 16px; flex-shrink: 0;" class="text-warning"></i>
+                <div>
+                    <strong>Instrução Obrigatória:</strong> A imagem <u>DEVE SER QUADRADA</u> (proporção 1:1, ex: 500×500 px, formato PNG ou JPG). Essa imagem será usada no cabeçalho do PDF do DANFE para este emitente conforme layout oficial.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <h6 class="border-bottom pb-2 fw-bold text-primary mb-3">Dados Principais</h6>
 <div class="row g-3 mb-4">
 <div class="col-md-3">
@@ -1101,11 +1380,9 @@
 
 <!-- Linha 4: País (8), Cód. País BACEN (4) = 12 colunas -->
 <div class="col-md-8 position-relative">
-<label class="form-label small fw-bold" for="edit_xpais">País do Emitente (Nome)</label>
-<div class="position-relative">
+<label class="form-label small fw-bold" for="edit_xpais">País (Nome)</label>
 <input autocomplete="off" class="form-control form-control-sm fw-bold" id="edit_xpais" onblur="aoPerderFocoPaisEmpresa('edit')" onfocus="aoDigitarPaisAutocompleteEmpresa('edit')" oninput="aoDigitarPaisAutocompleteEmpresa('edit')" placeholder="Digite para filtrar e selecionar o País..." type="text"/>
 <div class="dropdown-menu shadow w-100 overflow-auto p-1" id="dropdown_menu_edit_xpais" style="max-height: 250px; display: none; position: absolute; z-index: 1060; top: 100%; left: 0;"></div>
-</div>
 </div>
 <div class="col-md-4">
 <label class="form-label small fw-bold" for="edit_cpais">Cód. BACEN (&lt;cPais&gt;)</label>

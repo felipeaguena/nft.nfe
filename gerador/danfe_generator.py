@@ -9,7 +9,118 @@ from barcode.writer import ImageWriter
 
 try:
     from brazilfiscalreport.danfe import Danfe as BFRDanfe, DanfeConfig
+    from brazilfiscalreport.danfe.danfe_emit_info import DanfeEmitInfo
     HAS_BFR = True
+
+    # Customiza a renderização do bloco do emitente no padrão oficial NFT Logistics
+    # (Logo quadrada à esquerda, nome do emitente à direita e endereço completo centralizado na base)
+    def _custom_danfe_emit_render(self):
+        from brazilfiscalreport.pdf_element import Element
+        Element.render(self)
+
+        # 1. Logotipo quadrado à esquerda (proporção 1:1)
+        logo_size = 18.0
+        logo_x = self.x + 2.5
+        logo_y = self.y + 2.0
+
+        has_logo = False
+        if self.logo_image and os.path.exists(str(self.logo_image)):
+            try:
+                self.pdf.image(
+                    name=str(self.logo_image),
+                    x=logo_x,
+                    y=logo_y,
+                    w=logo_size,
+                    h=logo_size,
+                    keep_aspect_ratio=True,
+                )
+                has_logo = True
+            except Exception as e:
+                print(f"Aviso ao desenhar logotipo no DANFE: {e}")
+
+        # 2. Nome do Emitente à direita da logo
+        emit_name = (self.emit or '').strip().upper()
+        if has_logo:
+            name_x = logo_x + logo_size + 2.5
+            name_w = self.w - (name_x - self.x) - 2.0
+        else:
+            name_x = self.x + 2.0
+            name_w = self.w - 4.0
+
+        font_sz = 11.5 if len(emit_name) <= 22 else (10.0 if len(emit_name) <= 32 else 8.5)
+        self.pdf.set_font(self.pdf.default_font, 'B', font_sz)
+        name_y = self.y + (logo_size / 2.0) - 2.0
+        self.pdf.set_xy(x=name_x, y=name_y)
+        self.pdf.multi_cell(w=name_w, h=4.2, text=emit_name, border=0, align='C')
+
+        # 3. Endereço Completo na parte inferior do quadro (centralizado, negrito)
+        addr_text = ''
+        try:
+            emit_el = getattr(self.pdf, 'emit', None)
+            if emit_el is not None:
+                def _t(tag):
+                    n = emit_el.find(f'.//{{http://www.portalfiscal.inf.br/nfe}}{tag}')
+                    if n is None: n = emit_el.find(f'.//{tag}')
+                    return (n.text or '').strip() if n is not None else ''
+
+                lgr = _t('xLgr')
+                nro = _t('nro')
+                cpl = _t('xCpl')
+                bairro = _t('xBairro')
+                mun = _t('xMun')
+                uf = _t('UF')
+                cep = re.sub(r'\D', '', _t('CEP'))
+                fone = _t('fone')
+
+                # Abreviações oficiais
+                lgr = re.sub(r'^\s*Avenida\b\.?', 'AV.', lgr, flags=re.I)
+                lgr = re.sub(r'^\s*Av\b\.?', 'AV.', lgr, flags=re.I)
+                lgr = re.sub(r'^\s*Rua\b\.?', 'RUA', lgr, flags=re.I)
+                lgr = re.sub(r'\bDoutor\b\.?', 'DR.', lgr, flags=re.I)
+                lgr = re.sub(r'\bDr\b\.?', 'DR.', lgr, flags=re.I)
+
+                partes = []
+                lgr_nro = f'{lgr}, {nro}'.upper() if nro else lgr.upper()
+                if lgr_nro: partes.append(lgr_nro)
+                if cpl: partes.append(cpl.upper())
+                if bairro: partes.append(bairro.upper())
+                
+                # Município e UF (ex: Sao Paulo, SP conforme padrão da imagem)
+                loc = f'{mun}, {uf.upper()}' if (mun and uf) else (mun or uf.upper())
+                cep_str = f'CEP: {cep}' if cep else ''
+                
+                end_base = ' - '.join(partes)
+                if loc and cep_str:
+                    addr_text = f'{end_base}, {loc} - {cep_str}'
+                elif loc:
+                    addr_text = f'{end_base}, {loc}'
+                else:
+                    addr_text = end_base
+                if fone:
+                    addr_text += f' - FONE: {fone}'
+        except Exception:
+            pass
+
+        if not addr_text:
+            raw_addr = str(self.address or '').strip()
+            lines = [l.strip() for l in raw_addr.replace('\r', '').split('\n') if l.strip()]
+            addr_text = ' - '.join(lines)
+            addr_text = re.sub(r'\bAvenida\b\.?', 'AV.', addr_text, flags=re.I)
+            addr_text = re.sub(r'\bDoutor\b\.?', 'DR.', addr_text, flags=re.I)
+            addr_text = re.sub(r'\s*Fone:\s*$', '', addr_text, flags=re.I)
+
+        addr_text = re.sub(r'[ 	]+', ' ', addr_text).strip()
+        addr_text = re.sub(r'\s*-\s*', ' - ', addr_text)
+
+        addr_y = self.y + logo_size + 2.5
+        addr_x = self.x + 2.0
+        addr_w = self.w - 4.0
+
+        self.pdf.set_font(self.pdf.default_font, 'B', 7.2)
+        self.pdf.set_xy(x=addr_x, y=addr_y)
+        self.pdf.multi_cell(w=addr_w, h=3.2, text=addr_text, border=0, align='C')
+
+    DanfeEmitInfo.render = _custom_danfe_emit_render
 except Exception as e_bfr_import:
     HAS_BFR = False
     print(f"Aviso: BrazilFiscalReport não pôde ser importado ({e_bfr_import}). Usando renderizador legado.")
@@ -22,15 +133,65 @@ class DanfeGenerator:
         self.template_path = template_path
 
         if logo_path is None:
-            # Imagem oficial definida pelo usuário: NFTLogoBlackCompact.webp
-            default_logo = os.path.join(base_dir, "static", "img", "brand", "NFTLogoBlackCompact.webp")
+            # Imagem oficial definida pelo usuário: NFTLogoBlackCompact.png (quadrado 1:1)
+            default_logo = os.path.join(base_dir, "static", "img", "brand", "NFTLogoBlackCompact.png")
             if not os.path.exists(default_logo):
-                default_logo = os.path.join(base_dir, "static", "img", "brand", "NFTLogoBlackCompact.png")
+                default_logo = os.path.join(base_dir, "static", "img", "brand", "NFTLogoBlackCompact.webp")
             if not os.path.exists(default_logo):
                 default_logo = os.path.join(base_dir, "static", "img", "brand", "nft_logo_completo-black.png")
             if os.path.exists(default_logo):
                 logo_path = default_logo
         self.logo_path = logo_path
+
+    def get_logo_for_emitter(self, xml_bytes):
+        """
+        Identifica o CNPJ do emitente no XML e recupera o logotipo quadrado cadastrado
+        para esta empresa no banco de dados (Turso / SQLite / R2). Se não houver logotipo personalizado,
+        utiliza o logotipo padrão da NFT Logistics.
+        """
+        try:
+            import xml.etree.ElementTree as ET
+            root = ET.fromstring(xml_bytes)
+            ns = {'nfe': 'http://www.portalfiscal.inf.br/nfe'}
+            cnpj_el = root.find('.//nfe:emit/nfe:CNPJ', ns) or root.find('.//emit/CNPJ')
+            if cnpj_el is not None and cnpj_el.text:
+                raw_cnpj = re.sub(r'\D', '', cnpj_el.text).strip()
+                if raw_cnpj:
+                    base_dir = os.path.dirname(os.path.abspath(__file__))
+                    from app import get_db_connection
+                    conn = get_db_connection()
+                    c = conn.cursor()
+                    row = c.execute(
+                        "SELECT id, logo_url FROM cadastros WHERE REPLACE(REPLACE(REPLACE(cnpj_cpf, '.', ''), '-', ''), '/', '') = ? AND logo_url IS NOT NULL AND logo_url != '' ORDER BY id DESC LIMIT 1",
+                        (raw_cnpj,)
+                    ).fetchone()
+                    conn.close()
+                    if row:
+                        emp_id = row['id'] if hasattr(row, '__getitem__') else row[0]
+                        # Verifica se já está em disco local
+                        local_dir = os.path.join(base_dir, 'static', 'uploads', 'empresas')
+                        for ext in ('.png', '.jpg', '.jpeg', '.webp'):
+                            cand = os.path.join(local_dir, f"logo_{emp_id}{ext}")
+                            if os.path.exists(cand):
+                                return cand
+                        # Tenta obter do Cloudflare R2
+                        try:
+                            import r2_storage
+                            for ext in ('.png', '.jpg', '.jpeg', '.webp'):
+                                r2_key = f"empresas/logo_{emp_id}{ext}"
+                                b = r2_storage.get_file_bytes_r2(r2_key)
+                                if b:
+                                    os.makedirs(local_dir, exist_ok=True)
+                                    target_p = os.path.join(local_dir, f"logo_{emp_id}{ext}")
+                                    with open(target_p, 'wb') as lf:
+                                        lf.write(b)
+                                    return target_p
+                        except Exception:
+                            pass
+        except Exception as e:
+            print(f"Aviso ao consultar logotipo do emitente: {e}")
+
+        return self.logo_path
 
     @staticmethod
     def format_currency(val):
@@ -538,8 +699,9 @@ class DanfeGenerator:
                     or b'CANCELAMENTO' in xml_bytes.upper()
                 )
 
+                logo_to_use = self.get_logo_for_emitter(xml_bytes)
                 config = DanfeConfig(
-                    logo=self.logo_path if (self.logo_path and os.path.exists(self.logo_path)) else None,
+                    logo=logo_to_use if (logo_to_use and os.path.exists(str(logo_to_use))) else None,
                     watermark_cancelled=is_cancelada
                 )
                 danfe = BFRDanfe(xml_bytes, config=config)

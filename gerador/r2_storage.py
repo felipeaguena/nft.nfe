@@ -64,11 +64,63 @@ def upload_file_r2(local_path: str, remote_key: str, content_type: Optional[str]
             extra_args['ContentType'] = 'application/zip'
         elif local_path.endswith('.json'):
             extra_args['ContentType'] = 'application/json'
+        elif local_path.endswith('.png'):
+            extra_args['ContentType'] = 'image/png'
+        elif local_path.endswith('.jpg') or local_path.endswith('.jpeg'):
+            extra_args['ContentType'] = 'image/jpeg'
+        elif local_path.endswith('.webp'):
+            extra_args['ContentType'] = 'image/webp'
+        elif local_path.endswith('.gif'):
+            extra_args['ContentType'] = 'image/gif'
 
         client.upload_file(local_path, R2_BUCKET_NAME, remote_key, ExtraArgs=extra_args)
         return True
     except Exception as e:
         print(f"Erro no upload para Cloudflare R2 ({remote_key}): {e}")
+        return False
+
+def upload_bytes_r2(data_bytes: bytes, remote_key: str, content_type: Optional[str] = None) -> bool:
+    client = get_r2_client()
+    if not client or not data_bytes:
+        return False
+    try:
+        extra_args = {}
+        if content_type:
+            extra_args['ContentType'] = content_type
+        else:
+            if remote_key.endswith('.png'):
+                extra_args['ContentType'] = 'image/png'
+            elif remote_key.endswith('.jpg') or remote_key.endswith('.jpeg'):
+                extra_args['ContentType'] = 'image/jpeg'
+            elif remote_key.endswith('.webp'):
+                extra_args['ContentType'] = 'image/webp'
+            elif remote_key.endswith('.gif'):
+                extra_args['ContentType'] = 'image/gif'
+            elif remote_key.endswith('.pdf'):
+                extra_args['ContentType'] = 'application/pdf'
+            elif remote_key.endswith('.xml'):
+                extra_args['ContentType'] = 'application/xml'
+
+        client.put_object(
+            Bucket=R2_BUCKET_NAME,
+            Key=remote_key,
+            Body=data_bytes,
+            **extra_args
+        )
+        return True
+    except Exception as e:
+        print(f"Erro no upload de bytes para Cloudflare R2 ({remote_key}): {e}")
+        return False
+
+def delete_file_r2(remote_key: str) -> bool:
+    client = get_r2_client()
+    if not client:
+        return False
+    try:
+        client.delete_object(Bucket=R2_BUCKET_NAME, Key=remote_key)
+        return True
+    except Exception as e:
+        print(f"Erro ao remover arquivo no Cloudflare R2 ({remote_key}): {e}")
         return False
 
 def download_file_r2(remote_key: str, local_path: str) -> bool:

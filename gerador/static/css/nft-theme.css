@@ -1,898 +1,1798 @@
 /* ==========================================================================
+
    NFT LOGISTICS - DESIGN SYSTEM (THEME LIGHT & DARK)
+
    Estilo unificado, minimalista e de alta manutenibilidade
+
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+
 
 /* ==========================================================================
-   1. TOKENS DE CORES & VARIÁVEIS DO SISTEMA
-   ========================================================================== */
-:root {
-  /* Identidade Visual NFT (Azul Tecnológico) */
-  --primary: #0ea5e9;
-  --primary-hover: #0284c7;
-  --primary-subtle: rgba(14, 165, 233, 0.12);
-  --primary-border: rgba(14, 165, 233, 0.32);
 
-  /* Superfícies & Neutros (Modo Claro) */
-  --background: #f1f5f9;
+   1. TOKENS DE CORES & VARIÁVEIS DO SISTEMA
+
+   ========================================================================== */
+
+:root {
+
+  /* Identidade Visual NFT (Azul Real Vibrante - Modern SaaS) */
+
+  --primary: #2563eb;
+
+  --primary-hover: #1d4ed8;
+
+  --primary-subtle: #eff6ff;
+
+  --primary-border: #bfdbfe;
+
+
+
+  /* Superfícies & Neutros (Modo Claro - Bento Grid) */
+
+  --background: #edf1f5;
+
   --surface: #ffffff;
+
   --surface-secondary: #f8fafc;
-  --surface-tertiary: #edf2f7;
-  --foreground: #1e293b;
+
+  --surface-tertiary: #f1f5f9;
+
+  --surface-inset: #ffffff;
+
+  --foreground: #0f172a;
+
   --heading: #0f172a;
+
   --muted-foreground: #64748b;
+
   --border: #e2e8f0;
 
+  /* Tag de pílula Topbar */
+  --pill-tag-bg: #E2E8F0;
+  --pill-tag-color: var(--foreground, #0F172A);
+
+
+
   /* Estados e Feedback */
-  --success: #10b981;
-  --success-subtle: rgba(16, 185, 129, 0.12);
+
+  --success: #16a34a;
+
+  --success-subtle: #dcfce7;
+
   --warning: #f59e0b;
-  --warning-subtle: rgba(245, 158, 11, 0.12);
-  --danger: #ef4444;
-  --danger-subtle: rgba(239, 68, 68, 0.12);
+
+  --warning-subtle: #fef9c3;
+
+  --danger: #dc2626;
+
+  --danger-subtle: #fee2e2;
+
   --info: var(--primary);
+
   --info-subtle: var(--primary-subtle);
+
+
 
   /* Botão Base NFT */
+
   --btn-nft-bg: var(--primary-subtle);
+
   --btn-nft-color: var(--primary);
+
   --btn-nft-border: var(--primary-border);
+
+
 
   /* Dimensões e Raios */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 18px;
-  --radius-full: 999px;
+
+  --radius-sm: 8px;
+
+  --radius-md: 12px;
+
+  --radius-lg: 16px;
+
+  --radius-xl: 20px;
+
+  --radius-full: 9999px;
+
+
 
   /* Tipografia */
-  --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  --font-sans: 'Plus Jakarta Sans', 'Inter', 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
   --font-mono: 'JetBrains Mono', Consolas, monospace;
 
-  /* Sombras */
-  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 4px 6px -1px rgba(0, 0, 0, 0.03);
-  --card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+
+
+  /* Sombras Suaves */
+
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+
+  --card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.06);
+
+
 
   color-scheme: light;
+
 }
+
+
 
 /* Modo Escuro */
+
+:root[data-theme="dark"],
+
 [data-theme="dark"],
+
+[data-bs-theme="dark"],
+
 .dark {
-  --primary: #38bdf8;
-  --primary-hover: #0ea5e9;
-  --primary-subtle: rgba(56, 189, 248, 0.16);
-  --primary-border: rgba(56, 189, 248, 0.35);
 
-  --background: #11141a;
-  --surface: #1a1e27;
-  --surface-secondary: #222834;
-  --surface-tertiary: #2b3242;
-  --foreground: #e6ecf5;
-  --heading: #ffffff;
-  --muted-foreground: #94a3b8;
-  --border: #313a4b;
+  /* Identidade Visual NFT (Azul Royal Elétrico - Dark SaaS Pro) */
 
-  --success: #10b981;
-  --success-subtle: rgba(16, 185, 129, 0.18);
-  --warning: #f59e0b;
-  --warning-subtle: rgba(245, 158, 11, 0.18);
-  --danger: #ef4444;
-  --danger-subtle: rgba(239, 68, 68, 0.18);
+  --primary: #3359e8;
+
+  --primary-hover: #254edb;
+
+  --primary-subtle: rgba(51, 89, 232, 0.16);
+
+  --primary-border: rgba(51, 89, 232, 0.35);
+
+
+
+  /* Superfícies & Neutros (Midnight Obsidian Navy) */
+
+  --background: #0B0F17;
+
+  --surface: #161B26;
+
+  --surface-secondary: #0F1420;
+
+  --surface-tertiary: #1E273A;
+
+  --surface-inset: #121620;
+
+  --foreground: #E2E8F0;
+
+  --heading: #FFFFFF;
+
+  --muted-foreground: #94A3B8;
+
+  --placeholder: #525D73;
+
+  /* Tag de pílula Topbar no Modo Escuro */
+  --pill-tag-bg: #0B0F17;
+  --pill-tag-color: #E2E8F0;
+  --pill-tag-border: #242D40;
+
+
+
+  /* Bordas e Contornos Tecnológicos */
+
+  --border: #242D40;
+
+  --border-subtle: #1C2332;
+
+  --border-input: #283246;
+
+  --border-hover: #3B4761;
+
+  --border-focus: #3359E8;
+
+  --border-focus-ring: rgba(51, 89, 232, 0.25);
+
+
+
+  /* Estados e Feedback */
+
+  --success: #10B981;
+
+  --success-subtle: rgba(16, 185, 129, 0.16);
+
+  --warning: #F59E0B;
+
+  --warning-subtle: rgba(245, 158, 11, 0.16);
+
+  --danger: #EF4444;
+
+  --danger-subtle: rgba(239, 68, 68, 0.16);
+
   --info: var(--primary);
+
   --info-subtle: var(--primary-subtle);
 
+
+
+  /* Botão Base NFT */
+
   --btn-nft-bg: var(--primary-subtle);
+
   --btn-nft-color: var(--primary);
+
   --btn-nft-border: var(--primary-border);
 
-  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-  --card-shadow-hover: 0 12px 24px rgba(0, 0, 0, 0.5);
+
+
+  /* Sombras Profundas */
+
+  --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+
+  --card-shadow-hover: 0 12px 28px rgba(0, 0, 0, 0.6);
+
+  --modal-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.65), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+
+
 
   color-scheme: dark;
+
 }
 
+
+
 /* ==========================================================================
+
    2. REGRAS GERAIS & TIPOGRAFIA
+
    ========================================================================== */
+
 body {
+
   background-color: var(--background) !important;
+
   color: var(--foreground) !important;
+
   font-family: var(--font-sans) !important;
+
   font-size: 14px;
+
   line-height: 1.5;
+
   transition: background-color 0.2s ease, color 0.2s ease;
+
 }
+
+
 
 h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+
   color: var(--heading) !important;
+
   font-weight: 700;
+
   letter-spacing: -0.015em;
+
 }
+
+
 
 a {
+
   color: var(--primary);
+
   text-decoration: none;
+
   transition: color 0.15s ease;
+
 }
+
+
 
 a:hover {
+
   color: var(--primary-hover);
+
 }
+
+
 
 .text-muted {
+
   color: var(--muted-foreground) !important;
+
 }
+
+
 
 .text-heading {
+
   color: var(--heading) !important;
+
 }
+
+
 
 .text-body-custom {
+
   color: var(--foreground) !important;
+
 }
+
+
 
 /* Inversão adaptativa de .text-dark no Dark Mode */
+
 [data-theme="dark"] .text-dark:not(.badge):not(.badge *):not(.btn-warning):not(.btn-warning *):not(.btn-outline-warning):not(.btn-outline-info),
+
 [data-bs-theme="dark"] .text-dark:not(.badge):not(.badge *):not(.btn-warning):not(.btn-warning *):not(.btn-outline-warning):not(.btn-outline-info),
+
 .dark .text-dark:not(.badge):not(.badge *):not(.btn-warning):not(.btn-warning *):not(.btn-outline-warning):not(.btn-outline-info) {
+
   color: var(--foreground, #e6ecf5) !important;
+
 }
+
+
 
 /* Manter contraste legível em badges claros que usam text-dark */
+
 [data-theme="dark"] .badge.text-dark,
+
 [data-bs-theme="dark"] .badge.text-dark,
+
 .dark .badge.text-dark {
+
   color: #11141a !important;
+
 }
+
+
 
 /* Textos secundários legíveis no Dark Mode */
+
 [data-theme="dark"] .text-secondary,
+
 [data-bs-theme="dark"] .text-secondary,
+
 .dark .text-secondary {
+
   color: var(--muted-foreground, #94a3b8) !important;
+
 }
+
+
 
 [data-theme="dark"] .form-label,
+
 [data-bs-theme="dark"] .form-label,
+
 .dark .form-label {
+
   color: var(--foreground, #e6ecf5) !important;
+
 }
+
+
 
 /* Botões outline com text-dark */
+
 [data-theme="dark"] .btn-outline-warning.text-dark,
+
 [data-bs-theme="dark"] .btn-outline-warning.text-dark,
+
 .dark .btn-outline-warning.text-dark {
+
   color: #fbbf24 !important;
+
   border-color: #f59e0b !important;
+
 }
+
 [data-theme="dark"] .btn-outline-warning.text-dark:hover,
+
 [data-bs-theme="dark"] .btn-outline-warning.text-dark:hover,
+
 .dark .btn-outline-warning.text-dark:hover,
+
 [data-theme="dark"] .btn-outline-warning.text-dark.active,
+
 [data-bs-theme="dark"] .btn-outline-warning.text-dark.active,
+
 .dark .btn-outline-warning.text-dark.active {
+
   background-color: #f59e0b !important;
+
   color: #11141a !important;
+
 }
+
+
 
 [data-theme="dark"] .btn-outline-info.text-dark,
+
 [data-bs-theme="dark"] .btn-outline-info.text-dark,
+
 .dark .btn-outline-info.text-dark {
+
   color: #38bdf8 !important;
+
   border-color: #0ea5e9 !important;
+
 }
+
 [data-theme="dark"] .btn-outline-info.text-dark:hover,
+
 [data-bs-theme="dark"] .btn-outline-info.text-dark:hover,
+
 .dark .btn-outline-info.text-dark:hover,
+
 [data-theme="dark"] .btn-outline-info.text-dark.active,
+
 [data-bs-theme="dark"] .btn-outline-info.text-dark.active,
+
 .dark .btn-outline-info.text-dark.active {
+
   background-color: #0ea5e9 !important;
+
   color: #11141a !important;
+
 }
+
+
 
 .font-mono, .code-preview {
+
   font-family: var(--font-mono) !important;
+
 }
+
+
 
 /* Alternância de Logos (Light / Dark) */
+
 .logo-theme-white { display: none !important; }
+
 .logo-theme-black { display: inline-block !important; }
 
+
+
 [data-theme="dark"] .logo-theme-white { display: inline-block !important; }
+
 [data-theme="dark"] .logo-theme-black { display: none !important; }
 
+
+
 /* ==========================================================================
+
    3. CARDS E SUPERFÍCIES
+
    ========================================================================== */
+
 .card, .bg-white {
+
   background-color: var(--surface) !important;
+
   color: var(--foreground) !important;
+
   border: 1px solid var(--border) !important;
+
   border-radius: var(--radius-lg) !important;
+
   box-shadow: var(--card-shadow) !important;
+
   transition: background-color 0.2s ease, border-color 0.2s ease;
+
 }
+
+
 
 .card-header {
+
   background: transparent !important;
+
   border-bottom: 1px solid var(--border) !important;
+
   color: var(--heading) !important;
+
   font-weight: 600;
+
   padding: 0.85rem 1.25rem !important;
+
 }
+
+
 
 [data-theme="dark"] .card-header strong,
+
 [data-bs-theme="dark"] .card-header strong,
+
 .dark .card-header strong {
+
   color: var(--heading, #ffffff) !important;
+
 }
+
+
 
 [data-theme="dark"] .card-header.text-secondary,
+
 [data-bs-theme="dark"] .card-header.text-secondary,
+
 .dark .card-header.text-secondary {
+
   color: var(--muted-foreground, #94a3b8) !important;
+
 }
+
+
 
 .card-body {
+
   padding: 0.85rem 1.25rem !important;
+
 }
+
+
 
 .card-footer {
+
   background-color: var(--surface) !important;
+
   border-top: 1px solid var(--border) !important;
+
 }
+
+
 
 .bg-light, .bg-body-tertiary {
+
   background-color: var(--surface-secondary) !important;
+
   color: var(--foreground) !important;
+
 }
+
+
 
 /* List Groups & List Items (Adaptação Completa ao Dark Mode) */
+
 .list-group {
+
   background-color: transparent !important;
+
 }
+
+
 
 .list-group-item {
+
   background-color: var(--surface) !important;
+
   color: var(--foreground) !important;
+
   border-color: var(--border) !important;
+
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+
 }
+
+
 
 .list-group-item strong,
+
 .list-group-item b {
+
   color: var(--heading) !important;
+
 }
+
+
 
 .list-group-item-action:hover,
+
 .list-group-item-action:focus {
+
   background-color: var(--surface-secondary) !important;
+
   color: var(--heading) !important;
+
 }
+
+
 
 [data-theme="dark"] .list-group-item,
+
 [data-bs-theme="dark"] .list-group-item,
+
 .dark .list-group-item {
+
   background-color: var(--surface) !important;
+
   color: var(--foreground) !important;
+
   border-color: var(--border) !important;
+
 }
+
+
 
 [data-theme="dark"] .list-group-item strong,
+
 [data-bs-theme="dark"] .list-group-item strong,
+
 .dark .list-group-item strong,
+
 [data-theme="dark"] .list-group-item b,
+
 [data-bs-theme="dark"] .list-group-item b,
+
 .dark .list-group-item b {
+
   color: #ffffff !important;
+
 }
+
+
 
 [data-theme="dark"] .list-group-item-action:hover,
+
 [data-bs-theme="dark"] .list-group-item-action:hover,
+
 .dark .list-group-item-action:hover {
+
   background-color: var(--surface-secondary) !important;
+
   color: #ffffff !important;
+
 }
+
+
 
 [data-theme="dark"] .list-group-item.active,
+
 [data-bs-theme="dark"] .list-group-item.active,
+
 .dark .list-group-item.active {
+
   background-color: var(--primary-subtle) !important;
+
   border-color: var(--primary) !important;
+
   color: var(--primary) !important;
+
 }
+
+
 
 .border, .border-top, .border-bottom, .border-start, .border-end {
+
   border-color: var(--border) !important;
+
 }
 
+
+
 /* ==========================================================================
+
    4. FORMULÁRIOS & CONTROLES
+
    ========================================================================== */
+
 .form-control,
+
 .form-select,
+
 .input-group-text {
+
   background-color: var(--surface) !important;
+
   color: var(--foreground) !important;
+
   border: 1px solid var(--border) !important;
+
   border-radius: var(--radius-sm);
+
   font-size: 0.875rem !important;
+
   min-height: 36px !important;
+
   height: 36px !important;
+
   padding: 0.375rem 0.75rem !important;
+
   line-height: 1.5 !important;
+
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
 }
+
+
 
 .form-control-sm,
+
 .form-select-sm,
+
 .input-group-sm > .form-control,
+
 .input-group-sm > .form-select,
+
 .input-group-sm > .input-group-text,
+
 .input-group-sm > .btn {
-  min-height: 36px !important;
-  height: 36px !important;
-  font-size: 0.875rem !important;
-  padding: 0.375rem 0.75rem !important;
+
+  min-height: 42px !important;
+
+  height: 42px !important;
+
+  border-radius: 12px !important;
+
+  font-size: 0.85rem !important;
+
+  padding: 0.45rem 0.85rem !important;
+
 }
+
+
 
 textarea.form-control {
+
   min-height: auto !important;
+
   height: auto !important;
+
 }
+
+
 
 .form-control::placeholder {
+
   color: var(--muted-foreground) !important;
+
   opacity: 0.7;
+
 }
+
+
 
 .form-control:focus,
+
 .form-select:focus {
+
   border-color: var(--primary) !important;
+
   box-shadow: 0 0 0 3px var(--primary-subtle) !important;
+
   outline: none !important;
+
 }
+
+
 
 [data-theme="dark"] .form-control,
+
 [data-bs-theme="dark"] .form-control,
+
 .dark .form-control,
+
 [data-theme="dark"] .form-select,
+
 [data-bs-theme="dark"] .form-select,
+
 .dark .form-select {
+
   background-color: #151821 !important;
+
   color: #f1f5f9 !important;
+
   border-color: var(--border) !important;
+
 }
+
+
 
 [data-theme="dark"] .form-control:focus,
+
 [data-bs-theme="dark"] .form-control:focus,
+
 .dark .form-control:focus,
+
 [data-theme="dark"] .form-select:focus,
+
 [data-bs-theme="dark"] .form-select:focus,
+
 .dark .form-select:focus {
+
   background-color: #171b26 !important;
+
   border-color: var(--primary) !important;
+
   color: #ffffff !important;
+
 }
+
+
 
 /* Opções de menus Select */
+
 select option {
+
   background-color: var(--surface);
+
   color: var(--foreground);
+
 }
+
+
 
 [data-theme="dark"] select option,
+
 [data-bs-theme="dark"] select option,
+
 .dark select option {
+
   background-color: #151821 !important;
+
   color: #f1f5f9 !important;
+
 }
+
+
 
 /* Campos desabilitados e apenas leitura */
+
 [data-theme="dark"] .form-control:disabled,
+
 [data-theme="dark"] .form-select:disabled,
+
 [data-theme="dark"] .form-control[readonly],
+
 [data-bs-theme="dark"] .form-control:disabled,
+
 [data-bs-theme="dark"] .form-select:disabled,
+
 [data-bs-theme="dark"] .form-control[readonly],
+
 .dark .form-control:disabled,
+
 .dark .form-select:disabled,
+
 .dark .form-control[readonly] {
+
   background-color: rgba(255, 255, 255, 0.05) !important;
+
   color: var(--muted-foreground, #94a3b8) !important;
+
   border-color: var(--border, #313a4b) !important;
+
 }
+
+
 
 .input-group-text {
+
   background-color: var(--surface-secondary) !important;
+
   color: var(--muted-foreground) !important;
+
 }
+
+
 
 [data-theme="dark"] .input-group-text,
+
 [data-bs-theme="dark"] .input-group-text,
+
 .dark .input-group-text {
+
   background-color: var(--surface-secondary) !important;
+
   color: var(--muted-foreground, #94a3b8) !important;
+
   border-color: var(--border) !important;
+
 }
 
+
+
 /* ==========================================================================
+
    5. BOTÕES DO SISTEMA
+
    ========================================================================== */
+
 .btn {
+
   font-family: var(--font-sans);
+
   font-weight: 600;
+
   border-radius: var(--radius-md);
+
   padding: 0.45rem 1rem;
+
   font-size: 0.875rem;
+
   transition: all 0.18s ease;
+
   display: inline-flex;
+
   align-items: center;
+
   justify-content: center;
+
   gap: 0.4rem;
+
   outline: none;
+
 }
+
+
 
 .btn:active {
+
   transform: scale(0.98);
+
 }
+
+
 
 .btn-primary {
+
   background-color: var(--primary) !important;
+
   border-color: var(--primary) !important;
-  color: #11141a !important;
+
+  color: #ffffff !important;
+
+  border-radius: var(--radius-md) !important;
+
+  font-weight: 600 !important;
+
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2) !important;
+
 }
+
+
 
 .btn-primary:hover,
+
 .btn-primary:focus {
+
   background-color: var(--primary-hover) !important;
+
   border-color: var(--primary-hover) !important;
+
   color: #ffffff !important;
+
 }
+
+
 
 .btn-outline-primary {
+
   color: var(--primary) !important;
+
   border-color: var(--primary) !important;
+
   background-color: transparent !important;
+
 }
+
+
 
 .btn-outline-primary:hover {
+
   background-color: var(--primary) !important;
+
   color: #ffffff !important;
+
 }
+
+
 
 .btn-success {
+
   background-color: var(--success) !important;
+
   border-color: var(--success) !important;
+
   color: #ffffff !important;
+
 }
+
+
 
 .btn-success:hover {
+
   background-color: #059669 !important;
+
   border-color: #059669 !important;
+
 }
+
+
 
 .btn-outline-secondary {
+
   color: var(--foreground) !important;
+
   border-color: var(--border) !important;
+
   background-color: transparent !important;
+
 }
+
+
 
 .btn-outline-secondary:hover {
+
   background-color: var(--surface-secondary) !important;
+
   border-color: var(--muted-foreground) !important;
+
 }
+
+
 
 /* Botão Padrão NFT Pílula */
+
 .btn-nft {
+
   display: inline-flex;
+
   align-items: center;
+
   justify-content: center;
+
   gap: 0.5rem;
+
   font-weight: 600;
+
   border: 1px solid var(--btn-nft-border);
+
   padding: 0.375rem 0.75rem !important;
+
   font-size: 0.875rem !important;
+
   min-height: 36px !important;
+
   height: 36px !important;
+
   border-radius: var(--radius-full);
+
   background-color: var(--btn-nft-bg);
+
   color: var(--btn-nft-color);
+
   text-decoration: none;
+
   transition: all 0.15s ease-in-out;
+
 }
+
+
 
 .btn-nft:hover,
+
 .btn-nft:focus {
+
   background-color: var(--primary);
-  color: #11141a;
+
+  color: #FFFFFF !important;
+
   border-color: var(--primary);
+
 }
+
+
 
 .btn-nft-success {
+
   background-color: var(--success-subtle) !important;
+
   color: var(--success) !important;
+
   border-color: rgba(16, 185, 129, 0.35) !important;
+
 }
+
+
 
 .btn-nft-success:hover,
+
 .btn-nft-success:focus {
+
   background-color: var(--success) !important;
+
   color: #ffffff !important;
+
   border-color: var(--success) !important;
+
 }
+
+
 
 .btn-nft-success-solid {
+
   background-color: #10b981 !important;
+
   color: #ffffff !important;
+
   border-color: #059669 !important;
+
   box-shadow: 0 1px 3px rgba(16, 185, 129, 0.25);
+
 }
+
+
 
 .btn-nft-success-solid:hover,
+
 .btn-nft-success-solid:focus {
+
   background-color: #059669 !important;
+
   color: #ffffff !important;
+
   border-color: #047857 !important;
+
 }
+
+
 
 /* Dropzone de upload PFX */
+
 .dropzone-pfx {
+
   border: 2px dashed var(--border) !important;
+
   border-radius: var(--radius-md) !important;
+
   background-color: var(--surface-secondary) !important;
+
   transition: all 0.2s ease-in-out;
+
   cursor: pointer;
+
 }
+
+
 
 .dropzone-pfx:hover,
+
 .dropzone-pfx.dragover {
+
   border-color: var(--primary) !important;
+
   background-color: var(--primary-subtle) !important;
+
 }
+
+
 
 .btn-nft-danger {
+
   background-color: var(--danger-subtle) !important;
+
   color: var(--danger) !important;
+
   border-color: rgba(239, 68, 68, 0.35) !important;
+
 }
+
+
 
 .btn-nft-danger:hover,
+
 .btn-nft-danger:focus {
+
   background-color: var(--danger) !important;
+
   color: #ffffff !important;
+
   border-color: var(--danger) !important;
+
 }
+
+
 
 .btn-nft-warning {
+
   background-color: var(--warning-subtle) !important;
+
   color: var(--warning) !important;
+
   border-color: rgba(245, 158, 11, 0.4) !important;
+
 }
+
+
 
 .btn-nft-warning:hover,
+
 .btn-nft-warning:focus {
+
   background-color: var(--warning) !important;
-  color: #11141a !important;
+
+  color: #FFFFFF !important;
+
   border-color: var(--warning) !important;
+
 }
+
+
 
 .btn-icon-grow {
+
   color: var(--primary);
+
   background: transparent;
+
   border: none;
+
   padding: 4px;
+
   display: inline-flex;
+
   align-items: center;
+
   justify-content: center;
+
   transition: transform 0.2s ease, color 0.2s ease;
+
 }
+
+
 
 .btn-icon-grow:hover {
+
   transform: scale(1.15);
+
   color: var(--primary-hover);
+
 }
 
+
+
 /* ==========================================================================
+
    6. TABELAS (BOOTSTRAP & TABULATOR)
+
    ========================================================================== */
+
 .table {
+
   color: var(--foreground) !important;
+
   border-color: var(--border) !important;
+
   background-color: var(--surface) !important;
+
 }
+
+
 
 .table th {
+
   background-color: var(--surface-secondary) !important;
+
   color: var(--heading) !important;
+
   border-color: var(--border) !important;
+
   font-weight: 700;
+
   font-size: 0.8rem;
+
   text-transform: uppercase;
+
   letter-spacing: 0.03em;
+
   padding: 0.75rem 0.65rem;
+
 }
+
+
 
 .table td {
+
   border-color: var(--border) !important;
+
   padding: 0.65rem;
+
   vertical-align: middle;
+
 }
+
+
 
 .table-hover tbody tr:hover {
+
   background-color: var(--primary-subtle) !important;
+
 }
+
+
 
 .table-striped tbody tr:nth-of-type(odd) {
+
   background-color: var(--surface-secondary) !important;
+
 }
+
+
 
 .table-light,
+
 .thead-light,
+
 .table thead.table-light th,
+
 [data-theme="dark"] .table-light,
+
 [data-bs-theme="dark"] .table-light,
+
 .dark .table-light {
+
   background-color: var(--surface-secondary) !important;
+
   color: var(--heading) !important;
+
   border-color: var(--border) !important;
+
 }
+
+
 
 /* Tabulator Estilização Unificada */
+
 .tabulator {
+
   font-family: var(--font-sans) !important;
+
   font-size: 13px !important;
+
   background-color: var(--surface) !important;
+
   border: 1px solid var(--border) !important;
+
   border-radius: var(--radius-md) !important;
+
   color: var(--foreground) !important;
+
   overflow: hidden;
+
 }
+
+
 
 .tabulator .tabulator-header {
+
   background-color: var(--surface-secondary) !important;
+
   border-bottom: 2px solid var(--border) !important;
+
   color: var(--heading) !important;
+
   font-weight: 700 !important;
+
 }
+
+
 
 .tabulator .tabulator-header .tabulator-col {
+
   background-color: var(--surface-secondary) !important;
+
   border-right: 1px solid var(--border) !important;
+
   color: var(--heading) !important;
+
 }
+
+
 
 .tabulator .tabulator-header .tabulator-col:hover {
+
   background-color: var(--primary-subtle) !important;
+
 }
+
+
 
 .tabulator .tabulator-header .tabulator-col.tabulator-frozen,
+
 .tabulator .tabulator-header .tabulator-col:nth-child(-n+3) {
+
   background-color: var(--surface-secondary) !important;
+
   position: sticky !important;
+
   z-index: 12 !important;
+
 }
+
+
 
 .tabulator .tabulator-row {
+
   background-color: var(--surface) !important;
+
   color: var(--foreground) !important;
+
   border-bottom: 1px solid var(--border) !important;
+
 }
+
+
 
 .tabulator .tabulator-row.tabulator-row-even {
+
   background-color: var(--surface-secondary) !important;
+
 }
+
+
 
 .tabulator .tabulator-row:hover,
+
 .tabulator .tabulator-row:hover .tabulator-cell {
+
   background-color: var(--surface-tertiary) !important;
+
 }
+
+
 
 .tabulator .tabulator-cell {
+
   border-right: 1px solid var(--border) !important;
+
   padding: 6px 8px !important;
+
 }
+
+
 
 /* Colunas fixas (Frozen) */
+
 .tabulator .tabulator-row .tabulator-cell.tabulator-frozen,
+
 .tabulator .tabulator-row .tabulator-cell:nth-child(-n+3) {
+
   background-color: inherit !important;
+
   position: sticky !important;
+
   z-index: 10 !important;
+
 }
+
+
 
 /* Seleção de Linhas */
+
 .tabulator .tabulator-row.tabulator-selected,
+
 .tabulator .tabulator-row.tabulator-selected .tabulator-cell {
+
   background-color: var(--primary) !important;
+
   color: #ffffff !important;
+
 }
+
+
 
 .tabulator .tabulator-row.tabulator-selected .tabulator-cell * {
+
   color: #ffffff !important;
+
 }
+
+
 
 .tabulator .tabulator-row.tabulator-selected:hover,
+
 .tabulator .tabulator-row.tabulator-selected:hover .tabulator-cell {
+
   background-color: var(--primary-hover) !important;
+
   color: #ffffff !important;
+
 }
+
+
 
 .tabulator input[type="checkbox"] {
+
   cursor: pointer;
+
   accent-color: var(--primary);
+
   width: 16px;
+
   height: 16px;
+
 }
+
+
 
 .tabulator-footer {
+
   background-color: var(--surface) !important;
+
   border-top: 1px solid var(--border) !important;
+
   color: var(--foreground) !important;
+
 }
+
+
 
 .tabulator .tabulator-footer .tabulator-paginator .tabulator-page {
+
   background-color: var(--surface-secondary) !important;
+
   border: 1px solid var(--border) !important;
+
   color: var(--foreground) !important;
+
   border-radius: var(--radius-sm) !important;
+
 }
+
+
 
 .tabulator .tabulator-footer .tabulator-paginator .tabulator-page.active {
+
   background-color: var(--primary) !important;
+
   border-color: var(--primary) !important;
+
   color: #ffffff !important;
+
 }
+
+
 
 .btn-editar-item {
+
   color: var(--primary) !important;
+
   opacity: 0.85;
+
   border-radius: 4px;
+
   transition: all 0.15s ease;
+
 }
+
+
 
 .btn-editar-item:hover {
+
   opacity: 1;
+
   background-color: var(--primary-subtle) !important;
+
   transform: scale(1.12);
+
 }
 
+
+
 /* ==========================================================================
+
 /* ==========================================================================
+
    7. BADGES & PILLS (PADRÃO UNIFICADO --SUCCESS)
+
    ========================================================================== */
+
 .badge {
+
   font-weight: 600;
+
   padding: 0.35rem 0.6rem;
+
   border-radius: var(--radius-sm);
+
   background-color: var(--success-subtle) !important;
+
   color: var(--success) !important;
+
   border: 1px solid rgba(16, 185, 129, 0.32) !important;
+
   transition: all 0.15s ease;
+
 }
+
+
 
 /* Badges preenchidos sólidos com --success */
+
 .badge.bg-success,
+
 .badge.bg-primary {
+
   background-color: var(--success) !important;
+
   color: #ffffff !important;
+
   border: 1px solid var(--success) !important;
+
 }
+
+
 
 /* Badges de Erro / Cancelamento (Vermelho com texto em branco) */
+
 .badge.bg-danger,
+
 .badge-danger,
+
 .badge[style*="background-color: #dc2626"],
+
 .badge[style*="background-color:#dc2626"] {
+
   background-color: #dc2626 !important;
+
   color: #ffffff !important;
+
   border: 1px solid #dc2626 !important;
+
 }
+
+
 
 /* Badges sutis e variantes unificados com estilo --success */
+
 .badge.bg-info-subtle,
+
 .badge.bg-success-subtle,
+
 .badge.bg-warning-subtle,
+
 .badge.bg-secondary-subtle {
+
   background-color: var(--success-subtle) !important;
+
   color: var(--success) !important;
+
   border: 1px solid rgba(16, 185, 129, 0.32) !important;
+
 }
+
+
 
 /* Estilo de Categoria em Rascunhos (Somente texto) */
+
 .texto-categoria-rascunho {
+
   font-family: var(--font-sans);
+
   font-size: 0.76rem;
+
   font-weight: 600;
+
   color: var(--foreground) !important;
+
   background: transparent !important;
+
   border: none !important;
+
   padding: 0 !important;
+
   margin: 0 !important;
+
 }
+
+
 
 /* Badges específicos de origem de rascunhos com cores diferenciadas */
+
 .badge-origem-base {
+
   font-family: var(--font-mono);
+
   font-size: 0.7rem;
+
   font-weight: 600;
+
   padding: 0.2rem 0.5rem;
+
   border-radius: var(--radius-sm);
+
   display: inline-flex;
+
   align-items: center;
+
   gap: 0.3rem;
+
   line-height: 1.2;
+
 }
 
-/* Nova NF: Azul / Ciano Moderno */
-.badge-origem-nova {
-  background-color: rgba(6, 182, 212, 0.14) !important;
-  border: 1px solid rgba(6, 182, 212, 0.35) !important;
-  color: #0891b2 !important;
-}
-[data-bs-theme="dark"] .badge-origem-nova {
-  color: #22d3ee !important;
-  background-color: rgba(6, 182, 212, 0.18) !important;
-}
 
-/* XML Rascunho: Âmbar / Laranja Suave */
+
+/* Badges de Origem Padronizados: Estilo Azul / Ciano Moderno (Padrao Nova NF) */
+
+.badge-origem-nova,
 .badge-origem-rasc,
-.badge-origem-rascunho {
-  background-color: rgba(245, 158, 11, 0.14) !important;
-  border: 1px solid rgba(245, 158, 11, 0.35) !important;
-  color: #d97706 !important;
+.badge-origem-rascunho,
+.badge-origem-di,
+.badge-origem-duimp-imp,
+#rascunho-origem-indicator .badge {
+
+  background-color: rgba(6, 182, 212, 0.14) !important;
+
+  border: 1px solid rgba(6, 182, 212, 0.35) !important;
+
+  color: #0891b2 !important;
+
 }
+
+[data-bs-theme="dark"] .badge-origem-nova,
 [data-bs-theme="dark"] .badge-origem-rasc,
-[data-bs-theme="dark"] .badge-origem-rascunho {
-  color: #fbbf24 !important;
-  background-color: rgba(245, 158, 11, 0.18) !important;
+[data-bs-theme="dark"] .badge-origem-rascunho,
+[data-bs-theme="dark"] .badge-origem-di,
+[data-bs-theme="dark"] .badge-origem-duimp-imp,
+[data-bs-theme="dark"] #rascunho-origem-indicator .badge,
+[data-theme="dark"] .badge-origem-nova,
+[data-theme="dark"] .badge-origem-rasc,
+[data-theme="dark"] .badge-origem-rascunho,
+[data-theme="dark"] .badge-origem-di,
+[data-theme="dark"] .badge-origem-duimp-imp,
+[data-theme="dark"] #rascunho-origem-indicator .badge,
+.dark .badge-origem-nova,
+.dark .badge-origem-rasc,
+.dark .badge-origem-rascunho,
+.dark .badge-origem-di,
+.dark .badge-origem-duimp-imp,
+.dark #rascunho-origem-indicator .badge {
+
+  color: #22d3ee !important;
+
+  background-color: rgba(6, 182, 212, 0.18) !important;
+
 }
 
-/* XML DI: Roxo / Violeta Elegante */
-.badge-origem-di {
-  background-color: rgba(139, 92, 246, 0.14) !important;
-  border: 1px solid rgba(139, 92, 246, 0.35) !important;
-  color: #7c3aed !important;
-}
-[data-bs-theme="dark"] .badge-origem-di {
-  color: #a78bfa !important;
-  background-color: rgba(139, 92, 246, 0.18) !important;
-}
 
-/* DUIMP Importada: Azul Royal / Indigo */
-.badge-origem-duimp-imp {
-  background-color: rgba(59, 130, 246, 0.14) !important;
-  border: 1px solid rgba(59, 130, 246, 0.35) !important;
-  color: #2563eb !important;
-}
-[data-bs-theme="dark"] .badge-origem-duimp-imp {
-  color: #60a5fa !important;
-  background-color: rgba(59, 130, 246, 0.18) !important;
-}
 
 /* Botões de Ação Redondos para Modais de Tabela */
+
 .btn-nft-action-round {
+
   width: 28px !important;
+
   min-width: 28px !important;
+
   height: 28px !important;
+
   min-height: 28px !important;
+
   padding: 0 !important;
+
   border-radius: 50% !important;
+
   display: inline-flex !important;
+
   align-items: center !important;
+
   justify-content: center !important;
+
   transition: all 0.15s ease-in-out !important;
+
 }
 
+
+
 /* ==========================================================================
+
    8. NAVEGAÇÃO, ABAS E ALERTAS
+
    ========================================================================== */
+
 .nav-tabs {
-  border-bottom: 2px solid var(--border) !important;
+  border: none !important;
+  border-bottom: none !important;
+  --bs-nav-tabs-border-width: 0 !important;
   gap: 0.25rem;
 }
 
@@ -901,9 +1801,9 @@ select option {
   font-size: 0.9rem;
   color: var(--muted-foreground) !important;
   border: none !important;
-  border-bottom: 3px solid transparent !important;
+  border-bottom: none !important;
   padding: 0.65rem 1rem !important;
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  border-radius: var(--radius-sm);
   transition: all 0.18s ease;
   background-color: transparent !important;
 }
@@ -911,844 +1811,5544 @@ select option {
 .nav-tabs .nav-link:hover {
   color: var(--primary) !important;
   background-color: var(--primary-subtle) !important;
+  border: none !important;
+  border-bottom: none !important;
 }
 
 .nav-tabs .nav-link.active {
   color: var(--primary) !important;
-  border-bottom: 3px solid var(--primary) !important;
+  border: none !important;
+  border-bottom: none !important;
   background-color: var(--surface) !important;
 }
+
+
 
 /* Nav Pills (Modais e Abas de Configurações) */
+
 .nav-pills .nav-link {
+
   color: var(--muted-foreground) !important;
+
   font-weight: 600;
+
   border-radius: var(--radius-sm);
+
   transition: all 0.15s ease;
+
 }
+
+
 
 .nav-pills .nav-link:hover {
+
   color: var(--heading) !important;
+
   background-color: var(--surface-secondary) !important;
+
 }
+
+
 
 .nav-pills .nav-link.active {
+
   background-color: var(--primary) !important;
+
   color: #11141a !important;
+
 }
+
+
 
 [data-theme="dark"] .nav-pills .nav-link,
+
 [data-bs-theme="dark"] .nav-pills .nav-link,
+
 .dark .nav-pills .nav-link {
+
   color: var(--muted-foreground, #94a3b8) !important;
+
 }
+
+
 
 [data-theme="dark"] .nav-pills .nav-link:hover,
+
 [data-bs-theme="dark"] .nav-pills .nav-link:hover,
+
 .dark .nav-pills .nav-link:hover {
+
   color: #ffffff !important;
+
   background-color: var(--surface-tertiary) !important;
+
 }
+
+
 
 [data-theme="dark"] .nav-pills .nav-link.active,
+
 [data-bs-theme="dark"] .nav-pills .nav-link.active,
+
 .dark .nav-pills .nav-link.active {
+
   background-color: var(--primary) !important;
+
   color: #11141a !important;
+
 }
+
+
 
 /* Alertas Bootstrap no Dark Mode */
+
 [data-theme="dark"] .alert,
+
 [data-bs-theme="dark"] .alert,
+
 .dark .alert {
+
   border-color: var(--border) !important;
+
 }
+
+
 
 [data-theme="dark"] .alert-light,
+
 [data-bs-theme="dark"] .alert-light,
+
 .dark .alert-light {
+
   background-color: var(--surface-secondary) !important;
+
   border-color: var(--border) !important;
+
   color: var(--foreground) !important;
+
 }
+
+
 
 [data-theme="dark"] .alert-secondary,
+
 [data-bs-theme="dark"] .alert-secondary,
+
 .dark .alert-secondary {
+
   background-color: var(--surface-tertiary) !important;
+
   border-color: var(--border) !important;
+
   color: var(--foreground) !important;
+
 }
+
+
 
 [data-theme="dark"] .alert-info,
+
 [data-bs-theme="dark"] .alert-info,
+
 .dark .alert-info {
+
   background-color: var(--primary-subtle) !important;
+
   border-color: var(--primary-border) !important;
+
   color: var(--foreground) !important;
+
 }
+
+
 
 /* Dropdown menus no Dark Mode */
+
 [data-theme="dark"] .dropdown-menu,
+
 [data-bs-theme="dark"] .dropdown-menu,
+
 .dark .dropdown-menu {
+
   background-color: var(--surface) !important;
+
   border-color: var(--border) !important;
+
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45) !important;
+
 }
+
+
 
 [data-theme="dark"] .dropdown-item,
+
 [data-bs-theme="dark"] .dropdown-item,
+
 .dark .dropdown-item {
+
   color: var(--foreground) !important;
+
 }
+
+
 
 [data-theme="dark"] .dropdown-item:hover,
+
 [data-bs-theme="dark"] .dropdown-item:hover,
+
 .dark .dropdown-item:hover {
+
   background-color: var(--surface-secondary) !important;
+
   color: var(--heading) !important;
+
 }
+
+
 
 [data-theme="dark"] .dropdown-divider,
+
 [data-bs-theme="dark"] .dropdown-divider,
+
 .dark .dropdown-divider {
+
   border-color: var(--border) !important;
+
 }
+
+
 
 .alert-attention {
+
   background-color: var(--primary-subtle);
+
   border-left: 4px solid var(--primary);
+
   border: 1px solid var(--border);
+
   border-left-width: 4px;
+
   border-left-color: var(--primary);
+
   border-radius: var(--radius-md);
+
   padding: 0.9rem 1.25rem;
+
   color: var(--heading);
+
 }
+
+
 
 .alert-attention h6 {
+
   color: var(--primary) !important;
+
   font-weight: 700;
+
 }
 
+
+
 /* ==========================================================================
+
    9. ÍCONES E UTILITÁRIOS
+
    ========================================================================== */
-.lucide, svg.lucide {
+
+/* Ícones Minimalistas: Estilo Line (Outline) sem preenchimento em todo o sistema */
+
+.lucide, svg.lucide, [data-lucide], svg:not(.logo-theme-black):not(.logo-theme-white):not(.logo-svg) {
+
   width: 1.15em;
+
   height: 1.15em;
-  stroke: currentColor;
-  stroke-width: 1.75;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+
+  stroke: currentColor !important;
+
+  stroke-width: 1.75px !important;
+
+  stroke-linecap: round !important;
+
+  stroke-linejoin: round !important;
+
   vertical-align: -0.16em;
+
   display: inline-block;
-  fill: none;
+
+  fill: none !important;
+
   flex-shrink: 0;
+
 }
+
+
 
 .icon-xs { width: 12px !important; height: 12px !important; }
+
 .icon-sm { width: 14px !important; height: 14px !important; }
+
 .icon-md { width: 16px !important; height: 16px !important; }
+
 .icon-lg { width: 20px !important; height: 20px !important; }
+
 .icon-xl { width: 32px !important; height: 32px !important; }
 
+
+
 /* ==========================================================================
+
    10. MODAIS E CAIXAS DE DIÁLOGO
+
    ========================================================================== */
+
 .modal-backdrop {
+
   background-color: rgba(9, 12, 18, 0.75) !important;
+
   backdrop-filter: blur(8px) !important;
+
   -webkit-backdrop-filter: blur(8px) !important;
+
 }
+
+
 
 .modal-content {
+
   background-color: var(--surface) !important;
+
   color: var(--foreground) !important;
+
   border: 1px solid var(--border) !important;
+
   border-radius: var(--radius-xl) !important;
+
   box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.45) !important;
+
   overflow: hidden;
+
 }
+
+
 
 .modal-header {
+
   border-bottom: 1px solid var(--border) !important;
+
   padding: 1.15rem 1.4rem !important;
+
 }
+
+
 
 .modal-footer {
+
   background-color: var(--surface-secondary) !important;
+
   border-top: 1px solid var(--border) !important;
+
   padding: 0.9rem 1.4rem !important;
+
 }
+
+
 
 .modal-body {
+
   padding: 1.4rem !important;
+
 }
+
+
 
 [data-theme="dark"] .btn-close {
+
   filter: invert(1) grayscale(100%) brightness(200%) !important;
+
 }
+
+
 
 /* Diálogos Globais (nft-dialogs) */
+
 .nft-dialog-overlay {
+
   position: fixed;
+
   inset: 0;
+
   z-index: 10999;
+
   display: flex;
+
   align-items: center;
+
   justify-content: center;
+
   background-color: rgba(9, 12, 18, 0.75);
+
   backdrop-filter: blur(10px);
+
   -webkit-backdrop-filter: blur(10px);
+
   padding: 1.25rem;
+
   opacity: 0;
+
   transition: opacity 0.22s ease;
+
 }
+
+
 
 .nft-dialog-overlay.active {
+
   opacity: 1;
+
 }
+
+
 
 .nft-dialog-box {
+
   background-color: var(--surface);
+
   color: var(--foreground);
+
   border: 1px solid var(--border);
+
   border-radius: var(--radius-xl);
+
   box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.5);
+
   max-width: 460px;
+
   width: 100%;
+
   padding: 1.6rem 1.75rem;
+
   display: flex;
+
   flex-direction: column;
+
   align-items: center;
+
   text-align: center;
+
   transform: scale(0.95);
+
   transition: transform 0.22s ease;
+
 }
+
+
 
 .nft-dialog-overlay.active .nft-dialog-box {
+
   transform: scale(1);
+
 }
+
+
 
 .nft-dialog-icon-wrap {
+
   width: 54px;
+
   height: 54px;
+
   border-radius: 50%;
+
   display: flex;
+
   align-items: center;
+
   justify-content: center;
+
   margin-bottom: 1.1rem;
+
   flex-shrink: 0;
+
 }
+
+
 
 .nft-dialog-icon-wrap.type-info {
+
   background-color: var(--primary-subtle);
+
   border: 1px solid var(--primary-border);
+
   color: var(--primary);
+
 }
+
+
 
 .nft-dialog-icon-wrap.type-success {
+
   background-color: var(--success-subtle);
+
   border: 1px solid rgba(16, 185, 129, 0.3);
+
   color: var(--success);
+
 }
+
+
 
 .nft-dialog-icon-wrap.type-warning {
+
   background-color: var(--warning-subtle);
+
   border: 1px solid rgba(245, 158, 11, 0.3);
+
   color: var(--warning);
+
 }
+
+
 
 .nft-dialog-icon-wrap.type-danger {
+
   background-color: var(--danger-subtle);
+
   border: 1px solid rgba(239, 68, 68, 0.3);
+
   color: var(--danger);
+
 }
+
+
 
 .nft-dialog-title {
+
   color: var(--heading) !important;
+
   font-size: 1.15rem;
+
   font-weight: 700;
+
   margin-bottom: 0.65rem;
+
 }
+
+
 
 .nft-dialog-message {
+
   color: var(--foreground);
+
   font-size: 0.92rem;
+
   line-height: 1.55;
+
   margin-bottom: 1.4rem;
+
 }
+
+
 
 .nft-dialog-box.nft-dialog-wide {
+
   max-width: 620px;
+
 }
+
+
 
 .nft-dialog-input-wrap {
+
   width: 100%;
+
   margin-bottom: 1.25rem;
+
   text-align: left;
+
 }
+
+
 
 .nft-dialog-input,
-.nft-dialog-textarea {
-  width: 100%;
-  background-color: var(--surface-alt, #1e293b);
-  color: var(--foreground, #f8fafc);
-  border: 1px solid var(--border, #334155);
-  border-radius: var(--radius-md, 8px);
-  padding: 0.75rem 0.9rem;
-  font-size: 0.92rem;
-  font-family: var(--font-sans, inherit);
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
-}
 
 .nft-dialog-textarea {
-  min-height: 140px;
-  max-height: 320px;
-  resize: vertical;
-  line-height: 1.55;
+
+  width: 100%;
+
+  background-color: var(--surface-alt, #1e293b);
+
+  color: var(--foreground, #f8fafc);
+
+  border: 1px solid var(--border, #334155);
+
+  border-radius: var(--radius-md, 8px);
+
+  padding: 0.75rem 0.9rem;
+
+  font-size: 0.92rem;
+
+  font-family: var(--font-sans, inherit);
+
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+
 }
+
+
+
+.nft-dialog-textarea {
+
+  min-height: 140px;
+
+  max-height: 320px;
+
+  resize: vertical;
+
+  line-height: 1.55;
+
+}
+
+
 
 .nft-dialog-input:focus,
+
 .nft-dialog-textarea:focus {
+
   outline: none;
+
   border-color: var(--primary, #3b82f6);
+
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+
   background-color: var(--surface, #0f172a);
+
 }
+
+
 
 .nft-dialog-input-wrap.has-error .nft-dialog-input,
+
 .nft-dialog-input-wrap.has-error .nft-dialog-textarea {
+
   border-color: var(--danger, #ef4444) !important;
+
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25) !important;
+
 }
+
+
 
 .nft-dialog-input-footer {
+
   display: flex;
+
   justify-content: space-between;
+
   align-items: center;
+
   margin-top: 0.5rem;
+
   font-size: 0.8rem;
+
   gap: 0.5rem;
+
 }
+
+
 
 .nft-dialog-hint {
+
   color: var(--text-muted, #94a3b8);
+
   font-size: 0.78rem;
+
   flex: 1;
+
 }
+
+
 
 .nft-dialog-counter {
+
   font-family: var(--font-mono, monospace);
+
   font-size: 0.8rem;
+
   font-weight: 600;
+
   color: var(--text-muted, #94a3b8);
+
   white-space: nowrap;
+
 }
+
+
 
 .nft-dialog-counter.is-valid {
+
   color: var(--success, #10b981) !important;
+
 }
+
+
 
 .nft-dialog-counter.is-invalid {
+
   color: var(--warning, #f59e0b) !important;
+
 }
+
+
 
 .nft-dialog-counter.is-danger {
+
   color: var(--danger, #ef4444) !important;
+
 }
+
+
 
 .nft-dialog-actions {
+
   display: flex;
+
   gap: 0.75rem;
+
   width: 100%;
+
 }
+
+
 
 .nft-dialog-actions .btn {
+
   flex: 1;
+
 }
 
+
+
 /* ==========================================================================
+
    11. PORTAL INICIAL (PORTAL.HTML)
+
    ========================================================================== */
+
 .portal-hero {
+
   flex: 1;
+
   display: flex;
+
   flex-direction: column;
+
   justify-content: center;
+
   align-items: center;
+
   padding: 1.5rem 1.5rem 3rem 1.5rem;
+
 }
+
+
 
 .portal-hero-header {
+
   text-align: center;
+
   max-width: 680px;
+
   margin-bottom: 2.75rem;
+
 }
+
+
 
 .portal-tagline {
+
   display: inline-flex;
+
   align-items: center;
+
   gap: 0.5rem;
+
   font-family: var(--font-mono);
+
   font-size: 0.78rem;
+
   font-weight: 700;
+
   color: var(--primary);
+
   text-transform: uppercase;
+
   letter-spacing: 0.08em;
+
   margin-bottom: 0.75rem;
+
   padding: 0.3rem 0.85rem;
+
   border-radius: var(--radius-full);
+
   background: var(--primary-subtle);
+
   border: 1px solid var(--primary-border);
+
 }
+
+
 
 .portal-title {
+
   font-size: clamp(2rem, 3.8vw, 2.75rem);
+
   font-weight: 800;
+
   color: var(--heading);
+
   letter-spacing: -0.03em;
+
   margin-bottom: 0.75rem;
+
 }
+
+
 
 .portal-subtitle {
+
   font-size: 1.05rem;
+
   color: var(--muted-foreground);
+
 }
+
+
 
 .portal-cards-grid {
+
   display: flex;
+
   justify-content: center;
+
   align-items: stretch;
+
   gap: 2.25rem;
+
   width: 100%;
+
   max-width: 1040px;
+
 }
+
+
 
 @media (max-width: 991px) {
+
   .portal-cards-grid {
+
     flex-direction: column;
+
     align-items: center;
+
   }
+
 }
+
+
 
 .portal-card {
+
   flex: 1;
+
   max-width: 460px;
+
   width: 100%;
+
   background: var(--surface);
+
   border: 1px solid var(--border);
+
   border-radius: var(--radius-xl);
+
   text-decoration: none !important;
+
   display: flex;
+
   flex-direction: column;
+
   overflow: hidden;
+
   box-shadow: var(--card-shadow);
+
   transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+
   cursor: pointer;
+
 }
+
+
 
 .portal-card:hover {
+
   transform: translateY(-6px);
+
   border-color: var(--primary) !important;
+
   box-shadow: var(--card-shadow-hover), 0 0 0 1px var(--primary);
+
 }
+
+
 
 .portal-card-img-wrap {
+
   width: 100%;
+
   height: 230px;
+
   overflow: hidden;
+
   background: var(--surface-secondary);
+
 }
+
+
 
 .portal-card-img {
+
   width: 100%;
+
   height: 100%;
+
   object-fit: cover;
+
   transition: transform 0.4s ease;
+
 }
+
+
 
 .portal-card:hover .portal-card-img {
+
   transform: scale(1.04);
+
 }
+
+
 
 .portal-card-content {
+
   padding: 1.75rem;
+
   display: flex;
+
   flex-direction: column;
+
   flex: 1;
+
   justify-content: space-between;
+
 }
+
+
 
 .portal-card-title {
+
   font-size: 1.45rem;
+
   font-weight: 800;
+
   color: var(--heading);
+
   margin-bottom: 0.65rem;
+
 }
+
+
 
 .portal-card:hover .portal-card-title {
+
   color: var(--primary);
+
 }
+
+
 
 .portal-card-desc {
+
   font-size: 0.93rem;
+
   color: var(--muted-foreground);
+
   line-height: 1.55;
+
   margin-bottom: 1.5rem;
+
 }
+
+
 
 .portal-card-cta-btn {
+
   display: flex;
+
   width: 100%;
+
   align-items: center;
+
   justify-content: center;
+
   gap: 0.5rem;
+
   font-weight: 600;
+
   border: 1px solid var(--btn-nft-border);
+
   padding: 0.375rem 0.75rem !important;
+
   font-size: 0.875rem !important;
+
   min-height: 36px !important;
+
   height: 36px !important;
+
   border-radius: var(--radius-full);
+
   background-color: var(--btn-nft-bg);
+
   color: var(--btn-nft-color);
+
   transition: all 0.15s ease-in-out;
+
 }
+
+
 
 .portal-card:hover .portal-card-cta-btn {
+
   background-color: var(--primary);
-  color: #11141a;
+
+  color: #FFFFFF !important;
+
   border-color: var(--primary);
+
 }
 
+
+
 /* ==========================================================================
+
    INDICADORES SEFAZ (CSTAT & AMBIENTE SEM CLASSE BADGE)
+
    ========================================================================== */
+
 .sefaz-tag {
+
   display: inline-flex !important;
+
   align-items: center !important;
+
   justify-content: center !important;
+
   gap: 0.35rem !important;
+
   font-family: var(--font-mono, monospace) !important;
+
   font-size: 0.72rem !important;
+
   font-weight: 700 !important;
+
   padding: 0.2rem 0.55rem !important;
+
   border-radius: 4px !important;
+
   line-height: 1.25 !important;
+
   letter-spacing: 0.2px !important;
+
   white-space: nowrap !important;
+
   text-decoration: none !important;
+
 }
+
+
 
 /* Ambiente: Homologação em Cinza */
+
 .sefaz-amb-homologacao {
+
   background-color: #e9ecef !important;
+
   color: #495057 !important;
+
   border: 1px solid #ced4da !important;
+
 }
+
 [data-bs-theme="dark"] .sefaz-amb-homologacao {
+
   background-color: #343a40 !important;
+
   color: #dee2e6 !important;
+
   border: 1px solid #495057 !important;
+
 }
+
+
 
 /* Ambiente: Produção em Verde */
+
 .sefaz-amb-producao {
+
   background-color: #d1e7dd !important;
+
   color: #0f5132 !important;
+
   border: 1px solid #a3cfbb !important;
+
 }
+
 [data-bs-theme="dark"] .sefaz-amb-producao {
+
   background-color: rgba(25, 135, 84, 0.25) !important;
+
   color: #75b798 !important;
+
   border: 1px solid #198754 !important;
+
 }
+
+
 
 /* CSTAT: Autorizado / Sucesso (Verde) */
+
 .sefaz-cstat-autorizado {
+
   background-color: #d1e7dd !important;
+
   color: #0f5132 !important;
+
   border: 1px solid #a3cfbb !important;
+
 }
+
 [data-bs-theme="dark"] .sefaz-cstat-autorizado {
+
   background-color: rgba(25, 135, 84, 0.25) !important;
+
   color: #75b798 !important;
+
   border: 1px solid #198754 !important;
+
 }
+
+
 
 /* CSTAT: Rejeição Fiscal (Vermelho) */
+
 .sefaz-cstat-rejeicao {
+
   background-color: #f8d7da !important;
+
   color: #842029 !important;
+
   border: 1px solid #f5c2c7 !important;
+
 }
+
 [data-bs-theme="dark"] .sefaz-cstat-rejeicao {
+
   background-color: rgba(220, 53, 69, 0.25) !important;
+
   color: #ea868f !important;
+
   border: 1px solid #dc3545 !important;
+
 }
+
+
 
 /* CSTAT: Erro / Falha de Comunicação (Vermelho) */
+
 .sefaz-cstat-erro {
+
   background-color: #f8d7da !important;
+
   color: #842029 !important;
+
   border: 1px solid #f5c2c7 !important;
+
 }
+
 [data-bs-theme="dark"] .sefaz-cstat-erro {
+
   background-color: rgba(220, 53, 69, 0.3) !important;
+
   color: #f1aeb5 !important;
+
   border: 1px solid #dc3545 !important;
+
 }
+
+
 
 /* CSTAT: Aguardando / Processamento (Amarelo) */
+
 .sefaz-cstat-aguardando {
+
   background-color: #fff3cd !important;
+
   color: #664d03 !important;
+
   border: 1px solid #ffecb5 !important;
+
 }
+
 [data-bs-theme="dark"] .sefaz-cstat-aguardando {
+
   background-color: rgba(255, 193, 7, 0.2) !important;
+
   color: #ffda6a !important;
+
   border: 1px solid #ffc107 !important;
+
 }
+
+
 
 /* CSTAT: Denegada (Laranja) */
+
 .sefaz-cstat-denegada {
+
   background-color: #ffe5d0 !important;
+
   color: #984c0c !important;
+
   border: 1px solid #fecba1 !important;
+
 }
+
 [data-bs-theme="dark"] .sefaz-cstat-denegada {
+
   background-color: rgba(253, 126, 20, 0.25) !important;
+
   color: #feb272 !important;
+
   border: 1px solid #fd7e14 !important;
+
 }
+
+
 
 /* Remove interferência de .badge dentro da tabela de histórico SEFAZ */
+
 #tbody-historico-sefaz .badge {
+
   all: unset !important;
+
   display: inline-flex !important;
+
 }
 
+
+
 /* ==========================================================================
+
    BOTÃO DE EDIÇÃO DE ITEM NA GRADE TABULATOR (TAB 3 ITENS)
+
    ========================================================================== */
+
 .tabulator .tabulator-cell[tabulator-field="_acoes"],
+
 .tabulator .tabulator-header .tabulator-col[tabulator-field="_acoes"] {
+
   padding: 0 !important;
+
   text-align: center !important;
+
   justify-content: center !important;
+
   align-items: center !important;
+
 }
+
+
 
 .btn-editar-item-grade {
+
   display: inline-flex !important;
+
   align-items: center !important;
+
   justify-content: center !important;
+
   width: 26px !important;
+
   height: 26px !important;
+
   min-height: 26px !important;
+
   max-height: 26px !important;
+
   padding: 0 !important;
+
   margin: 0 auto !important;
+
   border: 1px solid rgba(14, 165, 233, 0.28) !important;
+
   border-radius: 4px !important;
+
   background-color: rgba(14, 165, 233, 0.08) !important;
+
   color: #0ea5e9 !important;
+
   cursor: pointer !important;
+
   transition: all 0.15s ease-in-out !important;
+
   box-shadow: none !important;
+
   outline: none !important;
+
   text-decoration: none !important;
+
 }
+
+
 
 .btn-editar-item-grade:hover {
+
   background-color: #0ea5e9 !important;
+
   color: #ffffff !important;
+
   border-color: #0ea5e9 !important;
+
   transform: scale(1.08);
+
 }
+
+
 
 .btn-editar-item-grade svg {
+
   width: 14px !important;
+
   height: 14px !important;
+
   stroke: currentColor !important;
+
   display: block !important;
+
   pointer-events: none !important;
+
 }
+
+
 
 [data-bs-theme="dark"] .btn-editar-item-grade {
+
   border-color: rgba(56, 189, 248, 0.35) !important;
+
   background-color: rgba(56, 189, 248, 0.12) !important;
+
   color: #38bdf8 !important;
+
 }
+
+
 
 [data-bs-theme="dark"] .btn-editar-item-grade:hover {
+
   background-color: #38bdf8 !important;
+
   color: #11141a !important;
+
 }
 
+
+
 /* ==========================================================================
+
    14. VALIDAÇÃO VISUAL REGEX & FORMATO SEFAZ
+
    ========================================================================== */
+
 .nft-regex-field {
+
   transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+
 }
+
+
 
 .nft-regex-valid {
+
   border-color: #10b981 !important;
+
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15) !important;
+
 }
+
+
 
 .nft-regex-invalid {
+
   border-color: #f59e0b !important;
+
   box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15) !important;
+
 }
+
+
 
 .nft-regex-error {
+
   border-color: #ef4444 !important;
+
   box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15) !important;
+
 }
+
+
 
 /* Labels que contêm tags de regex visual mantêm altura e alinhamento consistentes */
+
 label:has(.nft-regex-tag),
+
 .form-label:has(.nft-regex-tag),
+
 label.has-regex-tag,
+
 .form-label.has-regex-tag {
+
   display: flex !important;
+
   align-items: center !important;
+
   justify-content: space-between !important;
+
   min-height: 22px !important;
+
   margin-bottom: 3px !important;
+
 }
+
+
 
 .nft-regex-tag {
+
   display: inline-flex;
+
   align-items: center;
+
   justify-content: center;
+
   gap: 3px;
+
   font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
+
   font-size: 10px;
+
   font-weight: 600;
+
   padding: 0 6px;
+
   height: 18px;
+
   line-height: 18px;
+
   border-radius: 4px;
+
   margin-left: auto;
+
   white-space: nowrap;
+
   vertical-align: middle;
+
   transition: all 0.2s ease;
+
   user-select: none;
+
   flex-shrink: 0;
+
 }
+
+
 
 .nft-regex-tag-neutral {
+
   background-color: var(--surface-secondary, rgba(0, 0, 0, 0.05));
+
   color: var(--muted-foreground, #6b7280);
+
   border: 1px solid var(--border, rgba(0, 0, 0, 0.1));
+
 }
+
+
 
 .nft-regex-tag-warning {
+
   background-color: rgba(245, 158, 11, 0.12);
+
   color: #b45309;
+
   border: 1px solid rgba(245, 158, 11, 0.35);
+
 }
+
+
 
 .nft-regex-tag-success {
+
   background-color: rgba(16, 185, 129, 0.12);
+
   color: #047857;
+
   border: 1px solid rgba(16, 185, 129, 0.35);
+
 }
+
+
 
 .nft-regex-tag-danger {
+
   background-color: rgba(239, 68, 68, 0.12);
+
   color: #b91c1c;
+
   border: 1px solid rgba(239, 68, 68, 0.35);
+
 }
+
+
 
 /* Dark mode adjustments */
+
 [data-bs-theme="dark"] .nft-regex-tag-neutral,
+
 [data-theme="dark"] .nft-regex-tag-neutral {
+
   background-color: rgba(255, 255, 255, 0.06);
+
   color: #94a3b8;
+
   border-color: rgba(255, 255, 255, 0.12);
+
 }
+
+
 
 [data-bs-theme="dark"] .nft-regex-tag-warning,
+
 [data-theme="dark"] .nft-regex-tag-warning {
+
   background-color: rgba(245, 158, 11, 0.2);
+
   color: #fbbf24;
+
   border-color: rgba(245, 158, 11, 0.45);
+
 }
+
+
 
 [data-bs-theme="dark"] .nft-regex-tag-success,
+
 [data-theme="dark"] .nft-regex-tag-success {
+
   background-color: rgba(16, 185, 129, 0.2);
+
   color: #34d399;
+
   border-color: rgba(16, 185, 129, 0.45);
+
 }
+
+
 
 [data-bs-theme="dark"] .nft-regex-tag-danger,
+
 [data-theme="dark"] .nft-regex-tag-danger {
+
   background-color: rgba(239, 68, 68, 0.2);
+
   color: #f87171;
+
   border-color: rgba(239, 68, 68, 0.45);
+
 }
+
+
 
 /* Drag and Drop de Operações & Enquadramentos */
+
 .op-drag-item {
+
   user-select: none;
+
   cursor: pointer;
+
   transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+
 }
+
+
 
 .op-drag-item:hover {
+
   background-color: var(--surface-secondary, #f8fafc);
+
   border-color: var(--primary-border, #0ea5e9);
+
 }
+
+
 
 .op-drag-item.dragging {
+
   opacity: 0.45 !important;
+
   background-color: var(--primary-subtle, rgba(14, 165, 233, 0.15)) !important;
+
   border: 2px dashed var(--primary, #0ea5e9) !important;
+
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
 }
+
+
 
 .op-drag-item.op-drag-target-over {
+
   border-top: 3px solid var(--primary, #0ea5e9) !important;
+
   transform: translateY(2px);
+
 }
+
+
 
 .grip-handle {
+
   cursor: grab;
+
   touch-action: none;
+
 }
+
+
 
 .grip-handle:active {
+
   cursor: grabbing;
+
 }
+
+
 
 /* ==========================================================================
+
    15. CÉLULA QUANTIDADE TRIBUTÁVEL MANUAL (SOMENTE COR DA FONTE)
+
    ========================================================================== */
+
 .cell-qtrib-manual,
+
 .tabulator-cell.cell-qtrib-manual {
+
   color: #b45309 !important;
+
   font-weight: 700 !important;
+
 }
+
+
 
 [data-bs-theme="dark"] .cell-qtrib-manual,
+
 [data-bs-theme="dark"] .tabulator-cell.cell-qtrib-manual {
+
   color: #fbbf24 !important;
+
 }
 
+
+
 .cell-qtrib-manual .badge-manual-qtrib {
+
+  display: none !important;
+
+}
+
+
+
+/* ==============================================================================
+
+   16. MODERN SAAS DESIGN SYSTEM: TOPBAR, NOTCH LABELS & SEGMENTED CONTROLS
+
+   ============================================================================== */
+
+
+
+/* --- Topbar de Navegação Superior --- */
+
+.nft-topbar {
+
+  height: 56px;
+
+  padding: 0 20px;
+
+  background-color: #FFFFFF;
+
+  border-bottom: 1px solid var(--border, #E2E8F0);
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 16px;
+
+  z-index: 1040;
+
+}
+
+
+
+.nft-topbar-left {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+}
+
+
+
+.nft-brand-icon {
+
+  width: 32px;
+
+  height: 32px;
+
+  background-color: #0F172A;
+
+  color: #FFFFFF;
+
+  border-radius: 8px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-weight: 700;
+
+  font-size: 15px;
+
+  letter-spacing: -0.5px;
+
+}
+
+
+
+.nft-topbar-pill {
+
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  background-color: var(--surface-secondary, #F8FAFC);
+
+  border: 1px solid var(--border, #E2E8F0);
+
+  border-radius: 9999px;
+
+  padding: 5px 12px;
+
+  font-size: 12.5px;
+
+  font-weight: 500;
+
+  color: var(--foreground, #0F172A);
+
+  text-decoration: none;
+
+  cursor: pointer;
+
+  transition: all 0.15s ease;
+
+}
+
+
+
+.nft-topbar-pill:hover {
+
+  background-color: #F1F5F9;
+
+  border-color: #CBD5E1;
+
+}
+
+
+
+.nft-topbar-pill .pill-tag {
+
+  background-color: var(--pill-tag-bg, #E2E8F0);
+
+  color: var(--pill-tag-color, #0F172A);
+
+  padding: 1px 6px;
+
+  border-radius: 6px;
+
+  font-size: 10.5px;
+
+  font-weight: 600;
+
+}
+
+
+
+.nft-topbar-divider {
+
+  color: #CBD5E1;
+
+  font-size: 14px;
+
+  font-weight: 300;
+
+}
+
+
+
+.nft-topbar-right {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+}
+
+
+
+.nft-status-pill {
+
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  background-color: #F0FDF4;
+
+  border: 1px solid #BBF7D0;
+
+  border-radius: 9999px;
+
+  padding: 5px 12px;
+
+  font-size: 12px;
+
+  font-weight: 600;
+
+  color: #16A34A;
+
+}
+
+
+
+.nft-status-dot {
+
+  width: 7px;
+
+  height: 7px;
+
+  border-radius: 50%;
+
+  background-color: #22C55E;
+
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.25);
+
+  animation: nftStatusPulse 2s infinite ease-in-out;
+
+}
+
+
+
+@keyframes nftStatusPulse {
+
+  0%, 100% { transform: scale(1); opacity: 1; }
+
+  50% { transform: scale(1.2); opacity: 0.8; }
+
+}
+
+
+
+.nft-btn-circle {
+
+  width: 32px;
+
+  height: 32px;
+
+  border-radius: 50%;
+
+  border: 1px solid var(--border, #E2E8F0);
+
+  background-color: #FFFFFF;
+
+  color: #64748B;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  cursor: pointer;
+
+  font-size: 13px;
+
+  font-weight: 600;
+
+  transition: all 0.15s ease;
+
+}
+
+
+
+.nft-btn-circle:hover {
+
+  background-color: #F8FAFC;
+
+  color: #0F172A;
+
+  border-color: #CBD5E1;
+
+}
+
+
+
+/* --- Cabeçalho de Páginas --- */
+
+.nft-page-header {
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  flex-wrap: wrap;
+
+  gap: 14px;
+
+  margin-bottom: 20px;
+
+}
+
+
+
+.nft-page-title {
+
+  font-size: 22px;
+
+  font-weight: 700;
+
+  color: #0F172A;
+
+  letter-spacing: -0.02em;
+
+  margin: 0;
+
+}
+
+
+
+.nft-page-subtitle {
+
+  font-size: 13px;
+
+  color: #64748B;
+
+  margin: 3px 0 0 0;
+
+}
+
+
+
+/* --- Abas de Navegação (Segmented Control Pills Sem Borda Bottom) --- */
+
+.nav-tabs,
+
+ul.nav-tabs,
+
+#myTab {
+
+  border: none !important;
+
+  border-bottom: none !important;
+  --bs-nav-tabs-border-width: 0 !important;
+  --bs-nav-tabs-border-color: transparent !important;
+
+  box-shadow: none !important;
+
+  background-color: var(--surface-tertiary, #F1F5F9) !important;
+
+  padding: 4px !important;
+
+  border-radius: 12px !important;
+
+  display: inline-flex !important;
+
+  gap: 4px !important;
+
+  margin-bottom: 1.25rem !important;
+
+}
+
+
+
+.nav-tabs::before,
+
+.nav-tabs::after {
+
+  display: none !important;
+
+}
+
+
+
+.nav-tabs .nav-item {
+
+  margin-bottom: 0 !important;
+
+  border: none !important;
+
+}
+
+
+
+.nav-tabs .nav-link,
+
+.nav-tabs .nav-item .nav-link {
+
+  border: none !important;
+
+  border-bottom: none !important;
+
+  border-radius: 9px !important;
+
+  padding: 0.5rem 1rem !important;
+
+  font-size: 0.82rem !important;
+
+  font-weight: 500 !important;
+
+  color: var(--muted-foreground, #64748B) !important;
+
+  background-color: transparent !important;
+
+  transition: all 0.15s ease !important;
+
+  display: inline-flex !important;
+
+  align-items: center !important;
+
+  gap: 6px !important;
+
+}
+
+
+
+.nav-tabs .nav-link:hover {
+
+  border: none !important;
+
+  color: var(--heading, #0F172A) !important;
+
+  background-color: rgba(255, 255, 255, 0.6) !important;
+
+}
+
+
+
+.nav-tabs .nav-link.active,
+
+.nav-tabs .nav-item .nav-link.active {
+
+  border: none !important;
+
+  border-bottom: none !important;
+
+  background-color: var(--surface) !important;
+
+  color: var(--heading) !important;
+
+  font-weight: 600 !important;
+
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+
+}
+
+
+
+/* --- Notch Floating Labels (Rótulo Sobre a Borda) --- */
+
+.nft-notch-field {
+
+  position: relative;
+
+  display: flex;
+
+  flex-direction: column;
+
+  margin-top: 14px;
+
+  margin-bottom: 6px;
+
+}
+
+
+
+.nft-notch-label {
+
+  position: absolute;
+
+  top: -8px;
+
+  left: 12px;
+
+  background-color: var(--surface);
+
+  padding: 0 6px;
+
+  font-size: 11px;
+
+  font-weight: 600;
+
+  color: var(--muted-foreground);
+
+  z-index: 50 !important;
+
+  transition: color 0.15s ease;
+
+  pointer-events: none;
+
+  border-radius: 4px;
+
+  line-height: 1.1;
+
+  white-space: nowrap;
+
+  max-width: calc(100% - 24px);
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+}
+
+
+
+.nft-notch-input-wrapper {
+
+  position: relative;
+
+  display: flex;
+
+  align-items: center;
+
+  width: 100%;
+
+}
+
+
+
+.nft-notch-icon {
+
+  position: absolute;
+
+  left: 14px;
+
+  color: #94A3B8;
+
+  font-size: 14px;
+
+  pointer-events: none;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  width: 18px;
+
+  z-index: 2;
+
+}
+
+
+
+.nft-notch-input,
+
+.nft-notch-select {
+
+  width: 100%;
+
+  height: 44px !important;
+
+  min-height: 44px !important;
+
+  padding: 0 14px 0 42px;
+
+  background-color: var(--surface-inset);
+
+  border: 1px solid var(--border) !important;
+
+  border-radius: 12px !important;
+
+  font-size: 13.5px;
+
+  font-weight: 500;
+
+  color: var(--foreground);
+
+  outline: none !important;
+
+  transition: all 0.15s ease;
+
+}
+
+
+
+.nft-notch-input.no-icon,
+
+.nft-notch-select.no-icon {
+
+  padding-left: 14px;
+
+}
+
+
+
+/* Regra Global: Aplica o estilo Outlined Notch Label em containers de formulário padrão */
+
+form div[class*="col-"]:has(> label.form-label):has(> .form-control:not([type="checkbox"]):not([type="radio"]):not([type="hidden"])),
+
+form div[class*="col-"]:has(> label.form-label):has(> .form-select),
+
+form div[class*="col-"]:has(> label.form-label):has(> .input-group),
+
+.card-body div[class*="col-"]:has(> label.form-label):has(> .form-control:not([type="checkbox"]):not([type="radio"]):not([type="hidden"])),
+
+.card-body div[class*="col-"]:has(> label.form-label):has(> .form-select),
+
+.card-body div[class*="col-"]:has(> label.form-label):has(> .input-group) {
+
+  position: relative !important;
+
+  margin-top: 14px !important;
+
+  margin-bottom: 6px !important;
+
+}
+
+
+
+/* Rótulo Notch sobre a borda */
+
+div:has(> .form-control:not([type="checkbox"]):not([type="radio"]):not([type="hidden"])) > label.form-label,
+
+div:has(> .form-select) > label.form-label,
+
+div:has(> .input-group) > label.form-label,
+
+.col-md-7:has(#emit_xPais) > label.form-label,
+
+.col-md-7:has(#dest_xPais) > label.form-label,
+
+div:has(#input_busca_emitente) > label.form-label,
+
+div:has(#input_busca_destinatario) > label.form-label,
+
+.col-12:has(#input_busca_emitente) > label.form-label,
+
+.col-12:has(#input_busca_destinatario) > label.form-label {
+
+  position: absolute !important;
+
+  top: -8px !important;
+
+  left: 12px !important;
+
+  background-color: var(--surface);
+
+  padding: 0 5px !important;
+
+  font-size: 11px !important;
+
+  font-weight: 600 !important;
+
+  color: var(--muted-foreground) !important;
+
+  z-index: 50 !important; /* Sempre à frente do input focado */
+
+  margin-bottom: 0 !important;
+
+  line-height: 1.1 !important;
+
+  transition: color 0.15s ease !important;
+
+  pointer-events: none !important;
+
+  border-radius: 4px !important;
+
+  white-space: nowrap !important;
+
+  max-width: calc(100% - 24px) !important;
+
+  overflow: hidden !important;
+
+  text-overflow: ellipsis !important;
+
+  display: inline-flex !important;
+
+  align-items: center !important;
+
+  gap: 4px !important;
+
+}
+
+
+
+/* Padronização de Inputs e Selects Globais */
+
+div:has(> label.form-label) > .form-control:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+
+div:has(> label.form-label) > .form-select,
+
+#emit_xPais, #dest_xPais {
+
+  height: 44px !important;
+
+  min-height: 44px !important;
+
+  border-radius: 12px !important;
+
+  border: 1px solid var(--border) !important;
+
+  background-color: var(--surface-inset);
+
+  color: var(--foreground) !important;
+
+  font-size: 13.5px !important;
+
+  font-weight: 500 !important;
+
+  padding: 0 14px !important;
+
+  outline: none !important;
+
+  transition: all 0.15s ease !important;
+
+}
+
+
+
+/* --- ESTADO ATIVO E FOCO COM BORDA AZUL (#2563EB) PARA TODOS OS INPUTS EM TODAS AS ABAS --- */
+
+.form-control:focus,
+
+.form-control:active,
+
+.form-select:focus,
+
+.form-select:active,
+
+.nft-notch-input:focus,
+
+.nft-notch-input:active,
+
+.nft-notch-select:focus,
+
+.nft-notch-select:active,
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):focus,
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):active,
+
+textarea.form-control:focus,
+
+textarea.form-control:active,
+
+select.form-select:focus,
+
+select.form-select:active,
+
+#emit_xPais:focus, #emit_xPais:active,
+
+#dest_xPais:focus, #dest_xPais:active {
+
+  border-color: #2563EB !important;
+
+  box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.14) !important;
+
+  outline: none !important;
+
+  z-index: 1 !important;
+
+}
+
+
+
+.input-group:focus-within {
+
+  border-color: #2563EB !important;
+
+  box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.14) !important;
+
+  z-index: 1 !important;
+
+}
+
+
+
+.input-group:focus-within > .form-control,
+
+.input-group:focus-within > .form-select {
+
+  border: none !important;
+
+  box-shadow: none !important;
+
+}
+
+
+
+/* Rótulo ativo em azul vibrante quando o campo está em foco */
+
+div:has(> .form-control:focus) > label.form-label,
+
+div:has(> .form-select:focus) > label.form-label,
+
+div:has(> .input-group:focus-within) > label.form-label,
+
+.col-md-7:has(#emit_xPais:focus) > label.form-label,
+
+.col-md-7:has(#dest_xPais:focus) > label.form-label,
+
+div:has(#input_busca_emitente:focus) > label.form-label,
+
+div:has(#input_busca_destinatario:focus) > label.form-label,
+
+.col-12:has(#input_busca_emitente:focus) > label.form-label,
+
+.col-12:has(#input_busca_destinatario:focus) > label.form-label,
+
+.nft-notch-field:focus-within .nft-notch-label {
+
+  color: #2563EB !important;
+
+  font-weight: 600 !important;
+
+}
+
+
+
+/* --- INPUT GROUPS UNIFORMIZADOS COM BOTÕES (SEM BORDAS DESNECESSÁRIAS OU CANTOS DESALINHADOS) --- */
+
+.input-group {
+
+  border-radius: 12px !important;
+
+  border: 1px solid var(--border) !important;
+
+  background-color: var(--surface-inset);
+
+  overflow: hidden !important;
+
+  height: 44px !important;
+
+  min-height: 44px !important;
+
+  display: flex !important;
+
+  align-items: stretch !important;
+
+}
+
+
+
+.input-group > .form-control,
+
+.input-group > .form-select {
+
+  border: none !important;
+
+  height: 100% !important;
+
+  min-height: 100% !important;
+
+  border-radius: 0 !important;
+
+  padding: 0 14px !important;
+
+  font-size: 13.5px !important;
+
+  box-shadow: none !important;
+
+  background-color: transparent !important;
+
+}
+
+
+
+.input-group > .form-control:first-child,
+
+.input-group > .form-select:first-child {
+
+  border-top-left-radius: 12px !important;
+
+  border-bottom-left-radius: 12px !important;
+
+  border-top-right-radius: 0 !important;
+
+  border-bottom-right-radius: 0 !important;
+
+  border-right: none !important;
+
+}
+
+
+
+.input-group > .btn,
+
+.input-group > .btn-nft,
+
+.input-group > .nft-btn-secondary,
+
+.input-group > .nft-btn-primary {
+
+  border: none !important;
+
+  border-left: 1px solid var(--border, #E2E8F0) !important;
+
+  border-radius: 0 !important;
+
+  height: 100% !important;
+
+  min-height: 100% !important;
+
+  margin: 0 !important;
+
+  display: inline-flex !important;
+
+  align-items: center !important;
+
+  justify-content: center !important;
+
+  padding: 0 14px !important;
+
+}
+
+
+
+.input-group > :last-child {
+
+  border-top-right-radius: 12px !important;
+
+  border-bottom-right-radius: 12px !important;
+
+  border-top-left-radius: 0 !important;
+
+  border-bottom-left-radius: 0 !important;
+
+}
+
+
+
+/* --- ESTILIZAÇÃO E HOVER DOS BOTÕES: FUNDO COLORIDO = FONTE BRANCA (#FFFFFF) --- */
+
+.nft-btn-primary {
+
+  height: 44px;
+
+  padding: 0 18px;
+
+  background-color: #2563EB !important;
+
+  color: #FFFFFF !important;
+
+  border: 1px solid #2563EB !important;
+
+  border-radius: 10px;
+
+  font-size: 13.5px;
+
+  font-weight: 600;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 8px;
+
+  cursor: pointer;
+
+  transition: all 0.15s ease;
+
+  text-decoration: none;
+
+}
+
+
+
+.nft-btn-primary:hover, .nft-btn-primary:focus, .nft-btn-primary:active {
+
+  background-color: #1D4ED8 !important;
+
+  border-color: #1D4ED8 !important;
+
+  color: #FFFFFF !important;
+
+}
+
+
+
+.nft-btn-secondary {
+
+  height: 44px;
+
+  padding: 0 16px;
+
+  background-color: var(--surface-secondary);
+
+  border: 1px solid var(--border) !important;
+
+  color: var(--foreground) !important;
+
+  border-radius: 10px;
+
+  font-size: 13px;
+
+  font-weight: 600;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 8px;
+
+  cursor: pointer;
+
+  transition: all 0.15s ease;
+
+  text-decoration: none;
+
+}
+
+
+
+.nft-btn-secondary:hover, .nft-btn-secondary:focus {
+
+  background-color: var(--surface-tertiary) !important;
+
+  border-color: var(--border-hover) !important;
+
+  color: var(--heading) !important;
+
+}
+
+
+
+/* Regra Universal de Hover: Qualquer botão com fundo colorido terá fonte e ícone brancos */
+
+.btn-primary:hover, .btn-primary:focus, .btn-primary:active,
+
+.btn-nft:hover, .btn-nft:focus, .btn-nft:active,
+
+.btn-nft-primary:hover, .btn-nft-primary:focus, .btn-nft-primary:active,
+
+.nft-btn-primary:hover, .nft-btn-primary:focus, .nft-btn-primary:active,
+
+.btn-nft-dark:hover, .btn-nft-dark:focus, .btn-nft-dark:active,
+
+.nft-btn-dark:hover, .nft-btn-dark:focus, .nft-btn-dark:active,
+
+.btn-success:hover, .btn-success:focus, .btn-success:active,
+
+.btn-nft-success:hover, .btn-nft-success:focus, .btn-nft-success:active,
+
+.btn-nft-success-solid:hover, .btn-nft-success-solid:focus, .btn-nft-success-solid:active,
+
+.btn-danger:hover, .btn-danger:focus, .btn-danger:active,
+
+.btn-nft-danger:hover, .btn-nft-danger:focus, .btn-nft-danger:active,
+
+.btn-warning:hover, .btn-warning:focus, .btn-warning:active,
+
+.btn-nft-warning:hover, .btn-nft-warning:focus, .btn-nft-warning:active,
+
+.btn-info:hover, .btn-info:focus, .btn-info:active,
+
+.btn-nft-info:hover, .btn-nft-info:focus, .btn-nft-info:active,
+
+.btn-dark:hover, .btn-dark:focus, .btn-dark:active {
+
+  color: #FFFFFF !important;
+
+}
+
+
+
+.btn-primary:hover *, .btn-primary:focus *, .btn-primary:active *,
+
+.btn-nft:hover *, .btn-nft:focus *, .btn-nft:active *,
+
+.btn-nft-primary:hover *, .btn-nft-primary:focus *, .btn-nft-primary:active *,
+
+.nft-btn-primary:hover *, .nft-btn-primary:focus *, .nft-btn-primary:active *,
+
+.btn-nft-dark:hover *, .btn-nft-dark:focus *, .btn-nft-dark:active *,
+
+.nft-btn-dark:hover *, .nft-btn-dark:focus *, .nft-btn-dark:active *,
+
+.btn-success:hover *, .btn-success:focus *, .btn-success:active *,
+
+.btn-nft-success:hover *, .btn-nft-success:focus *, .btn-nft-success:active *,
+
+.btn-nft-success-solid:hover *, .btn-nft-success-solid:focus *, .btn-nft-success-solid:active *,
+
+.btn-danger:hover *, .btn-danger:focus *, .btn-danger:active *,
+
+.btn-nft-danger:hover *, .btn-nft-danger:focus *, .btn-nft-danger:active *,
+
+.btn-warning:hover *, .btn-warning:focus *, .btn-warning:active *,
+
+.btn-nft-warning:hover *, .btn-nft-warning:focus *, .btn-nft-warning:active *,
+
+.btn-info:hover *, .btn-info:focus *, .btn-info:active *,
+
+.btn-dark:hover *, .btn-dark:focus *, .btn-dark:active * {
+
+  color: #FFFFFF !important;
+
+  stroke: #FFFFFF !important;
+
+}
+
+
+
+/* Ícones 100% Minimalistas Line Style sem Preenchimento */
+
+.lucide, svg.lucide, [data-lucide], svg:not(.logo-theme-black):not(.logo-theme-white):not(.logo-svg) {
+
+  fill: none !important;
+
+  stroke: currentColor !important;
+
+  stroke-width: 1.75px !important;
+
+  stroke-linecap: round !important;
+
+  stroke-linejoin: round !important;
+
+}
+
+
+
+
+
+/* ==========================================================================
+
+   ABA 2 IDENTIFICAÇÃO: PADRONIZAÇÃO TOTAL DOS INPUTS E BORDA AZUL ATIVA (#2563EB)
+
+   ========================================================================== */
+
+#identificacao div[class*="col-"]:has(> label.form-label) {
+
+  position: relative !important;
+
+  margin-top: 14px !important;
+
+  margin-bottom: 6px !important;
+
+}
+
+
+
+#identificacao div[class*="col-"]:has(> label.form-label) > label.form-label,
+
+#identificacao .col-12:has(#input_busca_emitente) > label.form-label,
+
+#identificacao .col-12:has(#input_busca_destinatario) > label.form-label {
+
+  position: absolute !important;
+
+  top: -8px !important;
+
+  left: 12px !important;
+
+  background-color: var(--surface);
+
+  padding: 0 5px !important;
+
+  font-size: 11px !important;
+
+  font-weight: 600 !important;
+
+  color: var(--muted-foreground) !important;
+
+  z-index: 50 !important;
+
+  margin-bottom: 0 !important;
+
+  line-height: 1.1 !important;
+
+  pointer-events: none !important;
+
+  border-radius: 4px !important;
+
+  white-space: nowrap !important;
+
+  max-width: calc(100% - 24px) !important;
+
+  overflow: hidden !important;
+
+  text-overflow: ellipsis !important;
+
+  transition: color 0.15s ease !important;
+
+}
+
+
+
+#identificacao div[class*="col-"]:has(> label.form-label):focus-within > label.form-label,
+
+#identificacao .col-12:has(#input_busca_emitente:focus) > label.form-label,
+
+#identificacao .col-12:has(#input_busca_destinatario:focus) > label.form-label {
+
+  color: #2563EB !important;
+
+  font-weight: 600 !important;
+
+}
+
+
+
+#identificacao .form-control,
+
+#identificacao .form-select,
+
+#identificacao .input-group,
+
+#identificacao #input_busca_emitente,
+
+#identificacao #emit_xPais,
+
+#identificacao #dest_xPais {
+
+  height: 44px !important;
+
+  min-height: 44px !important;
+
+  border-radius: 12px !important;
+
+  border: 1px solid var(--border) !important;
+
+  background-color: var(--surface-inset);
+
+  color: var(--foreground) !important;
+
+  font-size: 13.5px !important;
+
+  font-weight: 500 !important;
+
+  padding: 0 14px !important;
+
+  outline: none !important;
+
+  transition: all 0.15s ease !important;
+
+}
+
+
+
+#identificacao .form-control[readonly],
+
+#identificacao .form-control.bg-light {
+
+  background-color: var(--surface-secondary);
+
+  color: var(--muted-foreground) !important;
+
+}
+
+
+
+#identificacao .form-control:focus,
+
+#identificacao .form-control:active,
+
+#identificacao .form-control:focus-visible,
+
+#identificacao .form-select:focus,
+
+#identificacao .form-select:active,
+
+#identificacao .form-select:focus-visible,
+
+#identificacao .input-group:focus-within,
+
+#identificacao #input_busca_emitente:focus,
+
+#identificacao #input_busca_emitente:active,
+
+#identificacao #emit_xPais:focus,
+
+#identificacao #emit_xPais:active,
+
+#identificacao #dest_xPais:focus,
+
+#identificacao #dest_xPais:active {
+
+  border-color: #2563EB !important;
+
+  box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.16) !important;
+
+  outline: none !important;
+
+  z-index: 5 !important;
+
+}
+
+
+
+#identificacao .input-group {
+
+  padding: 0 !important;
+
+  display: flex !important;
+
+  align-items: stretch !important;
+
+  overflow: hidden !important;
+
+}
+
+
+
+#identificacao .input-group > .form-control,
+
+#identificacao .input-group > .form-select {
+
+  border: none !important;
+
+  box-shadow: none !important;
+
+  height: 100% !important;
+
+  min-height: 100% !important;
+
+  border-radius: 0 !important;
+
+  background-color: transparent !important;
+
+  padding: 0 14px !important;
+
+}
+
+
+
+#identificacao .input-group > .btn,
+
+#identificacao .input-group > .btn-nft {
+
+  border: none !important;
+
+  border-left: 1px solid var(--border, #E2E8F0) !important;
+
+  border-radius: 0 !important;
+
+  height: 100% !important;
+
+  display: inline-flex !important;
+
+  align-items: center !important;
+
+  justify-content: center !important;
+
+  padding: 0 14px !important;
+
+}
+
+
+
+/* Ícones Notch Line-Only sem Cores */
+
+.nft-notch-icon {
+
+  color: #64748B !important;
+
+}
+
+.nft-notch-icon svg {
+
+  stroke: #64748B !important;
+
+  fill: none !important;
+
+  stroke-width: 1.75px !important;
+
+  width: 15px !important;
+
+  height: 15px !important;
+
+}
+
+.nft-notch-field:focus-within .nft-notch-icon svg {
+
+  stroke: #2563EB !important;
+
+}
+
+
+
+/* Dropdown Topbar Pill */
+
+#topbar-emitente-dropdown .nft-topbar-pill {
+
+  border: 1px solid var(--border);
+
+  background-color: var(--surface);
+
+  transition: all 0.15s ease;
+
+}
+
+#topbar-emitente-dropdown .nft-topbar-pill:hover {
+
+  border-color: #CBD5E1;
+
+  background-color: #F8FAFC;
+
+}
+
+#topbar-emitente-menu .dropdown-item {
+
+  border-radius: 8px;
+
+  margin: 2px 6px;
+
+  width: auto;
+
+  transition: all 0.15s ease;
+
+}
+
+#topbar-emitente-menu .dropdown-item:hover {
+
+  background-color: #EFF6FF;
+
+  color: #1D4ED8;
+
+}
+
+#topbar-emitente-menu .dropdown-item.active {
+
+  background-color: #EFF6FF !important;
+
+  color: #2563EB !important;
+
+  font-weight: 700 !important;
+
+}
+
+
+
+
+
+/* ==========================================================================
+
+   NFT LOGISTICS - MASTER DARK THEME COMPONENT SPECIFICATION
+
+   Padronização visual baseada no Design System Midnight Obsidian Navy (#0B0F17)
+
+   e Azul Royal Elétrico (#3359E8).
+
+   ========================================================================== */
+
+
+
+/* 1. Canvas, Superfícies e Cards */
+
+[data-theme="dark"] body,
+
+[data-bs-theme="dark"] body,
+
+.dark body {
+
+  background-color: #0B0F17 !important;
+
+  color: #E2E8F0 !important;
+
+}
+
+
+
+[data-theme="dark"] .nft-main-wrapper,
+
+[data-bs-theme="dark"] .nft-main-wrapper,
+
+.dark .nft-main-wrapper {
+
+  background-color: #0B0F17 !important;
+
+}
+
+
+
+[data-theme="dark"] .card,
+
+[data-bs-theme="dark"] .card,
+
+.dark .card,
+
+[data-theme="dark"] .nft-card,
+
+[data-bs-theme="dark"] .nft-card,
+
+.dark .nft-card,
+
+[data-theme="dark"] .bg-white,
+
+[data-bs-theme="dark"] .bg-white,
+
+.dark .bg-white {
+
+  background-color: #161B26 !important;
+
+  border-color: #242D40 !important;
+
+  color: #E2E8F0 !important;
+
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+
+}
+
+
+
+[data-theme="dark"] .card-header,
+
+[data-bs-theme="dark"] .card-header,
+
+.dark .card-header {
+
+  background-color: #161B26 !important;
+
+  border-bottom: 1px solid #242D40 !important;
+
+  color: #FFFFFF !important;
+
+}
+
+
+
+[data-theme="dark"] .card-footer,
+
+[data-bs-theme="dark"] .card-footer,
+
+.dark .card-footer {
+
+  background-color: #161B26 !important;
+
+  border-top: 1px solid #242D40 !important;
+
+}
+
+
+
+/* 2. Floating Notch Labels no Dark Theme (Máscara Escura #161B26) */
+
+[data-theme="dark"] .nft-notch-label,
+
+[data-bs-theme="dark"] .nft-notch-label,
+
+.dark .nft-notch-label,
+
+[data-theme="dark"] #identificacao div[class*="col-"]:has(> label.form-label) > label.form-label,
+
+[data-bs-theme="dark"] #identificacao div[class*="col-"]:has(> label.form-label) > label.form-label,
+
+.dark #identificacao div[class*="col-"]:has(> label.form-label) > label.form-label,
+
+[data-theme="dark"] #identificacao .col-12:has(#input_busca_emitente) > label.form-label,
+
+[data-bs-theme="dark"] #identificacao .col-12:has(#input_busca_emitente) > label.form-label,
+
+.dark #identificacao .col-12:has(#input_busca_emitente) > label.form-label,
+
+[data-theme="dark"] #identificacao .col-12:has(#input_busca_destinatario) > label.form-label,
+
+[data-bs-theme="dark"] #identificacao .col-12:has(#input_busca_destinatario) > label.form-label,
+
+.dark #identificacao .col-12:has(#input_busca_destinatario) > label.form-label {
+
+  background-color: #161B26 !important;
+
+  color: #94A3B8 !important;
+
+}
+
+
+
+[data-theme="dark"] .nft-notch-field:focus-within .nft-notch-label,
+
+[data-bs-theme="dark"] .nft-notch-field:focus-within .nft-notch-label,
+
+.dark .nft-notch-field:focus-within .nft-notch-label,
+
+[data-theme="dark"] #identificacao div[class*="col-"]:has(> label.form-label):focus-within > label.form-label,
+
+[data-bs-theme="dark"] #identificacao div[class*="col-"]:has(> label.form-label):focus-within > label.form-label,
+
+.dark #identificacao div[class*="col-"]:has(> label.form-label):focus-within > label.form-label,
+
+[data-theme="dark"] #identificacao .col-12:has(#input_busca_emitente:focus) > label.form-label,
+
+[data-bs-theme="dark"] #identificacao .col-12:has(#input_busca_emitente:focus) > label.form-label,
+
+.dark #identificacao .col-12:has(#input_busca_emitente:focus) > label.form-label,
+
+[data-theme="dark"] #identificacao .col-12:has(#input_busca_destinatario:focus) > label.form-label,
+
+[data-bs-theme="dark"] #identificacao .col-12:has(#input_busca_destinatario:focus) > label.form-label,
+
+.dark #identificacao .col-12:has(#input_busca_destinatario:focus) > label.form-label {
+
+  color: #3359E8 !important;
+
+  font-weight: 600 !important;
+
+}
+
+
+
+[data-theme="dark"] .required-star,
+
+[data-bs-theme="dark"] .required-star,
+
+.dark .required-star {
+
+  color: #EF4444 !important;
+
+}
+
+
+
+[data-theme="dark"] .nft-notch-icon,
+
+[data-bs-theme="dark"] .nft-notch-icon,
+
+.dark .nft-notch-icon {
+
+  color: #64748B !important;
+
+}
+
+
+
+[data-theme="dark"] .nft-notch-icon svg,
+
+[data-bs-theme="dark"] .nft-notch-icon svg,
+
+.dark .nft-notch-icon svg {
+
+  stroke: #64748B !important;
+
+  fill: none !important;
+
+  stroke-width: 1.75px !important;
+
+}
+
+
+
+[data-theme="dark"] .nft-notch-field:focus-within .nft-notch-icon svg,
+
+[data-bs-theme="dark"] .nft-notch-field:focus-within .nft-notch-icon svg,
+
+.dark .nft-notch-field:focus-within .nft-notch-icon svg {
+
+  stroke: #3359E8 !important;
+
+}
+
+
+
+/* 3. Inputs, Selects e Textareas no Dark Theme */
+
+[data-theme="dark"] .form-control,
+
+[data-bs-theme="dark"] .form-control,
+
+.dark .form-control,
+
+[data-theme="dark"] .form-select,
+
+[data-bs-theme="dark"] .form-select,
+
+.dark .form-select,
+
+[data-theme="dark"] #identificacao .form-control,
+
+[data-bs-theme="dark"] #identificacao .form-control,
+
+.dark #identificacao .form-control,
+
+[data-theme="dark"] #identificacao .form-select,
+
+[data-bs-theme="dark"] #identificacao .form-select,
+
+.dark #identificacao .form-select,
+
+[data-theme="dark"] #identificacao #input_busca_emitente,
+
+[data-bs-theme="dark"] #identificacao #input_busca_emitente,
+
+.dark #identificacao #input_busca_emitente,
+
+[data-theme="dark"] #identificacao #emit_xPais,
+
+[data-bs-theme="dark"] #identificacao #emit_xPais,
+
+.dark #identificacao #emit_xPais,
+
+[data-theme="dark"] #identificacao #dest_xPais,
+
+[data-bs-theme="dark"] #identificacao #dest_xPais,
+
+.dark #identificacao #dest_xPais {
+
+  background-color: #121620 !important;
+
+  border: 1px solid #283246 !important;
+
+  color: #FFFFFF !important;
+
+}
+
+
+
+[data-theme="dark"] .form-control::placeholder,
+
+[data-bs-theme="dark"] .form-control::placeholder,
+
+.dark .form-control::placeholder,
+
+[data-theme="dark"] textarea::placeholder,
+
+[data-bs-theme="dark"] textarea::placeholder,
+
+.dark textarea::placeholder {
+
+  color: #525D73 !important;
+
+}
+
+
+
+[data-theme="dark"] .form-control:focus,
+
+[data-theme="dark"] .form-control:active,
+
+[data-bs-theme="dark"] .form-control:focus,
+
+[data-bs-theme="dark"] .form-control:active,
+
+.dark .form-control:focus,
+
+.dark .form-control:active,
+
+[data-theme="dark"] .form-select:focus,
+
+[data-theme="dark"] .form-select:active,
+
+[data-bs-theme="dark"] .form-select:focus,
+
+[data-bs-theme="dark"] .form-select:active,
+
+.dark .form-select:focus,
+
+.dark .form-select:active,
+
+[data-theme="dark"] #identificacao .form-control:focus,
+
+[data-theme="dark"] #identificacao .form-control:active,
+
+[data-bs-theme="dark"] #identificacao .form-control:focus,
+
+[data-bs-theme="dark"] #identificacao .form-control:active,
+
+.dark #identificacao .form-control:focus,
+
+.dark #identificacao .form-control:active,
+
+[data-theme="dark"] #identificacao .form-select:focus,
+
+[data-theme="dark"] #identificacao .form-select:active,
+
+[data-bs-theme="dark"] #identificacao .form-select:focus,
+
+[data-bs-theme="dark"] #identificacao .form-select:active,
+
+.dark #identificacao .form-select:focus,
+
+.dark #identificacao .form-select:active {
+
+  border-color: #3359E8 !important;
+
+  box-shadow: 0 0 0 3.5px rgba(51, 89, 232, 0.25) !important;
+
+  outline: none !important;
+
+}
+
+
+
+[data-theme="dark"] .form-control[readonly],
+
+[data-theme="dark"] .form-control:disabled,
+
+[data-theme="dark"] .form-select:disabled,
+
+[data-bs-theme="dark"] .form-control[readonly],
+
+[data-bs-theme="dark"] .form-control:disabled,
+
+[data-bs-theme="dark"] .form-select:disabled,
+
+.dark .form-control[readonly],
+
+.dark .form-control:disabled,
+
+.dark .form-select:disabled {
+
+  background-color: #0E121B !important;
+
+  border-color: #1C2332 !important;
+
+  color: #64748B !important;
+
+}
+
+
+
+[data-theme="dark"] select option,
+
+[data-bs-theme="dark"] select option,
+
+.dark select option {
+
+  background-color: #161B26 !important;
+
+  color: #FFFFFF !important;
+
+}
+
+
+
+/* 4. Input Groups no Dark Theme */
+
+[data-theme="dark"] .input-group,
+
+[data-bs-theme="dark"] .input-group,
+
+.dark .input-group,
+
+[data-theme="dark"] #identificacao .input-group,
+
+[data-bs-theme="dark"] #identificacao .input-group,
+
+.dark #identificacao .input-group {
+
+  background-color: #121620 !important;
+
+  border: 1px solid #283246 !important;
+
+}
+
+
+
+[data-theme="dark"] .input-group:focus-within,
+
+[data-bs-theme="dark"] .input-group:focus-within,
+
+.dark .input-group:focus-within,
+
+[data-theme="dark"] #identificacao .input-group:focus-within,
+
+[data-bs-theme="dark"] #identificacao .input-group:focus-within,
+
+.dark #identificacao .input-group:focus-within {
+
+  border-color: #3359E8 !important;
+
+  box-shadow: 0 0 0 3.5px rgba(51, 89, 232, 0.25) !important;
+
+}
+
+
+
+[data-theme="dark"] .input-group > .form-control,
+
+[data-theme="dark"] .input-group > .form-select,
+
+[data-bs-theme="dark"] .input-group > .form-control,
+
+[data-bs-theme="dark"] .input-group > .form-select,
+
+.dark .input-group > .form-control,
+
+.dark .input-group > .form-select {
+
+  border: none !important;
+
+  background-color: transparent !important;
+
+  box-shadow: none !important;
+
+}
+
+
+
+[data-theme="dark"] .input-group > .btn,
+
+[data-theme="dark"] .input-group > .btn-nft,
+
+[data-bs-theme="dark"] .input-group > .btn,
+
+[data-bs-theme="dark"] .input-group > .btn-nft,
+
+.dark .input-group > .btn,
+
+.dark .input-group > .btn-nft {
+
+  background-color: #161C28 !important;
+
+  border: none !important;
+
+  border-left: 1px solid #283246 !important;
+
+  color: #E2E8F0 !important;
+
+}
+
+
+
+[data-theme="dark"] .input-group > .btn:hover,
+
+[data-theme="dark"] .input-group > .btn-nft:hover,
+
+[data-bs-theme="dark"] .input-group > .btn:hover,
+
+[data-bs-theme="dark"] .input-group > .btn-nft:hover,
+
+.dark .input-group > .btn:hover,
+
+.dark .input-group > .btn-nft:hover {
+
+  background-color: #1E273A !important;
+
+  color: #FFFFFF !important;
+
+}
+
+
+
+[data-theme="dark"] .input-group-text,
+
+[data-bs-theme="dark"] .input-group-text,
+
+.dark .input-group-text {
+
+  background-color: #161C28 !important;
+
+  border-color: #283246 !important;
+
+  color: #94A3B8 !important;
+
+}
+
+
+
+/* 5. Botões Primários, Secundários e de Ação */
+
+[data-theme="dark"] .btn-primary,
+
+[data-bs-theme="dark"] .btn-primary,
+
+.dark .btn-primary,
+
+[data-theme="dark"] .nft-btn-primary,
+
+[data-bs-theme="dark"] .nft-btn-primary,
+
+.dark .nft-btn-primary,
+
+[data-theme="dark"] .btn-nft-primary,
+
+[data-bs-theme="dark"] .btn-nft-primary,
+
+.dark .btn-nft-primary {
+
+  background-color: #3359E8 !important;
+
+  border-color: #3359E8 !important;
+
+  color: #FFFFFF !important;
+
+  box-shadow: 0 4px 12px rgba(51, 89, 232, 0.3) !important;
+
+}
+
+
+
+[data-theme="dark"] .btn-primary:hover,
+
+[data-theme="dark"] .btn-primary:focus,
+
+[data-bs-theme="dark"] .btn-primary:hover,
+
+[data-bs-theme="dark"] .btn-primary:focus,
+
+.dark .btn-primary:hover,
+
+.dark .btn-primary:focus,
+
+[data-theme="dark"] .nft-btn-primary:hover,
+
+[data-theme="dark"] .nft-btn-primary:focus,
+
+[data-bs-theme="dark"] .nft-btn-primary:hover,
+
+[data-bs-theme="dark"] .nft-btn-primary:focus,
+
+.dark .nft-btn-primary:hover,
+
+.dark .nft-btn-primary:focus {
+
+  background-color: #254EDB !important;
+
+  border-color: #254EDB !important;
+
+  color: #FFFFFF !important;
+
+}
+
+
+
+[data-theme="dark"] .btn-secondary,
+
+[data-bs-theme="dark"] .btn-secondary,
+
+.dark .btn-secondary,
+
+[data-theme="dark"] .nft-btn-secondary,
+
+[data-bs-theme="dark"] .nft-btn-secondary,
+
+.dark .nft-btn-secondary,
+
+[data-theme="dark"] .btn-light,
+
+[data-bs-theme="dark"] .btn-light,
+
+.dark .btn-light,
+
+[data-theme="dark"] .btn-outline-secondary,
+
+[data-bs-theme="dark"] .btn-outline-secondary,
+
+.dark .btn-outline-secondary {
+
+  background-color: #1A202E !important;
+
+  border: 1px solid #283246 !important;
+
+  color: #E2E8F0 !important;
+
+}
+
+
+
+[data-theme="dark"] .btn-secondary:hover,
+
+[data-bs-theme="dark"] .btn-secondary:hover,
+
+.dark .btn-secondary:hover,
+
+[data-theme="dark"] .nft-btn-secondary:hover,
+
+[data-bs-theme="dark"] .nft-btn-secondary:hover,
+
+.dark .nft-btn-secondary:hover,
+
+[data-theme="dark"] .btn-light:hover,
+
+[data-bs-theme="dark"] .btn-light:hover,
+
+.dark .btn-light:hover {
+
+  background-color: #222B3D !important;
+
+  border-color: #3B4761 !important;
+
+  color: #FFFFFF !important;
+
+}
+
+
+
+[data-theme="dark"] .btn-dark,
+
+[data-bs-theme="dark"] .btn-dark,
+
+.dark .btn-dark,
+
+[data-theme="dark"] .btn-nft-dark,
+
+[data-bs-theme="dark"] .btn-nft-dark,
+
+.dark .btn-nft-dark {
+
+  background-color: #1E273A !important;
+
+  border: 1px solid #283246 !important;
+
+  color: #FFFFFF !important;
+
+}
+
+
+
+[data-theme="dark"] .btn-dark:hover,
+
+[data-bs-theme="dark"] .btn-dark:hover,
+
+.dark .btn-dark:hover,
+
+[data-theme="dark"] .btn-nft-dark:hover,
+
+[data-bs-theme="dark"] .btn-nft-dark:hover,
+
+.dark .btn-nft-dark:hover {
+
+  background-color: #2A364E !important;
+
+  border-color: #3B4761 !important;
+
+  color: #FFFFFF !important;
+
+}
+
+
+
+/* 6. Topbar & Topbar Pill Dropdown */
+
+[data-theme="dark"] .nft-topbar,
+
+[data-bs-theme="dark"] .nft-topbar,
+
+.dark .nft-topbar {
+
+  background-color: #0F1420 !important;
+
+  border-bottom: 1px solid #242D40 !important;
+
+}
+
+
+
+[data-theme="dark"] .nft-topbar-pill,
+
+[data-bs-theme="dark"] .nft-topbar-pill,
+
+.dark .nft-topbar-pill,
+
+[data-theme="dark"] #topbar-emitente-dropdown .nft-topbar-pill,
+
+[data-bs-theme="dark"] #topbar-emitente-dropdown .nft-topbar-pill,
+
+.dark #topbar-emitente-dropdown .nft-topbar-pill {
+
+  background-color: #161B26 !important;
+
+  border: 1px solid #242D40 !important;
+
+  color: #E2E8F0 !important;
+
+}
+
+
+
+[data-theme="dark"] .nft-topbar-pill .pill-tag,
+[data-bs-theme="dark"] .nft-topbar-pill .pill-tag,
+.dark .nft-topbar-pill .pill-tag,
+[data-theme="dark"] #topbar-emitente-cnpj,
+[data-bs-theme="dark"] #topbar-emitente-cnpj,
+.dark #topbar-emitente-cnpj,
+[data-theme="dark"] #topbar-status-tag,
+[data-bs-theme="dark"] #topbar-status-tag,
+.dark #topbar-status-tag {
+  background-color: var(--pill-tag-bg, #0B0F17) !important;
+  color: var(--pill-tag-color, #E2E8F0) !important;
+  border: 1px solid var(--pill-tag-border, #242D40) !important;
+}
+
+
+[data-theme="dark"] #topbar-emitente-dropdown .nft-topbar-pill:hover,
+
+[data-bs-theme="dark"] #topbar-emitente-dropdown .nft-topbar-pill:hover,
+
+.dark #topbar-emitente-dropdown .nft-topbar-pill:hover {
+
+  background-color: #1E273A !important;
+
+  border-color: #3B4761 !important;
+
+  color: #FFFFFF !important;
+
+}
+
+
+
+[data-theme="dark"] #topbar-emitente-menu,
+
+[data-bs-theme="dark"] #topbar-emitente-menu,
+
+.dark #topbar-emitente-menu {
+
+  background-color: #161B26 !important;
+
+  border: 1px solid #242D40 !important;
+
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6) !important;
+
+}
+
+
+
+[data-theme="dark"] #topbar-emitente-menu .dropdown-item,
+
+[data-bs-theme="dark"] #topbar-emitente-menu .dropdown-item,
+
+.dark #topbar-emitente-menu .dropdown-item {
+
+  color: #E2E8F0 !important;
+
+}
+
+
+
+[data-theme="dark"] #topbar-emitente-menu .dropdown-item:hover,
+
+[data-bs-theme="dark"] #topbar-emitente-menu .dropdown-item:hover,
+
+.dark #topbar-emitente-menu .dropdown-item:hover {
+
+  background-color: #1E273A !important;
+
+  color: #FFFFFF !important;
+
+}
+
+
+
+[data-theme="dark"] #topbar-emitente-menu .dropdown-item.active,
+
+[data-bs-theme="dark"] #topbar-emitente-menu .dropdown-item.active,
+
+.dark #topbar-emitente-menu .dropdown-item.active {
+
+  background-color: rgba(51, 89, 232, 0.2) !important;
+
+  color: #38BDF8 !important;
+
+  font-weight: 700 !important;
+
+}
+
+
+
+/* 7. Modais no Dark Theme */
+
+[data-theme="dark"] .modal-content,
+
+[data-bs-theme="dark"] .modal-content,
+
+.dark .modal-content {
+
+  background-color: #161B26 !important;
+
+  border: 1px solid #242D40 !important;
+
+  color: #E2E8F0 !important;
+
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.65), 0 8px 10px -6px rgba(0, 0, 0, 0.5) !important;
+
+}
+
+
+
+[data-theme="dark"] .modal-header,
+
+[data-bs-theme="dark"] .modal-header,
+
+.dark .modal-header {
+
+  background-color: #161B26 !important;
+
+  border-bottom: 1px solid #242D40 !important;
+
+}
+
+
+
+[data-theme="dark"] .modal-footer,
+
+[data-bs-theme="dark"] .modal-footer,
+
+.dark .modal-footer {
+
+  background-color: #161B26 !important;
+
+  border-top: 1px solid #242D40 !important;
+
+}
+
+
+
+[data-theme="dark"] .modal-title,
+
+[data-bs-theme="dark"] .modal-title,
+
+.dark .modal-title {
+
+  color: #FFFFFF !important;
+
+}
+
+
+
+[data-theme="dark"] .btn-close,
+
+[data-bs-theme="dark"] .btn-close,
+
+.dark .btn-close {
+
+  filter: invert(1) grayscale(100%) brightness(200%) !important;
+
+}
+
+
+
+/* 8. Abas (Nav Tabs & Nav Pills - Segmented Control Sem Borda Bottom) */
+
+[data-theme="dark"] .nav-tabs,
+[data-bs-theme="dark"] .nav-tabs,
+.dark .nav-tabs,
+[data-theme="dark"] ul.nav-tabs,
+[data-bs-theme="dark"] ul.nav-tabs,
+.dark ul.nav-tabs,
+[data-theme="dark"] #myTab,
+[data-bs-theme="dark"] #myTab,
+.dark #myTab {
+  border: none !important;
+  border-bottom: none !important;
+  --bs-nav-tabs-border-width: 0 !important;
+  --bs-nav-tabs-border-color: transparent !important;
+  box-shadow: none !important;
+  background-color: var(--surface-secondary, #0F1420) !important;
+  padding: 4px !important;
+  border-radius: 12px !important;
+  display: inline-flex !important;
+  gap: 4px !important;
+  margin-bottom: 1.25rem !important;
+}
+
+[data-theme="dark"] .nav-tabs::before,
+[data-theme="dark"] .nav-tabs::after,
+[data-bs-theme="dark"] .nav-tabs::before,
+[data-bs-theme="dark"] .nav-tabs::after,
+.dark .nav-tabs::before,
+.dark .nav-tabs::after {
   display: none !important;
 }
 
+[data-theme="dark"] .nav-tabs .nav-item,
+[data-bs-theme="dark"] .nav-tabs .nav-item,
+.dark .nav-tabs .nav-item {
+  margin-bottom: 0 !important;
+  border: none !important;
+}
+
+[data-theme="dark"] .nav-tabs .nav-link,
+[data-bs-theme="dark"] .nav-tabs .nav-link,
+.dark .nav-tabs .nav-link,
+[data-theme="dark"] .nav-tabs .nav-item .nav-link,
+[data-bs-theme="dark"] .nav-tabs .nav-item .nav-link,
+.dark .nav-tabs .nav-item .nav-link {
+  border: none !important;
+  border-bottom: none !important;
+  border-radius: 9px !important;
+  padding: 0.5rem 1rem !important;
+  font-size: 0.82rem !important;
+  font-weight: 500 !important;
+  color: var(--muted-foreground, #94A3B8) !important;
+  background-color: transparent !important;
+  transition: all 0.15s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+[data-theme="dark"] .nav-tabs .nav-link:hover,
+[data-bs-theme="dark"] .nav-tabs .nav-link:hover,
+.dark .nav-tabs .nav-link:hover {
+  border: none !important;
+  border-bottom: none !important;
+  color: #FFFFFF !important;
+  background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+[data-theme="dark"] .nav-tabs .nav-link.active,
+[data-bs-theme="dark"] .nav-tabs .nav-link.active,
+.dark .nav-tabs .nav-link.active,
+[data-theme="dark"] .nav-tabs .nav-item .nav-link.active,
+[data-bs-theme="dark"] .nav-tabs .nav-item .nav-link.active,
+.dark .nav-tabs .nav-item .nav-link.active {
+  border: none !important;
+  border-bottom: none !important;
+  background-color: var(--surface, #161B26) !important;
+  color: #FFFFFF !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4) !important;
+}
 
 
 
+[data-theme="dark"] .nav-pills,
+
+[data-bs-theme="dark"] .nav-pills,
+
+.dark .nav-pills {
+
+  background-color: #0F1420 !important;
+
+  border: 1px solid #242D40 !important;
+
+  padding: 4px !important;
+
+}
+
+
+
+[data-theme="dark"] .nav-pills .nav-link,
+
+[data-bs-theme="dark"] .nav-pills .nav-link,
+
+.dark .nav-pills .nav-link {
+
+  color: #94A3B8 !important;
+
+  border-radius: 8px !important;
+
+}
+
+
+
+[data-theme="dark"] .nav-pills .nav-link:hover,
+
+[data-bs-theme="dark"] .nav-pills .nav-link:hover,
+
+.dark .nav-pills .nav-link:hover {
+
+  color: #FFFFFF !important;
+
+  background-color: #161B26 !important;
+
+}
+
+
+
+[data-theme="dark"] .nav-pills .nav-link.active,
+
+[data-bs-theme="dark"] .nav-pills .nav-link.active,
+
+.dark .nav-pills .nav-link.active {
+
+  background-color: #1E273A !important;
+
+  color: #FFFFFF !important;
+
+  font-weight: 600 !important;
+
+}
+
+
+
+/* 9. Tabelas e Tabulator Grid */
+
+[data-theme="dark"] .table,
+
+[data-bs-theme="dark"] .table,
+
+.dark .table {
+
+  color: #E2E8F0 !important;
+
+  border-color: #1C2332 !important;
+
+}
+
+
+
+[data-theme="dark"] .table > :not(caption) > * > *,
+
+[data-bs-theme="dark"] .table > :not(caption) > * > *,
+
+.dark .table > :not(caption) > * > * {
+
+  border-bottom-color: #1C2332 !important;
+
+}
+
+
+
+[data-theme="dark"] .table thead th,
+
+[data-bs-theme="dark"] .table thead th,
+
+.dark .table thead th,
+
+[data-theme="dark"] .table-light,
+
+[data-bs-theme="dark"] .table-light,
+
+.dark .table-light {
+
+  background-color: #0F1420 !important;
+
+  color: #94A3B8 !important;
+
+  border-bottom: 1px solid #242D40 !important;
+
+}
+
+
+
+[data-theme="dark"] .table tbody tr,
+
+[data-bs-theme="dark"] .table tbody tr,
+
+.dark .table tbody tr {
+
+  background-color: #161B26 !important;
+
+  color: #E2E8F0 !important;
+
+}
+
+
+
+[data-theme="dark"] .table tbody tr:hover,
+
+[data-bs-theme="dark"] .table tbody tr:hover,
+
+.dark .table tbody tr:hover {
+
+  background-color: #1C2434 !important;
+
+}
+
+
+
+[data-theme="dark"] .tabulator,
+
+[data-bs-theme="dark"] .tabulator,
+
+.dark .tabulator {
+
+  background-color: #161B26 !important;
+
+  border-color: #242D40 !important;
+
+}
+
+
+
+[data-theme="dark"] .tabulator .tabulator-header,
+
+[data-bs-theme="dark"] .tabulator .tabulator-header,
+
+.dark .tabulator .tabulator-header {
+
+  background-color: #0F1420 !important;
+
+  border-bottom: 1px solid #242D40 !important;
+
+  color: #94A3B8 !important;
+
+}
+
+
+
+[data-theme="dark"] .tabulator .tabulator-row,
+
+[data-bs-theme="dark"] .tabulator .tabulator-row,
+
+.dark .tabulator .tabulator-row {
+
+  background-color: #161B26 !important;
+
+  color: #E2E8F0 !important;
+
+  border-bottom: 1px solid #1C2332 !important;
+
+}
+
+
+
+[data-theme="dark"] .tabulator .tabulator-row:hover,
+
+[data-bs-theme="dark"] .tabulator .tabulator-row:hover,
+
+.dark .tabulator .tabulator-row:hover {
+
+  background-color: #1C2434 !important;
+
+}
+
+
+
+[data-theme="dark"] .tabulator .tabulator-row.tabulator-row-even,
+
+[data-bs-theme="dark"] .tabulator .tabulator-row.tabulator-row-even,
+
+.dark .tabulator .tabulator-row.tabulator-row-even {
+
+  background-color: #141822 !important;
+
+}
+
+
+
+[data-theme="dark"] .tabulator .tabulator-footer,
+
+[data-bs-theme="dark"] .tabulator .tabulator-footer,
+
+.dark .tabulator .tabulator-footer {
+
+  background-color: #0F1420 !important;
+
+  border-top: 1px solid #242D40 !important;
+
+  color: #94A3B8 !important;
+
+}
+
+
+
+/* 10. Interruptores (Toggles / Form-Switch) e Checkboxes */
+
+[data-theme="dark"] .form-check-input,
+
+[data-bs-theme="dark"] .form-check-input,
+
+.dark .form-check-input {
+
+  background-color: #121620 !important;
+
+  border: 1px solid #283246 !important;
+
+}
+
+
+
+[data-theme="dark"] .form-check-input:checked,
+
+[data-bs-theme="dark"] .form-check-input:checked,
+
+.dark .form-check-input:checked {
+
+  background-color: #3359E8 !important;
+
+  border-color: #3359E8 !important;
+
+}
+
+
+
+[data-theme="dark"] .form-check-label,
+
+[data-bs-theme="dark"] .form-check-label,
+
+.dark .form-check-label {
+
+  color: #E2E8F0 !important;
+
+}
+
+
+
+/* 11. Badges e Chips */
+
+[data-theme="dark"] .badge.bg-primary,
+
+[data-bs-theme="dark"] .badge.bg-primary,
+
+.dark .badge.bg-primary,
+
+[data-theme="dark"] .badge-primary,
+
+[data-bs-theme="dark"] .badge-primary,
+
+.dark .badge-primary {
+
+  background-color: rgba(51, 89, 232, 0.16) !important;
+
+  color: #38BDF8 !important;
+
+  border: 1px solid rgba(51, 89, 232, 0.3) !important;
+
+}
+
+
+
+[data-theme="dark"] .badge.bg-success,
+
+[data-bs-theme="dark"] .badge.bg-success,
+
+.dark .badge.bg-success,
+
+[data-theme="dark"] .badge-success,
+
+[data-bs-theme="dark"] .badge-success,
+
+.dark .badge-success {
+
+  background-color: rgba(16, 185, 129, 0.16) !important;
+
+  color: #10B981 !important;
+
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+
+}
+
+
+
+[data-theme="dark"] .badge.bg-warning,
+
+[data-bs-theme="dark"] .badge.bg-warning,
+
+.dark .badge.bg-warning,
+
+[data-theme="dark"] .badge-warning,
+
+[data-bs-theme="dark"] .badge-warning,
+
+.dark .badge-warning {
+
+  background-color: rgba(245, 158, 11, 0.16) !important;
+
+  color: #F59E0B !important;
+
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+
+}
+
+
+
+[data-theme="dark"] .badge.bg-danger,
+
+[data-bs-theme="dark"] .badge.bg-danger,
+
+.dark .badge.bg-danger,
+
+[data-theme="dark"] .badge-danger,
+
+[data-bs-theme="dark"] .badge-danger,
+
+.dark .badge-danger {
+
+  background-color: rgba(239, 68, 68, 0.16) !important;
+
+  color: #EF4444 !important;
+
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+
+}
+
+
+
+[data-theme="dark"] .badge.bg-light,
+
+[data-bs-theme="dark"] .badge.bg-light,
+
+.dark .badge.bg-light,
+
+[data-theme="dark"] .badge.bg-secondary,
+
+[data-bs-theme="dark"] .badge.bg-secondary,
+
+.dark .badge.bg-secondary {
+
+  background-color: #1E273A !important;
+
+  color: #94A3B8 !important;
+
+  border: 1px solid #283246 !important;
+
+}
+
+
+
+/* ==========================================================================
+
+   REFORÇO ABSOLUTO DO DARK THEME (ELIMINAÇÃO TOTAL DE FUNDOS BRANCOS EM INPUTS E LABELS)
+
+   ========================================================================== */
+
+[data-theme="dark"] label,
+
+[data-bs-theme="dark"] label,
+
+.dark label,
+
+[data-theme="dark"] .form-label,
+
+[data-bs-theme="dark"] .form-label,
+
+.dark .form-label,
+
+[data-theme="dark"] .nft-notch-label,
+
+[data-bs-theme="dark"] .nft-notch-label,
+
+.dark .nft-notch-label,
+
+[data-theme="dark"] div:has(> .form-control) > label.form-label,
+
+[data-bs-theme="dark"] div:has(> .form-control) > label.form-label,
+
+.dark div:has(> .form-control) > label.form-label,
+
+[data-theme="dark"] div:has(> .form-select) > label.form-label,
+
+[data-bs-theme="dark"] div:has(> .form-select) > label.form-label,
+
+.dark div:has(> .form-select) > label.form-label,
+
+[data-theme="dark"] div:has(> .input-group) > label.form-label,
+
+[data-bs-theme="dark"] div:has(> .input-group) > label.form-label,
+
+.dark div:has(> .input-group) > label.form-label,
+
+[data-theme="dark"] div[class*="col-"]:has(> label.form-label) > label.form-label,
+
+[data-bs-theme="dark"] div[class*="col-"]:has(> label.form-label) > label.form-label,
+
+.dark div[class*="col-"]:has(> label.form-label) > label.form-label,
+
+[data-theme="dark"] .col-md-7:has(#emit_xPais) > label.form-label,
+
+[data-bs-theme="dark"] .col-md-7:has(#emit_xPais) > label.form-label,
+
+.dark .col-md-7:has(#emit_xPais) > label.form-label,
+
+[data-theme="dark"] .col-md-7:has(#dest_xPais) > label.form-label,
+
+[data-bs-theme="dark"] .col-md-7:has(#dest_xPais) > label.form-label,
+
+.dark .col-md-7:has(#dest_xPais) > label.form-label,
+
+[data-theme="dark"] div:has(#input_busca_emitente) > label.form-label,
+
+[data-bs-theme="dark"] div:has(#input_busca_emitente) > label.form-label,
+
+.dark div:has(#input_busca_emitente) > label.form-label,
+
+[data-theme="dark"] div:has(#input_busca_destinatario) > label.form-label,
+
+[data-bs-theme="dark"] div:has(#input_busca_destinatario) > label.form-label,
+
+.dark div:has(#input_busca_destinatario) > label.form-label,
+
+[data-theme="dark"] .col-12:has(#input_busca_emitente) > label.form-label,
+
+[data-bs-theme="dark"] .col-12:has(#input_busca_emitente) > label.form-label,
+
+.dark .col-12:has(#input_busca_emitente) > label.form-label,
+
+[data-theme="dark"] .col-12:has(#input_busca_destinatario) > label.form-label,
+
+[data-bs-theme="dark"] .col-12:has(#input_busca_destinatario) > label.form-label,
+
+.dark .col-12:has(#input_busca_destinatario) > label.form-label {
+
+  background-color: #161B26 !important;
+
+  color: #94A3B8 !important;
+
+}
+
+
+
+[data-theme="dark"] div:has(> .form-control:focus) > label.form-label,
+
+[data-bs-theme="dark"] div:has(> .form-control:focus) > label.form-label,
+
+.dark div:has(> .form-control:focus) > label.form-label,
+
+[data-theme="dark"] div:has(> .form-select:focus) > label.form-label,
+
+[data-bs-theme="dark"] div:has(> .form-select:focus) > label.form-label,
+
+.dark div:has(> .form-select:focus) > label.form-label,
+
+[data-theme="dark"] div:has(> .input-group:focus-within) > label.form-label,
+
+[data-bs-theme="dark"] div:has(> .input-group:focus-within) > label.form-label,
+
+.dark div:has(> .input-group:focus-within) > label.form-label,
+
+[data-theme="dark"] div[class*="col-"]:has(> label.form-label):focus-within > label.form-label,
+
+[data-bs-theme="dark"] div[class*="col-"]:has(> label.form-label):focus-within > label.form-label,
+
+.dark div[class*="col-"]:has(> label.form-label):focus-within > label.form-label,
+
+[data-theme="dark"] .col-md-7:has(#emit_xPais:focus) > label.form-label,
+
+[data-bs-theme="dark"] .col-md-7:has(#emit_xPais:focus) > label.form-label,
+
+.dark .col-md-7:has(#emit_xPais:focus) > label.form-label,
+
+[data-theme="dark"] .col-md-7:has(#dest_xPais:focus) > label.form-label,
+
+[data-bs-theme="dark"] .col-md-7:has(#dest_xPais:focus) > label.form-label,
+
+.dark .col-md-7:has(#dest_xPais:focus) > label.form-label,
+
+[data-theme="dark"] div:has(#input_busca_emitente:focus) > label.form-label,
+
+[data-bs-theme="dark"] div:has(#input_busca_emitente:focus) > label.form-label,
+
+.dark div:has(#input_busca_emitente:focus) > label.form-label,
+
+[data-theme="dark"] div:has(#input_busca_destinatario:focus) > label.form-label,
+
+[data-bs-theme="dark"] div:has(#input_busca_destinatario:focus) > label.form-label,
+
+.dark div:has(#input_busca_destinatario:focus) > label.form-label,
+
+[data-theme="dark"] .col-12:has(#input_busca_emitente:focus) > label.form-label,
+
+[data-bs-theme="dark"] .col-12:has(#input_busca_emitente:focus) > label.form-label,
+
+.dark .col-12:has(#input_busca_emitente:focus) > label.form-label,
+
+[data-theme="dark"] .col-12:has(#input_busca_destinatario:focus) > label.form-label,
+
+[data-bs-theme="dark"] .col-12:has(#input_busca_destinatario:focus) > label.form-label,
+
+.dark .col-12:has(#input_busca_destinatario:focus) > label.form-label,
+
+[data-theme="dark"] .nft-notch-field:focus-within .nft-notch-label,
+
+[data-bs-theme="dark"] .nft-notch-field:focus-within .nft-notch-label,
+
+.dark .nft-notch-field:focus-within .nft-notch-label {
+
+  color: #3359E8 !important;
+
+  font-weight: 600 !important;
+
+}
+
+
+
+[data-theme="dark"] .form-control,
+
+[data-bs-theme="dark"] .form-control,
+
+.dark .form-control,
+
+[data-theme="dark"] .form-select,
+
+[data-bs-theme="dark"] .form-select,
+
+.dark .form-select,
+
+[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+
+[data-bs-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+
+[data-theme="dark"] select,
+
+[data-bs-theme="dark"] select,
+
+.dark select,
+
+[data-theme="dark"] textarea,
+
+[data-bs-theme="dark"] textarea,
+
+.dark textarea,
+
+[data-theme="dark"] .nft-notch-input,
+
+[data-bs-theme="dark"] .nft-notch-input,
+
+.dark .nft-notch-input,
+
+[data-theme="dark"] .nft-notch-select,
+
+[data-bs-theme="dark"] .nft-notch-select,
+
+.dark .nft-notch-select,
+
+[data-theme="dark"] div:has(> label.form-label) > .form-control,
+
+[data-bs-theme="dark"] div:has(> label.form-label) > .form-control,
+
+.dark div:has(> label.form-label) > .form-control,
+
+[data-theme="dark"] div:has(> label.form-label) > .form-select,
+
+[data-bs-theme="dark"] div:has(> label.form-label) > .form-select,
+
+.dark div:has(> label.form-label) > .form-select,
+
+[data-theme="dark"] .col-md-7 > #emit_xPais,
+
+[data-bs-theme="dark"] .col-md-7 > #emit_xPais,
+
+.dark .col-md-7 > #emit_xPais,
+
+[data-theme="dark"] .col-md-7 > #dest_xPais,
+
+[data-bs-theme="dark"] .col-md-7 > #dest_xPais,
+
+.dark .col-md-7 > #dest_xPais,
+
+[data-theme="dark"] div > #input_busca_emitente,
+
+[data-bs-theme="dark"] div > #input_busca_emitente,
+
+.dark div > #input_busca_emitente {
+
+  background-color: #121620 !important;
+
+  border-color: #283246 !important;
+
+  color: #FFFFFF !important;
+
+}
+
+
+
+[data-theme="dark"] .form-control:focus,
+
+[data-bs-theme="dark"] .form-control:focus,
+
+.dark .form-control:focus,
+
+[data-theme="dark"] .form-select:focus,
+
+[data-bs-theme="dark"] .form-select:focus,
+
+.dark .form-select:focus,
+
+[data-theme="dark"] input:focus,
+
+[data-bs-theme="dark"] input:focus,
+
+.dark input:focus,
+
+[data-theme="dark"] select:focus,
+
+[data-bs-theme="dark"] select:focus,
+
+.dark select:focus,
+
+[data-theme="dark"] textarea:focus,
+
+[data-bs-theme="dark"] textarea:focus,
+
+.dark textarea:focus,
+
+[data-theme="dark"] .input-group:focus-within,
+
+[data-bs-theme="dark"] .input-group:focus-within,
+
+.dark .input-group:focus-within {
+
+  border-color: #3359E8 !important;
+
+  box-shadow: 0 0 0 3.5px rgba(51, 89, 232, 0.25) !important;
+
+  outline: none !important;
+
+}
+
+
+
+[data-theme="dark"] .input-group,
+
+[data-bs-theme="dark"] .input-group,
+
+.dark .input-group {
+
+  background-color: #121620 !important;
+
+  border-color: #283246 !important;
+
+}
+
+
+
+/* ==========================================================================
+   PADRONIZAÇÃO GLOBAL DE BORDAS E BORDER-RADIUS (SEÇÕES E SUBSEÇÕES)
+   Design System NFT:
+   - Seções Principais (Cards Bento, Painéis, Containers de Abas, Fieldsets): 16px
+   - Subseções Internas (Sub-blocos, Boxes, Repeater Cards, Caixas Internas): 12px
+   - Bordas Sutis Unificadas: 1px solid var(--border)
+   ========================================================================== */
+
+/* 1. SEÇÕES PRINCIPAIS E CARDS GLOBAIS (16px) */
+.card,
+.nft-card-bento,
+.tab-content,
+#myTabContent,
+.nft-section-card,
+fieldset.nft-fieldset,
+.modal-content {
+  border: 1px solid var(--border) !important;
+  border-radius: 16px !important;
+}
+
+/* Garante o recorte limpo dos cantos superiores e inferiores nas seções com header/footer */
+.card-header,
+.nft-card-header-styled {
+  border-top-left-radius: 15px !important;
+  border-top-right-radius: 15px !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+.card-footer,
+.nft-card-footer-styled {
+  border-bottom-left-radius: 15px !important;
+  border-bottom-right-radius: 15px !important;
+  border-top: 1px solid var(--border) !important;
+}
+
+/* 2. SUBSEÇÕES, SUB-BLOCOS E CAIXAS INTERNAS (12px) */
+/* Sub-blocos de cálculo, câmbio, despesas aduaneiras e caixas de agrupamento */
+div[class*="rounded"]:not(.rounded-circle):not(.btn):not(.badge):not(.pill-tag),
+.p-2.rounded,
+.p-3.rounded,
+.nft-item-repeater,
+.nft-party-card,
+.nft-subcard,
+.nft-sub-bloco,
+#box-ref-nfe,
+#box-info-boletim,
+#card-resumo-heranca,
+.card-body > .card,
+.card .border.rounded,
+.card .p-2.border,
+.card .p-3.border {
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+}
+
+/* Títulos / divisores internos de subseções */
+.border-bottom {
+  border-bottom: 1px solid var(--border) !important;
+}
+
+/* 3. TEMA ESCURO: BORDAS HARMONIZADAS */
+[data-theme="dark"] .card,
+[data-bs-theme="dark"] .card,
+.dark .card,
+[data-theme="dark"] .nft-card-bento,
+[data-bs-theme="dark"] .nft-card-bento,
+.dark .nft-card-bento,
+[data-theme="dark"] .tab-content,
+[data-bs-theme="dark"] .tab-content,
+.dark .tab-content,
+[data-theme="dark"] .modal-content,
+[data-bs-theme="dark"] .modal-content,
+.dark .modal-content {
+  border-color: #242D40 !important;
+  border-radius: 16px !important;
+}
+
+[data-theme="dark"] div[class*="rounded"]:not(.rounded-circle):not(.btn):not(.badge):not(.pill-tag),
+[data-bs-theme="dark"] div[class*="rounded"]:not(.rounded-circle):not(.btn):not(.badge):not(.pill-tag),
+.dark div[class*="rounded"]:not(.rounded-circle):not(.btn):not(.badge):not(.pill-tag),
+[data-theme="dark"] .nft-item-repeater,
+[data-bs-theme="dark"] .nft-item-repeater,
+.dark .nft-item-repeater,
+[data-theme="dark"] .nft-party-card,
+[data-bs-theme="dark"] .nft-party-card,
+.dark .nft-party-card,
+[data-theme="dark"] #box-ref-nfe,
+[data-theme="dark"] #box-info-boletim,
+[data-theme="dark"] #card-resumo-heranca {
+  border-color: #283246 !important;
+  border-radius: 12px !important;
+}
+
+
+/* ==========================================================================
+   PADRONIZAÇÃO DOS PREFIXOS 'R$' EM INPUT-GROUP-TEXT (SEM BORDAS SOBRESSALENTES)
+   Remove bordas próprias, fundos destoantes e sombras de spans monetários,
+   integrando o prefixo 'R$' de forma limpa e nativa ao corpo do campo.
+   ========================================================================== */
+.input-group > span.input-group-text,
+.input-group-sm > span.input-group-text,
+span.input-group-text {
+  border: none !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  padding-right: 0.25rem !important;
+  padding-left: 0.75rem !important;
+  color: var(--muted-foreground, #64748B) !important;
+  font-weight: 700 !important;
+  font-size: 0.85rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+/* Garante que o input imediatamente após o prefixo R$ mantenha padding equilibrado */
+.input-group > span.input-group-text + .form-control,
+.input-group-sm > span.input-group-text + .form-control {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  padding-left: 0.25rem !important;
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  background-color: transparent !important;
+}
+
+/* Quando em foco / ativo: impede QUALQUER borda ou anel interno separador entre span e input */
+.input-group:focus-within > .form-control,
+.input-group:focus-within > .form-select,
+.input-group:focus-within > span.input-group-text,
+.input-group:focus-within > .input-group-text,
+.input-group:focus-within > span.input-group-text + .form-control,
+.input-group > .form-control:focus,
+.input-group > .form-control:active,
+.input-group > span.input-group-text + .form-control:focus,
+.input-group > span.input-group-text + .form-control:active {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background-color: transparent !important;
+}
+
+/* Modo escuro: reforça ausência de borda interna no foco */
+[data-theme="dark"] .input-group:focus-within > .form-control,
+[data-bs-theme="dark"] .input-group:focus-within > .form-control,
+.dark .input-group:focus-within > .form-control,
+[data-theme="dark"] .input-group > .form-control:focus,
+[data-bs-theme="dark"] .input-group > .form-control:focus,
+.dark .input-group > .form-control:focus {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background-color: transparent !important;
+}
+
+[data-theme="dark"] .input-group > span.input-group-text,
+[data-bs-theme="dark"] .input-group > span.input-group-text,
+.dark .input-group > span.input-group-text,
+[data-theme="dark"] span.input-group-text,
+[data-bs-theme="dark"] span.input-group-text,
+.dark span.input-group-text {
+  border: none !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  color: #94A3B8 !important;
+}
+
+
+/* ==========================================================================
+   PADRONIZAÇÃO EXCLUSIVA DE INPUTS E SELECTS DAS 3 SEÇÕES ESPECÍFICAS:
+   1. Volumes e Pesos
+   2. Dados de Exportação (SEFAZ: <exporta>)
+   3. Identificação da Importação
+   Aplica as regras Outlined Notch + Altura 44px + Borda sutil + Foco Azul (#2563EB / #3359E8)
+   sem afetar nenhum outro input ou card do sistema.
+   ========================================================================== */
+
+/* 1. Containers das 3 seções específicas (Posicionamento Relativo para os Rótulos Notch) */
+.card:has(#transp_qVol) div[class*="col-"]:has(> label.form-label),
+#secao_exportacao div[class*="col-"]:has(> label.form-label),
+.card:has(#import_nDI) div[class*="col-"]:has(> label.form-label) {
+  position: relative !important;
+  margin-top: 14px !important;
+  margin-bottom: 6px !important;
+}
+
+/* 2. Rótulos Notch sobre a borda superior para as 3 seções */
+.card:has(#transp_qVol) div[class*="col-"] > label.form-label,
+#secao_exportacao div[class*="col-"] > label.form-label,
+.card:has(#import_nDI) div[class*="col-"] > label.form-label {
+  position: absolute !important;
+  top: -8px !important;
+  left: 12px !important;
+  background-color: var(--surface) !important;
+  padding: 0 5px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: var(--muted-foreground) !important;
+  z-index: 50 !important;
+  margin-bottom: 0 !important;
+  line-height: 1.1 !important;
+  transition: color 0.15s ease !important;
+  pointer-events: none !important;
+  border-radius: 4px !important;
+  white-space: nowrap !important;
+  max-width: calc(100% - 24px) !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+/* 3. Inputs, Selects e Input-groups das 3 seções com altura 44px e borda arredondada 12px */
+.card:has(#transp_qVol) .form-control,
+#secao_exportacao .form-control,
+#secao_exportacao .form-select,
+.card:has(#import_nDI) .form-control,
+.card:has(#import_nDI) .form-select {
+  height: 44px !important;
+  min-height: 44px !important;
+  border-radius: 12px !important;
+  border: 1px solid var(--border) !important;
+  background-color: var(--surface-inset);
+  color: var(--foreground) !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  padding: 0 14px !important;
+  outline: none !important;
+  transition: all 0.15s ease !important;
+}
+
+.card:has(#import_nDI) .input-group {
+  height: 44px !important;
+  min-height: 44px !important;
+  border-radius: 12px !important;
+  border: 1px solid var(--border) !important;
+  background-color: var(--surface-inset);
+  color: var(--foreground) !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  outline: none !important;
+  transition: all 0.15s ease !important;
+}
+
+/* Input interno dentro de input-group na seção de importação */
+.card:has(#import_nDI) .input-group > .form-control {
+  height: 100% !important;
+  min-height: 100% !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 14px !important;
+}
+
+/* 4. Estado de foco / ativo com borda azul vibrante (#2563EB) */
+.card:has(#transp_qVol) .form-control:focus,
+.card:has(#transp_qVol) .form-control:active,
+#secao_exportacao .form-control:focus,
+#secao_exportacao .form-control:active,
+#secao_exportacao .form-select:focus,
+#secao_exportacao .form-select:active,
+.card:has(#import_nDI) .form-control:focus,
+.card:has(#import_nDI) .form-control:active,
+.card:has(#import_nDI) .form-select:focus,
+.card:has(#import_nDI) .form-select:active,
+.card:has(#import_nDI) .input-group:focus-within {
+  border-color: #2563EB !important;
+  box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.14) !important;
+  outline: none !important;
+  z-index: 5 !important;
+}
+
+/* Rótulo fica azul no foco do campo correspondente */
+.card:has(#transp_qVol) div[class*="col-"]:has(> .form-control:focus) > label.form-label,
+#secao_exportacao div[class*="col-"]:has(> :focus) > label.form-label,
+.card:has(#import_nDI) div[class*="col-"]:has(> :focus) > label.form-label,
+.card:has(#import_nDI) div[class*="col-"]:has(> .input-group:focus-within) > label.form-label {
+  color: #2563EB !important;
+  font-weight: 600 !important;
+}
+
+/* 5. Suporte Completo ao Tema Escuro para as 3 Seções */
+[data-theme="dark"] .card:has(#transp_qVol) label.form-label,
+[data-bs-theme="dark"] .card:has(#transp_qVol) label.form-label,
+.dark .card:has(#transp_qVol) label.form-label,
+[data-theme="dark"] #secao_exportacao label.form-label,
+[data-bs-theme="dark"] #secao_exportacao label.form-label,
+.dark #secao_exportacao label.form-label,
+[data-theme="dark"] .card:has(#import_nDI) label.form-label,
+[data-bs-theme="dark"] .card:has(#import_nDI) label.form-label,
+.dark .card:has(#import_nDI) label.form-label {
+  background-color: #121620 !important;
+  color: #94A3B8 !important;
+}
+
+[data-theme="dark"] .card:has(#transp_qVol) .form-control,
+[data-bs-theme="dark"] .card:has(#transp_qVol) .form-control,
+.dark .card:has(#transp_qVol) .form-control,
+[data-theme="dark"] #secao_exportacao .form-control,
+[data-bs-theme="dark"] #secao_exportacao .form-control,
+.dark #secao_exportacao .form-control,
+[data-theme="dark"] #secao_exportacao .form-select,
+[data-bs-theme="dark"] #secao_exportacao .form-select,
+.dark #secao_exportacao .form-select,
+[data-theme="dark"] .card:has(#import_nDI) .form-control,
+[data-bs-theme="dark"] .card:has(#import_nDI) .form-control,
+.dark .card:has(#import_nDI) .form-control,
+[data-theme="dark"] .card:has(#import_nDI) .form-select,
+[data-bs-theme="dark"] .card:has(#import_nDI) .form-select,
+.dark .card:has(#import_nDI) .form-select,
+[data-theme="dark"] .card:has(#import_nDI) .input-group,
+[data-bs-theme="dark"] .card:has(#import_nDI) .input-group,
+.dark .card:has(#import_nDI) .input-group {
+  background-color: #121620 !important;
+  border-color: #283246 !important;
+  color: #FFFFFF !important;
+}
+
+[data-theme="dark"] .card:has(#transp_qVol) .form-control:focus,
+[data-bs-theme="dark"] .card:has(#transp_qVol) .form-control:focus,
+.dark .card:has(#transp_qVol) .form-control:focus,
+[data-theme="dark"] #secao_exportacao .form-control:focus,
+[data-bs-theme="dark"] #secao_exportacao .form-control:focus,
+.dark #secao_exportacao .form-control:focus,
+[data-theme="dark"] #secao_exportacao .form-select:focus,
+[data-bs-theme="dark"] #secao_exportacao .form-select:focus,
+.dark #secao_exportacao .form-select:focus,
+[data-theme="dark"] .card:has(#import_nDI) .form-control:focus,
+[data-bs-theme="dark"] .card:has(#import_nDI) .form-control:focus,
+.dark .card:has(#import_nDI) .form-control:focus,
+[data-theme="dark"] .card:has(#import_nDI) .form-select:focus,
+[data-bs-theme="dark"] .card:has(#import_nDI) .form-select:focus,
+.dark .card:has(#import_nDI) .form-select:focus,
+[data-theme="dark"] .card:has(#import_nDI) .input-group:focus-within,
+[data-bs-theme="dark"] .card:has(#import_nDI) .input-group:focus-within,
+.dark .card:has(#import_nDI) .input-group:focus-within {
+  border-color: #3359E8 !important;
+  box-shadow: 0 0 0 3.5px rgba(51, 89, 232, 0.25) !important;
+}
+
+[data-theme="dark"] .card:has(#transp_qVol) div[class*="col-"]:has(> .form-control:focus) > label.form-label,
+[data-theme="dark"] #secao_exportacao div[class*="col-"]:has(> :focus) > label.form-label,
+[data-theme="dark"] .card:has(#import_nDI) div[class*="col-"]:has(> :focus) > label.form-label,
+[data-theme="dark"] .card:has(#import_nDI) div[class*="col-"]:has(> .input-group:focus-within) > label.form-label {
+  color: #3359E8 !important;
+}
+
+
+/* ==========================================================================
+   ESTILIZAÇÃO DO ITEM ATIVO NA LISTA DE ENQUADRAMENTOS FISCAIS
+   Preserva a cor original azul do CFOP e aplica fundo sutilmente mais escuro
+   para identificar visualmente o enquadramento selecionado com precisão.
+   ========================================================================== */
+#cfg_enquadramentos_lista .cfg-enq-item {
+  transition: all 0.15s ease-in-out;
+}
+
+/* Estado Ativo no Tema Claro: Fundo sutil mais escuro/cinza-azulado (#E2E8F0) sem ofuscar o texto */
+#cfg_enquadramentos_lista .cfg-enq-item.active {
+  background-color: #E2E8F0 !important;
+  border-color: #CBD5E1 !important;
+  color: #0F172A !important;
+  font-weight: 700 !important;
+}
+
+#cfg_enquadramentos_lista .cfg-enq-item.active .cfg-enq-cfop {
+  color: #2563EB !important; /* Preserva o azul original da tag CFOP */
+  font-weight: 800 !important;
+}
+
+#cfg_enquadramentos_lista .cfg-enq-item.active .cfg-enq-txt {
+  color: #0F172A !important;
+}
+
+/* Estado Ativo no Tema Escuro: Fundo sutil mais escuro/profundo (#1E273A) */
+[data-theme="dark"] #cfg_enquadramentos_lista .cfg-enq-item.active,
+[data-bs-theme="dark"] #cfg_enquadramentos_lista .cfg-enq-item.active,
+.dark #cfg_enquadramentos_lista .cfg-enq-item.active {
+  background-color: #1E273A !important;
+  border-color: #3B4761 !important;
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="dark"] #cfg_enquadramentos_lista .cfg-enq-item.active .cfg-enq-cfop,
+[data-bs-theme="dark"] #cfg_enquadramentos_lista .cfg-enq-item.active .cfg-enq-cfop,
+.dark #cfg_enquadramentos_lista .cfg-enq-item.active .cfg-enq-cfop {
+  color: #3359E8 !important; /* Preserva o azul elétrico original no tema escuro */
+  font-weight: 800 !important;
+}
+
+[data-theme="dark"] #cfg_enquadramentos_lista .cfg-enq-item.active .cfg-enq-txt,
+[data-bs-theme="dark"] #cfg_enquadramentos_lista .cfg-enq-item.active .cfg-enq-txt,
+.dark #cfg_enquadramentos_lista .cfg-enq-item.active .cfg-enq-txt {
+  color: #FFFFFF !important;
+}
+
+
+/* ==========================================================================
+   PADRONIZACAO SOLICITADA PELO USUARIO (Aba 1, Aba 2 e Input Groups)
+   ========================================================================== */
+
+/* 1. Borda azul ativa e anel de foco nos campos solicitados da Aba 1 (1. Operacao) */
+#ptax_moeda:focus,
+#ptax_moeda:active,
+#rateio_criterio:focus,
+#rateio_criterio:active,
+#serie:focus,
+#serie:active,
+#nNF:focus,
+#nNF:active,
+#dhEmi:focus,
+#dhEmi:active,
+#dhSaiEnt:focus,
+#dhSaiEnt:active {
+  border-color: #2563EB !important;
+  box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.16) !important;
+  outline: none !important;
+  z-index: 5 !important;
+}
+
+[data-theme="dark"] #ptax_moeda:focus,
+[data-theme="dark"] #ptax_moeda:active,
+[data-theme="dark"] #rateio_criterio:focus,
+[data-theme="dark"] #rateio_criterio:active,
+[data-theme="dark"] #serie:focus,
+[data-theme="dark"] #serie:active,
+[data-theme="dark"] #nNF:focus,
+[data-theme="dark"] #nNF:active,
+[data-theme="dark"] #dhEmi:focus,
+[data-theme="dark"] #dhEmi:active,
+[data-theme="dark"] #dhSaiEnt:focus,
+[data-theme="dark"] #dhSaiEnt:active,
+[data-bs-theme="dark"] #ptax_moeda:focus,
+[data-bs-theme="dark"] #ptax_moeda:active,
+[data-bs-theme="dark"] #rateio_criterio:focus,
+[data-bs-theme="dark"] #rateio_criterio:active,
+[data-bs-theme="dark"] #serie:focus,
+[data-bs-theme="dark"] #serie:active,
+[data-bs-theme="dark"] #nNF:focus,
+[data-bs-theme="dark"] #nNF:active,
+[data-bs-theme="dark"] #dhEmi:focus,
+[data-bs-theme="dark"] #dhEmi:active,
+[data-bs-theme="dark"] #dhSaiEnt:focus,
+[data-bs-theme="dark"] #dhSaiEnt:active,
+.dark #ptax_moeda:focus,
+.dark #ptax_moeda:active,
+.dark #rateio_criterio:focus,
+.dark #rateio_criterio:active,
+.dark #serie:focus,
+.dark #serie:active,
+.dark #nNF:focus,
+.dark #nNF:active,
+.dark #dhEmi:focus,
+.dark #dhEmi:active,
+.dark #dhSaiEnt:focus,
+.dark #dhSaiEnt:active {
+  border-color: #3359E8 !important;
+  box-shadow: 0 0 0 3.5px rgba(51, 89, 232, 0.25) !important;
+}
+
+/* 2. Correcao de alinhamento e eliminacao de bordas soltas no input_busca_destinatario */
+#identificacao .input-group:has(#input_busca_destinatario) {
+  height: 44px !important;
+  min-height: 44px !important;
+  border-radius: 12px !important;
+  border: 1px solid var(--border) !important;
+  background-color: var(--surface-inset) !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: stretch !important;
+  padding: 0 !important;
+}
+
+#identificacao .input-group:has(#input_busca_destinatario) > #input_busca_destinatario {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  flex: 1 1 auto !important;
+  padding: 0 14px !important;
+  margin: 0 !important;
+}
+
+#identificacao .input-group:has(#input_busca_destinatario) > .btn-nft,
+#identificacao .input-group:has(#input_busca_destinatario) > button {
+  border: none !important;
+  border-left: 1px solid var(--border) !important;
+  border-radius: 0 !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 16px !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+}
+
+#identificacao .input-group:has(#input_busca_destinatario):focus-within {
+  border-color: #2563EB !important;
+  box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.16) !important;
+}
+
+[data-theme="dark"] #identificacao .input-group:has(#input_busca_destinatario):focus-within,
+[data-bs-theme="dark"] #identificacao .input-group:has(#input_busca_destinatario):focus-within,
+.dark #identificacao .input-group:has(#input_busca_destinatario):focus-within {
+  border-color: #3359E8 !important;
+  box-shadow: 0 0 0 3.5px rgba(51, 89, 232, 0.25) !important;
+}
+
+/* 3. Preenchimento e unificacao do input-group import_cExportador (sem divisao interna de bordas em foco) */
+.input-group:has(#import_cExportador) {
+  height: 44px !important;
+  min-height: 44px !important;
+  border-radius: 12px !important;
+  border: 1px solid var(--border) !important;
+  background-color: var(--surface-inset) !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: stretch !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.input-group:has(#import_cExportador) > #import_cExportador {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  flex: 1 1 auto !important;
+  padding: 0 14px !important;
+  margin: 0 !important;
+}
+
+.input-group:has(#import_cExportador) > button,
+.input-group:has(#import_cExportador) > .btn-nft {
+  border: none !important;
+  border-left: 1px solid var(--border) !important;
+  border-radius: 0 !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 16px !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  background-color: var(--surface-secondary) !important;
+}
+
+.input-group:has(#import_cExportador):focus-within {
+  border-color: #2563EB !important;
+  box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.16) !important;
+}
+
+.input-group:has(#import_cExportador):focus-within > #import_cExportador,
+.input-group:has(#import_cExportador):focus-within > button,
+.input-group:has(#import_cExportador):focus-within > .btn-nft {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.input-group:has(#import_cExportador):focus-within > button,
+.input-group:has(#import_cExportador):focus-within > .btn-nft {
+  border-left: 1px solid var(--border) !important;
+}
+
+[data-theme="dark"] .input-group:has(#import_cExportador),
+[data-bs-theme="dark"] .input-group:has(#import_cExportador),
+.dark .input-group:has(#import_cExportador) {
+  background-color: #121620 !important;
+  border-color: #283246 !important;
+}
+
+[data-theme="dark"] .input-group:has(#import_cExportador) > button,
+[data-theme="dark"] .input-group:has(#import_cExportador) > .btn-nft,
+[data-bs-theme="dark"] .input-group:has(#import_cExportador) > button,
+[data-bs-theme="dark"] .input-group:has(#import_cExportador) > .btn-nft,
+.dark .input-group:has(#import_cExportador) > button,
+.dark .input-group:has(#import_cExportador) > .btn-nft {
+  background-color: #161C28 !important;
+  border-left: 1px solid #283246 !important;
+  color: #E2E8F0 !important;
+}
+
+[data-theme="dark"] .input-group:has(#import_cExportador):focus-within,
+[data-bs-theme="dark"] .input-group:has(#import_cExportador):focus-within,
+.dark .input-group:has(#import_cExportador):focus-within {
+  border-color: #3359E8 !important;
+  box-shadow: 0 0 0 3.5px rgba(51, 89, 232, 0.25) !important;
+}
+
+/* 4. Padronizacao de botoes na Aba 2 (2. Identificacao) */
+#identificacao .btn-nft {
+  font-weight: 600 !important;
+  font-size: 0.8125rem !important;
+  border-radius: var(--radius-full, 9999px) !important;
+  transition: all 0.15s ease-in-out !important;
+}
+
+#identificacao .card-header .btn-nft {
+  height: 32px !important;
+  min-height: 32px !important;
+  padding: 0 12px !important;
+  font-size: 12px !important;
+}
+
+#identificacao .input-group > .btn-nft,
+#identificacao .input-group > button {
+  height: 100% !important;
+  min-height: 100% !important;
+  border-radius: 0 !important;
+  border: none !important;
+  border-left: 1px solid var(--border) !important;
+  padding: 0 14px !important;
+  margin: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* ==========================================================================
+   PADRONIZAÇÃO COMPLETA DA ABA 2 (IDENTIFICAÇÃO) - BORDA AZUL ATIVA
+   ========================================================================== */
+
+/* Todos os inputs, selects e input-groups da Aba 2 quando em foco / ativos */
+#identificacao .form-control:focus,
+#identificacao .form-control:active,
+#identificacao .form-control:focus-visible,
+#identificacao .form-select:focus,
+#identificacao .form-select:active,
+#identificacao .form-select:focus-visible,
+#identificacao .input-group:focus-within,
+#identificacao input:focus,
+#identificacao input:active,
+#identificacao select:focus,
+#identificacao select:active {
+  border-color: #2563EB !important;
+  box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.16) !important;
+  outline: none !important;
+  z-index: 5 !important;
+}
+
+/* Foco em inputs/selects dentro de input-groups não deve criar bordas internas */
+#identificacao .input-group:focus-within > .form-control,
+#identificacao .input-group:focus-within > .form-select,
+#identificacao .input-group > .form-control:focus,
+#identificacao .input-group > .form-select:focus {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Rótulos suspensos ativos em azul vibrante quando o campo correspondente está em foco */
+#identificacao div[class*="col-"]:has(> :focus) > label.form-label,
+#identificacao div[class*="col-"]:has(> .form-control:focus) > label.form-label,
+#identificacao div[class*="col-"]:has(> .form-select:focus) > label.form-label,
+#identificacao div[class*="col-"]:has(> .input-group:focus-within) > label.form-label,
+#identificacao div[class*="col-"]:focus-within > label.form-label {
+  color: #2563EB !important;
+  font-weight: 600 !important;
+}
+
+/* ==========================================================================
+   TEMA ESCURO (DARK MODE) - ABA 2 IDENTIFICAÇÃO
+   ========================================================================== */
+[data-theme="dark"] #identificacao .form-control:focus,
+[data-theme="dark"] #identificacao .form-control:active,
+[data-theme="dark"] #identificacao .form-control:focus-visible,
+[data-theme="dark"] #identificacao .form-select:focus,
+[data-theme="dark"] #identificacao .form-select:active,
+[data-theme="dark"] #identificacao .form-select:focus-visible,
+[data-theme="dark"] #identificacao .input-group:focus-within,
+[data-theme="dark"] #identificacao input:focus,
+[data-theme="dark"] #identificacao input:active,
+[data-theme="dark"] #identificacao select:focus,
+[data-theme="dark"] #identificacao select:active,
+[data-bs-theme="dark"] #identificacao .form-control:focus,
+[data-bs-theme="dark"] #identificacao .form-control:active,
+[data-bs-theme="dark"] #identificacao .form-control:focus-visible,
+[data-bs-theme="dark"] #identificacao .form-select:focus,
+[data-bs-theme="dark"] #identificacao .form-select:active,
+[data-bs-theme="dark"] #identificacao .form-select:focus-visible,
+[data-bs-theme="dark"] #identificacao .input-group:focus-within,
+[data-bs-theme="dark"] #identificacao input:focus,
+[data-bs-theme="dark"] #identificacao input:active,
+[data-bs-theme="dark"] #identificacao select:focus,
+[data-bs-theme="dark"] #identificacao select:active,
+.dark #identificacao .form-control:focus,
+.dark #identificacao .form-control:active,
+.dark #identificacao .form-control:focus-visible,
+.dark #identificacao .form-select:focus,
+.dark #identificacao .form-select:active,
+.dark #identificacao .form-select:focus-visible,
+.dark #identificacao .input-group:focus-within,
+.dark #identificacao input:focus,
+.dark #identificacao input:active,
+.dark #identificacao select:focus,
+.dark #identificacao select:active {
+  border-color: #3359E8 !important;
+  box-shadow: 0 0 0 3.5px rgba(51, 89, 232, 0.25) !important;
+  outline: none !important;
+  z-index: 5 !important;
+}
+
+[data-theme="dark"] #identificacao .input-group:focus-within > .form-control,
+[data-theme="dark"] #identificacao .input-group:focus-within > .form-select,
+[data-theme="dark"] #identificacao .input-group > .form-control:focus,
+[data-theme="dark"] #identificacao .input-group > .form-select:focus,
+[data-bs-theme="dark"] #identificacao .input-group:focus-within > .form-control,
+[data-bs-theme="dark"] #identificacao .input-group:focus-within > .form-select,
+[data-bs-theme="dark"] #identificacao .input-group > .form-control:focus,
+[data-bs-theme="dark"] #identificacao .input-group > .form-select:focus,
+.dark #identificacao .input-group:focus-within > .form-control,
+.dark #identificacao .input-group:focus-within > .form-select,
+.dark #identificacao .input-group > .form-control:focus,
+.dark #identificacao .input-group > .form-select:focus {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+[data-theme="dark"] #identificacao div[class*="col-"]:has(> :focus) > label.form-label,
+[data-theme="dark"] #identificacao div[class*="col-"]:has(> .form-control:focus) > label.form-label,
+[data-theme="dark"] #identificacao div[class*="col-"]:has(> .form-select:focus) > label.form-label,
+[data-theme="dark"] #identificacao div[class*="col-"]:has(> .input-group:focus-within) > label.form-label,
+[data-theme="dark"] #identificacao div[class*="col-"]:focus-within > label.form-label,
+[data-bs-theme="dark"] #identificacao div[class*="col-"]:has(> :focus) > label.form-label,
+[data-bs-theme="dark"] #identificacao div[class*="col-"]:has(> .form-control:focus) > label.form-label,
+[data-bs-theme="dark"] #identificacao div[class*="col-"]:has(> .form-select:focus) > label.form-label,
+[data-bs-theme="dark"] #identificacao div[class*="col-"]:has(> .input-group:focus-within) > label.form-label,
+[data-bs-theme="dark"] #identificacao div[class*="col-"]:focus-within > label.form-label,
+.dark #identificacao div[class*="col-"]:has(> :focus) > label.form-label,
+.dark #identificacao div[class*="col-"]:has(> .form-control:focus) > label.form-label,
+.dark #identificacao div[class*="col-"]:has(> .form-select:focus) > label.form-label,
+.dark #identificacao div[class*="col-"]:has(> .input-group:focus-within) > label.form-label,
+.dark #identificacao div[class*="col-"]:focus-within > label.form-label {
+  color: #3359E8 !important;
+  font-weight: 600 !important;
+}
+
+/* ==========================================================================
+   PADRONIZAÇÃO EXPLICITA DE input_busca_emitente E emit_xPais NO DARK THEME
+   ========================================================================== */
+[data-theme="dark"] #input_busca_emitente:focus,
+[data-theme="dark"] #input_busca_emitente:active,
+[data-theme="dark"] #emit_xPais:focus,
+[data-theme="dark"] #emit_xPais:active,
+[data-theme="dark"] #identificacao #input_busca_emitente:focus,
+[data-theme="dark"] #identificacao #input_busca_emitente:active,
+[data-theme="dark"] #identificacao #emit_xPais:focus,
+[data-theme="dark"] #identificacao #emit_xPais:active,
+[data-bs-theme="dark"] #input_busca_emitente:focus,
+[data-bs-theme="dark"] #input_busca_emitente:active,
+[data-bs-theme="dark"] #emit_xPais:focus,
+[data-bs-theme="dark"] #emit_xPais:active,
+[data-bs-theme="dark"] #identificacao #input_busca_emitente:focus,
+[data-bs-theme="dark"] #identificacao #input_busca_emitente:active,
+[data-bs-theme="dark"] #identificacao #emit_xPais:focus,
+[data-bs-theme="dark"] #identificacao #emit_xPais:active,
+.dark #input_busca_emitente:focus,
+.dark #input_busca_emitente:active,
+.dark #emit_xPais:focus,
+.dark #emit_xPais:active,
+.dark #identificacao #input_busca_emitente:focus,
+.dark #identificacao #input_busca_emitente:active,
+.dark #identificacao #emit_xPais:focus,
+.dark #identificacao #emit_xPais:active,
+#input_busca_emitente:focus,
+#input_busca_emitente:active,
+#emit_xPais:focus,
+#emit_xPais:active,
+#identificacao #input_busca_emitente:focus,
+#identificacao #input_busca_emitente:active,
+#identificacao #emit_xPais:focus,
+#identificacao #emit_xPais:active {
+  border-color: #3359E8 !important;
+  box-shadow: 0 0 0 3.5px rgba(51, 89, 232, 0.25) !important;
+  outline: none !important;
+  z-index: 5 !important;
+}
+
+/* Foco no tema claro explícito */
+:root:not([data-theme="dark"]):not([data-bs-theme="dark"]) #input_busca_emitente:focus,
+:root:not([data-theme="dark"]):not([data-bs-theme="dark"]) #input_busca_emitente:active,
+:root:not([data-theme="dark"]):not([data-bs-theme="dark"]) #emit_xPais:focus,
+:root:not([data-theme="dark"]):not([data-bs-theme="dark"]) #emit_xPais:active,
+:root:not([data-theme="dark"]):not([data-bs-theme="dark"]) #identificacao #input_busca_emitente:focus,
+:root:not([data-theme="dark"]):not([data-bs-theme="dark"]) #identificacao #input_busca_emitente:active,
+:root:not([data-theme="dark"]):not([data-bs-theme="dark"]) #identificacao #emit_xPais:focus,
+:root:not([data-theme="dark"]):not([data-bs-theme="dark"]) #identificacao #emit_xPais:active {
+  border-color: #2563EB !important;
+  box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.16) !important;
+  outline: none !important;
+  z-index: 5 !important;
+}

@@ -9,8 +9,8 @@
   <!-- Bootstrap 5 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <!-- NFT Logistics Theme (Light & Dark) -->
-  <link href="/static/css/nft-theme.css?v=3.1" rel="stylesheet"/>
-  <link href="/static/css/nft-sidebar.css" rel="stylesheet"/>
+  <link href="/static/css/nft-theme.css?v=4.1" rel="stylesheet"/>
+  <link href="/static/css/nft-sidebar.css?v=4.3" rel="stylesheet"/>
   <script src="/static/js/theme.js"></script>
   <!-- Lucide Icons -->
   <script src="/static/js/lucide.min.js"></script>
@@ -65,96 +65,152 @@
     .table-users tbody tr td {
       vertical-align: middle;
     }
+    .btn-action-round {
+      width: 32px !important;
+      height: 32px !important;
+      min-width: 32px !important;
+      border-radius: 50% !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      padding: 0 !important;
+      transition: all 0.2s ease-in-out;
+      border-width: 1.5px;
+      flex-shrink: 0;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .btn-action-round:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+    }
+    .btn-action-round i, .btn-action-round svg {
+      width: 13px !important;
+      height: 13px !important;
+      stroke-width: 2.2px !important;
+    }
+    .col-acoes-usuarios {
+      width: 175px !important;
+      min-width: 175px !important;
+      max-width: 185px !important;
+      white-space: nowrap !important;
+    }
+    .modal-avatar-preview {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--primary);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
   </style>
 </head>
 <body class="has-sidebar">
-<!-- MENU LATERAL FIXO (SIDEBAR) -->
+<!-- MENU LATERAL FIXO (SIDEBAR) NO PADRÃO DO PREVIEW -->
 <aside class="nft-sidebar" id="nftSidebar">
-  <!-- 1. Cabeçalho da Sidebar -->
-  <div class="nft-sidebar-header">
-    <a class="sidebar-brand-link" href="/" title="NFT Logistics - Retornar ao Início">
-      <div class="sidebar-brand-logo-wrap">
-        <img alt="NFT" class="logo-theme-black" src="/static/img/brand/NFT%20Logo%20(3).webp"/>
-        <img alt="NFT" class="logo-theme-white" src="/static/img/brand/NFT%20Logo%20(11).webp"/>
-      </div>
-      <div class="sidebar-brand-info">
-        <span class="sidebar-brand-title">NFT Logistics</span>
-        <span class="badge sidebar-brand-badge bg-primary-subtle text-primary fw-bold">Acesso</span>
-      </div>
-    </a>
-    <button aria-label="Recolher / Fixar Menu" class="sidebar-toggle-btn" onclick="toggleSidebar()" title="Recolher / Fixar Menu Lateral" type="button">
-      <i data-lucide="chevron-left" style="width: 14px; height: 14px;"></i>
-    </button>
+<!-- 1. Cabeçalho da Sidebar -->
+<div class="nft-sidebar-header">
+<a class="sidebar-brand-link" href="/" title="NFT Logistics - Retornar ao Início">
+<div class="sidebar-brand-logo-wrap">
+<img alt="NFT" class="logo-theme-black" src="/static/img/brand/NFT%20Logo%20(3).webp"/>
+<img alt="NFT" class="logo-theme-white" src="/static/img/brand/NFT%20Logo%20(11).webp"/>
+</div>
+</a>
+<button aria-label="Recolher / Fixar Menu" class="sidebar-toggle-btn" onclick="toggleSidebar()" title="Recolher / Fixar Menu Lateral" type="button">
+<i data-lucide="chevron-left"></i>
+</button>
+</div>
+
+<!-- 2. Corpo com Menus e Itens -->
+<div class="nft-sidebar-body">
+  <!-- Busca rápida com atalho / -->
+  <div class="nft-sidebar-search-wrap">
+    <div class="nft-sidebar-search">
+      <span class="search-icon"><i data-lucide="search" style="width: 14px; height: 14px;"></i></span>
+      <input type="text" id="nftSidebarSearch" placeholder="Buscar nota, ref, DI..." autocomplete="off">
+      <span class="search-kbd">/</span>
+    </div>
   </div>
-  <!-- 2. Corpo com Menus e Itens -->
-  <div class="nft-sidebar-body">
-    <!-- Grupo: Módulos -->
-    <div class="sidebar-section-title">Módulos</div>
+
+  <!-- Grupo: Operações -->
+  <div class="nft-sidebar-group">
+    <div class="sidebar-section-title">Operações</div>
     <ul class="nft-sidebar-nav">
       <li class="nft-sidebar-item">
-        <a class="nft-sidebar-btn" href="/" title="Portal Inicial">
-          <span class="sidebar-icon"><i data-lucide="home"></i></span>
+        <a class="nft-sidebar-btn " href="/" title="Portal Inicial">
+          <span class="sidebar-icon"><i data-lucide="layout-grid"></i></span>
           <span class="sidebar-label">Início / Módulos</span>
         </a>
       </li>
       <li class="nft-sidebar-item">
-        <a class="nft-sidebar-btn" href="/nova_nf?nova_nota=1" title="Módulo Nova NF (Sem XML)">
+        <a class="nft-sidebar-btn " href="/nova_nf?nova_nota=1" title="Módulo Nova NF (Sem XML)">
           <span class="sidebar-icon"><i data-lucide="file-plus-2"></i></span>
           <span class="sidebar-label">Nova NF</span>
         </a>
       </li>
       <li class="nft-sidebar-item">
-        <a class="nft-sidebar-btn" href="/rascunho?nova_nota=1" title="Módulo XML Rascunho">
+        <a class="nft-sidebar-btn " href="/rascunho?nova_nota=1" title="Módulo XML Rascunho">
           <span class="sidebar-icon"><i data-lucide="file-code"></i></span>
           <span class="sidebar-label">XML Rascunho</span>
         </a>
       </li>
       <li class="nft-sidebar-item">
-        <a class="nft-sidebar-btn" href="/di_duimp?nova_nota=1" title="Módulo XML da DI ou DUIMP">
+        <a class="nft-sidebar-btn " href="/di_duimp?nova_nota=1" title="Módulo XML da DI ou DUIMP">
           <span class="sidebar-icon"><i data-lucide="globe"></i></span>
           <span class="sidebar-label">XML da DI ou DUIMP</span>
         </a>
       </li>
       <li class="nft-sidebar-item">
-        <a class="nft-sidebar-btn" href="/rascunho?abrir_rascunhos=1" title="Ver e gerenciar Rascunhos Salvos">
+        <button class="nft-sidebar-btn" onclick="abrirRascunhosOuRedirecionar()" title="Ver e gerenciar Rascunhos Salvos" type="button">
           <span class="sidebar-icon"><i data-lucide="folder-clock"></i></span>
           <span class="sidebar-label">Rascunhos Salvos</span>
-        </a>
+          <span class="badge sidebar-badge badge-counter-rascunhos bg-info-subtle text-info fw-bold" id="sidebar-rascunhos-badge">0</span>
+        </button>
       </li>
-    </ul>
-    <!-- Grupo: Relatório -->
-    <div class="sidebar-section-title">Relatório</div>
-    <ul class="nft-sidebar-nav">
       <li class="nft-sidebar-item">
-        <a class="nft-sidebar-btn" href="/relatorios" title="Relatório de Notas Fiscais Geradas">
+        <a class="nft-sidebar-btn " href="/relatorios" title="Relatório de Notas Fiscais Geradas">
           <span class="sidebar-icon"><i data-lucide="file-spreadsheet"></i></span>
-          <span class="sidebar-label">Relatório</span>
+          <span class="sidebar-label">Relatórios / Notas</span>
         </a>
       </li>
     </ul>
-    <!-- Grupo: Configurações -->
+  </div>
+
+  <!-- Grupo: Configurações -->
+  <div class="nft-sidebar-group">
     <div class="sidebar-section-title">Configurações</div>
     <ul class="nft-sidebar-nav">
       <li class="nft-sidebar-item">
-        <a class="nft-sidebar-btn" href="/empresas" title="Gestão de Empresas e Cadastros">
+        <a class="nft-sidebar-btn " href="/unidades_tributaveis" title="Unidades Tributáveis & Abreviações">
+          <span class="sidebar-icon"><i data-lucide="scale"></i></span>
+          <span class="sidebar-label">Unidades Tributáveis</span>
+        </a>
+      </li>
+      <li class="nft-sidebar-item">
+        <button class="nft-sidebar-btn" onclick="abrirModalTipoNota()" title="Configuração de Impostos &amp; Regras por Operação" type="button">
+          <span class="sidebar-icon"><i data-lucide="sliders-horizontal"></i></span>
+          <span class="sidebar-label">Tipo de Nota (Impostos)</span>
+        </button>
+      </li>
+      <li class="nft-sidebar-item">
+        <a class="nft-sidebar-btn " href="/banco_ncm" title="Grande Tabela NCM &amp; Impostos">
+          <span class="sidebar-icon"><i data-lucide="book-open"></i></span>
+          <span class="sidebar-label">Banco NCM</span>
+        </a>
+      </li>
+      <li class="nft-sidebar-item">
+        <a class="nft-sidebar-btn " href="/empresas" title="Gestão de Empresas e Cadastros">
           <span class="sidebar-icon"><i data-lucide="building-2"></i></span>
           <span class="sidebar-label">Empresas</span>
         </a>
       </li>
       <li class="nft-sidebar-item">
-        <a class="nft-sidebar-btn" href="/banco_ncm" title="Grande Tabela NCM &amp; Impostos">
-          <span class="sidebar-icon"><i data-lucide="book-open"></i></span>
-          <span class="sidebar-label">Tabela NCM</span>
-        </a>
-      </li>
-      <li class="nft-sidebar-item">
-        <a class="nft-sidebar-btn" href="/localidades" title="Localidades Oficiais (BACEN, IBGE, CEPs)">
+        <a class="nft-sidebar-btn " href="/localidades" title="Localidades Oficiais (BACEN, IBGE, CEPs)">
           <span class="sidebar-icon"><i data-lucide="map-pin"></i></span>
           <span class="sidebar-label">Localidades</span>
         </a>
       </li>
       <li class="nft-sidebar-item">
-        <a class="nft-sidebar-btn" href="/feiras" title="Descrição da Feira (Feiras do Ano)">
+        <a class="nft-sidebar-btn " href="/feiras" title="Descrição da Feira (Feiras do Ano)">
           <span class="sidebar-icon"><i data-lucide="calendar-days"></i></span>
           <span class="sidebar-label">Descrição da Feira</span>
         </a>
@@ -165,40 +221,91 @@
           <span class="sidebar-label">Usuários Autorizados</span>
         </a>
       </li>
-            <li class="nft-sidebar-item">
-                <button class="nft-sidebar-btn" onclick="abrirModalTipoNota()" title="Configuração de Impostos &amp; Operações" type="button">
-                    <span class="sidebar-icon"><i data-lucide="settings"></i></span>
-                    <span class="sidebar-label">Tipo de Nota (Impostos)</span>
-                </button>
-            </li>
-<li class="nft-sidebar-item">
-<a class="nft-sidebar-btn" href="/unidades_tributaveis" title="Unidades Tributáveis & Abreviações">
-<span class="sidebar-icon"><i data-lucide="scale"></i></span>
-<span class="sidebar-label">Unidades Tributáveis</span>
-</a>
-</li>
     </ul>
   </div>
-  <!-- 3. Rodapé da Sidebar -->
-  <div class="nft-sidebar-footer">
+  </div>
+
+  <!-- Card de Status do Certificado A1 no Bottom da Sidebar (Antes do Footer) -->
+  <div class="nft-sidebar-card" id="nftSidebarCertCard">
+    <div class="nft-sidebar-card-title d-flex justify-content-between align-items-center mb-1">
+      <div class="d-flex align-items-center gap-1">
+        <i data-lucide="shield-check" style="width: 15px; height: 15px; color: #16A34A; stroke-width: 1.75px;"></i>
+        <span style="font-size: 0.8rem; font-weight: 700;">Certificado Digital</span>
+      </div>
+      <span class="badge bg-success-subtle text-success small" style="font-size: 0.65rem;" id="sidebar-cert-badge">Ativo</span>
+    </div>
+    <div class="nft-sidebar-card-desc">
+      <div class="fw-bold text-truncate" id="sidebar-cert-empresa" title="NFT Logistics LTDA" style="max-width: 175px; color: #0F172A; font-size: 0.78rem;">NFT Logistics LTDA</div>
+      <div class="text-muted small mt-0" style="font-size: 0.73rem;">Válido até <strong id="sidebar-cert-validade">23/02/2027</strong></div>
+      <div class="small" style="font-size: 0.73rem;">Ambiente: <span style="color: #16A34A; font-weight: 700;">Produção</span></div>
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-primary w-100 mt-2 py-1 d-flex align-items-center justify-content-center gap-1" style="font-size: 0.75rem; border-radius: 8px; font-weight: 600;" onclick="abrirModalGerenciarCertificados()">
+      <i data-lucide="key-round" style="width: 13px; height: 13px;"></i> Gerenciar Certificados
+    </button>
+  </div>
+
+<!-- 3. Rodapé da Sidebar -->
+<div class="nft-sidebar-footer">
     <div class="sidebar-footer-actions">
-      <button class="sidebar-footer-btn" onclick="logoutSistema()" title="Sair / Fazer Logout" type="button" style="color: #f59e0b !important;">
-        <span class="sidebar-icon" style="color: #f59e0b !important;"><i data-lucide="log-out"></i></span>
-        <span class="sidebar-footer-text" style="color: #f59e0b !important; font-weight: 700;">Sair</span>
-      </button>
-      <button class="sidebar-footer-btn theme-toggle-btn" onclick="toggleTheme()" title="Alternar Modo Claro / Escuro" type="button">
-        <i data-lucide="moon"></i>
-      </button>
+        <button class="sidebar-footer-btn" onclick="logoutSistema()" title="Sair / Fazer Logout" type="button" style="color: #f59e0b !important;">
+            <span class="sidebar-icon" style="color: #f59e0b !important;"><i data-lucide="log-out"></i></span>
+            <span class="sidebar-footer-text" style="color: #f59e0b !important; font-weight: 700;">Sair</span>
+        </button>
+        <button class="sidebar-footer-btn theme-toggle-btn" onclick="toggleTheme()" title="Alternar Modo Claro / Escuro" type="button">
+            <i data-lucide="moon"></i>
+        </button>
     </div>
     <div class="sidebar-footer-info">
-      <span>NFT Logistics</span>
-      <span>v2.2</span>
+        <span>Emissor de NFe</span>
+        <span>v3.0.0</span>
     </div>
-  </div>
+</div>
 </aside>
 
 <!-- ÁREA PRINCIPAL DE CONTEÚDO (DESLOCADA PELA SIDEBAR) -->
 <div class="nft-main-wrapper">
+  <!-- TOPBAR MODERNA NO PADRÃO DO PREVIEW -->
+  <header class="nft-topbar">
+    <div class="nft-topbar-left">
+      <button class="btn-nft d-lg-none" onclick="document.body.classList.toggle('sidebar-mobile-open')" title="Abrir Menu" type="button" style="padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface);">
+        <i data-lucide="menu" style="width: 16px; height: 16px;"></i>
+      </button>
+      <div class="nft-brand-icon">N</div>
+      <!-- Topbar Pill Dropdown: Seleção Dinâmica de Emitente -->
+      <div class="dropdown d-inline-block" id="topbar-emitente-dropdown">
+        <div class="nft-topbar-pill" data-bs-toggle="dropdown" aria-expanded="false" title="Clique para alternar a Empresa Emitente" style="cursor: pointer;" id="topbar-emitente-pill">
+          <i data-lucide="building-2" style="width: 14px; height: 14px; color: #2563EB;"></i>
+          <span id="topbar-emitente-nome" class="fw-semibold">NFT Logistics LTDA</span>
+          <span class="pill-tag font-monospace" id="topbar-emitente-cnpj">47.998.441/0001-98</span>
+          <i data-lucide="chevron-down" style="width: 11px; height: 11px; color: #94A3B8;"></i>
+        </div>
+        <ul class="dropdown-menu shadow-lg border-0 mt-2 py-2" id="topbar-emitente-menu" style="min-width: 300px; max-height: 360px; overflow-y: auto; border-radius: 12px; z-index: 1060;">
+          <li class="dropdown-header text-uppercase small fw-bold px-3 py-1 text-muted" style="font-size: 0.72rem; letter-spacing: 0.05em;">Empresas Emitentes Cadastradas</li>
+          <li><hr class="dropdown-divider my-1"></li>
+          <li id="topbar-emitente-loading" class="px-3 py-2 text-muted small"><span class="spinner-border spinner-border-sm me-2"></span>Carregando emitentes...</li>
+        </ul>
+      </div>
+      <span class="nft-topbar-divider">/</span>
+      <div class="nft-topbar-pill" title="Módulo Atual / Referência">
+        <i data-lucide="file-text" style="width: 14px; height: 14px;"></i>
+        <span id="topbar-titulo-modulo">Usuários Autorizados</span>
+        <span class="pill-tag" style="background-color: #EFF6FF; color: #2563EB;" id="topbar-status-tag">Segurança</span>
+        <i data-lucide="chevron-down" style="width: 11px; height: 11px; color: #94A3B8;"></i>
+      </div>
+    </div>
+    <div class="nft-topbar-right">
+      <div class="nft-status-pill success" title="Ambiente SEFAZ: Conexão ativa">
+        <span class="nft-status-dot"></span>
+        <span>SEFAZ Online</span>
+      </div>
+      <button class="nft-btn-circle" onclick="window.open('/preview-novo-layout', '_blank')" title="Central de Ajuda / Ver Preview" type="button">?</button>
+      <div class="nft-topbar-pill" id="topbar-user-pill" style="padding: 3px 10px 3px 6px; gap: 8px;" title="Usuário Administrador Autenticado">
+        <div id="topbar-user-avatar-wrap" style="width: 24px; height: 24px; border-radius: 50%; background: #0F172A; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; overflow: hidden; flex-shrink: 0;">A</div>
+        <span id="topbar-user-name" style="font-size: 12px; font-weight: 600;">Admin</span>
+        <i data-lucide="chevron-down" style="width: 11px; height: 11px; color: #94A3B8;"></i>
+      </div>
+    </div>
+  </header>
   <div class="container-fluid px-4 py-3">
     <!-- Top Header -->
     <div class="d-flex justify-content-between align-items-center mb-3 bg-white p-3 rounded shadow-sm border" style="background-color: var(--surface) !important; border-color: var(--border) !important;">
@@ -234,7 +341,7 @@
                 <th style="padding: 1rem 1.25rem;">E-mail Corporativo</th>
                 <th style="padding: 1rem 1.25rem;">Perfil / Perfil de Acesso</th>
                 <th style="padding: 1rem 1.25rem;">Data de Criação</th>
-                <th class="text-end" style="width: 130px; padding: 1rem 1.25rem;">Ações</th>
+                <th class="text-end col-acoes-usuarios" style="padding: 1rem 1.25rem;">Ações</th>
               </tr>
             </thead>
             <tbody id="tabelaUsuariosCorpo">
@@ -266,6 +373,32 @@
       <form id="formUsuario" onsubmit="salvarUsuario(event)">
         <div class="modal-body p-4">
           <input type="hidden" id="usuarioId" value=""/>
+
+          <!-- Seção de Foto de Perfil do Usuário (R2 + Turso) -->
+          <div class="mb-4 p-3 rounded border text-center" style="background-color: var(--surface-secondary); border-color: var(--border) !important;">
+            <div class="d-flex align-items-center justify-content-center gap-3">
+              <div class="position-relative">
+                <img id="modalUserAvatarPreview" src="/static/img/brand/nftlogo.webp" class="modal-avatar-preview" alt="Preview da Foto" onerror="this.src='/static/img/brand/nftlogo.webp';"/>
+                <div id="modalUserAvatarPlaceholder" class="modal-avatar-preview d-none align-items-center justify-content-center fw-bold text-white bg-dark fs-4">U</div>
+              </div>
+              <div class="text-start">
+                <div class="fw-bold small mb-1">Foto de Perfil</div>
+                <div class="text-muted small mb-2" style="font-size: 0.75rem;">Armazenada no Cloudflare R2 e Turso. Formatos: JPG, PNG, WEBP.</div>
+                <div class="d-flex gap-2">
+                  <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2.5 d-flex align-items-center gap-1" style="border-radius: 6px; font-size: 0.78rem;" onclick="document.getElementById('modalFotoUploadInput').click()">
+                    <i data-lucide="upload" style="width: 12px; height: 12px;"></i>
+                    <span id="labelBtnCarregarFoto">Carregar Foto</span>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2 d-flex align-items-center gap-1" id="btnRemoverFotoModal" style="border-radius: 6px; font-size: 0.78rem; display: none;" onclick="removerFotoModal()">
+                    <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
+                    <span>Remover</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <input type="file" id="modalFotoUploadInput" accept="image/png, image/jpeg, image/jpg, image/webp" style="display: none;" onchange="handleModalFotoChange(event)"/>
+            <input type="hidden" id="usuarioPhotoUrl" value=""/>
+          </div>
 
           <div class="mb-3">
             <label class="form-label small fw-semibold" for="usuarioNome">Nome Completo</label>
@@ -310,6 +443,9 @@
   </div>
 </div>
 
+<!-- Input oculto para upload direto pela linha da tabela -->
+<input type="file" id="inputFotoRapidaTabela" accept="image/png, image/jpeg, image/jpg, image/webp" style="display: none;" onchange="executarUploadFotoRapida(event)"/>
+
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -338,6 +474,9 @@
     }
   }
 
+  let idUsuarioParaFotoRapida = null;
+  let arquivoFotoModalPendente = null;
+
   function renderizarTabela(usuarios) {
     const tbody = document.getElementById('tabelaUsuariosCorpo');
     if (!usuarios || usuarios.length === 0) {
@@ -353,12 +492,16 @@
       
       const createdDate = u.created_at ? new Date(u.created_at).toLocaleString('pt-BR') : '-';
 
+      const avatarHtml = u.photo_url 
+        ? `<img src="${u.photo_url}" class="user-avatar-circle" style="object-fit: cover; border: 1px solid var(--border);" alt="${escapeHtml(u.name)}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'user-avatar-circle\'>${initials}</div>';"/>`
+        : `<div class="user-avatar-circle">${initials}</div>`;
+
       return `
         <tr>
           <td class="text-muted fw-bold ps-4">${u.id}</td>
           <td>
             <div class="d-flex align-items-center gap-2">
-              <div class="user-avatar-circle">${initials}</div>
+              ${avatarHtml}
               <div>
                 <div class="fw-bold text-heading">${escapeHtml(u.name)}</div>
               </div>
@@ -369,13 +512,18 @@
           </td>
           <td>${roleBadge}</td>
           <td class="text-muted small">${createdDate}</td>
-          <td class="text-end pe-4">
-            <button class="btn btn-sm btn-outline-primary me-1" onclick="abrirModalEditarUsuario(${u.id})" title="Editar Usuário">
-              <i data-lucide="edit-2" style="width: 14px; height: 14px;"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-danger" onclick="excluirUsuario(${u.id}, '${escapeHtml(u.name)}')" title="Excluir Usuário">
-              <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
-            </button>
+          <td class="text-end pe-4 col-acoes-usuarios">
+            <div class="d-inline-flex align-items-center justify-content-end gap-1 flex-nowrap" style="white-space: nowrap;">
+              <button class="btn btn-sm btn-action-round btn-outline-info" onclick="dispararUploadFotoRapida(${u.id})" title="Alterar Foto de Perfil (R2 / Turso)" type="button">
+                <i data-lucide="camera"></i>
+              </button>
+              <button class="btn btn-sm btn-action-round btn-outline-primary" onclick="abrirModalEditarUsuario(${u.id})" title="Editar Usuário" type="button">
+                <i data-lucide="edit-2"></i>
+              </button>
+              <button class="btn btn-sm btn-action-round btn-outline-danger" onclick="excluirUsuario(${u.id}, '${escapeHtml(u.name)}')" title="Excluir Usuário" type="button">
+                <i data-lucide="trash-2"></i>
+              </button>
+            </div>
           </td>
         </tr>
       `;
@@ -389,17 +537,122 @@
     return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
   }
 
+  function dispararUploadFotoRapida(userId) {
+    idUsuarioParaFotoRapida = userId;
+    const inp = document.getElementById('inputFotoRapidaTabela');
+    inp.value = '';
+    inp.click();
+  }
+
+  async function executarUploadFotoRapida(event) {
+    const file = event.target.files[0];
+    if (!file || !idUsuarioParaFotoRapida) return;
+
+    const formData = new FormData();
+    formData.append('foto', file);
+
+    try {
+      if (window.nftToast) window.nftToast('Enviando foto para o Cloudflare R2 e Turso...', 'info');
+      const resp = await fetch(`/api/usuarios/${idUsuarioParaFotoRapida}/foto`, {
+        method: 'POST',
+        body: formData
+      });
+      const data = await resp.json();
+      if (resp.ok && data.status === 'success') {
+        if (window.nftToast) window.nftToast('Foto de perfil atualizada no R2 e Turso com sucesso!', 'success');
+        else alert('Foto atualizada com sucesso!');
+
+        await carregarUsuarios();
+        if (typeof window.carregarUsuarioAutenticadoTopbar === 'function') {
+          await window.carregarUsuarioAutenticadoTopbar(true);
+        }
+      } else {
+        const msg = data.error || 'Falha ao enviar foto.';
+        if (window.nftAlert) window.nftAlert(msg, { title: 'Erro de Upload', type: 'warning' });
+        else alert(msg);
+      }
+    } catch (e) {
+      alert('Erro de comunicação ao fazer upload da imagem.');
+    } finally {
+      idUsuarioParaFotoRapida = null;
+    }
+  }
+
+  function handleModalFotoChange(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    arquivoFotoModalPendente = file;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = document.getElementById('modalUserAvatarPreview');
+      const placeholder = document.getElementById('modalUserAvatarPlaceholder');
+      img.src = e.target.result;
+      img.classList.remove('d-none');
+      placeholder.classList.add('d-none');
+      document.getElementById('btnRemoverFotoModal').style.display = 'inline-flex';
+      document.getElementById('labelBtnCarregarFoto').innerText = 'Alterar Foto';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function removerFotoModal() {
+    const id = document.getElementById('usuarioId').value;
+    if (id) {
+      const confirmar = await (window.nftConfirm 
+        ? window.nftConfirm('Deseja realmente remover a foto deste usuário do Cloudflare R2 e Turso?', { title: 'Remover Foto', type: 'danger' })
+        : confirm('Deseja realmente remover a foto deste usuário?'));
+      if (!confirmar) return;
+
+      try {
+        const resp = await fetch(`/api/usuarios/${id}/foto`, { method: 'DELETE' });
+        if (resp.ok) {
+          if (window.nftToast) window.nftToast('Foto removida com sucesso.', 'info');
+          if (typeof window.carregarUsuarioAutenticadoTopbar === 'function') {
+            await window.carregarUsuarioAutenticadoTopbar(true);
+          }
+        }
+      } catch(e) {}
+    }
+
+    arquivoFotoModalPendente = null;
+    document.getElementById('usuarioPhotoUrl').value = '';
+    document.getElementById('modalFotoUploadInput').value = '';
+    const img = document.getElementById('modalUserAvatarPreview');
+    const placeholder = document.getElementById('modalUserAvatarPlaceholder');
+    img.src = '';
+    img.classList.add('d-none');
+    placeholder.classList.remove('d-none');
+    placeholder.textContent = (document.getElementById('usuarioNome').value || 'U').trim()[0]?.toUpperCase() || 'U';
+    document.getElementById('btnRemoverFotoModal').style.display = 'none';
+    document.getElementById('labelBtnCarregarFoto').innerText = 'Carregar Foto';
+  }
+
   function abrirModalNovoUsuario() {
+    arquivoFotoModalPendente = null;
     document.getElementById('usuarioId').value = '';
     document.getElementById('usuarioNome').value = '';
     document.getElementById('usuarioEmail').value = '';
     document.getElementById('usuarioRole').value = 'user';
+    document.getElementById('usuarioPhotoUrl').value = '';
+    document.getElementById('modalFotoUploadInput').value = '';
     document.getElementById('usuarioSenha').value = '';
     document.getElementById('usuarioSenha').required = true;
     document.getElementById('labelSenhaInfo').innerText = '(Mínimo 6 caracteres)';
     document.getElementById('helpSenhaTexto').innerText = 'Para novos usuários a senha é obrigatória.';
     document.getElementById('modalUsuarioTitulo').innerText = 'Novo Usuário';
     document.getElementById('modalUserIcon').setAttribute('data-lucide', 'user-plus');
+    
+    // Foto preview
+    const img = document.getElementById('modalUserAvatarPreview');
+    const placeholder = document.getElementById('modalUserAvatarPlaceholder');
+    img.src = '';
+    img.classList.add('d-none');
+    placeholder.classList.remove('d-none');
+    placeholder.textContent = 'U';
+    document.getElementById('btnRemoverFotoModal').style.display = 'none';
+    document.getElementById('labelBtnCarregarFoto').innerText = 'Carregar Foto';
+
     lucide.createIcons();
     modalBootstrap.show();
   }
@@ -408,16 +661,40 @@
     const user = listaUsuariosGlobal.find(u => u.id === id);
     if (!user) return;
 
+    arquivoFotoModalPendente = null;
     document.getElementById('usuarioId').value = user.id;
     document.getElementById('usuarioNome').value = user.name || '';
     document.getElementById('usuarioEmail').value = user.email || '';
     document.getElementById('usuarioRole').value = user.role || 'user';
+    document.getElementById('usuarioPhotoUrl').value = user.photo_url || '';
+    document.getElementById('modalFotoUploadInput').value = '';
     document.getElementById('usuarioSenha').value = '';
     document.getElementById('usuarioSenha').required = false;
     document.getElementById('labelSenhaInfo').innerText = '(Deixe em branco para manter a atual)';
     document.getElementById('helpSenhaTexto').innerText = 'Preencha este campo apenas se desejar redefinir a senha do usuário.';
     document.getElementById('modalUsuarioTitulo').innerText = 'Editar Usuário';
     document.getElementById('modalUserIcon').setAttribute('data-lucide', 'edit-3');
+
+    // Foto preview
+    const img = document.getElementById('modalUserAvatarPreview');
+    const placeholder = document.getElementById('modalUserAvatarPlaceholder');
+    const initials = (user.name || user.email || 'U').split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('').toUpperCase();
+
+    if (user.photo_url) {
+      img.src = user.photo_url;
+      img.classList.remove('d-none');
+      placeholder.classList.add('d-none');
+      document.getElementById('btnRemoverFotoModal').style.display = 'inline-flex';
+      document.getElementById('labelBtnCarregarFoto').innerText = 'Alterar Foto';
+    } else {
+      img.src = '';
+      img.classList.add('d-none');
+      placeholder.classList.remove('d-none');
+      placeholder.textContent = initials;
+      document.getElementById('btnRemoverFotoModal').style.display = 'none';
+      document.getElementById('labelBtnCarregarFoto').innerText = 'Carregar Foto';
+    }
+
     lucide.createIcons();
     modalBootstrap.show();
   }
@@ -469,8 +746,30 @@
 
       data = await resp.json();
       if (resp.ok && data.status === 'success') {
+        const targetUserId = id || (data.usuario && data.usuario.id);
+
+        // Se houver arquivo de foto selecionado no modal, realiza o upload no R2 e Turso
+        if (arquivoFotoModalPendente && targetUserId) {
+          try {
+            const formData = new FormData();
+            formData.append('foto', arquivoFotoModalPendente);
+            await fetch(`/api/usuarios/${targetUserId}/foto`, {
+              method: 'POST',
+              body: formData
+            });
+          } catch(e) {
+            console.error('Erro ao enviar foto no salvamento do usuário:', e);
+          }
+        }
+
         modalBootstrap.hide();
         await carregarUsuarios();
+
+        // Atualiza a foto e o nome na Topbar na hora
+        if (typeof window.carregarUsuarioAutenticadoTopbar === 'function') {
+          await window.carregarUsuarioAutenticadoTopbar(true);
+        }
+
         if (window.nftToast) {
           window.nftToast(data.message || 'Operação realizada com sucesso!', 'success');
         } else {

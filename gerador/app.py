@@ -264,6 +264,20 @@ def get_db_connection():
             if 'complemento' not in cad_cols:
                 conn.execute("ALTER TABLE cadastros ADD COLUMN complemento TEXT DEFAULT ''")
                 conn.commit()
+            if 'logo_url' not in cad_cols:
+                try:
+                    conn.execute("ALTER TABLE cadastros ADD COLUMN logo_url TEXT DEFAULT ''")
+                    conn.commit()
+                except Exception:
+                    pass
+
+            try:
+                user_cols = [col[1] for col in conn.execute('PRAGMA table_info(usuarios)').fetchall()]
+                if 'photo_url' not in user_cols:
+                    conn.execute("ALTER TABLE usuarios ADD COLUMN photo_url TEXT DEFAULT ''")
+                    conn.commit()
+            except Exception:
+                pass
             
             tables = [t[0] for t in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
             if 'tabela_csts' not in tables or 'tabela_paises' not in tables or 'tabela_municipios' not in tables or 'tabela_feiras' not in tables or 'tabela_locais_entrega' not in tables or 'tabela_cenq_ipi' not in tables:
@@ -1322,6 +1336,11 @@ def modulo_di_duimp():
 def modulo_nova_nf():
     return render_template('nova_nf.html')
 
+@app.route('/preview_novo_layout')
+@app.route('/preview-novo-layout')
+def modulo_preview_novo_layout():
+    return render_template('preview_novo_layout.html')
+
 
 # === ROTAS DE AUTENTICAÇÃO (LOGIN / LOGOUT COM RATE LIMITING E BCRYPT) ===
 @app.route('/api/auth/login', methods=['POST'])
@@ -1403,10 +1422,43 @@ def api_auth_logout():
     return resp
 
 
-# === GESTÃO DE USUÁRIOS AUTORIZADOS ===
+# === GESTÃO DE USUÁRIOS AUTORIZADOS & FOTOS (R2 + TURSO/SQLITE) ===
 @app.route('/usuarios')
 def pagina_usuarios():
     return render_template('usuarios.html')
+
+@app.route('/api/auth/me', methods=['GET'])
+def api_auth_me():
+    """Retorna os dados do usuário autenticado atual, com foto e nome atualizados."""
+    user = security.get_current_user_from_request()
+    if not user:
+        return jsonify({"status": "error", "authenticated": False, "error": "Não autenticado"}), 401
+    
+    # Sincroniza com o banco de dados para garantir dados frescos (foto e nome atualizados)
+    try:
+        conn = get_db_connection()
+        c = conn.cursor()
+        uid = user.get('id')
+        if uid and str(uid).isdigit():
+            row = c.execute("SELECT id, email, name, role, photo_url FROM usuarios WHERE id = ?", (int(uid),)).fetchone()
+            if row:
+                user['name'] = row['name'] if hasattr(row, '__getitem__') else row[2]
+                user['role'] = row['role'] if hasattr(row, '__getitem__') else row[3]
+                user['photo_url'] = (row['photo_url'] if hasattr(row, '__getitem__') else (row[4] if len(row) > 4 else '')) or ''
+                # Atualiza também a sessão Flask
+                if 'user' in session and isinstance(session['user'], dict):
+                    session['user']['name'] = user['name']
+                    session['user']['role'] = user['role']
+                    session['user']['photo_url'] = user['photo_url']
+        conn.close()
+    except Exception:
+        pass
+
+    return jsonify({
+        "status": "success",
+        "authenticated": True,
+        "user": user
+    })
 
 @app.route('/api/usuarios', methods=['GET', 'POST'])
 def api_usuarios():
@@ -1415,20 +1467,32 @@ def api_usuarios():
     c = conn.cursor()
     try:
         if request.method == 'GET':
-            rows = c.execute("SELECT id, email, name, role, created_at, updated_at FROM usuarios ORDER BY id ASC").fetchall()
+            rows = c.execute("SELECT id, email, name, role, photo_url, created_at, updated_at FROM usuarios ORDER BY id ASC").fetchall()
             usuarios = []
             for r in rows:
+                photo = ''
+                try:
+                    photo = r['photo_url'] if hasattr(r, '__getitem__') else (r[4] if len(r) > 4 else '')
+                except Exception:
+                    pass
                 usuarios.append({
                     "id": r['id'] if hasattr(r, '__getitem__') else r[0],
                     "email": r['email'] if hasattr(r, '__getitem__') else r[1],
                     "name": r['name'] if hasattr(r, '__getitem__') else r[2],
                     "role": r['role'] if hasattr(r, '__getitem__') else r[3],
-                    "created_at": r['created_at'] if hasattr(r, '__getitem__') else r[4],
-                    "updated_at": r['updated_at'] if hasattr(r, '__getitem__') else r[5],
+                    "photo_url": photo or '',
+                    "created_at": r['created_at'] if hasattr(r, '__getitem__') else (r[5] if len(r) > 5 else None),
+                    "updated_at": r['updated_at'] if hasattr(r, '__getitem__') else (r[6] if len(r) > 6 else None),
                 })
             return jsonify({"status": "success", "usuarios": usuarios})
 
-        # POST: Inclusão de Usuário
+        # POST: Inclusão de Usuário (Restrito a Administradores)
+        if not security.is_current_user_admin():
+            return jsonify({
+                "status": "error",
+                "error": "Acesso não autorizado. Apenas Administradores podem adicionar novos usuários ao sistema."
+            }), 403
+
         data, err_resp = security.validate_json_payload(security.UsuarioCreateSchema)
         if err_resp:
             return err_resp
@@ -1436,6 +1500,7 @@ def api_usuarios():
         email = data['email'].strip().lower()
         name = data['name'].strip()
         role = (data.get('role') or 'user').strip()
+        photo_url = (data.get('photo_url') or '').strip()
         raw_password = data['password']
 
         # Verifica se e-mail já existe
@@ -1445,9 +1510,9 @@ def api_usuarios():
 
         pwd_hash = bcrypt.hashpw(raw_password.encode('utf-8'), bcrypt.gensalt(12)).decode('utf-8')
         c.execute("""
-            INSERT INTO usuarios (email, password_hash, name, role, created_at, updated_at)
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        """, (email, pwd_hash, name, role))
+            INSERT INTO usuarios (email, password_hash, name, role, photo_url, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        """, (email, pwd_hash, name, role, photo_url))
         conn.commit()
 
         novo_id = c.lastrowid
@@ -1458,7 +1523,8 @@ def api_usuarios():
                 "id": novo_id,
                 "email": email,
                 "name": name,
-                "role": role
+                "role": role,
+                "photo_url": photo_url
             }
         }), 201
     finally:
@@ -1474,9 +1540,15 @@ def api_usuario_detalhes(user_id):
     conn = get_db_connection()
     c = conn.cursor()
     try:
-        user_row = c.execute("SELECT id, email, name, role, created_at, updated_at FROM usuarios WHERE id = ?", (user_id,)).fetchone()
+        user_row = c.execute("SELECT id, email, name, role, photo_url, created_at, updated_at FROM usuarios WHERE id = ?", (user_id,)).fetchone()
         if not user_row:
             return jsonify({"status": "error", "error": "Usuário não encontrado."}), 404
+
+        photo = ''
+        try:
+            photo = user_row['photo_url'] if hasattr(user_row, '__getitem__') else (user_row[4] if len(user_row) > 4 else '')
+        except Exception:
+            pass
 
         if request.method == 'GET':
             return jsonify({
@@ -1486,12 +1558,17 @@ def api_usuario_detalhes(user_id):
                     "email": user_row['email'] if hasattr(user_row, '__getitem__') else user_row[1],
                     "name": user_row['name'] if hasattr(user_row, '__getitem__') else user_row[2],
                     "role": user_row['role'] if hasattr(user_row, '__getitem__') else user_row[3],
-                    "created_at": user_row['created_at'] if hasattr(user_row, '__getitem__') else user_row[4],
-                    "updated_at": user_row['updated_at'] if hasattr(user_row, '__getitem__') else user_row[5],
+                    "photo_url": photo or '',
+                    "created_at": user_row['created_at'] if hasattr(user_row, '__getitem__') else (user_row[5] if len(user_row) > 5 else None),
+                    "updated_at": user_row['updated_at'] if hasattr(user_row, '__getitem__') else (user_row[6] if len(user_row) > 6 else None),
                 }
             })
 
         if request.method == 'DELETE':
+            # Exclusão restrita a Administrador
+            if not security.is_current_user_admin():
+                return jsonify({"status": "error", "error": "Acesso não autorizado. Apenas Administradores podem excluir usuários."}), 403
+
             # Protege para não permitir deletar se for o único usuário admin
             total_users = c.execute("SELECT COUNT(*) FROM usuarios").fetchone()[0]
             if total_users <= 1:
@@ -1502,6 +1579,12 @@ def api_usuario_detalhes(user_id):
             return jsonify({"status": "success", "message": "Usuário excluído com sucesso."})
 
         # PUT: Edição de Usuário
+        # Permitido para Administradores OU o próprio usuário autenticado editando seu perfil
+        current_user = security.get_current_user_from_request()
+        is_self = current_user and str(current_user.get('id')) == str(user_id)
+        if not security.is_current_user_admin() and not is_self:
+            return jsonify({"status": "error", "error": "Acesso não autorizado. Apenas Administradores podem editar outros usuários."}), 403
+
         data, err_resp = security.validate_json_payload(security.UsuarioUpdateSchema)
         if err_resp:
             return err_resp
@@ -1509,6 +1592,7 @@ def api_usuario_detalhes(user_id):
         email = data.get('email')
         name = data.get('name')
         role = data.get('role')
+        photo_url = data.get('photo_url')
         password = data.get('password')
 
         current_email = user_row['email'] if hasattr(user_row, '__getitem__') else user_row[1]
@@ -1521,23 +1605,37 @@ def api_usuario_detalhes(user_id):
             email_clean = current_email
 
         name_final = name.strip() if name else (user_row['name'] if hasattr(user_row, '__getitem__') else user_row[2])
-        role_final = role.strip() if role else (user_row['role'] if hasattr(user_row, '__getitem__') else user_row[3])
+        # Se for operador editando a si mesmo, não pode se autopromover para admin
+        if not security.is_current_user_admin():
+            role_final = user_row['role'] if hasattr(user_row, '__getitem__') else user_row[3]
+        else:
+            role_final = role.strip() if role else (user_row['role'] if hasattr(user_row, '__getitem__') else user_row[3])
+
+        photo_final = photo_url if photo_url is not None else (photo or '')
 
         if password and len(password.strip()) >= 6:
             pwd_hash = bcrypt.hashpw(password.strip().encode('utf-8'), bcrypt.gensalt(12)).decode('utf-8')
             c.execute("""
                 UPDATE usuarios
-                SET email = ?, password_hash = ?, name = ?, role = ?, updated_at = CURRENT_TIMESTAMP
+                SET email = ?, password_hash = ?, name = ?, role = ?, photo_url = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
-            """, (email_clean, pwd_hash, name_final, role_final, user_id))
+            """, (email_clean, pwd_hash, name_final, role_final, photo_final, user_id))
         else:
             c.execute("""
                 UPDATE usuarios
-                SET email = ?, name = ?, role = ?, updated_at = CURRENT_TIMESTAMP
+                SET email = ?, name = ?, role = ?, photo_url = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
-            """, (email_clean, name_final, role_final, user_id))
+            """, (email_clean, name_final, role_final, photo_final, user_id))
 
         conn.commit()
+
+        # Atualiza a sessão Flask se o usuário editado for o usuário conectado
+        if session.get('user') and str(session['user'].get('id')) == str(user_id):
+            session['user']['name'] = name_final
+            session['user']['email'] = email_clean
+            session['user']['role'] = role_final
+            session['user']['photo_url'] = photo_final
+
         return jsonify({
             "status": "success",
             "message": "Usuário atualizado com sucesso!",
@@ -1545,8 +1643,195 @@ def api_usuario_detalhes(user_id):
                 "id": user_id,
                 "email": email_clean,
                 "name": name_final,
-                "role": role_final
+                "role": role_final,
+                "photo_url": photo_final
             }
+        })
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
+# === CRUD DE FOTOS DE USUÁRIOS (UPLOAD NO R2 + BANCO TURSO/SQLITE) ===
+@app.route('/api/usuarios/<int:user_id>/foto', methods=['GET', 'POST', 'DELETE'])
+@app.route('/api/usuario/foto', methods=['GET', 'POST', 'DELETE'])
+def api_usuario_foto(user_id=None):
+    """
+    CRUD para fotos de perfil:
+    - POST: Upload para Cloudflare R2 e persistência de photo_url no Turso/SQLite
+    - GET: Obtenção da imagem (do R2 ou fallback local)
+    - DELETE: Remoção da foto no R2 e limpeza no Turso/SQLite
+    """
+    import r2_storage
+    import io
+
+    # Se chamado via /api/usuario/foto (sem user_id no path), usa o id do usuário logado
+    if user_id is None:
+        curr = security.get_current_user_from_request()
+        if not curr or not curr.get('id'):
+            return jsonify({"status": "error", "error": "Usuário não autenticado."}), 401
+        try:
+            user_id = int(str(curr.get('id')).replace('admin-', '1'))
+        except Exception:
+            user_id = 1
+
+    conn = get_db_connection()
+    c = conn.cursor()
+    try:
+        user_row = c.execute("SELECT id, name, email, role, photo_url FROM usuarios WHERE id = ?", (user_id,)).fetchone()
+        if not user_row:
+            return jsonify({"status": "error", "error": "Usuário não encontrado."}), 404
+
+        current_photo = ''
+        try:
+            current_photo = user_row['photo_url'] if hasattr(user_row, '__getitem__') else (user_row[4] if len(user_row) > 4 else '')
+        except Exception:
+            pass
+
+        # === 1. GET: Retorna os bytes da imagem ===
+        if request.method == 'GET':
+            img_bytes = None
+            content_type = 'image/jpeg'
+            
+            candidate_keys = [
+                f"avatars/user_{user_id}.jpg",
+                f"avatars/user_{user_id}.png",
+                f"avatars/user_{user_id}.webp",
+                f"avatars/user_{user_id}.gif"
+            ]
+            if current_photo and 'avatars/' in current_photo:
+                k = current_photo.split('avatars/')[-1].split('?')[0]
+                candidate_keys.insert(0, f"avatars/{k}")
+
+            for key in candidate_keys:
+                b = r2_storage.get_file_bytes_r2(key)
+                if b:
+                    img_bytes = b
+                    if key.endswith('.png'):
+                        content_type = 'image/png'
+                    elif key.endswith('.webp'):
+                        content_type = 'image/webp'
+                    elif key.endswith('.gif'):
+                        content_type = 'image/gif'
+                    break
+
+            if not img_bytes:
+                local_dir = os.path.join(os.path.dirname(__file__), 'static', 'uploads', 'avatars')
+                for ext in ('.jpg', '.jpeg', '.png', '.webp', '.gif'):
+                    local_f = os.path.join(local_dir, f"user_{user_id}{ext}")
+                    if os.path.exists(local_f):
+                        try:
+                            with open(local_f, 'rb') as lf:
+                                img_bytes = lf.read()
+                            if ext == '.png':
+                                content_type = 'image/png'
+                            elif ext == '.webp':
+                                content_type = 'image/webp'
+                            elif ext == '.gif':
+                                content_type = 'image/gif'
+                            break
+                        except Exception:
+                            pass
+
+            if img_bytes:
+                return send_file(io.BytesIO(img_bytes), mimetype=content_type, max_age=86400)
+            
+            uname = (user_row['name'] if hasattr(user_row, '__getitem__') else user_row[1]) or 'User'
+            initial = uname.strip()[0].upper()
+            svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+                <rect width="128" height="128" rx="64" fill="#0F172A"/>
+                <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-size="54" font-weight="700">{initial}</text>
+            </svg>'''
+            return send_file(io.BytesIO(svg.encode('utf-8')), mimetype='image/svg+xml', max_age=3600)
+
+        # === 2. DELETE: Remover a foto ===
+        if request.method == 'DELETE':
+            curr = security.get_current_user_from_request()
+            is_self = curr and str(curr.get('id')) == str(user_id)
+            if not security.is_current_user_admin() and not is_self:
+                return jsonify({"status": "error", "error": "Acesso não autorizado para remover foto de outro usuário."}), 403
+
+            for ext in ('.jpg', '.jpeg', '.png', '.webp', '.gif'):
+                r2_storage.delete_file_r2(f"avatars/user_{user_id}{ext}")
+            
+            local_dir = os.path.join(os.path.dirname(__file__), 'static', 'uploads', 'avatars')
+            for ext in ('.jpg', '.jpeg', '.png', '.webp', '.gif'):
+                local_f = os.path.join(local_dir, f"user_{user_id}{ext}")
+                if os.path.exists(local_f):
+                    try: os.remove(local_f)
+                    except Exception: pass
+
+            c.execute("UPDATE usuarios SET photo_url = '', updated_at = CURRENT_TIMESTAMP WHERE id = ?", (user_id,))
+            conn.commit()
+
+            if session.get('user') and str(session['user'].get('id')) == str(user_id):
+                session['user']['photo_url'] = ''
+
+            return jsonify({"status": "success", "message": "Foto removida com sucesso."})
+
+        # === 3. POST: Upload de Foto ===
+        curr = security.get_current_user_from_request()
+        is_self = curr and str(curr.get('id')) == str(user_id)
+        if not security.is_current_user_admin() and not is_self:
+            return jsonify({"status": "error", "error": "Acesso não autorizado para alterar foto de outro usuário."}), 403
+
+        file = request.files.get('foto') or request.files.get('photo') or request.files.get('file')
+        file_bytes = None
+        ext = '.jpg'
+        content_type = 'image/jpeg'
+
+        if file and file.filename:
+            raw_ext = os.path.splitext(file.filename)[1].lower()
+            if raw_ext not in ('.jpg', '.jpeg', '.png', '.webp', '.gif'):
+                return jsonify({"status": "error", "error": "Formato de imagem inválido. Use JPG, PNG ou WEBP."}), 400
+            ext = raw_ext
+            if ext == '.png': content_type = 'image/png'
+            elif ext == '.webp': content_type = 'image/webp'
+            elif ext == '.gif': content_type = 'image/gif'
+            file_bytes = file.read()
+        elif request.is_json:
+            import base64
+            b64_data = request.json.get('image_base64') or request.json.get('photo_base64')
+            if b64_data:
+                if ',' in b64_data:
+                    b64_data = b64_data.split(',', 1)[1]
+                file_bytes = base64.b64decode(b64_data)
+
+        if not file_bytes:
+            return jsonify({"status": "error", "error": "Nenhum arquivo de imagem recebido."}), 400
+
+        if len(file_bytes) > 5 * 1024 * 1024:
+            return jsonify({"status": "error", "error": "A imagem excede o tamanho máximo permitido de 5MB."}), 400
+
+        timestamp = int(datetime.now().timestamp())
+        remote_key = f"avatars/user_{user_id}_{timestamp}{ext}"
+        r2_ok = r2_storage.upload_bytes_r2(file_bytes, remote_key, content_type=content_type)
+        r2_storage.upload_bytes_r2(file_bytes, f"avatars/user_{user_id}{ext}", content_type=content_type)
+
+        local_dir = os.path.join(os.path.dirname(__file__), 'static', 'uploads', 'avatars')
+        os.makedirs(local_dir, exist_ok=True)
+        local_file = os.path.join(local_dir, f"user_{user_id}{ext}")
+        try:
+            with open(local_file, 'wb') as lf:
+                lf.write(file_bytes)
+        except Exception as e:
+            print(f"Aviso ao salvar cópia local do avatar: {e}")
+
+        photo_url = f"/api/usuarios/{user_id}/foto?v={timestamp}"
+
+        c.execute("UPDATE usuarios SET photo_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (photo_url, user_id))
+        conn.commit()
+
+        if session.get('user') and str(session['user'].get('id')) == str(user_id):
+            session['user']['photo_url'] = photo_url
+
+        return jsonify({
+            "status": "success",
+            "message": "Foto enviada com sucesso!",
+            "photo_url": photo_url,
+            "r2_uploaded": r2_ok
         })
     finally:
         try:
@@ -1563,20 +1848,22 @@ def page_empresas():
 @app.route('/api/empresas', methods=['GET', 'POST'])
 def api_empresas():
     if request.method == 'POST':
+        if not security.is_current_user_admin():
+            return jsonify({"status": "error", "error": "Acesso não autorizado. Apenas Administradores podem adicionar ou alterar empresas."}), 403
         data, err_resp = security.validate_json_payload(security.EmpresaPayloadSchema)
         if err_resp:
             return err_resp
         conn = get_db_connection()
         c = conn.cursor()
         c.execute('''
-            INSERT INTO cadastros (tipo, nome, cnpj_cpf, ie, logradouro, numero, complemento, bairro, municipio, uf, cep, cpais, xpais, cmun, fone, apelido, ind_ie)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO cadastros (tipo, nome, cnpj_cpf, ie, logradouro, numero, complemento, bairro, municipio, uf, cep, cpais, xpais, cmun, fone, apelido, ind_ie, logo_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             data.get('tipo', ''), data.get('nome', ''), data.get('cnpj_cpf', ''), data.get('ie', ''),
             data.get('logradouro', ''), data.get('numero', ''), data.get('complemento', ''), data.get('bairro', ''),
             data.get('municipio', ''), data.get('uf', ''), data.get('cep', ''),
             data.get('cpais', ''), data.get('xpais', ''), data.get('cmun', ''), data.get('fone', ''),
-            data.get('apelido', ''), data.get('ind_ie', '')
+            data.get('apelido', ''), data.get('ind_ie', ''), data.get('logo_url', '')
         ))
         conn.commit()
         new_id = c.lastrowid
@@ -1594,24 +1881,41 @@ def api_empresas():
 
 @app.route('/api/empresas/<int:cid>', methods=['PUT', 'DELETE'])
 def api_edit_delete_empresa(cid):
+    if not security.is_current_user_admin():
+        return jsonify({"status": "error", "error": "Acesso não autorizado. Apenas Administradores podem alterar ou excluir empresas."}), 403
     if request.method == 'PUT':
         data, err_resp = security.validate_json_payload(security.EmpresaPayloadSchema)
         if err_resp:
             return err_resp
         conn = get_db_connection()
         c = conn.cursor()
-        c.execute('''
-            UPDATE cadastros
-            SET tipo=?, nome=?, cnpj_cpf=?, ie=?, logradouro=?, numero=?, complemento=?, bairro=?, municipio=?, uf=?, cep=?, cpais=?, xpais=?, cmun=?, fone=?, apelido=?, ind_ie=?
-            WHERE id = ?
-        ''', (
-            data.get('tipo', ''), data.get('nome', ''), data.get('cnpj_cpf', ''), data.get('ie', ''),
-            data.get('logradouro', ''), data.get('numero', ''), data.get('complemento', ''), data.get('bairro', ''),
-            data.get('municipio', ''), data.get('uf', ''), data.get('cep', ''),
-            data.get('cpais', ''), data.get('xpais', ''), data.get('cmun', ''), data.get('fone', ''),
-            data.get('apelido', ''), data.get('ind_ie', ''),
-            cid
-        ))
+        logo_val = data.get('logo_url')
+        if logo_val is not None:
+            c.execute('''
+                UPDATE cadastros
+                SET tipo=?, nome=?, cnpj_cpf=?, ie=?, logradouro=?, numero=?, complemento=?, bairro=?, municipio=?, uf=?, cep=?, cpais=?, xpais=?, cmun=?, fone=?, apelido=?, ind_ie=?, logo_url=?
+                WHERE id = ?
+            ''', (
+                data.get('tipo', ''), data.get('nome', ''), data.get('cnpj_cpf', ''), data.get('ie', ''),
+                data.get('logradouro', ''), data.get('numero', ''), data.get('complemento', ''), data.get('bairro', ''),
+                data.get('municipio', ''), data.get('uf', ''), data.get('cep', ''),
+                data.get('cpais', ''), data.get('xpais', ''), data.get('cmun', ''), data.get('fone', ''),
+                data.get('apelido', ''), data.get('ind_ie', ''), logo_val,
+                cid
+            ))
+        else:
+            c.execute('''
+                UPDATE cadastros
+                SET tipo=?, nome=?, cnpj_cpf=?, ie=?, logradouro=?, numero=?, complemento=?, bairro=?, municipio=?, uf=?, cep=?, cpais=?, xpais=?, cmun=?, fone=?, apelido=?, ind_ie=?
+                WHERE id = ?
+            ''', (
+                data.get('tipo', ''), data.get('nome', ''), data.get('cnpj_cpf', ''), data.get('ie', ''),
+                data.get('logradouro', ''), data.get('numero', ''), data.get('complemento', ''), data.get('bairro', ''),
+                data.get('municipio', ''), data.get('uf', ''), data.get('cep', ''),
+                data.get('cpais', ''), data.get('xpais', ''), data.get('cmun', ''), data.get('fone', ''),
+                data.get('apelido', ''), data.get('ind_ie', ''),
+                cid
+            ))
         conn.commit()
         conn.close()
         return jsonify({"status": "success"})
@@ -1623,6 +1927,195 @@ def api_edit_delete_empresa(cid):
     conn.commit()
     conn.close()
     return jsonify({"status": "success"})
+
+# === CRUD DE LOGOTIPOS DE EMPRESAS (UPLOAD NO R2 + BANCO TURSO/SQLITE) ===
+@app.route('/api/empresas/<int:empresa_id>/logo', methods=['GET', 'POST', 'DELETE'])
+def api_empresa_logo(empresa_id):
+    """
+    CRUD para logotipo oficial de empresas/emitentes:
+    - POST: Upload para Cloudflare R2 e persistência de logo_url no Turso/SQLite
+    - GET: Obtenção da imagem do logotipo (do R2 ou cache local, ou placeholder SVG com inicial)
+    - DELETE: Remoção do logotipo no R2 e limpeza no Turso/SQLite
+    """
+    import r2_storage
+    import io
+    from PIL import Image
+
+    conn = get_db_connection()
+    c = conn.cursor()
+    try:
+        emp_row = c.execute("SELECT id, tipo, nome, cnpj_cpf, logo_url FROM cadastros WHERE id = ?", (empresa_id,)).fetchone()
+        if not emp_row:
+            return jsonify({"status": "error", "error": "Empresa não encontrada."}), 404
+
+        current_logo = ''
+        try:
+            current_logo = emp_row['logo_url'] if hasattr(emp_row, '__getitem__') else (emp_row[4] if len(emp_row) > 4 else '')
+        except Exception:
+            pass
+
+        # === 1. GET: Retorna os bytes da imagem do logotipo ===
+        if request.method == 'GET':
+            img_bytes = None
+            content_type = 'image/png'
+
+            candidate_keys = [
+                f"empresas/logo_{empresa_id}.png",
+                f"empresas/logo_{empresa_id}.jpg",
+                f"empresas/logo_{empresa_id}.jpeg",
+                f"empresas/logo_{empresa_id}.webp"
+            ]
+            if current_logo and 'empresas/' in current_logo:
+                k = current_logo.split('empresas/')[-1].split('?')[0]
+                candidate_keys.insert(0, f"empresas/{k}")
+
+            # 1.1 Tenta recuperar do R2
+            for key in candidate_keys:
+                b = r2_storage.get_file_bytes_r2(key)
+                if b:
+                    img_bytes = b
+                    if key.endswith('.jpg') or key.endswith('.jpeg'):
+                        content_type = 'image/jpeg'
+                    elif key.endswith('.webp'):
+                        content_type = 'image/webp'
+                    elif key.endswith('.png'):
+                        content_type = 'image/png'
+                    break
+
+            # 1.2 Fallback: Verifica no cache local
+            if not img_bytes:
+                local_dir = os.path.join(os.path.dirname(__file__), 'static', 'uploads', 'empresas')
+                for ext in ('.png', '.jpg', '.jpeg', '.webp'):
+                    local_f = os.path.join(local_dir, f"logo_{empresa_id}{ext}")
+                    if os.path.exists(local_f):
+                        try:
+                            with open(local_f, 'rb') as lf:
+                                img_bytes = lf.read()
+                            if ext in ('.jpg', '.jpeg'):
+                                content_type = 'image/jpeg'
+                            elif ext == '.webp':
+                                content_type = 'image/webp'
+                            elif ext == '.png':
+                                content_type = 'image/png'
+                            break
+                        except Exception:
+                            pass
+
+            # 1.3 Se for a NFT Logistics LTDA e não tiver logo personalizada, usa o logo padrão oficial
+            if not img_bytes:
+                cnpj_clean = re.sub(r'\D', '', str(emp_row['cnpj_cpf'] if hasattr(emp_row, '__getitem__') else emp_row[3]))
+                if cnpj_clean == '47998441000198' or 'NFT' in str(emp_row['nome'] if hasattr(emp_row, '__getitem__') else emp_row[2]).upper():
+                    default_logo = os.path.join(os.path.dirname(__file__), "static", "img", "brand", "NFTLogoBlackCompact.png")
+                    if os.path.exists(default_logo):
+                        with open(default_logo, 'rb') as dlf:
+                            img_bytes = dlf.read()
+                        content_type = 'image/png'
+
+            if img_bytes:
+                return send_file(io.BytesIO(img_bytes), mimetype=content_type, max_age=86400)
+
+            # 1.4 Placeholder SVG dinâmico quadrado com as iniciais do nome da empresa
+            ename = (emp_row['nome'] if hasattr(emp_row, '__getitem__') else emp_row[2]) or 'Empresa'
+            words = [w for w in ename.strip().split() if w]
+            initial = (words[0][0] + (words[1][0] if len(words) > 1 else ''))[:2].upper()
+            svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+                <rect width="128" height="128" rx="16" fill="#1E293B"/>
+                <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-size="44" font-weight="700">{initial}</text>
+            </svg>'''
+            return send_file(io.BytesIO(svg.encode('utf-8')), mimetype='image/svg+xml', max_age=3600)
+
+        # === 2. DELETE: Remover logotipo ===
+        if request.method == 'DELETE':
+            if not security.is_current_user_admin():
+                return jsonify({"status": "error", "error": "Acesso não autorizado. Apenas Administradores podem remover logotipos."}), 403
+
+            for ext in ('.png', '.jpg', '.jpeg', '.webp'):
+                r2_storage.delete_file_r2(f"empresas/logo_{empresa_id}{ext}")
+
+            local_dir = os.path.join(os.path.dirname(__file__), 'static', 'uploads', 'empresas')
+            for ext in ('.png', '.jpg', '.jpeg', '.webp'):
+                local_f = os.path.join(local_dir, f"logo_{empresa_id}{ext}")
+                if os.path.exists(local_f):
+                    try: os.remove(local_f)
+                    except Exception: pass
+
+            c.execute("UPDATE cadastros SET logo_url = '' WHERE id = ?", (empresa_id,))
+            conn.commit()
+            return jsonify({"status": "success", "message": "Logotipo removido com sucesso."})
+
+        # === 3. POST: Upload de Logotipo ===
+        if not security.is_current_user_admin():
+            return jsonify({"status": "error", "error": "Acesso não autorizado. Apenas Administradores podem cadastrar/alterar logotipos."}), 403
+
+        file = request.files.get('foto') or request.files.get('logo') or request.files.get('file') or request.files.get('imagem')
+        file_bytes = None
+        ext = '.png'
+        content_type = 'image/png'
+
+        if file and file.filename:
+            raw_ext = os.path.splitext(file.filename)[1].lower()
+            if raw_ext not in ('.jpg', '.jpeg', '.png', '.webp'):
+                return jsonify({"status": "error", "error": "Formato inválido. Utilize imagem quadrada nos formatos PNG ou JPG."}), 400
+            file_bytes = file.read()
+        elif request.is_json:
+            import base64
+            b64_data = request.json.get('image_base64') or request.json.get('logo_base64')
+            if b64_data:
+                if ',' in b64_data:
+                    b64_data = b64_data.split(',', 1)[1]
+                file_bytes = base64.b64decode(b64_data)
+
+        if not file_bytes:
+            return jsonify({"status": "error", "error": "Nenhum arquivo de imagem recebido."}), 400
+
+        if len(file_bytes) > 5 * 1024 * 1024:
+            return jsonify({"status": "error", "error": "A imagem excede o tamanho máximo de 5MB."}), 400
+
+        # Normalização com PIL: Garante imagem quadrada (1:1) com alta qualidade
+        try:
+            im = Image.open(io.BytesIO(file_bytes))
+            w, h = im.size
+            if w != h:
+                max_side = max(w, h)
+                square_im = Image.new('RGBA', (max_side, max_side), (255, 255, 255, 0))
+                offset_x = (max_side - w) // 2
+                offset_y = (max_side - h) // 2
+                square_im.paste(im, (offset_x, offset_y))
+                im = square_im
+
+            buf = io.BytesIO()
+            im.save(buf, format='PNG', optimize=True)
+            file_bytes = buf.getvalue()
+            ext = '.png'
+            content_type = 'image/png'
+        except Exception as e_pil:
+            print(f"Aviso ao processar imagem da empresa com Pillow: {e_pil}")
+
+        timestamp = int(datetime.now().timestamp())
+        remote_key = f"empresas/logo_{empresa_id}_{timestamp}{ext}"
+        r2_ok = r2_storage.upload_bytes_r2(file_bytes, remote_key, content_type=content_type)
+        r2_storage.upload_bytes_r2(file_bytes, f"empresas/logo_{empresa_id}{ext}", content_type=content_type)
+
+        local_dir = os.path.join(os.path.dirname(__file__), 'static', 'uploads', 'empresas')
+        os.makedirs(local_dir, exist_ok=True)
+        local_file = os.path.join(local_dir, f"logo_{empresa_id}{ext}")
+        try:
+            with open(local_file, 'wb') as lf:
+                lf.write(file_bytes)
+        except Exception as e:
+            print(f"Aviso ao salvar cópia local do logotipo: {e}")
+
+        logo_url = f"/api/empresas/{empresa_id}/logo?v={timestamp}"
+        c.execute("UPDATE cadastros SET logo_url = ? WHERE id = ?", (logo_url, empresa_id))
+        conn.commit()
+
+        return jsonify({
+            "status": "success",
+            "message": "Logotipo salvo com sucesso no R2 e banco de dados.",
+            "logo_url": logo_url
+        })
+    finally:
+        conn.close()
 
 @app.route('/api/empresas/consulta_cnpj/<cnpj>', methods=['GET'])
 def api_consulta_cnpj(cnpj):
@@ -1907,6 +2400,7 @@ def get_tipos_operacao():
     return jsonify([dict(x) for x in ops])
 
 @app.route('/tipos_operacao', methods=['POST'])
+@security.require_admin
 def save_tipo_operacao():
     data, err_resp = security.validate_json_payload(security.TipoOperacaoPayloadSchema)
     if err_resp:
@@ -2146,6 +2640,7 @@ def save_tipo_operacao():
         return jsonify({"status": "error", "error": f"Erro ao salvar operação no banco de dados: {err_str}"}), 500
 
 @app.route('/api/operacoes/reordenar', methods=['POST'])
+@security.require_admin
 def reordenar_operacoes():
     data, err_resp = security.validate_json_payload(security.ReordenarOperacoesSchema)
     if err_resp:
@@ -2276,6 +2771,7 @@ def get_config_regimes_tributarios():
     return jsonify({"status": "success", "regimes": res})
 
 @app.route('/api/config/regimes_tributarios', methods=['POST'])
+@security.require_admin
 def save_config_regimes_tributarios():
     data, err_resp = security.validate_json_payload(security.RegimesTributariosPayloadSchema)
     if err_resp:
@@ -2308,6 +2804,7 @@ def save_config_regimes_tributarios():
     return jsonify({"status": "success", "regimes": merged})
 
 @app.route('/api/config/regimes_tributarios/reset', methods=['POST'])
+@security.require_admin
 def reset_config_regimes_tributarios():
     conn = get_db_connection()
     conn.execute("DELETE FROM sistema_config WHERE chave = 'config_regimes_tributarios'")
@@ -2316,6 +2813,7 @@ def reset_config_regimes_tributarios():
     return jsonify({"status": "success", "regimes": REGIMES_TRIBUTARIOS_DEFAULT})
 
 @app.route('/tipos_operacao/<int:op_id>', methods=['DELETE'])
+@security.require_admin
 def delete_tipo_operacao(op_id):
     conn = get_db_connection()
     c = conn.cursor()
@@ -2385,6 +2883,7 @@ def _is_sensitive_config_key(chave: str) -> bool:
     return any(p in k for p in _SENSITIVE_CONFIG_PATTERNS)
 
 @app.route('/api/config/salvar', methods=['POST'])
+@security.require_admin
 def salvar_config_geral():
     data, err_resp = security.validate_json_payload(security.ConfigGeralPayloadSchema)
     if err_resp:
@@ -4409,6 +4908,8 @@ def unidades_tributaveis_view():
 
 @app.route('/api/unidades_tributaveis', methods=['GET', 'POST'])
 def api_unidades_tributaveis():
+    if request.method == 'POST' and not security.is_current_user_admin():
+        return jsonify({"status": "error", "error": "Acesso não autorizado. Apenas Administradores podem adicionar ou alterar unidades tributáveis."}), 403
     conn = get_db_connection()
     c = conn.cursor()
     if request.method == 'GET':
@@ -4467,6 +4968,8 @@ def api_unidades_tributaveis():
 
 @app.route('/api/unidades_tributaveis/<int:uid>', methods=['PUT', 'DELETE'])
 def api_unidades_tributaveis_item(uid):
+    if not security.is_current_user_admin():
+        return jsonify({"status": "error", "error": "Acesso não autorizado. Apenas Administradores podem alterar ou excluir unidades tributáveis."}), 403
     conn = get_db_connection()
     c = conn.cursor()
     if request.method == 'DELETE':
@@ -4530,6 +5033,7 @@ def api_unidades_tributaveis_item(uid):
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/unidades_tributaveis/reset_padrao', methods=['POST'])
+@security.require_admin
 def api_unidades_tributaveis_reset():
     conn = get_db_connection()
     c = conn.cursor()
@@ -4732,6 +5236,8 @@ def feiras_page():
 
 @app.route('/api/feiras', methods=['GET', 'POST'])
 def api_feiras():
+    if request.method == 'POST' and not security.is_current_user_admin():
+        return jsonify({"status": "error", "error": "Acesso não autorizado. Apenas Administradores podem cadastrar feiras."}), 403
     conn = get_db_connection()
     c = conn.cursor()
     if request.method == 'GET':
@@ -4797,6 +5303,8 @@ def api_feiras():
 
 @app.route('/api/feiras/<int:feira_id>', methods=['GET', 'PUT', 'DELETE'])
 def api_feira_item(feira_id):
+    if request.method in ('PUT', 'DELETE') and not security.is_current_user_admin():
+        return jsonify({"status": "error", "error": "Acesso não autorizado. Apenas Administradores podem alterar ou excluir feiras."}), 403
     conn = get_db_connection()
     c = conn.cursor()
 
@@ -4854,6 +5362,8 @@ def api_feira_item(feira_id):
 @limiter.limit("10 per minute")
 def api_feiras_sync_sheets():
     """Obtém ou atualiza a base de feiras a partir de um link do Google Sheets informado pelo usuário"""
+    if request.method == 'POST' and not security.is_current_user_admin():
+        return jsonify({"status": "error", "error": "Acesso não autorizado. Apenas Administradores podem sincronizar feiras via Google Sheets."}), 403
     import urllib.request, csv, io, re
 
     conn = get_db_connection()
@@ -5287,6 +5797,8 @@ def api_certificado_importar():
                      ('certificado_ativo_arquivo', nome_sanitizado))
         conn.execute("INSERT OR REPLACE INTO sistema_config (chave, valor, data_atualizacao) VALUES (?, ?, CURRENT_TIMESTAMP)",
                      ('certificado_ativo_senha', senha))
+        conn.execute("INSERT OR REPLACE INTO sistema_config (chave, valor, data_atualizacao) VALUES (?, ?, CURRENT_TIMESTAMP)",
+                     (f'cert_pwd_{nome_sanitizado}', senha))
         conn.commit()
         conn.close()
         
@@ -5295,6 +5807,177 @@ def api_certificado_importar():
         return jsonify(info)
     except Exception as e:
         return jsonify({'status': 'error', 'message': f'Erro interno ao importar certificado: {str(e)}'}), 500
+
+@app.route('/api/certificado/listar', methods=['GET'])
+def api_certificado_listar():
+    try:
+        cert_dir = '/tmp/certificado' if os.environ.get('VERCEL') == '1' else os.path.join(os.path.dirname(__file__), 'certificado')
+        if not os.path.exists(cert_dir):
+            return jsonify({'status': 'success', 'certificados': [], 'ativo': None})
+
+        ativo_arquivo = None
+        ativo_senha = None
+        senhas_salvas = {}
+        try:
+            conn = get_db_connection()
+            rows = conn.execute("SELECT chave, valor FROM sistema_config WHERE chave LIKE 'cert_pwd_%' OR chave LIKE 'certificado_ativo_%'").fetchall()
+            conn.close()
+            for r in rows:
+                k, v = r['chave'], r['valor']
+                if k == 'certificado_ativo_arquivo':
+                    ativo_arquivo = v.strip() if v else None
+                elif k == 'certificado_ativo_senha':
+                    ativo_senha = v.strip() if v else None
+                elif k.startswith('cert_pwd_'):
+                    arq_k = k[len('cert_pwd_'):]
+                    senhas_salvas[arq_k] = v.strip() if v else ''
+        except Exception:
+            pass
+
+        if not ativo_arquivo and sefaz_client.CERT_PATH:
+            ativo_arquivo = os.path.basename(sefaz_client.CERT_PATH)
+
+        arquivos = [f for f in os.listdir(cert_dir) if f.lower().endswith(('.pfx', '.p12'))]
+        lista = []
+        ativo_info = None
+
+        for arq in sorted(arquivos):
+            caminho = os.path.join(cert_dir, arq)
+            is_ativo = (arq == ativo_arquivo)
+            senha_cand = senhas_salvas.get(arq) or (ativo_senha if is_ativo else None) or os.environ.get('CERT_PFX_PASSWORD', 'nftecnpj')
+            item = {
+                'arquivo': arq,
+                'ativo': is_ativo,
+                'tamanho': os.path.getsize(caminho),
+                'empresa': arq.replace('.pfx', '').replace('.p12', ''),
+                'cnpj': '',
+                'inicio': '',
+                'fim': '',
+                'status': 'valido'
+            }
+
+            try:
+                with open(caminho, 'rb') as f_c:
+                    pfx_data = f_c.read()
+                info = sefaz_client.validar_e_extrair_info_pfx(pfx_data, senha_cand.encode('utf-8'))
+                assunto = info.get('assunto', '')
+                nome_empresa = assunto
+                if 'CN=' in assunto:
+                    cn_part = assunto.split('CN=')[1].split(',')[0].strip()
+                    if ':' in cn_part:
+                        nome_empresa = cn_part.split(':')[0].strip()
+                    else:
+                        nome_empresa = cn_part
+                item['empresa'] = nome_empresa
+                item['cnpj'] = info.get('cnpj', '')
+                item['inicio'] = info.get('inicio', '')
+                item['fim'] = info.get('fim', '')
+                item['emissor'] = info.get('emissor', '')
+                item['status'] = 'valido'
+            except Exception as e_parse:
+                item['status'] = 'protegido'
+                item['erro'] = str(e_parse)
+
+            if is_ativo:
+                ativo_info = item
+            lista.append(item)
+
+        return jsonify({'status': 'success', 'certificados': lista, 'ativo': ativo_info})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/certificado/selecionar', methods=['POST'])
+def api_certificado_selecionar():
+    try:
+        data = request.get_json(silent=True) or {}
+        arquivo = (data.get('arquivo') or '').strip()
+        senha = (data.get('senha') or '').strip()
+        if not arquivo:
+            return jsonify({'status': 'error', 'message': 'Nome do arquivo não informado.'}), 400
+
+        cert_dir = '/tmp/certificado' if os.environ.get('VERCEL') == '1' else os.path.join(os.path.dirname(__file__), 'certificado')
+        caminho = os.path.join(cert_dir, os.path.basename(arquivo))
+        if not os.path.exists(caminho):
+            return jsonify({'status': 'error', 'message': 'Arquivo do certificado não encontrado no servidor.'}), 404
+
+        if not senha:
+            try:
+                conn = get_db_connection()
+                r = conn.execute("SELECT valor FROM sistema_config WHERE chave = ?", (f'cert_pwd_{os.path.basename(arquivo)}',)).fetchone()
+                if r and r['valor']:
+                    senha = r['valor'].strip()
+                else:
+                    r2 = conn.execute("SELECT valor FROM sistema_config WHERE chave = 'certificado_ativo_senha'").fetchone()
+                    if r2 and r2['valor']:
+                        senha = r2['valor'].strip()
+                conn.close()
+            except Exception:
+                pass
+        if not senha:
+            senha = os.environ.get('CERT_PFX_PASSWORD', 'nftecnpj')
+
+        senha_bytes = senha.encode('utf-8')
+        with open(caminho, 'rb') as f:
+            pfx_bytes = f.read()
+
+        info = sefaz_client.validar_e_extrair_info_pfx(pfx_bytes, senha_bytes)
+        sefaz_client.set_active_certificate(caminho, senha_bytes)
+
+        nome_arq = os.path.basename(arquivo)
+        conn = get_db_connection()
+        conn.execute("INSERT OR REPLACE INTO sistema_config (chave, valor, data_atualizacao) VALUES (?, ?, CURRENT_TIMESTAMP)",
+                     ('certificado_ativo_arquivo', nome_arq))
+        conn.execute("INSERT OR REPLACE INTO sistema_config (chave, valor, data_atualizacao) VALUES (?, ?, CURRENT_TIMESTAMP)",
+                     ('certificado_ativo_senha', senha))
+        conn.execute("INSERT OR REPLACE INTO sistema_config (chave, valor, data_atualizacao) VALUES (?, ?, CURRENT_TIMESTAMP)",
+                     (f'cert_pwd_{nome_arq}', senha))
+        conn.commit()
+        conn.close()
+
+        assunto = info.get('assunto', '')
+        nome_empresa = assunto
+        if 'CN=' in assunto:
+            cn_part = assunto.split('CN=')[1].split(',')[0].strip()
+            if ':' in cn_part:
+                nome_empresa = cn_part.split(':')[0].strip()
+            else:
+                nome_empresa = cn_part
+
+        info['arquivo'] = nome_arq
+        info['empresa'] = nome_empresa
+        info['message'] = f'Certificado {nome_empresa} selecionado e ativado com sucesso!'
+        return jsonify({'status': 'success', 'data': info})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'Erro ao ativar certificado: {str(e)}'}), 400
+
+@app.route('/api/certificado/excluir', methods=['POST'])
+def api_certificado_excluir():
+    try:
+        data = request.get_json(silent=True) or {}
+        arquivo = os.path.basename((data.get('arquivo') or '').strip())
+        if not arquivo:
+            return jsonify({'status': 'error', 'message': 'Nome do arquivo não informado.'}), 400
+
+        cert_dir = '/tmp/certificado' if os.environ.get('VERCEL') == '1' else os.path.join(os.path.dirname(__file__), 'certificado')
+        caminho = os.path.join(cert_dir, arquivo)
+
+        if sefaz_client.CERT_PATH and os.path.basename(sefaz_client.CERT_PATH) == arquivo:
+            return jsonify({'status': 'error', 'message': 'Não é permitido excluir o certificado que está ativo no momento. Selecione outro certificado primeiro.'}), 400
+
+        if os.path.exists(caminho):
+            os.remove(caminho)
+
+        try:
+            conn = get_db_connection()
+            conn.execute("DELETE FROM sistema_config WHERE chave = ?", (f'cert_pwd_{arquivo}',))
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
+
+        return jsonify({'status': 'success', 'message': f'Certificado {arquivo} removido com sucesso.'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/sefaz/enviar', methods=['POST'])
 @limiter.limit("15 per minute")
@@ -6772,6 +7455,7 @@ def api_relatorios_notas():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/relatorios/notas/atualizar_referencia', methods=['POST'])
+@security.require_admin
 def api_relatorios_atualizar_referencia():
     try:
         validated, err_resp = security.validate_json_payload(security.RelatorioAtualizarRefSchema, request.get_json(silent=True) or {})
@@ -6805,6 +7489,7 @@ def api_relatorios_atualizar_referencia():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/relatorios/notas/excluir', methods=['POST'])
+@security.require_admin
 def api_relatorios_excluir_nota():
     try:
         validated, err_resp = security.validate_json_payload(security.RelatorioExcluirNotaSchema, request.get_json(silent=True) or {})
