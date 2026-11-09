@@ -1669,6 +1669,7 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
     }
 
     function calcularChaveAcessoDinamica() {
+        window.calcularChaveAcessoDinamica = calcularChaveAcessoDinamica;
         // Se a nota já foi autorizada ou cancelada na SEFAZ ou está bloqueada, a chave de acesso é IMUTÁVEL
         if (window._chaveAcessoBloqueada) {
             return;
@@ -1747,6 +1748,7 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
             setVal('chaveAcessoDisplay', chave43);
         }
     }
+    window.calcularChaveAcessoDinamica = calcularChaveAcessoDinamica;
 
     function copiarChaveAcesso() {
         const chave = getVal('chaveAcesso') || (getVal('chaveAcessoDisplay') || '').replace(/\s+/g, '');
@@ -7422,6 +7424,32 @@ Utilizada para decodificar a chave privada na assinatura e transmissão de docum
                     preencherOpcoesSelect('select_emitente', 'Emitente');
                     preencherOpcoesSelect('select_destinatario', 'Cliente');
                     preencherOpcoesSelect('select_transportadora', 'Transportadora');
+
+                    // Auto-selecionar emitente ativo se emit_CNPJ estiver vazio
+                    try {
+                        const emitCnpjAtual = (getVal('emit_CNPJ') || '').replace(/\D/g, '');
+                        if (!emitCnpjAtual && cadastrosDisponiveis && cadastrosDisponiveis.length > 0) {
+                            const savedId = localStorage.getItem('nft_active_emitente_id');
+                            let activeEmp = cadastrosDisponiveis.find(e => String(e.id) === String(savedId));
+                            if (!activeEmp) {
+                                activeEmp = cadastrosDisponiveis.find(e => {
+                                    const t = (e.tipo || '').toLowerCase();
+                                    return t === 'emitente' || t === 'ambos' || t === 'filial' || t.includes('emit');
+                                });
+                            }
+                            if (!activeEmp) {
+                                activeEmp = cadastrosDisponiveis[0];
+                            }
+                            if (activeEmp) {
+                                selecionarEmpresa('emit', activeEmp.id);
+                            }
+                        }
+                    } catch(eAutoEmit) {
+                        console.warn('Aviso ao auto-selecionar emitente:', eAutoEmit);
+                    }
+                    if (typeof window.calcularChaveAcessoDinamica === 'function') {
+                        window.calcularChaveAcessoDinamica();
+                    }
                 })
                 .catch(err => console.error('Erro ao carregar empresas:', err));
         });
@@ -7507,6 +7535,7 @@ Utilizada para decodificar a chave privada na assinatura e transmissão de docum
         }
 
         function selecionarEmpresa(tipo, id) {
+            window.selecionarEmpresa = selecionarEmpresa;
             const dropdownId = tipo === 'emit' ? 'dropdown_menu_busca_emitente' : 'dropdown_menu_busca_destinatario';
             const inputId = tipo === 'emit' ? 'input_busca_emitente' : 'input_busca_destinatario';
             const selectId = tipo === 'emit' ? 'select_emitente' : 'select_destinatario';
@@ -7527,6 +7556,8 @@ Utilizada para decodificar a chave privada na assinatura e transmissão de docum
                 preencherDadosDeCadastro(sel, tipo);
             }
         }
+        window.selecionarEmpresa = selecionarEmpresa;
+        window.preencherDadosDeCadastro = preencherDadosDeCadastro;
 
         function aoPerderFocoEmpresa(tipo) {
             setTimeout(() => {

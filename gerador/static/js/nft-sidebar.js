@@ -1010,6 +1010,13 @@ window.carregarEmitentesTopbar = async function () {
 
         if (activeEmp) {
             window.atualizarVisualTopbarEmitente(activeEmp);
+            // Se a tela tiver selecionarEmpresa e emit_CNPJ estiver vazio, sincroniza emitente
+            try {
+                const emitCnpjEl = document.getElementById('emit_CNPJ');
+                if (emitCnpjEl && !emitCnpjEl.value.replace(/\D/g, '') && typeof window.selecionarEmpresa === 'function') {
+                    window.selecionarEmpresa('emit', activeEmp.id);
+                }
+            } catch (eSync) {}
         }
 
         let html = `
