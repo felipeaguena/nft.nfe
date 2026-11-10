@@ -324,6 +324,39 @@
             border-color: rgba(148, 163, 184, 0.35) !important;
         }
 
+        .btn-header-round {
+            width: 34px;
+            height: 34px;
+            border-radius: 50% !important;
+            padding: 0 !important;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+        .btn-header-round i,
+        .btn-header-round svg {
+            width: 16px;
+            height: 16px;
+        }
+        .btn-header-round:hover {
+            transform: translateY(-1px);
+        }
+        .btn-header-backup {
+            background-color: #16a34a !important;
+            border-color: #16a34a !important;
+            color: #ffffff !important;
+        }
+        .btn-header-backup:hover,
+        .btn-header-backup:focus,
+        .btn-header-backup:active {
+            background-color: #15803d !important;
+            border-color: #15803d !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 10px rgba(22, 163, 74, 0.35) !important;
+        }
+
         @media print {
             .nft-sidebar, .filter-panel, .header-actions, .pagination-wrap, .chave-copy-btn, .btn-file-action {
                 display: none !important;
@@ -563,21 +596,23 @@
                 </div>
             </div>
             <div class="d-flex align-items-center gap-2 mt-2 mt-md-0 header-actions">
-                <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" onclick="carregarNotas()" title="Atualizar listagem de notas" type="button">
-                    <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
-                    <span>Atualizar</span>
+                <button class="btn btn-sm btn-outline-secondary btn-header-round shadow-sm" onclick="carregarNotas()" title="Atualizar listagem de notas" data-bs-toggle="tooltip" data-bs-placement="bottom" type="button" aria-label="Atualizar">
+                    <i data-lucide="refresh-cw"></i>
                 </button>
-                <button class="btn btn-sm btn-success d-flex align-items-center gap-1" onclick="exportarExcel()" title="Exportar dados filtrados para Excel (.xlsx)" type="button">
-                    <i data-lucide="download" style="width: 14px; height: 14px;"></i>
-                    <span>Exportar Excel</span>
+                <button class="btn btn-sm btn-header-backup btn-header-round shadow-sm" onclick="abrirModalBackup()" title="Backup de Notas Fiscais" data-bs-toggle="tooltip" data-bs-placement="bottom" type="button" aria-label="Backup">
+                    <i data-lucide="archive"></i>
                 </button>
-                <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" onclick="exportarCSV()" title="Exportar dados filtrados para CSV" type="button">
-                    <i data-lucide="file-text" style="width: 14px; height: 14px;"></i>
-                    <span>CSV</span>
+                <button class="btn btn-sm btn-primary btn-header-round shadow-sm" onclick="abrirModalImportarXml()" title="Importar XML" data-bs-toggle="tooltip" data-bs-placement="bottom" type="button" aria-label="Importar XML">
+                    <i data-lucide="upload"></i>
                 </button>
-                <button class="btn btn-sm btn-outline-info text-info-emphasis d-flex align-items-center gap-1 shadow-sm fw-semibold" onclick="abrirModalConsultaSefazModal()" title="Consultar Situação da NF-e no SEFAZ" type="button">
-                    <i data-lucide="search" style="width: 14px; height: 14px;"></i>
-                    <span>Consulta SEFAZ</span>
+                <button class="btn btn-sm btn-success btn-header-round shadow-sm" onclick="exportarExcel()" title="Exportar Excel" data-bs-toggle="tooltip" data-bs-placement="bottom" type="button" aria-label="Exportar Excel">
+                    <i data-lucide="download"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-primary btn-header-round shadow-sm" onclick="exportarCSV()" title="CSV" data-bs-toggle="tooltip" data-bs-placement="bottom" type="button" aria-label="CSV">
+                    <i data-lucide="file-text"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-info text-info-emphasis btn-header-round shadow-sm" onclick="abrirModalConsultaSefazModal()" title="Consulta SEFAZ" data-bs-toggle="tooltip" data-bs-placement="bottom" type="button" aria-label="Consulta SEFAZ">
+                    <i data-lucide="search"></i>
                 </button>
             </div>
         </div>
@@ -721,9 +756,20 @@
         <!-- TABELA DE NOTAS FISCAIS GERADAS -->
         <div class="table-report-wrap">
             <div class="p-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2" style="background-color: var(--surface);">
-                <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
                     <span class="fw-bold text-heading">Listagem de Notas Fiscais</span>
                     <span class="badge bg-secondary-subtle text-secondary" id="badge-contador-linhas">0 notas</span>
+                    
+                    <!-- Dropdown de Ordenação Rápida -->
+                    <div class="d-inline-flex align-items-center gap-1 ms-md-2">
+                        <span class="small text-muted d-none d-sm-inline" style="font-size: 0.75rem;">Ordenar por:</span>
+                        <select class="form-select form-select-sm py-0 ps-2 pe-4" id="select-ordenacao" onchange="alterarOrdenacao(this.value)" style="width: auto; font-size: 0.75rem; height: 26px;">
+                            <option value="data_desc" selected>Data/Hora (Mais recente)</option>
+                            <option value="data_asc">Data/Hora (Mais antiga)</option>
+                            <option value="numero_desc">Nº NF-e (Maior para menor)</option>
+                            <option value="numero_asc">Nº NF-e (Menor para maior)</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="d-flex align-items-center gap-3 pagination-wrap">
                     <div class="d-flex align-items-center gap-1 small text-muted">
@@ -747,8 +793,18 @@
                     <thead class="sticky-top">
                         <tr>
                             <th style="min-width: 115px;">Referencia Interna</th>
-                            <th style="min-width: 95px;">Data/Hora</th>
-                            <th style="min-width: 55px;" class="text-center">Nº NF-e</th>
+                            <th style="min-width: 105px; cursor: pointer; user-select: none;" onclick="alternarOrdenacaoColuna('data')" title="Clique para alternar ordenação por Data/Hora" id="th-col-data">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <span>Data/Hora</span>
+                                    <i data-lucide="arrow-down" class="sort-icon text-primary ms-1" style="width: 13px; height: 13px;"></i>
+                                </div>
+                            </th>
+                            <th style="min-width: 80px; cursor: pointer; user-select: none;" class="text-center" onclick="alternarOrdenacaoColuna('numero')" title="Clique para alternar ordenação por Nº NF-e" id="th-col-numero">
+                                <div class="d-flex align-items-center justify-content-center gap-1">
+                                    <span>Nº NF-e</span>
+                                    <i data-lucide="arrow-up-down" class="sort-icon text-muted" style="width: 13px; height: 13px;"></i>
+                                </div>
+                            </th>
                             <th style="min-width: 135px;">Tipo de Operação</th>
                             <th style="min-width: 80px;" class="text-center">Ambiente</th>
                             <th style="min-width: 155px;">Chave de Acesso</th>
@@ -983,6 +1039,169 @@
     </div>
 </div>
 
+<!-- MODAL: BACKUP CONSOLIDADO DE NOTAS FISCAIS -->
+<div class="modal fade" id="modalBackup" tabindex="-1" aria-labelledby="modalBackupLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-bottom py-3" style="background-color: var(--surface);">
+                <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="modalBackupLabel">
+                    <i class="text-primary" data-lucide="archive"></i>
+                    <span>Backup de Notas Fiscais</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body py-3">
+                <p class="small text-muted mb-3">
+                    Exporte e consolide os arquivos (PDFs e/ou XMLs) das notas fiscais geradas ou importadas em um único arquivo compactado (.ZIP).
+                </p>
+
+                <!-- 1. Critério de Filtro -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted mb-2">1. Critério de Seleção:</label>
+                    <div class="d-flex flex-column gap-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="backupTipoFiltro" id="backupFiltroTodas" value="todas" checked onchange="atualizarCamposBackup()">
+                            <label class="form-check-label fw-semibold" for="backupFiltroTodas">
+                                Todas as notas fiscais cadastradas
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="backupTipoFiltro" id="backupFiltroPeriodo" value="periodo" onchange="atualizarCamposBackup()">
+                            <label class="form-check-label fw-semibold" for="backupFiltroPeriodo">
+                                Por período de data de emissão
+                            </label>
+                        </div>
+                        <div id="backup-campos-periodo" class="row g-2 mt-1 ps-4" style="display: none;">
+                            <div class="col-6">
+                                <label class="form-label small text-muted mb-1">Data Início:</label>
+                                <input type="date" class="form-control form-control-sm" id="backup-data-ini">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted mb-1">Data Fim:</label>
+                                <input type="date" class="form-control form-control-sm" id="backup-data-fim">
+                            </div>
+                        </div>
+
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="backupTipoFiltro" id="backupFiltroNumero" value="numero" onchange="atualizarCamposBackup()">
+                            <label class="form-check-label fw-semibold" for="backupFiltroNumero">
+                                Por intervalo de número da nota (Nº NF-e)
+                            </label>
+                        </div>
+                        <div id="backup-campos-numero" class="row g-2 mt-1 ps-4" style="display: none;">
+                            <div class="col-6">
+                                <label class="form-label small text-muted mb-1">Nº NF-e Inicial:</label>
+                                <input type="number" class="form-control form-control-sm" id="backup-num-ini" placeholder="Ex: 800" min="1">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted mb-1">Nº NF-e Final:</label>
+                                <input type="number" class="form-control form-control-sm" id="backup-num-fim" placeholder="Ex: 950" min="1">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Formato do Pacote -->
+                <div class="mb-3 pt-2 border-top">
+                    <label class="form-label small fw-bold text-muted mb-2">2. Formato dos Arquivos no ZIP:</label>
+                    <div class="d-flex flex-column gap-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="backupFormato" id="backupFormatoConsolidado" value="consolidado" checked>
+                            <label class="form-check-label" for="backupFormatoConsolidado">
+                                <span class="fw-bold">ZIP Consolidado</span> <span class="text-muted small">(Inclui ambos: DANFE em PDF e XML de cada nota)</span>
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="backupFormato" id="backupFormatoPdf" value="pdf">
+                            <label class="form-check-label" for="backupFormatoPdf">
+                                <span class="fw-bold">Todos os PDFs</span> <span class="text-muted small">(Apenas DANFEs em formato PDF)</span>
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="backupFormato" id="backupFormatoXml" value="xml">
+                            <label class="form-check-label" for="backupFormatoXml">
+                                <span class="fw-bold">Todos os XMLs</span> <span class="text-muted small">(Apenas os arquivos XML oficiais)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="backup-status-msg" class="alert alert-info py-2 px-3 small d-none mb-0"></div>
+            </div>
+            <div class="modal-footer border-top py-2" style="background-color: var(--surface);">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-sm btn-primary d-flex align-items-center gap-1" id="btn-executar-backup" onclick="executarDownloadBackup()">
+                    <i data-lucide="download" style="width: 14px; height: 14px;"></i>
+                    <span>Gerar e Baixar Backup (.ZIP)</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: IMPORTAR XMLs DE OUTROS SISTEMAS -->
+<div class="modal fade" id="modalImportarXml" tabindex="-1" aria-labelledby="modalImportarXmlLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-bottom py-3" style="background-color: var(--surface);">
+                <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="modalImportarXmlLabel">
+                    <i class="text-primary" data-lucide="upload"></i>
+                    <span>Importar Notas Fiscais (XML SEFAZ)</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body py-3">
+                <p class="small text-muted mb-3">
+                    Importe arquivos XML emitidos em outros sistemas que seguem o padrão SEFAZ (ou um pacote <code>.zip</code> com múltiplos XMLs).
+                    O sistema irá ler os dados da nota, gerar o <strong>DANFE em PDF</strong> no nosso padrão e disponibilizar para download na coluna "Arquivos".
+                </p>
+
+                <!-- Área de Seleção / Drag & Drop -->
+                <div class="border border-2 border-dashed rounded-3 p-4 text-center mb-3 bg-light" id="drop-zone-xml" style="cursor: pointer;" onclick="document.getElementById('input-arquivos-xml').click()">
+                    <i data-lucide="file-up" class="text-primary mb-2" style="width: 36px; height: 36px;"></i>
+                    <div class="fw-bold text-dark">Clique para selecionar ou arraste os arquivos XML aqui</div>
+                    <div class="small text-muted mt-1">Formatos aceitos: <code>.xml</code> ou <code>.zip</code> contendo XMLs (pode selecionar vários)</div>
+                    <input type="file" id="input-arquivos-xml" accept=".xml,.zip" multiple style="display: none;" onchange="atualizarListaArquivosSelecionados(this.files)">
+                </div>
+
+                <!-- Arquivos selecionados -->
+                <div id="container-arquivos-selecionados" class="mb-3 d-none">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="small fw-bold text-muted" id="lbl-total-arquivos-selecionados">0 arquivo(s) selecionado(s)</span>
+                        <button type="button" class="btn btn-link btn-sm text-danger p-0 small" onclick="limparArquivosSelecionados()">Limpar seleção</button>
+                    </div>
+                    <div class="border rounded p-2 bg-white" style="max-height: 140px; overflow-y: auto;" id="lista-nomes-arquivos"></div>
+                </div>
+
+                <!-- Referência Interna Opcional -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted mb-1" for="import-ref-custom">Referência Interna (Opcional):</label>
+                    <input type="text" class="form-control form-control-sm" id="import-ref-custom" placeholder="Deixe em branco para extrair automaticamente do XML (ex: NFT... / DI / REF-nNF)">
+                    <small class="text-muted" style="font-size: 0.72rem;">Se preenchido, será aplicada esta referência para as notas importadas que não possuírem referência própria.</small>
+                </div>
+
+                <!-- Barra de progresso -->
+                <div id="import-progress-area" class="d-none mb-3">
+                    <div class="progress mb-2" style="height: 10px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" id="import-progress-bar" style="width: 100%;"></div>
+                    </div>
+                    <div class="small text-muted text-center" id="import-progress-text">Processando XMLs, gerando DANFEs em PDF e gravando no sistema...</div>
+                </div>
+
+                <!-- Resumo dos resultados -->
+                <div id="import-result-area" class="d-none"></div>
+            </div>
+            <div class="modal-footer border-top py-2" style="background-color: var(--surface);">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-sm btn-primary d-flex align-items-center gap-1" id="btn-iniciar-importacao" onclick="iniciarImportacaoXml()">
+                    <i data-lucide="check" style="width: 14px; height: 14px;"></i>
+                    <span>Iniciar Importação</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Bootstrap 5 Bundle JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -1000,7 +1219,19 @@
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
-        modalRefBootstrap = new bootstrap.Modal(document.getElementById('modalEditarReferencia'));
+        // Inicializa Tooltips do Bootstrap
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+
+        const modalRefEl = document.getElementById('modalEditarReferencia');
+        if (modalRefEl) modalRefBootstrap = new bootstrap.Modal(modalRefEl);
+        const modalBackupEl = document.getElementById('modalBackup');
+        if (modalBackupEl) modalBackupBootstrap = new bootstrap.Modal(modalBackupEl);
+        const modalImportEl = document.getElementById('modalImportarXml');
+        if (modalImportEl) modalImportarXmlBootstrap = new bootstrap.Modal(modalImportEl);
+        configurarDropZoneXml();
         carregarNotas();
     });
 
@@ -1138,6 +1369,7 @@
             return true;
         });
 
+        aplicarOrdenacao();
         paginaAtual = 1;
         atualizarResumoCards();
         renderizarTabela();
@@ -2028,6 +2260,422 @@
                 btnExcluir.innerHTML = `<i data-lucide="trash-2" style="width: 14px; height: 14px;"></i> <span>Excluir Nota Fiscal do Relatório</span>`;
                 if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
             }
+        }
+    }
+
+    // ==============================================================================
+    // === MÓDULO DE ORDENAÇÃO DINÂMICA (Nº NF-e & DATA/HORA) ===
+    // ==============================================================================
+    let ordenacaoAtual = {
+        campo: 'data',    // 'data' ou 'numero'
+        direcao: 'desc'   // 'asc' ou 'desc'
+    };
+
+    function aplicarOrdenacao() {
+        notasFiltradas.sort((a, b) => {
+            if (ordenacaoAtual.campo === 'numero') {
+                const numA = parseInt(String(a.numero_nfe || '').replace(/\D/g, '')) || 0;
+                const numB = parseInt(String(b.numero_nfe || '').replace(/\D/g, '')) || 0;
+                return ordenacaoAtual.direcao === 'asc' ? numA - numB : numB - numA;
+            } else {
+                // Campo data_hora
+                const dtA = String(a.data_hora || '');
+                const dtB = String(b.data_hora || '');
+                return ordenacaoAtual.direcao === 'asc' ? dtA.localeCompare(dtB) : dtB.localeCompare(dtA);
+            }
+        });
+
+        atualizarIndicadoresOrdenacaoUI();
+    }
+
+    function alternarOrdenacaoColuna(campo) {
+        if (ordenacaoAtual.campo === campo) {
+            ordenacaoAtual.direcao = ordenacaoAtual.direcao === 'asc' ? 'desc' : 'asc';
+        } else {
+            ordenacaoAtual.campo = campo;
+            ordenacaoAtual.direcao = 'desc';
+        }
+
+        const selOrd = document.getElementById('select-ordenacao');
+        if (selOrd) {
+            selOrd.value = `${ordenacaoAtual.campo}_${ordenacaoAtual.direcao}`;
+        }
+
+        aplicarOrdenacao();
+        paginaAtual = 1;
+        renderizarTabela();
+    }
+
+    function alterarOrdenacao(valor) {
+        if (!valor) return;
+        const partes = valor.split('_');
+        ordenacaoAtual.campo = partes[0] || 'data';
+        ordenacaoAtual.direcao = partes[1] || 'desc';
+        aplicarOrdenacao();
+        paginaAtual = 1;
+        renderizarTabela();
+    }
+
+    function atualizarIndicadoresOrdenacaoUI() {
+        const thData = document.getElementById('th-col-data');
+        const thNumero = document.getElementById('th-col-numero');
+
+        if (thData) {
+            const iconData = thData.querySelector('.sort-icon');
+            if (iconData) {
+                if (ordenacaoAtual.campo === 'data') {
+                    iconData.setAttribute('data-lucide', ordenacaoAtual.direcao === 'asc' ? 'arrow-up' : 'arrow-down');
+                    iconData.className = 'sort-icon text-primary ms-1';
+                } else {
+                    iconData.setAttribute('data-lucide', 'arrow-up-down');
+                    iconData.className = 'sort-icon text-muted ms-1';
+                }
+            }
+        }
+
+        if (thNumero) {
+            const iconNumero = thNumero.querySelector('.sort-icon');
+            if (iconNumero) {
+                if (ordenacaoAtual.campo === 'numero') {
+                    iconNumero.setAttribute('data-lucide', ordenacaoAtual.direcao === 'asc' ? 'arrow-up' : 'arrow-down');
+                    iconNumero.className = 'sort-icon text-primary';
+                } else {
+                    iconNumero.setAttribute('data-lucide', 'arrow-up-down');
+                    iconNumero.className = 'sort-icon text-muted';
+                }
+            }
+        }
+
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+            lucide.createIcons();
+        }
+    }
+
+    // ==============================================================================
+    // === MÓDULO DE BACKUP CONSOLIDADO (PDFs, XMLs, ZIP CONSOLIDADO) ===
+    // ==============================================================================
+    let modalBackupBootstrap = null;
+
+    function abrirModalBackup() {
+        if (!modalBackupBootstrap) {
+            const el = document.getElementById('modalBackup');
+            if (el) modalBackupBootstrap = new bootstrap.Modal(el);
+        }
+        const statusMsg = document.getElementById('backup-status-msg');
+        if (statusMsg) {
+            statusMsg.classList.add('d-none');
+            statusMsg.textContent = '';
+        }
+        const btnExec = document.getElementById('btn-executar-backup');
+        if (btnExec) {
+            btnExec.disabled = false;
+            btnExec.innerHTML = `<i data-lucide="download" style="width: 14px; height: 14px;"></i> <span>Gerar e Baixar Backup (.ZIP)</span>`;
+        }
+        atualizarCamposBackup();
+        if (modalBackupBootstrap) modalBackupBootstrap.show();
+        if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+    }
+
+    function atualizarCamposBackup() {
+        const tipo = document.querySelector('input[name="backupTipoFiltro"]:checked')?.value || 'todas';
+        const divPeriodo = document.getElementById('backup-campos-periodo');
+        const divNumero = document.getElementById('backup-campos-numero');
+
+        if (divPeriodo) divPeriodo.style.display = (tipo === 'periodo') ? 'flex' : 'none';
+        if (divNumero) divNumero.style.display = (tipo === 'numero') ? 'flex' : 'none';
+    }
+
+    async function executarDownloadBackup() {
+        const tipoFiltro = document.querySelector('input[name="backupTipoFiltro"]:checked')?.value || 'todas';
+        const formato = document.querySelector('input[name="backupFormato"]:checked')?.value || 'consolidado';
+        const dataIni = document.getElementById('backup-data-ini')?.value || '';
+        const dataFim = document.getElementById('backup-data-fim')?.value || '';
+        const numIni = document.getElementById('backup-num-ini')?.value || '';
+        const numFim = document.getElementById('backup-num-fim')?.value || '';
+        const statusMsg = document.getElementById('backup-status-msg');
+        const btnExec = document.getElementById('btn-executar-backup');
+
+        if (tipoFiltro === 'periodo' && !dataIni && !dataFim) {
+            alert('Por favor, informe a Data Início ou Data Fim para o período de backup.');
+            return;
+        }
+        if (tipoFiltro === 'numero' && !numIni && !numFim) {
+            alert('Por favor, informe ao menos um número de NF-e (inicial ou final).');
+            return;
+        }
+
+        btnExec.disabled = true;
+        btnExec.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status"></span> Consolidando notas e gerando ZIP...`;
+
+        if (statusMsg) {
+            statusMsg.className = 'alert alert-info py-2 px-3 small mb-0';
+            statusMsg.textContent = 'Aguarde: localizando notas fiscais, verificando PDFs e XMLs e gerando arquivo ZIP consolidado...';
+            statusMsg.classList.remove('d-none');
+        }
+
+        try {
+            const payload = {
+                tipo_filtro: tipoFiltro,
+                formato: formato,
+                data_inicio: dataIni,
+                data_fim: dataFim,
+                numero_inicio: numIni,
+                numero_fim: numFim
+            };
+
+            const res = await fetch('/api/relatorios/backup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                const errJson = await res.json().catch(() => ({}));
+                throw new Error(errJson.error || `Erro ao gerar backup (Status ${res.status})`);
+            }
+
+            const disposition = res.headers.get('Content-Disposition');
+            let filename = 'Backup_Notas_Fiscais.zip';
+            if (disposition && disposition.indexOf('filename=') !== -1) {
+                const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
+                if (matches != null && matches[1]) {
+                    filename = matches[1].replace(/['"]/g, '');
+                }
+            }
+
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+
+            if (statusMsg) {
+                statusMsg.className = 'alert alert-success py-2 px-3 small mb-0';
+                statusMsg.textContent = `Backup consolidado (${filename}) gerado e baixado com sucesso!`;
+            }
+
+            setTimeout(() => {
+                if (modalBackupBootstrap) modalBackupBootstrap.hide();
+            }, 1800);
+
+        } catch (err) {
+            console.error('Erro no backup:', err);
+            if (statusMsg) {
+                statusMsg.className = 'alert alert-danger py-2 px-3 small mb-0';
+                statusMsg.textContent = `Falha ao gerar backup: ${err.message}`;
+            }
+        } finally {
+            btnExec.disabled = false;
+            btnExec.innerHTML = `<i data-lucide="download" style="width: 14px; height: 14px;"></i> <span>Gerar e Baixar Backup (.ZIP)</span>`;
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        }
+    }
+
+    // ==============================================================================
+    // === MÓDULO DE IMPORTAÇÃO DE XMLs (PADRÃO SEFAZ & GERAÇÃO DE DANFE PDF) ===
+    // ==============================================================================
+    let modalImportarXmlBootstrap = null;
+    let arquivosXmlSelecionados = [];
+
+    function abrirModalImportarXml() {
+        if (!modalImportarXmlBootstrap) {
+            const el = document.getElementById('modalImportarXml');
+            if (el) modalImportarXmlBootstrap = new bootstrap.Modal(el);
+        }
+        limparArquivosSelecionados();
+        const resultArea = document.getElementById('import-result-area');
+        if (resultArea) {
+            resultArea.innerHTML = '';
+            resultArea.classList.add('d-none');
+        }
+        const progressArea = document.getElementById('import-progress-area');
+        if (progressArea) progressArea.classList.add('d-none');
+
+        const btn = document.getElementById('btn-iniciar-importacao');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `<i data-lucide="check" style="width: 14px; height: 14px;"></i> <span>Iniciar Importação</span>`;
+        }
+
+        if (modalImportarXmlBootstrap) modalImportarXmlBootstrap.show();
+        if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+    }
+
+    function atualizarListaArquivosSelecionados(files) {
+        if (!files || files.length === 0) return;
+        arquivosXmlSelecionados = Array.from(files);
+
+        const container = document.getElementById('container-arquivos-selecionados');
+        const lbl = document.getElementById('lbl-total-arquivos-selecionados');
+        const lista = document.getElementById('lista-nomes-arquivos');
+
+        lbl.textContent = `${arquivosXmlSelecionados.length} arquivo(s) selecionado(s)`;
+        lista.innerHTML = arquivosXmlSelecionados.map((f, i) => `
+            <div class="d-flex justify-content-between align-items-center py-1 border-bottom small">
+                <span class="text-truncate font-monospace" style="max-width: 80%; font-size: 0.75rem;" title="${escapeHtml(f.name)}">
+                    <i data-lucide="file-code" class="text-primary me-1" style="width: 12px; height: 12px;"></i>
+                    ${escapeHtml(f.name)}
+                </span>
+                <span class="text-muted" style="font-size: 0.70rem;">(${(f.size / 1024).toFixed(1)} KB)</span>
+            </div>
+        `).join('');
+
+        container.classList.remove('d-none');
+        if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+    }
+
+    function limparArquivosSelecionados() {
+        arquivosXmlSelecionados = [];
+        const input = document.getElementById('input-arquivos-xml');
+        if (input) input.value = '';
+        const container = document.getElementById('container-arquivos-selecionados');
+        if (container) container.classList.add('d-none');
+        const lista = document.getElementById('lista-nomes-arquivos');
+        if (lista) lista.innerHTML = '';
+    }
+
+    function configurarDropZoneXml() {
+        const dropZone = document.getElementById('drop-zone-xml');
+        if (!dropZone) return;
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.add('border-primary', 'bg-primary-subtle');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.remove('border-primary', 'bg-primary-subtle');
+            }, false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            atualizarListaArquivosSelecionados(files);
+        }, false);
+    }
+
+    async function iniciarImportacaoXml() {
+        if (arquivosXmlSelecionados.length === 0) {
+            alert('Por favor, selecione ao menos um arquivo XML ou ZIP para importar.');
+            return;
+        }
+
+        const btn = document.getElementById('btn-iniciar-importacao');
+        const progressArea = document.getElementById('import-progress-area');
+        const resultArea = document.getElementById('import-result-area');
+        const refCustom = (document.getElementById('import-ref-custom')?.value || '').trim();
+
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status"></span> Importando...`;
+        progressArea.classList.remove('d-none');
+        resultArea.classList.add('d-none');
+        resultArea.innerHTML = '';
+
+        try {
+            const formData = new FormData();
+            arquivosXmlSelecionados.forEach(f => {
+                formData.append('files', f);
+            });
+            if (refCustom) {
+                formData.append('referencia_interna', refCustom);
+            }
+
+            const res = await fetch('/api/relatorios/notas/importar_xml', {
+                method: 'POST',
+                body: formData
+            });
+
+            progressArea.classList.add('d-none');
+
+            const contentType = res.headers.get('content-type') || '';
+            let data = null;
+            if (contentType.includes('application/json')) {
+                data = await res.json();
+            } else {
+                const rawText = await res.text();
+                const cleanMsg = rawText.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                throw new Error(`Servidor retornou resposta inesperada (${res.status}): ${cleanMsg.substring(0, 120)}`);
+            }
+
+            if (!res.ok || !data.success) {
+                throw new Error(data.error || 'Falha ao importar notas fiscais.');
+            }
+
+            let htmlResumo = `
+                <div class="alert alert-${data.total_importados > 0 ? 'success' : 'warning'} py-2 px-3 small mb-2">
+                    <strong>Resultado da Importação:</strong> ${data.total_importados} nota(s) fiscal(is) importada(s) com sucesso.
+                    ${data.total_erros > 0 ? `<br/><span class="text-danger">${data.total_erros} arquivo(s) com erro.</span>` : ''}
+                </div>
+            `;
+
+            if (data.importados && data.importados.length > 0) {
+                htmlResumo += `
+                    <div class="border rounded p-2 bg-light mb-2" style="max-height: 180px; overflow-y: auto;">
+                        <div class="small fw-bold text-success mb-1">Notas integradas e DANFEs em PDF gerados:</div>
+                        ${data.importados.map(n => `
+                            <div class="d-flex justify-content-between align-items-center py-1 border-bottom small">
+                                <div>
+                                    <span class="badge bg-success-subtle text-success me-1">NF-e ${escapeHtml(n.numero_nfe || '')}</span>
+                                    <strong>${escapeHtml(n.referencia_interna || '')}</strong>
+                                    <span class="text-muted ms-1 font-monospace" style="font-size: 0.70rem;">(${n.chave ? n.chave.substring(0, 22) + '...' : ''})</span>
+                                </div>
+                                <span class="badge bg-light text-success border border-success-subtle" style="font-size: 0.68rem;">
+                                    ${n.tem_pdf ? 'DANFE PDF Gerado' : 'XML Importado'}
+                                </span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            if (data.erros && data.erros.length > 0) {
+                htmlResumo += `
+                    <div class="border rounded p-2 bg-light text-danger" style="max-height: 120px; overflow-y: auto;">
+                        <div class="small fw-bold mb-1">Avisos / Erros:</div>
+                        ${data.erros.map(e => `
+                            <div class="py-1 border-bottom small">
+                                <strong>${escapeHtml(e.arquivo || 'Arquivo')}:</strong> ${escapeHtml(e.error || 'Erro desconhecido')}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            resultArea.innerHTML = htmlResumo;
+            resultArea.classList.remove('d-none');
+
+            if (data.total_importados > 0) {
+                carregarNotas();
+            }
+
+        } catch (err) {
+            console.error('Erro na importação de XML:', err);
+            progressArea.classList.add('d-none');
+            resultArea.innerHTML = `
+                <div class="alert alert-danger py-2 px-3 small mb-0">
+                    <strong>Erro na importação:</strong> ${escapeHtml(err.message)}
+                </div>
+            `;
+            resultArea.classList.remove('d-none');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `<i data-lucide="check" style="width: 14px; height: 14px;"></i> <span>Concluir</span>`;
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
         }
     }
 </script>

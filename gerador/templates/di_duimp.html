@@ -240,17 +240,14 @@
 <p class="nft-page-subtitle" style="font-size: 13px; color: #64748B; margin: 3px 0 0 0;">Importe a Declaração de Importação (DI) ou DUIMP, selecione o Tipo de Nota e salve rascunhos para continuar a edição.</p>
 </div>
 <div class="d-flex align-items-center gap-2">
-<button class="nft-btn-secondary fw-bold d-flex align-items-center gap-2 btn-analisar-rascunho" onclick="analisarRascunho()" title="Analisar e Verificar Rascunho da NF-e" type="button" style="height: 40px; padding: 0 16px; border-radius: 10px;">
-<i data-lucide="shield-check" style="width: 16px; height: 16px;"></i>
-<span>Analisar</span>
+<button class="nft-btn-secondary fw-bold btn-header-round btn-analisar-rascunho" onclick="analisarRascunho()" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Analisar e Verificar Rascunho da NF-e" aria-label="Analisar e Verificar Rascunho da NF-e" type="button">
+<i data-lucide="shield-check"></i>
 </button>
-<button class="nft-btn-secondary fw-bold d-flex align-items-center gap-2 btn-espelho-fiscal" onclick="abrirEspelhoFiscal()" title="Visualizar Espelho do Documento Fiscal (Resumo de Configurações - Atalho: Alt+E)" type="button" style="height: 40px; padding: 0 16px; border-radius: 10px; border-color: #93C5FD; color: #1D4ED8; background: #EFF6FF;">
-<i data-lucide="file-search" style="width: 16px; height: 16px; color: #2563EB;"></i>
-<span>Espelho do Documento Fiscal</span>
+<button class="nft-btn-secondary fw-bold btn-header-round btn-espelho-fiscal" onclick="abrirEspelhoFiscal()" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Visualizar Espelho do Documento Fiscal (Resumo de Configurações - Atalho: Alt+E)" aria-label="Visualizar Espelho do Documento Fiscal" type="button" style="border-color: #93C5FD; color: #1D4ED8; background: #EFF6FF;">
+<i data-lucide="file-search" style="color: #2563EB;"></i>
 </button>
-<button class="nft-btn-primary fw-bold d-flex align-items-center gap-2 btn-gerar-xml" onclick="generateXML()" title="Gerar e Baixar Arquivo XML da NF-e" type="button" style="height: 40px; padding: 0 16px; border-radius: 10px;">
-<i data-lucide="download" style="width: 16px; height: 16px;"></i>
-<span>Download do XML</span>
+<button class="nft-btn-primary fw-bold btn-header-round btn-gerar-xml" onclick="generateXML()" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Gerar e Baixar Arquivo XML da NF-e" aria-label="Gerar e Baixar Arquivo XML da NF-e" type="button">
+<i data-lucide="download"></i>
 </button>
 </div>
 </div>

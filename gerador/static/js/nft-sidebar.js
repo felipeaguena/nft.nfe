@@ -314,15 +314,31 @@
         }
     }
 
-    // Sincronização de Abas (Cabeçalho, Itens, Rodapé, Configurações)
+    // Sincronização de Abas (Cabeçalho, Itens, Identificação, SEFAZ, Configurações)
     window.sidebarSwitchTab = function (tabKey) {
-        if (tabKey === 'tipo-nota') {
+        if (!tabKey) return;
+        const key = String(tabKey).toLowerCase().trim();
+
+        if (key.includes('tipo') || key.includes('imposto')) {
             if (typeof window.abrirModalTipoNota === 'function') {
                 window.abrirModalTipoNota();
                 return;
             }
         }
-        const targetTabBtn = document.getElementById(tabKey + '-tab');
+
+        // Resolução inteligente de qualquer alias para os IDs oficiais das abas do sistema
+        let resolvedKey = key;
+        if (key.includes('identifica') || key.includes('emit') || key.includes('dest') || key.includes('transp') || key === '2') {
+            resolvedKey = 'identificacao';
+        } else if (key.includes('item') || key.includes('prod') || key.includes('tot') || key === '3') {
+            resolvedKey = 'itens';
+        } else if (key.includes('sefaz') || key.includes('hist') || key === '4') {
+            resolvedKey = 'historico-sefaz';
+        } else if (key.includes('cabec') || key.includes('operac') || key.includes('export') || key === '1') {
+            resolvedKey = 'cabecalho';
+        }
+
+        const targetTabBtn = document.getElementById(resolvedKey + '-tab');
         if (targetTabBtn) {
             if (window.bootstrap && bootstrap.Tab) {
                 try {
@@ -337,7 +353,7 @@
         }
 
         // Força a transição segura dos tab-panes
-        const targetPane = document.getElementById(tabKey);
+        const targetPane = document.getElementById(resolvedKey);
         if (targetPane) {
             const tabContent = targetPane.closest('.tab-content') || document.getElementById('myTabContent');
             if (tabContent) {
@@ -359,7 +375,7 @@
             }
         }
 
-        setActiveSidebarItem(tabKey);
+        setActiveSidebarItem(resolvedKey);
     };
 
     function setActiveSidebarItem(tabKey) {
@@ -1319,4 +1335,19 @@ document.addEventListener('DOMContentLoaded', function () {
     window.carregarEmitentesTopbar();
     window.carregarUsuarioAutenticadoTopbar();
     window.atualizarContadorRascunhosSidebar();
+
+    // Inicialização global de tooltips Bootstrap em todos os elementos com data-bs-toggle="tooltip"
+    try {
+        if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl, {
+                    trigger: 'hover',
+                    boundary: 'window'
+                });
+            });
+        }
+    } catch (e) {
+        console.warn('Erro ao inicializar tooltips:', e);
+    }
 });

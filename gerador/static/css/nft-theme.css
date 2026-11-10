@@ -7352,3 +7352,137 @@ span.input-group-text {
   outline: none !important;
   z-index: 5 !important;
 }
+
+/* ==========================================================================
+   BOTÕES DE CABEÇALHO CIRCULARES COM TOOLTIP (.btn-header-round)
+   ========================================================================== */
+.btn-header-round {
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  max-width: 38px !important;
+  border-radius: 50% !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+  cursor: pointer;
+  border: 1px solid var(--border, #cbd5e1);
+}
+
+.btn-header-round:hover {
+  transform: translateY(-1px) scale(1.04);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+}
+
+.btn-header-round:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.btn-header-round i,
+.btn-header-round svg {
+  width: 17px !important;
+  height: 17px !important;
+  margin: 0 !important;
+  display: block;
+}
+
+/* ==========================================================================
+   DESTACAMENTO VISUAL DE CAMPOS COM ERRO / ANÁLISE (.nft-field-error-highlight)
+   ========================================================================== */
+@keyframes nftFieldPulseHighlight {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    border-color: #ef4444 !important;
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0.35);
+    border-color: #dc2626 !important;
+    background-color: rgba(254, 242, 242, 0.8) !important;
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    border-color: #ef4444 !important;
+  }
+}
+
+.nft-field-error-highlight {
+  animation: nftFieldPulseHighlight 0.9s ease-in-out 3 !important;
+  border-color: #ef4444 !important;
+  outline: 2px solid rgba(239, 68, 68, 0.6) !important;
+  outline-offset: 2px !important;
+}
+
+.error-item-row:hover,
+.alert-item-row:hover {
+  filter: brightness(0.97);
+  transition: all 0.15s ease;
+}
+
+/* Botão de ação nos itens de Erro da Análise do Rascunho */
+.btn-analise-corrigir-erro {
+  background-color: #dc3545 !important;
+  color: #ffffff !important;
+  border: 1px solid #dc3545 !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  border-radius: 6px !important;
+  padding: 4px 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  white-space: nowrap !important;
+  box-shadow: 0 1px 2px rgba(220, 53, 69, 0.25) !important;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease !important;
+  cursor: pointer !important;
+}
+
+.btn-analise-corrigir-erro:hover {
+  background-color: #991b1b !important; /* Vermelho escuro */
+  border-color: #7f1d1d !important;
+  color: #ffffff !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 5px rgba(153, 27, 27, 0.4) !important;
+}
+
+.btn-analise-corrigir-erro:active {
+  background-color: #7f1d1d !important;
+  transform: translateY(0) !important;
+}
+
+/* Botão de ação nos itens de Alerta da Análise do Rascunho */
+.btn-analise-revisar-alerta {
+  background-color: #f59e0b !important;
+  color: #ffffff !important;
+  border: 1px solid #d97706 !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  border-radius: 6px !important;
+  padding: 4px 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  white-space: nowrap !important;
+  box-shadow: 0 1px 2px rgba(245, 158, 11, 0.25) !important;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease !important;
+  cursor: pointer !important;
+}
+
+.btn-analise-revisar-alerta:hover {
+  background-color: #b45309 !important; /* Âmbar / laranja escuro */
+  border-color: #92400e !important;
+  color: #ffffff !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 5px rgba(180, 83, 9, 0.4) !important;
+}
+
+.btn-analise-revisar-alerta:active {
+  background-color: #78350f !important;
+  transform: translateY(0) !important;
+}
+
+
+

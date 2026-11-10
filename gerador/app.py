@@ -3550,12 +3550,12 @@ def process_di_xml(root):
     # Try to find UF Desemb from cadastros table
     uf_desemb = ""
     try:
-        conn = sqlite3.connect(db_path)
+        conn = get_db_connection()
         c = conn.cursor()
         c.execute("SELECT uf FROM cadastros WHERE tipo = 'Local de Desembaraço' AND nome LIKE ? LIMIT 1", (f"%{xLocDesemb}%",))
         row = c.fetchone()
-        if row and row[0]:
-            uf_desemb = row[0]
+        if row and (row[0] if isinstance(row, (list, tuple)) else row['uf']):
+            uf_desemb = row[0] if isinstance(row, (list, tuple)) else row['uf']
         conn.close()
     except Exception:
         pass
@@ -4075,7 +4075,9 @@ def validar_dados_nfe(cabecalho, itens, rodape, referencia_interna=''):
         erros.append({
             "categoria": "Itens da Nota",
             "aba": "3. Itens da Nota",
+            "aba_id": "itens",
             "campo": "Grade de Itens",
+            "campo_id": "tabela-itens",
             "mensagem": "Nenhum item adicionado à nota fiscal. A SEFAZ exige ao menos 1 item."
         })
     else:
@@ -4086,7 +4088,12 @@ def validar_dados_nfe(cabecalho, itens, rodape, referencia_interna=''):
                 erros.append({
                     "categoria": "Itens da Nota",
                     "aba": "3. Itens da Nota",
+                    "aba_id": "itens",
                     "campo": f"Item #{n_item} - Cód. Prod.",
+                    "campo_id": "tabela-itens",
+                    "item_num": n_item,
+                    "item_col": "cProd",
+                    "modal_field_id": "m_item_cProd",
                     "mensagem": f"Item #{n_item}: Código do produto (cProd) é obrigatório."
                 })
 
@@ -4095,14 +4102,24 @@ def validar_dados_nfe(cabecalho, itens, rodape, referencia_interna=''):
                 erros.append({
                     "categoria": "Itens da Nota",
                     "aba": "3. Itens da Nota",
+                    "aba_id": "itens",
                     "campo": f"Item #{n_item} - Descrição",
+                    "campo_id": "tabela-itens",
+                    "item_num": n_item,
+                    "item_col": "xProd",
+                    "modal_field_id": "m_item_xProd",
                     "mensagem": f"Item #{n_item}: Descrição do produto (xProd) é obrigatória."
                 })
             elif len(x_prod) > 120:
                 alertas.append({
                     "categoria": "Itens da Nota",
                     "aba": "3. Itens da Nota",
+                    "aba_id": "itens",
                     "campo": f"Item #{n_item} - Descrição",
+                    "campo_id": "tabela-itens",
+                    "item_num": n_item,
+                    "item_col": "xProd",
+                    "modal_field_id": "m_item_xProd",
                     "mensagem": f"Item #{n_item}: Descrição tem {len(x_prod)} caracteres (limite SEFAZ é 120, será truncada)."
                 })
 
@@ -4111,14 +4128,24 @@ def validar_dados_nfe(cabecalho, itens, rodape, referencia_interna=''):
                 erros.append({
                     "categoria": "Itens da Nota",
                     "aba": "3. Itens da Nota",
+                    "aba_id": "itens",
                     "campo": f"Item #{n_item} - NCM",
+                    "campo_id": "tabela-itens",
+                    "item_num": n_item,
+                    "item_col": "NCM",
+                    "modal_field_id": "m_item_NCM",
                     "mensagem": f"Item #{n_item}: NCM é obrigatório para validação tributária."
                 })
             elif len(ncm) != 8:
                 erros.append({
                     "categoria": "Itens da Nota",
                     "aba": "3. Itens da Nota",
+                    "aba_id": "itens",
                     "campo": f"Item #{n_item} - NCM",
+                    "campo_id": "tabela-itens",
+                    "item_num": n_item,
+                    "item_col": "NCM",
+                    "modal_field_id": "m_item_NCM",
                     "mensagem": f"Item #{n_item}: NCM deve conter exatamente 8 dígitos numéricos (atual: {len(ncm)})."
                 })
 
@@ -4127,14 +4154,24 @@ def validar_dados_nfe(cabecalho, itens, rodape, referencia_interna=''):
                 erros.append({
                     "categoria": "Itens da Nota",
                     "aba": "3. Itens da Nota",
+                    "aba_id": "itens",
                     "campo": f"Item #{n_item} - CFOP",
+                    "campo_id": "tabela-itens",
+                    "item_num": n_item,
+                    "item_col": "CFOP",
+                    "modal_field_id": "m_item_CFOP",
                     "mensagem": f"Item #{n_item}: CFOP é obrigatório."
                 })
             elif len(cfop) != 4:
                 erros.append({
                     "categoria": "Itens da Nota",
                     "aba": "3. Itens da Nota",
+                    "aba_id": "itens",
                     "campo": f"Item #{n_item} - CFOP",
+                    "campo_id": "tabela-itens",
+                    "item_num": n_item,
+                    "item_col": "CFOP",
+                    "modal_field_id": "m_item_CFOP",
                     "mensagem": f"Item #{n_item}: CFOP deve conter exatamente 4 dígitos numéricos."
                 })
 
@@ -4143,7 +4180,12 @@ def validar_dados_nfe(cabecalho, itens, rodape, referencia_interna=''):
                 erros.append({
                     "categoria": "Itens da Nota",
                     "aba": "3. Itens da Nota",
+                    "aba_id": "itens",
                     "campo": f"Item #{n_item} - Un. Com.",
+                    "campo_id": "tabela-itens",
+                    "item_num": n_item,
+                    "item_col": "uCom",
+                    "modal_field_id": "m_item_uCom",
                     "mensagem": f"Item #{n_item}: Unidade comercial (uCom) é obrigatória."
                 })
 
@@ -4152,7 +4194,12 @@ def validar_dados_nfe(cabecalho, itens, rodape, referencia_interna=''):
                 erros.append({
                     "categoria": "Itens da Nota",
                     "aba": "3. Itens da Nota",
+                    "aba_id": "itens",
                     "campo": f"Item #{n_item} - Qtd. Com.",
+                    "campo_id": "tabela-itens",
+                    "item_num": n_item,
+                    "item_col": "qCom",
+                    "modal_field_id": "m_item_qCom",
                     "mensagem": f"Item #{n_item}: Quantidade comercial (qCom) deve ser maior que zero."
                 })
 
@@ -4161,7 +4208,12 @@ def validar_dados_nfe(cabecalho, itens, rodape, referencia_interna=''):
                 erros.append({
                     "categoria": "Itens da Nota",
                     "aba": "3. Itens da Nota",
+                    "aba_id": "itens",
                     "campo": f"Item #{n_item} - V. Unit. Com.",
+                    "campo_id": "tabela-itens",
+                    "item_num": n_item,
+                    "item_col": "vUnCom",
+                    "modal_field_id": "m_item_vUnCom",
                     "mensagem": f"Item #{n_item}: Valor unitário (vUnCom) deve ser maior que zero."
                 })
 
@@ -4170,7 +4222,12 @@ def validar_dados_nfe(cabecalho, itens, rodape, referencia_interna=''):
                 erros.append({
                     "categoria": "Itens da Nota",
                     "aba": "3. Itens da Nota",
+                    "aba_id": "itens",
                     "campo": f"Item #{n_item} - V. Total Prod.",
+                    "campo_id": "tabela-itens",
+                    "item_num": n_item,
+                    "item_col": "vProd",
+                    "modal_field_id": "m_item_vProd",
                     "mensagem": f"Item #{n_item}: Valor total do produto (vProd) deve ser maior que zero."
                 })
 
@@ -4179,7 +4236,12 @@ def validar_dados_nfe(cabecalho, itens, rodape, referencia_interna=''):
                 alertas.append({
                     "categoria": "Itens da Nota",
                     "aba": "3. Itens da Nota",
+                    "aba_id": "itens",
                     "campo": f"Item #{n_item} - Un. Trib.",
+                    "campo_id": "tabela-itens",
+                    "item_num": n_item,
+                    "item_col": "uTrib",
+                    "modal_field_id": "m_item_uTrib",
                     "mensagem": f"Item #{n_item}: Unidade tributável (uTrib) não informada."
                 })
 
@@ -4190,14 +4252,24 @@ def validar_dados_nfe(cabecalho, itens, rodape, referencia_interna=''):
                     erros.append({
                         "categoria": "Itens da Nota",
                         "aba": "3. Itens da Nota",
+                        "aba_id": "itens",
                         "campo": f"Item #{n_item} - Qtd. Trib.",
+                        "campo_id": "tabela-itens",
+                        "item_num": n_item,
+                        "item_col": "qTrib",
+                        "modal_field_id": "m_item_qTrib",
                         "mensagem": f"Item #{n_item}: Quantidade tributável (qTrib) é obrigatória em operações de exportação/exterior."
                     })
                 else:
                     alertas.append({
                         "categoria": "Itens da Nota",
                         "aba": "3. Itens da Nota",
+                        "aba_id": "itens",
                         "campo": f"Item #{n_item} - Qtd. Trib.",
+                        "campo_id": "tabela-itens",
+                        "item_num": n_item,
+                        "item_col": "qTrib",
+                        "modal_field_id": "m_item_qTrib",
                         "mensagem": f"Item #{n_item}: Quantidade tributável (qTrib) zerada ou em branco."
                     })
 
@@ -4212,51 +4284,66 @@ def validar_dados_nfe(cabecalho, itens, rodape, referencia_interna=''):
                 erros.append({
                     "categoria": "Documento de Importação (DI/DUIMP)",
                     "aba": "3. Itens da Nota",
+                    "aba_id": "itens",
                     "campo": f"Item #{n_item} - Nº DI/DUIMP",
+                    "campo_id": "tabela-itens",
+                    "item_num": n_item,
+                    "item_col": "nDI",
+                    "modal_field_id": "m_item_nDI",
                     "mensagem": f"Item #{n_item}: Nenhuma nota fiscal pode ser emitida sem a identificação do Documento de Importação (DI/DUIMP) e Adição correspondente."
                 })
 
-    # 2. Identificação da NF-e (ide)
+    # 2. Identificação da Operação (ide) -> Aba 1: 1. Operação
     n_nf = str(cabecalho.get('nNF') or '').strip()
     if not n_nf or not n_nf.isdigit() or int(n_nf) <= 0:
         erros.append({
-            "categoria": "Identificação",
-            "aba": "1. Identificação",
+            "categoria": "Operação",
+            "aba": "1. Operação",
+            "aba_id": "cabecalho",
             "campo": "Número da NF (nNF)",
+            "campo_id": "nNF",
             "mensagem": "Número da NF deve ser preenchido com um número inteiro maior que zero."
         })
 
     serie = str(cabecalho.get('serie') or '').strip()
     if not serie or not serie.isdigit():
         erros.append({
-            "categoria": "Identificação",
-            "aba": "1. Identificação",
+            "categoria": "Operação",
+            "aba": "1. Operação",
+            "aba_id": "cabecalho",
             "campo": "Série",
+            "campo_id": "serie",
             "mensagem": "Série da nota fiscal deve conter apenas números."
         })
 
     ind_final_val = str(cabecalho.get('indFinal') if cabecalho.get('indFinal') is not None and str(cabecalho.get('indFinal')).strip() != '' else '1').strip()
     if ind_final_val not in ('0', '1'):
         erros.append({
-            "categoria": "Identificação",
+            "categoria": "Operação",
             "aba": "1. Operação",
+            "aba_id": "cabecalho",
             "campo": "Consumidor final (indFinal)",
+            "campo_id": "indFinal",
             "mensagem": "Campo Consumidor final deve ser '0' (Não) ou '1' (Sim)."
         })
 
     nat_op = str(cabecalho.get('natOp') or cabecalho.get('select_operacao') or '').strip()
     if not nat_op:
         erros.append({
-            "categoria": "Identificação",
-            "aba": "1. Identificação",
+            "categoria": "Operação",
+            "aba": "1. Operação",
+            "aba_id": "cabecalho",
             "campo": "Natureza da Operação (natOp)",
+            "campo_id": "select_operacao",
             "mensagem": "Natureza da Operação é campo obrigatório pela SEFAZ."
         })
     elif len(nat_op) > 60:
         alertas.append({
-            "categoria": "Identificação",
-            "aba": "1. Identificação",
+            "categoria": "Operação",
+            "aba": "1. Operação",
+            "aba_id": "cabecalho",
             "campo": "Natureza da Operação",
+            "campo_id": "select_operacao",
             "mensagem": f"Natureza da Operação possui {len(nat_op)} caracteres (limite máximo é 60)."
         })
 
@@ -4264,9 +4351,11 @@ def validar_dados_nfe(cabecalho, itens, rodape, referencia_interna=''):
     if ref_nfe:
         if len(ref_nfe) != 44:
             erros.append({
-                "categoria": "Identificação",
-                "aba": "1. Identificação",
+                "categoria": "Operação",
+                "aba": "1. Operação",
+                "aba_id": "cabecalho",
                 "campo": "Chave Referenciada (refNFe)",
+                "campo_id": "refNFe",
                 "mensagem": f"Chave de acesso referenciada deve conter exatamente 44 dígitos numéricos (atual: {len(ref_nfe)})."
             })
     else:
@@ -4277,9 +4366,11 @@ def validar_dados_nfe(cabecalho, itens, rodape, referencia_interna=''):
         is_devolucao = (fin_nfe == '4' or cfop_ref in cfops_devolucao or 'DEVOLU' in nat_op.upper())
         if is_devolucao:
             alertas.append({
-                "categoria": "Identificação",
-                "aba": "1. Identificação",
+                "categoria": "Operação",
+                "aba": "1. Operação",
+                "aba_id": "cabecalho",
                 "campo": "Chave Referenciada (refNFe)",
+                "campo_id": "refNFe",
                 "mensagem": "Operações de Devolução (ou finNFe=4) exigem obrigatoriamente a Chave de Acesso da NF-e referenciada (tag <NFref>) conforme MOC da SEFAZ."
             })
 
@@ -4289,26 +4380,32 @@ def validar_dados_nfe(cabecalho, itens, rodape, referencia_interna=''):
         is_retorno_reexp = (cfop_ref in cfops_retorno_reexp or has_retorno_reexp_item or 'RETORNO' in nat_op.upper() or 'REEXPORTA' in nat_op.upper())
         if is_retorno_reexp:
             alertas.append({
-                "categoria": "Identificação",
+                "categoria": "Operação",
                 "aba": "1. Operação",
+                "aba_id": "cabecalho",
                 "campo": "Chave Referenciada (refNFe)",
+                "campo_id": "refNFe",
                 "mensagem": "Operações de Retorno de Feira (CFOP 1914/2914) e Reexportação (CFOP 7930) recomendam/exigem informar a Chave de Acesso da NF-e referenciada de origem (<NFref>) para autorização na SEFAZ."
             })
 
-    # 3. Emitente (emit)
+    # 3. Emitente (emit) -> Aba 2: 2. Identificação
     emit_cnpj = re.sub(r'\D', '', str(cabecalho.get('emit_CNPJ') or ''))
     if not emit_cnpj:
         erros.append({
             "categoria": "Emitente",
-            "aba": "2. Emitente",
+            "aba": "2. Identificação",
+            "aba_id": "identificacao",
             "campo": "CNPJ Emitente",
+            "campo_id": "emit_CNPJ",
             "mensagem": "CNPJ do emitente é obrigatório."
         })
     elif len(emit_cnpj) != 14:
         erros.append({
             "categoria": "Emitente",
-            "aba": "2. Emitente",
+            "aba": "2. Identificação",
+            "aba_id": "identificacao",
             "campo": "CNPJ Emitente",
+            "campo_id": "emit_CNPJ",
             "mensagem": f"CNPJ do emitente inválido (deve ter 14 dígitos, atual: {len(emit_cnpj)})."
         })
 
@@ -4316,8 +4413,10 @@ def validar_dados_nfe(cabecalho, itens, rodape, referencia_interna=''):
     if not emit_x_nome:
         erros.append({
             "categoria": "Emitente",
-            "aba": "2. Emitente",
+            "aba": "2. Identificação",
+            "aba_id": "identificacao",
             "campo": "Razão Social Emitente",
+            "campo_id": "emit_xNome",
             "mensagem": "Razão Social do emitente é obrigatória."
         })
 
@@ -4325,18 +4424,22 @@ def validar_dados_nfe(cabecalho, itens, rodape, referencia_interna=''):
     if not emit_uf or len(emit_uf) != 2:
         erros.append({
             "categoria": "Emitente",
-            "aba": "2. Emitente",
+            "aba": "2. Identificação",
+            "aba_id": "identificacao",
             "campo": "UF Emitente",
+            "campo_id": "emit_UF",
             "mensagem": "UF do emitente deve conter a sigla de 2 letras do Estado."
         })
 
-    # 4. Destinatário (dest)
+    # 4. Destinatário (dest) -> Aba 2: 2. Identificação
     dest_x_nome = str(cabecalho.get('dest_xNome') or '').strip()
     if not dest_x_nome:
         erros.append({
             "categoria": "Destinatário",
-            "aba": "2. Destinatário",
+            "aba": "2. Identificação",
+            "aba_id": "identificacao",
             "campo": "Razão Social / Nome Destinatário",
+            "campo_id": "dest_xNome",
             "mensagem": "Nome ou Razão Social do destinatário é obrigatório."
         })
 
@@ -4346,16 +4449,20 @@ def validar_dados_nfe(cabecalho, itens, rodape, referencia_interna=''):
         if dest_uf and dest_uf != 'EX':
             alertas.append({
                 "categoria": "Destinatário",
-                "aba": "2. Destinatário",
+                "aba": "2. Identificação",
+                "aba_id": "identificacao",
                 "campo": "UF Destinatário",
+                "campo_id": "dest_UF",
                 "mensagem": "Operação para o exterior (idDest=3) deve ter UF do destinatário preenchida como 'EX'."
             })
         id_estrangeiro = str(cabecalho.get('dest_idEstrangeiro') or cabecalho.get('dest_CNPJ_CPF') or '').strip()
         if id_estrangeiro and (len(id_estrangeiro) < 5 or len(id_estrangeiro) > 20):
             alertas.append({
                 "categoria": "Destinatário",
-                "aba": "2. Destinatário",
+                "aba": "2. Identificação",
+                "aba_id": "identificacao",
                 "campo": "ID Estrangeiro",
+                "campo_id": "dest_idEstrangeiro",
                 "mensagem": f"ID Estrangeiro informado ({id_estrangeiro}) deve ter entre 5 e 20 caracteres conforme padrão SEFAZ (ou ser deixado em branco)."
             })
     else:
@@ -4365,19 +4472,23 @@ def validar_dados_nfe(cabecalho, itens, rodape, referencia_interna=''):
             if not dest_doc:
                 erros.append({
                     "categoria": "Destinatário",
-                    "aba": "2. Destinatário",
+                    "aba": "2. Identificação",
+                    "aba_id": "identificacao",
                     "campo": "CNPJ / CPF Destinatário",
+                    "campo_id": "dest_CNPJ_CPF",
                     "mensagem": "CNPJ ou CPF do destinatário é obrigatório em operações nacionais."
                 })
             elif len(dest_doc) not in (11, 14):
                 erros.append({
                     "categoria": "Destinatário",
-                    "aba": "2. Destinatário",
+                    "aba": "2. Identificação",
+                    "aba_id": "identificacao",
                     "campo": "CNPJ / CPF Destinatário",
+                    "campo_id": "dest_CNPJ_CPF",
                     "mensagem": f"Documento do destinatário inválido (CPF deve ter 11 dígitos, CNPJ deve ter 14 dígitos, atual: {len(dest_doc)})."
                 })
 
-    # 5. Informações de Exportação (exporta - MOC SEFAZ v4.00)
+    # 5. Informações de Exportação (exporta - MOC SEFAZ v4.00) -> Aba 1: 1. Operação
     exporta_data = rodape.get('exportacao') or cabecalho.get('exportacao') or {}
     uf_exp = str(exporta_data.get('UFSaidaPais') or cabecalho.get('exporta_UFSaidaPais') or rodape.get('exporta_UFSaidaPais') or '').strip().upper()
     loc_exp = str(exporta_data.get('xLocExporta') or cabecalho.get('exporta_xLocExporta') or rodape.get('exporta_xLocExporta') or '').strip()
@@ -4394,7 +4505,9 @@ def validar_dados_nfe(cabecalho, itens, rodape, referencia_interna=''):
             erros.append({
                 "categoria": "Exportação",
                 "aba": "1. Operação",
+                "aba_id": "cabecalho",
                 "campo": "Exportação (<exporta>)",
+                "campo_id": "exporta_UFSaidaPais",
                 "mensagem": "Para operações com CFOP 79xx (Reexportação/Exportação), o preenchimento da seção 'Exportação (Tag SEFAZ: <exporta>)' é obrigatório: informe a UF e o Local de Embarque."
             })
 
@@ -4402,59 +4515,73 @@ def validar_dados_nfe(cabecalho, itens, rodape, referencia_interna=''):
         if not is_op_exportacao:
             alertas.append({
                 "categoria": "Exportação",
-                "aba": "2. Transporte",
+                "aba": "1. Operação",
+                "aba_id": "cabecalho",
                 "campo": "Grupo de Exportação (<exporta>)",
+                "campo_id": "exporta_UFSaidaPais",
                 "mensagem": "Campos de exportação preenchidos em operação que não possui CFOP 7xxx nem destinatário exterior (Rejeição SEFAZ 527)."
             })
         if loc_exp and not uf_exp:
             erros.append({
                 "categoria": "Exportação",
-                "aba": "2. Transporte",
+                "aba": "1. Operação",
+                "aba_id": "cabecalho",
                 "campo": "UF de Embarque (UFSaidaPais)",
+                "campo_id": "exporta_UFSaidaPais",
                 "mensagem": "UF de embarque é obrigatória para o grupo de exportação da NF-e."
             })
         elif uf_exp and len(uf_exp) != 2:
             erros.append({
                 "categoria": "Exportação",
-                "aba": "2. Transporte",
+                "aba": "1. Operação",
+                "aba_id": "cabecalho",
                 "campo": "UF de Embarque (UFSaidaPais)",
+                "campo_id": "exporta_UFSaidaPais",
                 "mensagem": "UF de embarque deve conter a sigla de 2 letras de um Estado brasileiro válido."
             })
         if uf_exp and not loc_exp:
             erros.append({
                 "categoria": "Exportação",
-                "aba": "2. Transporte",
+                "aba": "1. Operação",
+                "aba_id": "cabecalho",
                 "campo": "Local de Embarque (xLocExporta)",
+                "campo_id": "exporta_xLocExporta",
                 "mensagem": "Local de embarque é obrigatório quando a UF de embarque for informada."
             })
         elif loc_exp and len(loc_exp) > 60:
             alertas.append({
                 "categoria": "Exportação",
-                "aba": "2. Transporte",
+                "aba": "1. Operação",
+                "aba_id": "cabecalho",
                 "campo": "Local de Embarque (xLocExporta)",
+                "campo_id": "exporta_xLocExporta",
                 "mensagem": f"Local de embarque possui {len(loc_exp)} caracteres (limite máximo é 60)."
             })
         if loc_desp and len(loc_desp) > 60:
             alertas.append({
                 "categoria": "Exportação",
-                "aba": "2. Transporte",
+                "aba": "1. Operação",
+                "aba_id": "cabecalho",
                 "campo": "Local de Despacho (xLocDespacho)",
+                "campo_id": "exporta_xLocDespacho",
                 "mensagem": f"Local de despacho possui {len(loc_desp)} caracteres (limite máximo é 60)."
             })
 
-    # 5. Totais e Conferência Financeira
+    # 6. Totais e Conferência Financeira -> Aba 3: 3. Itens da Nota
     totais = rodape.get('totais', {}) if isinstance(rodape, dict) else {}
     soma_itens = sum(safe_float(it.get('vProd')) for it in itens) if itens else 0.0
     tot_v_prod = safe_float(totais.get('vProd'))
     if tot_v_prod > 0 and abs(soma_itens - tot_v_prod) > 0.05:
         alertas.append({
             "categoria": "Totais da NF",
-            "aba": "4. Totais",
+            "aba": "3. Itens da Nota",
+            "aba_id": "itens",
             "campo": "Total dos Produtos (vProd)",
+            "campo_id": "tot_vProd",
             "mensagem": f"A soma dos produtos dos itens (R$ {soma_itens:,.2f}) difere do total informado no rodapé (R$ {tot_v_prod:,.2f})."
         })
 
-    # 6. Teste de Estruturação do XML
+    # 7. Teste de Estruturação do XML
     xml_construido = False
     if len(erros) == 0:
         try:
@@ -4465,8 +4592,10 @@ def validar_dados_nfe(cabecalho, itens, rodape, referencia_interna=''):
         except Exception as e:
             erros.append({
                 "categoria": "Esquema XML",
-                "aba": "Geral",
+                "aba": "1. Operação",
+                "aba_id": "cabecalho",
                 "campo": "Estrutura XML",
+                "campo_id": "",
                 "mensagem": f"Falha na montagem da estrutura do XML da NF-e: {str(e)}"
             })
 
@@ -6419,6 +6548,21 @@ def garantir_xml_e_danfe_nota(chave, retorno_sefaz=None, forcar_render=False):
                     except Exception as e_pdf:
                         print(f"Aviso ao renderizar DANFE: {e_pdf}")
                 return xml_path, pdf_path
+            elif '<infNFe' in conteudo_disco or '<NFe' in conteudo_disco:
+                if forcar_render or not os.path.exists(pdf_path) or os.path.getsize(pdf_path) < 1000:
+                    try:
+                        from danfe_generator import DanfeGenerator
+                        DanfeGenerator().render(xml_path, pdf_path)
+                        if forcar_render:
+                            try:
+                                import r2_storage
+                                if os.path.exists(pdf_path):
+                                    r2_storage.upload_file_r2(pdf_path, f"downloads/{chave_limpa}-danfe.pdf", "application/pdf")
+                            except Exception:
+                                pass
+                    except Exception as e_pdf:
+                        print(f"Aviso ao renderizar DANFE para NFe importada: {e_pdf}")
+                return xml_path, pdf_path
         except Exception:
             pass
 
@@ -6443,6 +6587,14 @@ def garantir_xml_e_danfe_nota(chave, retorno_sefaz=None, forcar_render=False):
                                 pass
                     except Exception as e_pdf:
                         print(f"Aviso ao renderizar DANFE: {e_pdf}")
+                return xml_path, pdf_path
+            elif '<infNFe' in conteudo_r2 or '<NFe' in conteudo_r2:
+                if forcar_render or not os.path.exists(pdf_path) or os.path.getsize(pdf_path) < 1000:
+                    try:
+                        from danfe_generator import DanfeGenerator
+                        DanfeGenerator().render(xml_path, pdf_path)
+                    except Exception as e_pdf:
+                        print(f"Aviso ao renderizar DANFE para NFe importada via R2: {e_pdf}")
                 return xml_path, pdf_path
     except Exception:
         pass
@@ -7511,6 +7663,431 @@ def api_relatorios_excluir_nota():
         conn.close()
         return jsonify({'success': True, 'message': 'Nota fiscal excluída do relatório com sucesso.'})
     except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ==============================================================================
+# === MÓDULO IMPORTAÇÃO DE XMLs EXTERNOS (PADRÃO SEFAZ) & BACKUP CONSOLIDADO ===
+# ==============================================================================
+
+def extrair_referencia_de_xml(chave, xml_str):
+    """
+    Tenta identificar automaticamente a referência interna da nota
+    a partir das informações complementares (infCpl) ou padrões comuns.
+    """
+    if xml_str:
+        try:
+            root_cpl = etree.fromstring(xml_str.encode('utf-8') if isinstance(xml_str, str) else xml_str, parser=SAFE_XML_PARSER)
+            cpl_nodes = root_cpl.xpath("//*[local-name()='infCpl']")
+            if cpl_nodes and cpl_nodes[0].text:
+                txt = cpl_nodes[0].text
+                m = re.search(r'S/REF:\s*([A-Za-z0-9_\-\.\/]+)', txt)
+                if m: return m.group(1).strip()
+                m = re.search(r'N/REF:\s*([A-Za-z0-9_\-\.\/]+)', txt)
+                if m: return m.group(1).strip()
+                m = re.search(r'(NFT\d+-[A-Za-z0-9]+(?:\s+[A-Za-z0-9_\-]+)?)', txt)
+                if m: return m.group(1).strip()
+                m = re.search(r'DI:\s*([0-9\/\-]+)', txt)
+                if m: return f"DI {m.group(1).strip()}"
+        except Exception:
+            pass
+    return ""
+
+def _processar_arquivo_xml_importado(conteudo_bytes, nome_origem='nfe.xml', ref_personalizada=''):
+    """
+    Processa um único XML de NF-e (nfeProc ou NFe avulsa),
+    extrai os metadados fiscais oficiais da SEFAZ, salva o XML em disco,
+    renderiza o DANFE em PDF via DanfeGenerator no padrão oficial do sistema,
+    gera o pacote ZIP com nome padronizado, sincroniza no R2 se disponível,
+    e persiste na tabela notas_fiscais e historico_sefaz.
+    """
+    if not conteudo_bytes or len(conteudo_bytes) < 100:
+        return {'success': False, 'arquivo': nome_origem, 'error': 'Arquivo vazio ou com tamanho insuficiente.'}
+
+    # Decodifica conteúdo XML para string
+    xml_str = None
+    for enc in ('utf-8', 'latin-1', 'iso-8859-1'):
+        try:
+            xml_str = conteudo_bytes.decode(enc)
+            break
+        except Exception:
+            pass
+
+    if not xml_str:
+        return {'success': False, 'arquivo': nome_origem, 'error': 'Falha na codificação de caracteres do arquivo XML.'}
+
+    try:
+        root = etree.fromstring(conteudo_bytes, parser=SAFE_XML_PARSER)
+    except Exception as e_xml:
+        return {'success': False, 'arquivo': nome_origem, 'error': f'XML inválido ou mal formatado: {e_xml}'}
+
+    def _get_val(tag):
+        nodes = root.xpath(f".//*[local-name()='{tag}']")
+        if nodes and nodes[0].text:
+            return nodes[0].text.strip()
+        return ''
+
+    # 1. Identificação da Chave de Acesso (44 dígitos numéricos)
+    chave = ''
+    ch_prot = _get_val('chNFe')
+    if ch_prot and len(re.sub(r'\D', '', ch_prot)) == 44:
+        chave = re.sub(r'\D', '', ch_prot)
+
+    if not chave:
+        inf_nfe_nodes = root.xpath(".//*[local-name()='infNFe']")
+        if inf_nfe_nodes and 'Id' in inf_nfe_nodes[0].attrib:
+            id_val = inf_nfe_nodes[0].attrib['Id']
+            id_limpo = re.sub(r'\D', '', id_val)
+            if len(id_limpo) == 44:
+                chave = id_limpo
+
+    if not chave:
+        m_ch = re.search(r'\b(35\d{42}|\d{44})\b', xml_str)
+        if m_ch:
+            chave = m_ch.group(1)
+
+    if not chave or len(chave) != 44:
+        return {'success': False, 'arquivo': nome_origem, 'error': 'Chave de acesso de 44 dígitos não encontrada no XML.'}
+
+    # 2. Metadados fiscais da NF-e
+    n_nf = _get_val('nNF')
+    if not n_nf and len(chave) >= 34:
+        try:
+            n_nf = str(int(chave[25:34]))
+        except Exception:
+            pass
+
+    nat_op = _get_val('natOp') or 'NF-E IMPORTADA'
+    tp_nf = _get_val('tpNF') or '1'
+    tp_amb = 1 if (_get_val('tpAmb') == '1' or (len(chave) >= 35 and chave[34:35] == '1')) else 2
+
+    # Data de emissão (dhEmi ou dEmi)
+    dh_emi = _get_val('dhEmi') or _get_val('dEmi') or _get_val('dhRecbto') or ''
+    data_hora_fmt = ''
+    if dh_emi:
+        try:
+            if 'T' in dh_emi:
+                dt_p = dh_emi.split('T')[0]
+                tm_p = dh_emi.split('T')[1].split('-')[0].split('+')[0]
+                data_hora_fmt = f"{dt_p} {tm_p}"
+            elif len(dh_emi) == 10 and '-' in dh_emi:
+                data_hora_fmt = f"{dh_emi} 12:00:00"
+        except Exception:
+            data_hora_fmt = dh_emi
+
+    if not data_hora_fmt:
+        data_hora_fmt = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    # Valores
+    v_nf = 0.0
+    try:
+        v_nf = float(_get_val('vNF') or 0.0)
+    except Exception:
+        pass
+
+    v_prod = v_nf
+    try:
+        v_prod = float(_get_val('vProd') or v_nf)
+    except Exception:
+        pass
+
+    # Protocolo, CStat e Motivo SEFAZ
+    prot = _get_val('nProt')
+    cstat = _get_val('cStat') or ('100' if ('<protNFe' in xml_str or prot) else '')
+    xmotivo = _get_val('xMotivo') or ('Autorizado o uso da NF-e' if cstat == '100' else 'Nota Fiscal importada no sistema')
+
+    is_canc = (cstat in ('101', '135') or 'cancel' in xmotivo.lower())
+    is_aut = (cstat in ('100', '150') or '<protNFe' in xml_str or bool(prot))
+
+    status_final = 'Cancelada' if is_canc else ('Autorizada' if is_aut else 'Gerada')
+
+    # Referência Interna
+    ref_interna = (ref_personalizada or '').strip()
+    if not ref_interna:
+        ref_interna = extrair_referencia_de_xml(chave, xml_str)
+    if not ref_interna or ref_interna == '-':
+        ref_interna = f"REF-{n_nf}" if n_nf else f"REF-{chave[-8:]}"
+
+    # 3. Salva os arquivos no DOWNLOADS_DIR
+    os.makedirs(DOWNLOADS_DIR, exist_ok=True)
+    xml_path = os.path.join(DOWNLOADS_DIR, f"{chave}-nfe.xml")
+    pdf_path = os.path.join(DOWNLOADS_DIR, f"{chave}-danfe.pdf")
+    zip_path = os.path.join(DOWNLOADS_DIR, f"{chave}-arquivos.zip")
+
+    try:
+        with open(xml_path, 'wb') as f_out:
+            f_out.write(conteudo_bytes)
+    except Exception as e_w:
+        return {'success': False, 'arquivo': nome_origem, 'error': f'Falha ao gravar arquivo XML em disco: {e_w}'}
+
+    # Renderiza o PDF via DanfeGenerator
+    pdf_gerado = False
+    try:
+        from danfe_generator import DanfeGenerator
+        DanfeGenerator().render(xml_path, pdf_path)
+        pdf_gerado = os.path.exists(pdf_path) and os.path.getsize(pdf_path) > 500
+    except Exception as e_pdf:
+        print(f"Aviso ao renderizar DANFE para nota importada {chave}: {e_pdf}")
+
+    # Gera o arquivo ZIP individual no padrão do sistema
+    nome_padrao = obter_nome_padrao_arquivo(chave, xml_path)
+    try:
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+            if pdf_gerado and os.path.exists(pdf_path):
+                zf.write(pdf_path, f"{nome_padrao}.pdf")
+            if os.path.exists(xml_path):
+                zf.write(xml_path, f"{nome_padrao}.xml")
+    except Exception as e_zip:
+        print(f"Aviso ao gerar pacote ZIP para nota importada {chave}: {e_zip}")
+
+    # Sincroniza Cloudflare R2 se configurado
+    try:
+        import r2_storage
+        if os.path.exists(xml_path):
+            r2_storage.upload_file_r2(xml_path, f"downloads/{chave}-nfe.xml", "application/xml")
+        if pdf_gerado and os.path.exists(pdf_path):
+            r2_storage.upload_file_r2(pdf_path, f"downloads/{chave}-danfe.pdf", "application/pdf")
+        if os.path.exists(zip_path):
+            r2_storage.upload_file_r2(zip_path, f"downloads/{chave}-arquivos.zip", "application/zip")
+    except Exception:
+        pass
+
+    # 4. Registra na base de dados (notas_fiscais e historico_sefaz)
+    conn = get_db_connection()
+    c = conn.cursor()
+
+    caminho_xml_rel = f"{chave}-nfe.xml"
+    caminho_pdf_rel = f"{chave}-danfe.pdf" if pdf_gerado else ''
+
+    row_nf = c.execute("SELECT id, referencia_interna FROM notas_fiscais WHERE REPLACE(chave_nfe, ' ', '') = ? LIMIT 1", (chave,)).fetchone()
+    if row_nf:
+        if not ref_personalizada and row_nf['referencia_interna'] and row_nf['referencia_interna'] != '-':
+            ref_interna = row_nf['referencia_interna']
+        c.execute("""
+            UPDATE notas_fiscais SET
+                referencia_interna = ?,
+                data_hora = COALESCE(NULLIF(?, ''), data_hora),
+                numero_nfe = COALESCE(NULLIF(?, ''), numero_nfe),
+                tipo_operacao = COALESCE(NULLIF(?, ''), tipo_operacao),
+                tipo_movimento = ?,
+                valor_total = ?,
+                total_produtos = ?,
+                status = ?,
+                protocolo = CASE WHEN ? != '' THEN ? ELSE protocolo END,
+                ambiente = ?,
+                cstat = ?,
+                xmotivo = ?,
+                caminho_xml = ?,
+                caminho_pdf = CASE WHEN ? != '' THEN ? ELSE caminho_pdf END,
+                oculto = 0,
+                data_atualizacao = CURRENT_TIMESTAMP
+            WHERE REPLACE(chave_nfe, ' ', '') = ?
+        """, (
+            ref_interna, data_hora_fmt, n_nf, nat_op, tp_nf,
+            v_nf, v_prod, status_final, prot, prot,
+            tp_amb, cstat, xmotivo, caminho_xml_rel,
+            caminho_pdf_rel, caminho_pdf_rel, chave
+        ))
+    else:
+        c.execute("""
+            INSERT INTO notas_fiscais (
+                chave_nfe, referencia_interna, data_hora, numero_nfe, tipo_operacao,
+                tipo_movimento, valor_total, total_produtos, status, protocolo,
+                recibo, ambiente, cstat, xmotivo, caminho_xml, caminho_pdf, oculto
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, 0)
+        """, (
+            chave, ref_interna, data_hora_fmt, n_nf, nat_op,
+            tp_nf, v_nf, v_prod, status_final, prot,
+            tp_amb, cstat, xmotivo, caminho_xml_rel, caminho_pdf_rel
+        ))
+
+    # Também insere no historico_sefaz se ainda não registrado
+    row_h = c.execute("SELECT id FROM historico_sefaz WHERE REPLACE(chave_nfe, ' ', '') = ? LIMIT 1", (chave,)).fetchone()
+    if not row_h:
+        c.execute("""
+            INSERT INTO historico_sefaz (
+                chave_nfe, tpAmb, cstat, xmotivo, recibo, protocolo, xml_envio, xml_retorno
+            ) VALUES (?, ?, ?, ?, '', ?, ?, '')
+        """, (
+            chave, tp_amb, cstat or '100', xmotivo, prot, xml_str
+        ))
+
+    conn.commit()
+    conn.close()
+
+    return {
+        'success': True,
+        'arquivo': nome_origem,
+        'chave': chave,
+        'numero_nfe': n_nf,
+        'referencia_interna': ref_interna,
+        'data_hora': data_hora_fmt,
+        'valor_total': v_nf,
+        'status': status_final,
+        'tem_pdf': pdf_gerado
+    }
+
+@app.route('/api/relatorios/notas/importar_xml', methods=['POST'])
+def api_relatorios_importar_xml():
+    """
+    Recebe um ou múltiplos arquivos XML (ou ZIP contendo XMLs) de notas fiscais
+    emitidas em outros sistemas no padrão SEFAZ, processa os dados, gera DANFE PDF e registra no sistema.
+    """
+    try:
+        ref_personalizada = (request.form.get('referencia_interna') or '').strip()
+        files = request.files.getlist('files')
+        if not files:
+            files = request.files.getlist('file')
+        if not files:
+            files = list(request.files.values())
+
+        if not files or all(not f.filename for f in files):
+            return jsonify({'success': False, 'error': 'Nenhum arquivo XML ou ZIP foi selecionado.'}), 400
+
+        resultados = []
+        erros = []
+
+        for f in files:
+            if not f or not f.filename:
+                continue
+            fname_lower = f.filename.lower()
+            file_bytes = f.read()
+
+            if fname_lower.endswith('.zip'):
+                try:
+                    with zipfile.ZipFile(io.BytesIO(file_bytes)) as z_in:
+                        for z_info in z_in.infolist():
+                            if z_info.is_dir():
+                                continue
+                            if z_info.filename.lower().endswith('.xml'):
+                                xml_b = z_in.read(z_info.filename)
+                                r = _processar_arquivo_xml_importado(xml_b, z_info.filename, ref_personalizada)
+                                if r.get('success'):
+                                    resultados.append(r)
+                                else:
+                                    erros.append(r)
+                except Exception as e_zip:
+                    erros.append({'success': False, 'arquivo': f.filename, 'error': f'Falha ao extrair ZIP: {e_zip}'})
+
+            elif fname_lower.endswith('.xml'):
+                r = _processar_arquivo_xml_importado(file_bytes, f.filename, ref_personalizada)
+                if r.get('success'):
+                    resultados.append(r)
+                else:
+                    erros.append(r)
+            else:
+                erros.append({'success': False, 'arquivo': f.filename, 'error': 'Formato incompatível. Envie arquivos .xml ou pacote .zip.'})
+
+        return jsonify({
+            'success': True,
+            'total_importados': len(resultados),
+            'total_erros': len(erros),
+            'importados': resultados,
+            'erros': erros,
+            'message': f"{len(resultados)} nota(s) fiscal(is) importada(s) com sucesso!" if resultados else "Nenhum arquivo válido importado."
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/relatorios/backup', methods=['GET', 'POST'])
+def api_relatorios_backup():
+    """
+    Gera um arquivo ZIP consolidado contendo os PDFs e/ou XMLs das notas fiscais,
+    filtradas por período de data, intervalo de números de NF-e ou todas as notas.
+    """
+    try:
+        data = request.get_json(silent=True) or {}
+        if not data and request.form:
+            data = request.form
+        if not data and request.args:
+            data = request.args
+
+        tipo_filtro = str(data.get('tipo_filtro') or 'todas').strip().lower()
+        formato = str(data.get('formato') or 'consolidado').strip().lower()
+        data_ini = str(data.get('data_inicio') or '').strip()
+        data_fim = str(data.get('data_fim') or '').strip()
+        num_ini_raw = str(data.get('numero_inicio') or '').strip()
+        num_fim_raw = str(data.get('numero_fim') or '').strip()
+
+        conn = get_db_connection()
+        c = conn.cursor()
+        rows = c.execute("SELECT * FROM notas_fiscais WHERE COALESCE(oculto, 0) = 0 ORDER BY data_hora DESC, id DESC").fetchall()
+        conn.close()
+
+        notas_selecionadas = []
+        for r in rows:
+            d = dict(r)
+
+            # Filtro por período de data (YYYY-MM-DD)
+            if tipo_filtro == 'periodo':
+                raw_dt = (d.get('data_hora') or '')[:10]
+                if data_ini and raw_dt and raw_dt < data_ini:
+                    continue
+                if data_fim and raw_dt and raw_dt > data_fim:
+                    continue
+
+            # Filtro por faixa numérica de NF-e
+            elif tipo_filtro == 'numero':
+                n_str = re.sub(r'\D', '', str(d.get('numero_nfe') or ''))
+                if not n_str:
+                    continue
+                n_int = int(n_str)
+                if num_ini_raw:
+                    try:
+                        if n_int < int(num_ini_raw): continue
+                    except ValueError: pass
+                if num_fim_raw:
+                    try:
+                        if n_int > int(num_fim_raw): continue
+                    except ValueError: pass
+
+            notas_selecionadas.append(d)
+
+        if not notas_selecionadas:
+            return jsonify({'success': False, 'error': 'Nenhuma nota fiscal encontrada com os parâmetros informados.'}), 404
+
+        # Cria arquivo ZIP em memória
+        zip_buffer = io.BytesIO()
+        arquivos_adicionados = 0
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
+            for n in notas_selecionadas:
+                ch = (n.get('chave_nfe') or '').replace(' ', '').strip()
+                if not ch or len(ch) != 44:
+                    continue
+
+                xml_path, pdf_path = garantir_xml_e_danfe_nota(ch)
+                nome_padrao = obter_nome_padrao_arquivo(ch, xml_path)
+
+                # Inclui DANFE PDF
+                if formato in ('pdf', 'consolidado'):
+                    if pdf_path and os.path.exists(pdf_path):
+                        zf.write(pdf_path, f"{nome_padrao}.pdf")
+                        arquivos_adicionados += 1
+
+                # Inclui XML da NF-e
+                if formato in ('xml', 'consolidado'):
+                    if xml_path and os.path.exists(xml_path):
+                        zf.write(xml_path, f"{nome_padrao}.xml")
+                        arquivos_adicionados += 1
+
+        if arquivos_adicionados == 0:
+            return jsonify({'success': False, 'error': 'Não foram localizados arquivos físicos para as notas selecionadas.'}), 404
+
+        zip_buffer.seek(0)
+        dt_agora = datetime.now().strftime('%Y%m%d_%H%M%S')
+        sufixo_fmt = "Consolidado" if formato == "consolidado" else ("PDFs" if formato == "pdf" else "XMLs")
+        nome_download = f"Backup_NFe_{sufixo_fmt}_{dt_agora}.zip"
+
+        return send_file(
+            zip_buffer,
+            as_attachment=True,
+            download_name=nome_download,
+            mimetype='application/zip'
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':

@@ -198,32 +198,124 @@
         };
     }
 
-    function navegarParaAba(abaNome) {
-        if (typeof window.sidebarSwitchTab !== 'function') return;
-        const nome = String(abaNome).toLowerCase();
-        if (nome.includes('item') || nome.includes('itens') || nome.includes('3')) {
-            window.sidebarSwitchTab('itens');
-        } else if (nome.includes('emitente') || nome.includes('destinatario') || nome.includes('identifica') || nome.includes('1') || nome.includes('2')) {
-            window.sidebarSwitchTab('cabecalho');
-        } else if (nome.includes('total') || nome.includes('transporte') || nome.includes('4')) {
-            window.sidebarSwitchTab('rodape');
-        } else if (nome.includes('tipo') || nome.includes('imposto')) {
-            if (typeof window.abrirModalTipoNota === 'function') {
-                window.abrirModalTipoNota();
-            } else {
-                window.sidebarSwitchTab('tipo-nota');
-            }
+    function destacarElementoComAnimacao(el) {
+        if (!el) return;
+        el.classList.add('nft-field-error-highlight');
+        const container = el.closest('.nft-notch-field') || el.closest('.form-group') || el.parentElement;
+        if (container && container !== document.body && container.tagName !== 'FORM') {
+            container.classList.add('nft-field-error-highlight');
         }
-        
-        // Fecha o modal após navegar
+        setTimeout(() => {
+            el.classList.remove('nft-field-error-highlight');
+            if (container) container.classList.remove('nft-field-error-highlight');
+        }, 3500);
+    }
+
+    function resolverAbaId(abaIdentificador) {
+        if (!abaIdentificador) return 'cabecalho';
+        const s = String(abaIdentificador).toLowerCase().trim();
+        if (s.includes('tipo') || s.includes('imposto')) {
+            return 'tipo-nota';
+        }
+        if (s.includes('identifica') || s.includes('emit') || s.includes('dest') || s.includes('transp') || s === '2') {
+            return 'identificacao';
+        }
+        if (s.includes('item') || s.includes('prod') || s.includes('tot') || s === '3') {
+            return 'itens';
+        }
+        if (s.includes('sefaz') || s.includes('hist') || s === '4') {
+            return 'historico-sefaz';
+        }
+        return 'cabecalho';
+    }
+
+    window.irParaErro = function(abaId, campoId, itemNum, modalFieldId) {
+        // 1. Fecha o modal de análise
         if (modalElement && window.bootstrap && bootstrap.Modal) {
             const inst = bootstrap.Modal.getInstance(modalElement);
             if (inst) inst.hide();
         }
-    }
+
+        const targetAba = resolverAbaId(abaId);
+
+        // Se for modal de Tipo de Nota
+        if (targetAba === 'tipo-nota') {
+            if (typeof window.abrirModalTipoNota === 'function') {
+                window.abrirModalTipoNota();
+            }
+            return;
+        }
+
+        // 2. Troca de aba
+        if (typeof window.sidebarSwitchTab === 'function') {
+            window.sidebarSwitchTab(targetAba);
+        } else {
+            const btnTab = document.getElementById(targetAba + '-tab');
+            if (btnTab) btnTab.click();
+        }
+
+        // 3. Se for erro em item da nota e tivermos modal de edição disponível
+        if (targetAba === 'itens' && itemNum && window.abrirModalItemEditar) {
+            setTimeout(() => {
+                let lista = [];
+                if (window.itensTable && typeof window.itensTable.getData === 'function') {
+                    lista = window.itensTable.getData();
+                } else if (window.itensCache && Array.isArray(window.itensCache)) {
+                    lista = window.itensCache;
+                }
+                const idx = parseInt(itemNum, 10) - 1;
+                const rowData = (idx >= 0 && idx < lista.length) ? lista[idx] : (lista[0] || null);
+                if (rowData) {
+                    window.abrirModalItemEditar(rowData, idx >= 0 ? idx : 0);
+                    if (modalFieldId) {
+                        setTimeout(() => {
+                            // Seleciona a aba interna correta no modal de edição do item
+                            if (modalFieldId.includes('nDI') || modalFieldId.includes('dDI') || modalFieldId.includes('qTrib')) {
+                                const tabAduan = document.getElementById('tab-item-aduaneiro-btn');
+                                if (tabAduan) tabAduan.click();
+                            } else if (modalFieldId.includes('CST') || modalFieldId.includes('pICMS') || modalFieldId.includes('pIPI') || modalFieldId.includes('pPIS') || modalFieldId.includes('pCOFINS')) {
+                                const tabTrib = document.getElementById('tab-item-tributos-btn');
+                                if (tabTrib) tabTrib.click();
+                            } else {
+                                const tabGeral = document.getElementById('tab-item-geral-btn');
+                                if (tabGeral) tabGeral.click();
+                            }
+                            const mEl = document.getElementById(modalFieldId);
+                            if (mEl) {
+                                mEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                try { mEl.focus(); } catch(e) {}
+                                if (typeof mEl.select === 'function') { try { mEl.select(); } catch(e) {} }
+                                destacarElementoComAnimacao(mEl);
+                            }
+                        }, 350);
+                    }
+                    return;
+                }
+            }, 250);
+        }
+
+        // 4. Se for campo na tela (Tabs 1: Operação, 2: Identificação ou 3: Itens)
+        setTimeout(() => {
+            let el = null;
+            if (campoId) {
+                el = document.getElementById(campoId);
+            }
+            if (!el && campoId === 'select_operacao') el = document.getElementById('natOp') || document.getElementById('select_operacao');
+            if (!el && campoId === 'tabela-itens') el = document.getElementById('tabela-itens') || document.getElementById('btn-adicionar-item');
+
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                try { el.focus(); } catch(e) {}
+                if (typeof el.select === 'function') {
+                    try { el.select(); } catch(e) {}
+                }
+                destacarElementoComAnimacao(el);
+            }
+        }, 250);
+    };
 
     window.irParaAbaAnalise = function(abaNome) {
-        navegarParaAba(abaNome);
+        window.irParaErro(abaNome, '', '', '');
     };
 
     window.fecharModalEGerarXML = function() {
@@ -330,25 +422,39 @@
         // Lista de Erros
         let errosHtml = '';
         if (totalErros > 0) {
-            const itensErros = data.erros.map(e => `
-                <li class="list-group-item d-flex justify-content-between align-items-start gap-2 py-2 px-3 border-danger-subtle" style="background-color: rgba(239, 68, 68, 0.03);">
+            const itensErros = data.erros.map(e => {
+                const abaId = e.aba_id || resolverAbaId(e.aba);
+                const campoId = e.campo_id || '';
+                const itemNum = e.item_num || '';
+                const modalFieldId = e.modal_field_id || '';
+                const abaDisplay = e.aba || 'Aba';
+
+                return `
+                <li class="list-group-item d-flex justify-content-between align-items-center gap-2 py-2 px-3 border-danger-subtle error-item-row" 
+                    style="background-color: rgba(239, 68, 68, 0.03); cursor: pointer;"
+                    onclick="irParaErro('${abaId}', '${campoId}', '${itemNum}', '${modalFieldId}')"
+                    title="Clique para ir até este campo na tela">
                     <div class="ms-1 me-auto">
-                        <div class="d-flex align-items-center gap-2 mb-1">
-                            <span class="badge bg-info-subtle text-info fw-bold" style="font-size: 10.5px;">${e.categoria || 'Erro'}</span>
+                        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                            <span class="badge bg-danger text-white fw-bold" style="font-size: 10px;">${e.categoria || 'Erro'}</span>
                             <strong class="text-heading" style="font-size: 13px;">${e.campo || ''}</strong>
+                            ${campoId ? `<code class="text-muted small" style="font-size: 10.5px;">#${campoId}</code>` : ''}
                         </div>
                         <div class="text-secondary small">${e.mensagem || ''}</div>
                     </div>
-                    <button type="button" class="btn-nft py-0 px-2 mt-1 shadow-none" onclick="irParaAbaAnalise('${e.aba}')" title="Ir para a aba para corrigir este campo" style="font-size: 11px; border-radius: 4px; white-space: nowrap;">
-                        Corrigir na ${e.aba || 'Aba'} &rarr;
+                    <button type="button" class="btn-analise-corrigir-erro" 
+                        onclick="event.stopPropagation(); irParaErro('${abaId}', '${campoId}', '${itemNum}', '${modalFieldId}')" 
+                        title="Ir diretamente para a ${abaDisplay} e focar no campo">
+                        <i data-lucide="crosshair" style="width: 13px; height: 13px;"></i>
+                        <span>Corrigir na ${abaDisplay}</span> &rarr;
                     </button>
                 </li>
-            `).join('');
+            `}).join('');
 
             errosHtml = `
                 <div class="card border border-danger mb-3 shadow-sm rounded-3 overflow-hidden">
                     <div class="card-header py-2 px-3 d-flex justify-content-between align-items-center text-secondary">
-                        <span class="fw-bold d-flex align-items-center gap-2" style="font-size: 13px;">
+                        <span class="fw-bold d-flex align-items-center gap-2 text-danger" style="font-size: 13px;">
                             <i data-lucide="alert-octagon" style="width: 16px; height: 16px;"></i>
                             O que precisa ser corrigido (${totalErros}):
                         </span>
@@ -363,25 +469,39 @@
         // Lista de Alertas
         let alertasHtml = '';
         if (totalAlertas > 0) {
-            const itensAlertas = data.alertas.map(a => `
-                <li class="list-group-item d-flex justify-content-between align-items-start gap-2 py-2 px-3 border-warning-subtle" style="background-color: rgba(245, 158, 11, 0.03);">
+            const itensAlertas = data.alertas.map(a => {
+                const abaId = a.aba_id || resolverAbaId(a.aba);
+                const campoId = a.campo_id || '';
+                const itemNum = a.item_num || '';
+                const modalFieldId = a.modal_field_id || '';
+                const abaDisplay = a.aba || 'Aba';
+
+                return `
+                <li class="list-group-item d-flex justify-content-between align-items-center gap-2 py-2 px-3 border-warning-subtle alert-item-row" 
+                    style="background-color: rgba(245, 158, 11, 0.03); cursor: pointer;"
+                    onclick="irParaErro('${abaId}', '${campoId}', '${itemNum}', '${modalFieldId}')"
+                    title="Clique para ir até este campo na tela">
                     <div class="ms-1 me-auto">
-                        <div class="d-flex align-items-center gap-2 mb-1">
-                            <span class="badge bg-info-subtle text-info fw-bold" style="font-size: 10.5px;">${a.categoria || 'Aviso'}</span>
+                        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                            <span class="badge bg-warning-subtle text-warning-emphasis fw-bold" style="font-size: 10px;">${a.categoria || 'Aviso'}</span>
                             <strong class="text-heading" style="font-size: 13px;">${a.campo || ''}</strong>
+                            ${campoId ? `<code class="text-muted small" style="font-size: 10.5px;">#${campoId}</code>` : ''}
                         </div>
                         <div class="text-secondary small">${a.mensagem || ''}</div>
                     </div>
-                    <button type="button" class="btn-nft py-0 px-2 mt-1 shadow-none" onclick="irParaAbaAnalise('${a.aba}')" title="Ir para a aba para revisar este campo" style="font-size: 11px; border-radius: 4px; white-space: nowrap;">
-                        Revisar na ${a.aba || 'Aba'} &rarr;
+                    <button type="button" class="btn-analise-revisar-alerta" 
+                        onclick="event.stopPropagation(); irParaErro('${abaId}', '${campoId}', '${itemNum}', '${modalFieldId}')" 
+                        title="Ir diretamente para a ${abaDisplay} e revisar o campo">
+                        <i data-lucide="crosshair" style="width: 13px; height: 13px;"></i>
+                        <span>Revisar na ${abaDisplay}</span> &rarr;
                     </button>
                 </li>
-            `).join('');
+            `}).join('');
 
             alertasHtml = `
                 <div class="card border border-warning mb-3 shadow-sm rounded-3 overflow-hidden">
                     <div class="card-header py-2 px-3 d-flex justify-content-between align-items-center text-secondary">
-                        <span class="fw-bold d-flex align-items-center gap-2" style="font-size: 13px;">
+                        <span class="fw-bold d-flex align-items-center gap-2 text-warning" style="font-size: 13px;">
                             <i data-lucide="alert-triangle" style="width: 16px; height: 16px;"></i>
                             Alertas e Recomendações (${totalAlertas}):
                         </span>

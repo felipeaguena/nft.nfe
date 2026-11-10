@@ -237,17 +237,14 @@
             </div>
             <div class="d-flex align-items-center gap-2 flex-wrap">
                 <!-- BOTÃO EXTRA PARA INCLUIR / GERENCIAR LOCAL DE ENTREGA -->
-                <button class="btn-nft d-flex align-items-center gap-1" onclick="abrirModalGerenciarLocais()" title="Cadastrar ou gerenciar centros de exposições e locais de entrega">
-                    <i data-lucide="map-pin" style="width: 14px; height: 14px;"></i>
-                    <span>Locais</span>
+                <button class="btn-nft btn-header-round" onclick="abrirModalGerenciarLocais()" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Cadastrar ou gerenciar centros de exposições e locais de entrega" aria-label="Cadastrar ou gerenciar centros de exposições e locais de entrega" type="button">
+                    <i data-lucide="map-pin"></i>
                 </button>
-                <button class="btn-nft d-flex align-items-center gap-1" onclick="abrirModalPlanilhaGoogle()" title="Configurar link do Google Sheets e sincronizar feiras">
-                    <i data-lucide="sheet" style="width: 14px; height: 14px;"></i>
-                    <span>Sincronizar Sheets</span>
+                <button class="btn-nft btn-header-round" onclick="abrirModalPlanilhaGoogle()" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Configurar link do Google Sheets e sincronizar feiras" aria-label="Sincronizar Planilha Google Sheets" type="button">
+                    <i data-lucide="sheet"></i>
                 </button>
-                <button class="btn-nft d-flex align-items-center gap-1" onclick="abrirModalNovaFeira()">
-                    <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
-                    <span>Nova Feira</span>
+                <button class="btn-nft btn-header-round" onclick="abrirModalNovaFeira()" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Cadastrar Nova Feira" aria-label="Cadastrar Nova Feira" type="button">
+                    <i data-lucide="plus"></i>
                 </button>
             </div>
         </div>
