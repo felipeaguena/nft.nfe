@@ -1678,37 +1678,35 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
         return getVal('cUF') || '35';
     }
 
-    function calcularChaveAcessoDinamica() {
-        window.calcularChaveAcessoDinamica = calcularChaveAcessoDinamica;
-        // Se a nota já foi autorizada ou cancelada na SEFAZ ou está bloqueada, a chave de acesso é IMUTÁVEL
-        if (window._chaveAcessoBloqueada) {
-            return;
-        }
+    // Verifica se a chave (44 dígitos) pertence à nota informada: CNPJ (pos 7-20), série (23-25) e nNF (26-34)
+    function chaveCorrespondeNota(chave44, cnpj14, serie3, nnf9) {
+        return !!chave44 && chave44.length === 44 &&
+            chave44.substr(6, 14) === cnpj14 &&
+            chave44.substr(22, 3) === serie3 &&
+            chave44.substr(25, 9) === nnf9;
+    }
 
-        const linhasHist = document.querySelectorAll('#tbody-historico-sefaz tr');
-        let chaveAutorizadaRegistrada = '';
-        for (const l of linhasHist) {
-            const txt = (l.innerText || '').toLowerCase();
-            if (txt.includes('100') || txt.includes('101') || txt.includes('135') || txt.includes('autoriz') || txt.includes('cancel')) {
-                const cells = l.querySelectorAll('td');
-                for (const td of cells) {
-                    const c = td.innerText.replace(/\D/g, '').trim();
-                    if (c.length === 44) {
-                        chaveAutorizadaRegistrada = c;
-                        break;
-                    }
-                }
-                if (chaveAutorizadaRegistrada) break;
+    // Busca no histórico SEFAZ (colunas: 4 = Chave, 5 = cStat, 6 = Motivo) uma chave AUTORIZADA/CANCELADA da nota atual
+    function obterChaveAutorizadaHistoricoParaNota(cnpj14, serie3, nnf9) {
+        const linhas = document.querySelectorAll('#tbody-historico-sefaz tr');
+        for (const tr of linhas) {
+            const cells = tr.querySelectorAll('td');
+            if (cells.length < 6) continue;
+            const chave = (cells[4].innerText || cells[4].textContent || '').replace(/\D/g, '');
+            if (chave.length !== 44) continue;
+            const cstat = (cells[5].innerText || cells[5].textContent || '').replace(/\D/g, '').slice(0, 3);
+            const motivo = (cells[6] ? (cells[6].getAttribute('title') || cells[6].innerText || '') : '').toLowerCase();
+            const rejeitada = motivo.includes('rejei') || (Number(cstat) >= 200 && cstat !== '801');
+            const autorizada = !rejeitada && (['100', '101', '135', '136', '150', '151', '155'].includes(cstat) ||
+                motivo.includes('autorizado o uso') || motivo.includes('cancelamento de nf-e homologado'));
+            if (autorizada && chaveCorrespondeNota(chave, cnpj14, serie3, nnf9)) {
+                return chave;
             }
         }
+        return '';
+    }
 
-        if (chaveAutorizadaRegistrada) {
-            window._chaveAcessoBloqueada = true;
-            setVal('chaveAcesso', chaveAutorizadaRegistrada);
-            setVal('chaveAcessoDisplay', chaveAutorizadaRegistrada.replace(/(\d{4})/g, '$1 ').trim());
-            return;
-        }
-
+    function calcularChaveAcessoDinamica() {
         const cUF = obterCodigoUF();
         setVal('cUF', cUF);
 
@@ -1737,6 +1735,24 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
         let nNFRaw = (getVal('nNF') || '1').replace(/\D/g, '');
         if (!nNFRaw) nNFRaw = '1';
         const nNFPadded = nNFRaw.padStart(9, '0').slice(-9);
+
+        // Chave IMUTÁVEL apenas para a MESMA nota (CNPJ + série + nNF) já AUTORIZADA/CANCELADA na SEFAZ.
+        // Rejeições (ex.: 225) e notas com outro número NÃO travam o cálculo dinâmico.
+        const chaveAutorizadaRegistrada = obterChaveAutorizadaHistoricoParaNota(cnpjPadded, seriePadded, nNFPadded);
+        if (chaveAutorizadaRegistrada) {
+            window._chaveAcessoBloqueada = true;
+            setVal('chaveAcesso', chaveAutorizadaRegistrada);
+            setVal('chaveAcessoDisplay', chaveAutorizadaRegistrada.replace(/(\d{4})/g, '$1 ').trim());
+            return;
+        }
+        if (window._chaveAcessoBloqueada) {
+            // Trava definida externamente (ex.: retorno da SEFAZ): mantém somente se a chave atual for da mesma nota
+            const chaveAtual = (getVal('chaveAcesso') || getVal('chaveAcessoDisplay') || '').replace(/\D/g, '');
+            if (chaveAtual.length === 44 && chaveCorrespondeNota(chaveAtual, cnpjPadded, seriePadded, nNFPadded)) {
+                return;
+            }
+            window._chaveAcessoBloqueada = false;
+        }
 
         const tpEmis = (getVal('tpEmis') || '1').slice(0, 1);
 
