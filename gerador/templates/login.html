@@ -35,31 +35,51 @@
       max-width: 440px;
       position: relative;
       z-index: 2;
-      background: rgba(15, 23, 42, 0.65);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 24px;
+      background: transparent;
+      border: none;
+      border-radius: 0;
       padding: 2.75rem 2.25rem 2.25rem;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      box-shadow: none;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
     }
     .brand-logo-wrap {
-      width: 80px;
-      height: 80px;
-      margin: 0 auto 1.25rem;
-      border-radius: 20px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      max-width: 260px;
+      width: 100%;
+      height: auto;
+      margin: 0 auto 1.5rem;
+      border-radius: 0;
+      background: transparent;
+      border: none;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 12px;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+      padding: 0;
+      box-shadow: none;
     }
     .brand-logo-wrap img {
       width: 100%;
-      height: 100%;
+      height: auto;
+      max-height: 80px;
       object-fit: contain;
+    }
+    .login-field-wrap {
+      position: relative !important;
+    }
+    .login-card .form-label {
+      position: static !important;
+      top: auto !important;
+      left: auto !important;
+      background: transparent !important;
+      padding: 0 !important;
+      margin-bottom: 0.5rem !important;
+      display: block !important;
+      font-size: 0.875rem !important;
+      color: rgba(255, 255, 255, 0.7) !important;
+      pointer-events: auto !important;
+      max-width: 100% !important;
+      white-space: normal !important;
+      line-height: 1.4 !important;
     }
     .form-control {
       background-color: rgba(255, 255, 255, 0.06);
@@ -86,10 +106,11 @@
       background: linear-gradient(135deg, #2563eb, #1d4ed8);
       border: none;
       color: #fff;
-      font-weight: 700;
+      font-weight: 600;
       border-radius: 12px;
-      padding: 0.85rem;
-      font-size: 1rem;
+      padding: 0.75rem 1rem;
+      min-height: 44px;
+      font-size: 0.95rem;
       width: 100%;
       display: flex;
       align-items: center;
@@ -140,10 +161,8 @@
   <div class="login-card">
     <div class="text-center">
       <div class="brand-logo-wrap">
-        <img alt="NFT Logistics" src="/static/img/brand/NFT%20Logo%20(11).webp"/>
+        <img alt="NFT Logistics" src="/static/img/brand/NFT-COMPLETO-WHITE.webp"/>
       </div>
-      <div><span class="badge-env">Acesso Seguro</span></div>
-      <h3 class="fw-bold mb-1 text-white">NFT Logistics</h3>
       <p class="text-white-50 small mb-4">Portal de Emissão & Gestão Aduaneira / Fiscal</p>
     </div>
 
@@ -155,7 +174,6 @@
 
     <form id="formLogin" onsubmit="realizarLogin(event)">
       <div class="mb-3">
-        <label class="form-label text-muted small fw-semibold" for="inputEmail">E-mail Corporativo</label>
         <div class="input-group">
           <span class="input-group-text border-end-0" style="border-top-right-radius: 0; border-bottom-right-radius: 0;">
             <i data-lucide="mail" style="width: 18px; height: 18px;"></i>
@@ -174,7 +192,6 @@
       </div>
 
       <div class="mb-4">
-        <label class="form-label text-muted small fw-semibold" for="inputPassword">Senha</label>
         <div class="input-group">
           <span class="input-group-text border-end-0" style="border-top-right-radius: 0; border-bottom-right-radius: 0;">
             <i data-lucide="lock" style="width: 18px; height: 18px;"></i>
@@ -205,11 +222,17 @@
         <span id="btnText">Acessar Sistema</span>
         <i data-lucide="arrow-right" id="btnIcon" style="width: 18px; height: 18px;"></i>
       </button>
+
+      <div class="text-center mt-3">
+        <span class="text-white-50" style="font-size: 0.8rem;">
+          Perdeu a senha? Entre em contato com o administrador da conta para solicitar uma nova senha
+        </span>
+      </div>
     </form>
 
     <div class="mt-4 pt-3 text-center border-top border-secondary border-opacity-10">
       <small class="text-muted" style="font-size: 0.75rem;">
-        Protegido com autenticação criptografada & Rate Limiting.<br/>
+        Protegido por criptografia, acesso controlado<br/>
         &copy; NFT Logistics. Todos os direitos reservados.
       </small>
     </div>
