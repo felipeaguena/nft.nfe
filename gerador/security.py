@@ -227,6 +227,21 @@ class _ValidatedPayloadDict(dict):
         return dict(self)
 
 
+import secrets as _secrets
+_DEV_SECRET = None
+
+def get_auth_secret():
+    """Retorna AUTH_SECRET (ou FLASK_SECRET_KEY). Obrigatorio em producao; em dev usa segredo aleatorio por processo."""
+    global _DEV_SECRET
+    val = (os.environ.get('AUTH_SECRET', '').strip() or os.environ.get('FLASK_SECRET_KEY', '').strip())
+    if val:
+        return val
+    if os.environ.get('VERCEL') == '1' or os.environ.get('FLASK_ENV') == 'production':
+        raise RuntimeError("AUTH_SECRET nao definido em producao.")
+    if _DEV_SECRET is None:
+        _DEV_SECRET = _secrets.token_urlsafe(48)
+    return _DEV_SECRET
+
 def validate_json_payload(schema_cls, raw_data=None):
     """
     Valida o JSON da requisição contra o schema Pydantic informado.
@@ -276,11 +291,7 @@ def verify_auth_token_or_internal_key() -> bool:
     4. Para manter funcionamento local transparente caso ENFORCE_API_AUTH="false" ou requisições same-origin
        autenticadas via sessão local quando nenhum segredo externo foi configurado no ambiente dev.
     """
-    auth_secret = (
-        os.environ.get('AUTH_SECRET', '').strip()
-        or os.environ.get('FLASK_SECRET_KEY', '').strip()
-        or "NFTLogistics_AuthSecret_JWT_Key_Fallback_1652"
-    )
+    auth_secret = get_auth_secret()
     internal_api_key = os.environ.get('INTERNAL_API_KEY', '').strip()
 
     # 1. Verifica Header Server-to-Server X-Internal-API-Key
@@ -418,11 +429,7 @@ def get_current_user_from_request() -> Optional[Dict[str, Any]]:
         return user_sess
 
     # Tenta obter pelo token JWT (Cookie ou Header)
-    auth_secret = (
-        os.environ.get('AUTH_SECRET', '').strip()
-        or os.environ.get('FLASK_SECRET_KEY', '').strip()
-        or "NFTLogistics_AuthSecret_JWT_Key_Fallback_1652"
-    )
+    auth_secret = get_auth_secret()
     cookie_token = (
         request.cookies.get('__Secure-authjs.session-token')
         or request.cookies.get('authjs.session-token')
