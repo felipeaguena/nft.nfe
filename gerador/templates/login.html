@@ -156,7 +156,6 @@
       margin-bottom: 0.5rem;
     }
   </style>
-  {% if turnstile_site_key %}<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>{% endif %}
 </head>
 <body>
   <div class="login-card">
@@ -219,10 +218,6 @@
         </div>
       </div>
 
-      {% if turnstile_site_key %}
-      <div class="cf-turnstile mb-3" data-sitekey="{{ turnstile_site_key }}" data-theme="dark"></div>
-      {% endif %}
-
       <button type="submit" class="btn-login" id="btnLogin">
         <span id="btnText">Acessar Sistema</span>
         <i data-lucide="arrow-right" id="btnIcon" style="width: 18px; height: 18px;"></i>
@@ -276,10 +271,7 @@
         const resp = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email, password,
-            turnstile_token: (document.querySelector('[name="cf-turnstile-response"]') || {}).value || ''
-          })
+          body: JSON.stringify({ email, password })
         });
 
         const data = await resp.json().catch(() => ({}));

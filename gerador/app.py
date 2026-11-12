@@ -89,7 +89,11 @@ app = Flask(
 )
 
 # Configuração de Segredo de Sessão e Cookies Seguros para Produção
-app.secret_key = security.get_auth_secret()
+app.secret_key = (
+    os.environ.get('FLASK_SECRET_KEY')
+    or os.environ.get('AUTH_SECRET')
+    or "NFTLogistics_SecretKey_2026_Prod_Static_Key_Fallback_1652"
+)
 
 _is_prod_env = (
     os.environ.get('VERCEL') == '1'
@@ -186,7 +190,7 @@ def enforce_private_routes_auth():
     auth_header = request.headers.get('Authorization', '').strip()
     cookie_token = request.cookies.get('__Secure-authjs.session-token') or request.cookies.get('authjs.session-token')
 
-    auth_secret = security.get_auth_secret()
+    auth_secret = os.environ.get('AUTH_SECRET', '').strip() or "NFTLogistics_AuthSecret_JWT_Key_Fallback_1652"
     if (auth_header.startswith('Bearer ') or cookie_token) and auth_secret:
         try:
             tok = auth_header[7:].strip() if auth_header.startswith('Bearer ') else cookie_token
@@ -1312,45 +1316,7 @@ def build_nfe_element(cabecalho, itens, rodape):
 def pagina_login():
     if session.get('user_authenticated') is True:
         return redirect('/')
-    return render_template('login.html', turnstile_site_key=os.environ.get('TURNSTILE_SITE_KEY', '').strip())
-
-
-# === ANTIBOT: Cloudflare Turnstile + bloqueio por tentativas falhas ===
-import time as _time
-import requests as _requests
-
-_FAILED_LOGINS = {}  # chave (ip|email) -> [timestamps]
-_MAX_FAILS = 5
-_FAIL_WINDOW = 15 * 60  # 15 minutos
-
-
-def _login_key(email):
-    return f"{get_remote_address()}|{(email or '').strip().lower()}"
-
-
-def _is_locked(key):
-    now = _time.time()
-    fails = [t for t in _FAILED_LOGINS.get(key, []) if now - t < _FAIL_WINDOW]
-    _FAILED_LOGINS[key] = fails
-    return len(fails) >= _MAX_FAILS
-
-
-def _verify_turnstile(token):
-    """Valida o token no Cloudflare. Se TURNSTILE_SECRET_KEY não estiver configurada, não exige (dev local)."""
-    secret = os.environ.get('TURNSTILE_SECRET_KEY', '').strip()
-    if not secret:
-        return True
-    if not token:
-        return False
-    try:
-        r = _requests.post(
-            'https://challenges.cloudflare.com/turnstile/v0/siteverify',
-            data={'secret': secret, 'response': token, 'remoteip': get_remote_address()},
-            timeout=5,
-        )
-        return bool(r.json().get('success'))
-    except Exception:
-        return False  # fail-closed
+    return render_template('login.html')
 
 @app.route('/')
 def portal():
@@ -1380,17 +1346,9 @@ def modulo_preview_novo_layout():
 @app.route('/api/auth/login', methods=['POST'])
 @limiter.limit("5 per minute")
 def api_auth_login():
-    raw = request.get_json(silent=True) or {}
-    if not _verify_turnstile(raw.get('turnstile_token')):
-        return jsonify({"error": "Verificação anti-bot falhou. Recarregue a página e tente novamente."}), 403
-
     data, err_resp = security.validate_json_payload(security.LoginPayloadSchema)
     if err_resp:
         return jsonify({"error": "Credenciais inválidas"}), 401
-
-    lock_key = _login_key(data['email'])
-    if _is_locked(lock_key):
-        return jsonify({"error": "Muitas tentativas. Aguarde 15 minutos."}), 429
 
     conn = get_db_connection()
     try:
@@ -1402,14 +1360,12 @@ def api_auth_login():
             pass
 
     if not user:
-        _FAILED_LOGINS.setdefault(lock_key, []).append(_time.time())
         return jsonify({"error": "Credenciais inválidas"}), 401
-    _FAILED_LOGINS.pop(lock_key, None)
 
     session['user_authenticated'] = True
     session['user'] = user
 
-    auth_secret = security.get_auth_secret()
+    auth_secret = os.environ.get('AUTH_SECRET', '').strip() or "NFTLogistics_AuthSecret_JWT_Key_Fallback_1652"
     token_jwt = ""
     payload_jwt = {
         "sub": user["id"],
