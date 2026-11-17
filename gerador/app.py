@@ -1302,7 +1302,8 @@ def build_nfe_element(cabecalho, itens, rodape):
 def pagina_login():
     if session.get('user_authenticated') is True:
         return redirect('/')
-    return render_template('login.html')
+    turnstile_site_key = os.environ.get('TURNSTILE_SITE_KEY', '').strip()
+    return render_template('login.html', turnstile_site_key=turnstile_site_key)
 
 @app.route('/')
 def portal():
@@ -1375,6 +1376,31 @@ def modulo_nova_nf():
 @app.route('/api/auth/login', methods=['POST'])
 @limiter.limit("5 per minute")
 def api_auth_login():
+    turnstile_secret = os.environ.get('TURNSTILE_SECRET_KEY', '').strip()
+    if turnstile_secret:
+        raw_body = request.get_json(silent=True) or {}
+        cf_token = (raw_body.get('turnstile_token') or raw_body.get('cf-turnstile-response') or '').strip()
+        if not cf_token:
+            return jsonify({"error": "Verificação antibot obrigatória. Aguarde a validação e tente novamente."}), 403
+        try:
+            import urllib.request as _urlreq, urllib.parse as _urlparse
+            verify_data = _urlparse.urlencode({
+                'secret': turnstile_secret,
+                'response': cf_token,
+                'remoteip': request.remote_addr or ''
+            }).encode('utf-8')
+            req_cf = _urlreq.Request(
+                'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+                data=verify_data,
+                method='POST'
+            )
+            with _urlreq.urlopen(req_cf, timeout=8) as resp_cf:
+                res_cf = json.loads(resp_cf.read().decode('utf-8'))
+            if not res_cf.get('success'):
+                return jsonify({"error": "Verificação antibot expirada ou inválida. Tente novamente."}), 403
+        except Exception:
+            return jsonify({"error": "Falha ao validar verificação antibot. Tente novamente."}), 503
+
     data, err_resp = security.validate_json_payload(security.LoginPayloadSchema)
     if err_resp:
         return jsonify({"error": "Credenciais inválidas"}), 401
