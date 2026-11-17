@@ -14,7 +14,7 @@
 <label class="form-label fw-bold text-muted small text-uppercase">Referência Interna</label>
 <div class="input-group input-group-sm">
 <span class="input-group-text bg-body-tertiary"><i data-lucide="tag" style="width: 16px; height: 16px;"></i></span>
-<input class="form-control form-control-sm" id="rascunho_ref_input" placeholder="{{ editor_cfg.modal_rascunho_placeholder }}" type="text"/>
+<input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly')" class="form-control form-control-sm" id="rascunho_ref_input" name="rascunho_ref_doc" placeholder="{{ editor_cfg.modal_rascunho_placeholder }}" type="text"/>
 </div>
 <div class="form-text">Esta referência permite identificar rapidamente seu trabalho em andamento.</div>
 </div>
