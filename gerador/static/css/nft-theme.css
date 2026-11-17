@@ -2316,6 +2316,7 @@ label.has-regex-tag,
     --bs-table-bg: transparent !important;
     border: 1px solid var(--border, #E2E8F0);
     border-radius: 12px;
+    overflow: hidden !important;
     padding: 0.65rem 0.75rem;
     margin-bottom: 0.6rem;
     box-shadow: none !important;
@@ -2387,6 +2388,7 @@ label.has-regex-tag,
     --bs-table-bg: transparent !important;
     border: 1px solid var(--border, #E2E8F0);
     border-radius: 12px;
+    overflow: hidden !important;
     padding: 0.65rem 0.75rem;
     margin-bottom: 0.6rem;
   }
@@ -2455,6 +2457,7 @@ label.has-regex-tag,
     --bs-table-bg: transparent !important;
     border: 1px solid var(--border, #E2E8F0);
     border-radius: 12px;
+    overflow: hidden !important;
     padding: 0.65rem 0.75rem;
     margin-bottom: 0.6rem;
     display: flex !important;
@@ -2525,6 +2528,185 @@ label.has-regex-tag,
 
   #tbody-feiras .lucide-calendar {
     display: none !important;
+  }
+
+  /* Usuários Autorizados: cards empilhados no mobile (<= 767px) */
+  .card-usuarios-lista {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    overflow: visible !important;
+  }
+
+  .card-usuarios-lista table,
+  .card-usuarios-lista tbody,
+  .card-usuarios-lista tr,
+  .card-usuarios-lista td {
+    display: block;
+    width: 100% !important;
+  }
+
+  .card-usuarios-lista thead {
+    display: none;
+  }
+
+  #tabelaUsuariosCorpo {
+    padding: 0.35rem !important;
+  }
+
+  #tabelaUsuariosCorpo tr,
+  [data-theme="dark"] #tabelaUsuariosCorpo tr,
+  [data-bs-theme="dark"] #tabelaUsuariosCorpo tr,
+  .dark #tabelaUsuariosCorpo tr {
+    background: transparent !important;
+    background-color: transparent !important;
+    --bs-table-bg: transparent !important;
+    border: 1px solid var(--border, #E2E8F0);
+    border-radius: 12px;
+    overflow: hidden !important;
+    padding: 0.65rem 0.75rem;
+    margin-bottom: 0.6rem;
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  #tabelaUsuariosCorpo td,
+  [data-theme="dark"] #tabelaUsuariosCorpo td,
+  [data-bs-theme="dark"] #tabelaUsuariosCorpo td,
+  .dark #tabelaUsuariosCorpo td {
+    background: transparent !important;
+    background-color: transparent !important;
+    --bs-table-bg: transparent !important;
+    border: none !important;
+    padding: 0.2rem 0 !important;
+    text-align: left !important;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    flex: 0 0 100%;
+  }
+
+  #tabelaUsuariosCorpo td:nth-child(1) {
+    flex: 0 0 100% !important;
+    width: 100% !important;
+    font-size: 0.88rem;
+    font-weight: 700;
+    padding-bottom: 0.4rem !important;
+    margin-bottom: 0.35rem;
+    border-bottom: 1px solid var(--border, #E2E8F0) !important;
+    display: block;
+  }
+
+  #tabelaUsuariosCorpo td:nth-child(2)::before { content: "E-mail:"; color: var(--muted-foreground, #64748B); font-weight: 600; }
+  #tabelaUsuariosCorpo td:nth-child(3)::before { content: "Perfil:"; color: var(--muted-foreground, #64748B); font-weight: 600; }
+  #tabelaUsuariosCorpo td:nth-child(4)::before { content: "Criado em:"; color: var(--muted-foreground, #64748B); font-weight: 600; }
+
+  #tabelaUsuariosCorpo td:last-child {
+    width: 100% !important;
+    flex: 0 0 100% !important;
+    margin-top: 0.4rem;
+    padding-top: 0.45rem !important;
+    border-top: 1px solid var(--border, #E2E8F0) !important;
+    justify-content: flex-end;
+  }
+
+  #tabelaUsuariosCorpo td:last-child > div {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+  }
+
+  /* Unidades Tributáveis & Abreviações: cards empilhados no mobile (<= 767px) */
+  .table-responsive:has(#tabela-unidades) {
+    overflow: visible !important;
+  }
+
+  #tabela-unidades,
+  #tabela-unidades tbody,
+  #tabela-unidades tr,
+  #tabela-unidades td {
+    display: block;
+    width: 100% !important;
+  }
+
+  #tabela-unidades thead {
+    display: none;
+  }
+
+  #unidades-tbody tr,
+  [data-theme="dark"] #unidades-tbody tr,
+  [data-bs-theme="dark"] #unidades-tbody tr,
+  .dark #unidades-tbody tr {
+    background: transparent !important;
+    background-color: transparent !important;
+    --bs-table-bg: transparent !important;
+    border: 1px solid var(--border, #E2E8F0);
+    border-radius: 12px;
+    overflow: hidden !important;
+    padding: 0.65rem 0.75rem;
+    margin-bottom: 0.6rem;
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  #unidades-tbody td,
+  [data-theme="dark"] #unidades-tbody td,
+  [data-bs-theme="dark"] #unidades-tbody td,
+  .dark #unidades-tbody td {
+    background: transparent !important;
+    background-color: transparent !important;
+    --bs-table-bg: transparent !important;
+    border: none !important;
+    padding: 0.2rem 0 !important;
+    text-align: left !important;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    flex: 0 0 100%;
+  }
+
+  #unidades-tbody td:nth-child(1) {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    justify-content: flex-start !important;
+    padding-bottom: 0.4rem !important;
+    margin-bottom: 0.35rem;
+    padding-right: 0.4rem !important;
+    border-bottom: 1px solid var(--border, #E2E8F0) !important;
+    gap: 0 !important;
+  }
+
+  #unidades-tbody td:nth-child(1)::after {
+    content: "|";
+    margin-left: 0.4rem;
+    opacity: 0.5;
+  }
+
+  #unidades-tbody td:nth-child(2) {
+    flex: 1 1 0% !important;
+    width: auto !important;
+    font-size: 0.88rem;
+    font-weight: 700;
+    padding-bottom: 0.4rem !important;
+    margin-bottom: 0.35rem;
+    border-bottom: 1px solid var(--border, #E2E8F0) !important;
+    display: block;
+  }
+
+  #unidades-tbody td:nth-child(3)::before { content: "Variações:"; color: var(--muted-foreground, #64748B); font-weight: 600; }
+  #unidades-tbody td:nth-child(4)::before { content: "Status:"; color: var(--muted-foreground, #64748B); font-weight: 600; }
+
+  #unidades-tbody td:last-child {
+    margin-top: 0.4rem;
+    padding-top: 0.45rem !important;
+    border-top: 1px solid var(--border, #E2E8F0) !important;
+    justify-content: flex-end;
   }
 }
 
