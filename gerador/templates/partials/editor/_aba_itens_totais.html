@@ -1,0 +1,182 @@
+<!-- ABA 2: ITENS DA NOTA (TABELA EM SEQUENCIA ESTILO GOOGLE SHEETS) -->
+<div class="tab-pane fade" id="itens" role="tabpanel">
+<div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom flex-wrap gap-2">
+<div>
+<h6 class="mb-0 fw-bold">Planilha de Itens da NF-e (det nItem)</h6>
+<small class="text-muted">Clique em qualquer célula para editar diretamente. Use a barra de rolagem horizontal para ver todas as colunas.</small>
+</div>
+<div class="d-flex align-items-center flex-wrap gap-1">
+<button class="btn-nft btn-nft-success me-1 fw-bold d-flex align-items-center justify-content-center shadow-sm" onclick="adicionarNovoItem()" title="Adicionar um novo item na nota" type="button">
+<i data-lucide="plus-circle"></i>
+</button>
+<button class="btn-nft btn-nft-danger me-1 fw-bold d-flex align-items-center justify-content-center shadow-sm" onclick="excluirItensSelecionados()" title="Excluir item(ns) selecionado(s) na grade" type="button">
+<i data-lucide="trash-2"></i>
+</button>
+<button class="btn-nft me-1 fw-bold d-flex align-items-center justify-content-center" onclick="duplicarItensSelecionados()" title="Duplicar item(ns) selecionado(s) na grade" type="button">
+<i data-lucide="copy"></i>
+</button>
+<button class="btn-nft btn-nft-warning me-1 fw-bold d-flex align-items-center gap-1 shadow-sm" onclick="zerarImpostosTodosItensComConfirmacao()" title="Zerar Base de Cálculo, Porcentagem e Valor de II, IPI, PIS e COFINS de todos os itens" type="button">
+<i data-lucide="percent"></i>
+<span>Zerar Impostos</span>
+</button>
+<button class="btn-nft fw-bold d-flex align-items-center gap-1 me-1 shadow-sm" type="button" onclick="abrirModalAplicarEnquadramentoItens()" title="Aplicar Enquadramento Fiscal aos itens da nota">
+    <i data-lucide="shield-check"></i>
+    <span>Enquadramento Fiscal</span>
+</button>
+<button class="btn-nft fw-bold d-flex align-items-center gap-1 me-1 shadow-sm" type="button" onclick="repassarImportacaoParaItens()" title="Repassar Número e Dados da Declaração de Importação (DI) para os itens da grade">
+    <i data-lucide="globe"></i>
+    <span>Repassar DI</span>
+</button>
+<button class="btn-nft fw-bold d-flex align-items-center gap-1 me-1 shadow-sm" type="button" onclick="substituirUnidadesPorAbreviadas()" title="Padronizar e substituir nomes de unidades pelos códigos abreviados oficiais (Un. Trib. e Un. Com. com confirmação)">
+    <i data-lucide="wand-2"></i>
+    <span>Abreviar Unidades</span>
+</button>
+<button class="btn-nft me-1 fw-bold d-flex align-items-center gap-1" onclick="abrirPainelRateio()" title="Ir para Parâmetros de Rateio e Câmbio PTAX">
+<i data-lucide="scale"></i>
+<span>Rateio &amp; PTAX</span>
+</button>
+<button class="btn-nft me-1 d-flex align-items-center gap-1" onclick="recarregarTabelaItens()">
+<i data-lucide="refresh-cw"></i>
+<span>Redesenhar Grade</span>
+</button>
+<button class="btn-nft me-1 fw-bold d-flex align-items-center gap-1" onclick="exportarExcel()">
+<i data-lucide="file-spreadsheet"></i>
+<span>Exportar Excel (.xlsx)</span>
+</button>
+<button class="btn-nft fw-bold d-flex align-items-center gap-1" onclick="document.getElementById('importExcelInput').click()">
+<i data-lucide="upload"></i>
+<span>Importar Excel (.xlsx)</span>
+</button>
+<input accept=".xlsx" id="importExcelInput" onchange="importarExcel(this)" style="display:none" type="file"/>
+</div>
+</div>
+<!-- Barra de Status Rápido de Câmbio PTAX & Despesas de Rateio Ativas -->
+<div class="card border mb-2 p-2 px-3 bg-light d-flex flex-row justify-content-between align-items-center flex-wrap gap-2 shadow-sm mt-3" style="font-size: 12.5px;">
+<div class="d-flex align-items-center flex-wrap gap-3">
+<div><span class="text-muted">Moeda:</span> <span class="badge bg-info-subtle text-info fw-bold" id="lbl-bar-ptax-moeda">USD</span></div>
+<div><span class="text-muted">Cotação PTAX:</span> <strong class="text-primary font-monospace" id="lbl-bar-ptax-taxa">R$ -</strong></div>
+<div class="border-start ps-3"><span class="text-muted">Marinha Mercante (AFRMM):</span> <span class="fw-bold font-monospace text-heading" id="lbl-bar-rateio-afrmm">R$ 0,00</span></div>
+<div><span class="text-muted">Taxa Siscomex:</span> <span class="fw-bold font-monospace text-heading" id="lbl-bar-rateio-siscomex">R$ 0,00</span></div>
+<div><span class="text-muted">Outras Desp. (vOutro):</span> <span class="fw-bold font-monospace text-heading" id="lbl-bar-rateio-outro">R$ 0,00</span></div>
+</div>
+<div class="d-flex align-items-center gap-2">
+<button class="btn-nft fw-bold shadow-sm d-flex align-items-center gap-1" onclick="recalcularConversaoItens()" title="Recalcula a conversão de moeda dos itens com base na nova taxa PTAX" type="button">
+<i data-lucide="refresh-cw"></i>
+<span>Recalcular Conversão</span>
+</button>
+<button class="btn-nft fw-semibold d-flex align-items-center gap-1" onclick="aplicarUnidadesExportacaoManual()" title="Recalcula uTrib/qTrib de exportação com base no peso líquido e tabela Comex" type="button">
+<i data-lucide="globe"></i>
+<span>uTrib Exportação</span>
+</button>
+<button class="btn-nft fw-semibold d-flex align-items-center gap-1" onclick="reaplicarRateioItens()" title="Recalcula e reaplica as despesas de rateio aos itens da tabela" type="button">
+<i data-lucide="refresh-cw"></i>
+<span>Reaplicar Rateio</span>
+</button>
+</div>
+</div>
+<div id="itens-table"></div>
+<div class="card border mt-4 mb-3">
+<div class="card-header py-2 d-flex justify-content-between align-items-center flex-wrap gap-2 text-secondary">
+<div class="d-flex align-items-center gap-2">
+<span class="fw-bold d-inline-flex align-items-center gap-2"><i data-lucide="calculator" style="width: 16px; height: 16px;"></i> Totais da Nota Fiscal (Grupo &lt;total&gt; / &lt;ICMSTot&gt;)</span>
+<small class="text-muted d-none d-md-inline">(Valores em R$)</small>
+</div>
+<button class="btn-nft py-1 px-3 fw-bold shadow-sm" onclick="recalcularTotaisDosItens()" type="button">
+<i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> Recalcular Totais da Nota
+                        </button>
+</div>
+<div class="card-body py-3">
+<!-- Linha de Destaques Comerciais -->
+<div class="row g-2 pb-3 mb-3 border-bottom">
+<div class="col-md-2">
+<label class="form-label small mb-1 fw-bold">Total dos Produtos (vProd)</label>
+<input class="form-control form-control-sm font-monospace text-end fw-bold" id="tot_vProd" onchange="formatarInputVisualBR(this, 2, 2); calcularVNFAutomatico();" oninput="calcularVNFAutomatico()" type="text"/>
+</div>
+<div class="col-md-2">
+<label class="form-label small mb-1">Total do Frete (vFrete)</label>
+<input class="form-control form-control-sm font-monospace text-end" id="tot_vFrete" onchange="formatarInputVisualBR(this, 2, 2); calcularVNFAutomatico();" oninput="calcularVNFAutomatico()" type="text"/>
+</div>
+<div class="col-md-2">
+<label class="form-label small mb-1">Total do Seguro (vSeg)</label>
+<input class="form-control form-control-sm font-monospace text-end" id="tot_vSeg" onchange="formatarInputVisualBR(this, 2, 2); calcularVNFAutomatico();" oninput="calcularVNFAutomatico()" type="text"/>
+</div>
+<div class="col-md-2">
+<label class="form-label small mb-1">Outras Despesas (vOutro)</label>
+<input class="form-control form-control-sm font-monospace text-end" id="tot_vOutro" onchange="formatarInputVisualBR(this, 2, 2); calcularVNFAutomatico();" oninput="calcularVNFAutomatico()" type="text"/>
+</div>
+<div class="col-md-2">
+<label class="form-label small mb-1">Total Desconto (vDesc)</label>
+<input class="form-control form-control-sm font-monospace text-end text-danger" id="tot_vDesc" onchange="formatarInputVisualBR(this, 2, 2); calcularVNFAutomatico();" oninput="calcularVNFAutomatico()" type="text"/>
+</div>
+<div class="col-md-2">
+<label class="form-label small mb-1 fw-bold text-success">Valor Total da NF (vNF)</label>
+<input class="form-control form-control-sm font-monospace text-end fw-bold text-success border-success" id="tot_vNF" onchange="formatarInputVisualBR(this, 2, 2); setVal('vNF', this.value);" oninput="setVal('vNF', this.value)" type="text"/>
+<input id="vNF" type="hidden"/>
+</div>
+</div>
+<!-- Linha de Cobrança & Meio de Pagamento (SEFAZ YA04-10) -->
+<div class="row g-2 pb-3 mb-3 border-bottom align-items-center bg-light p-2 rounded">
+    <div class="col-md-5">
+        <label class="form-label small mb-1 fw-bold d-flex align-items-center gap-1 text-secondary">
+            <i data-lucide="credit-card" style="width: 14px; height: 14px;"></i>
+            <span>Meio de Pagamento SEFAZ (&lt;detPag&gt;&lt;tPag&gt;)</span>
+        </label>
+        <select class="form-select form-select-sm fw-semibold" id="tot_tPag" onchange="aoMudarMeioPagamento(this.value)">
+            <option value="90" selected>90 - Sem Pagamento (Remessas / Retornos / Admissão / Reexportação)</option>
+            <option value="99">99 - Outros (Câmbio / Internacional)</option>
+            <option value="01">01 - Dinheiro</option>
+            <option value="15">15 - Boleto Bancário</option>
+            <option value="16">16 - Depósito Bancário</option>
+            <option value="17">17 - Pagamento Instantâneo (PIX)</option>
+            <option value="03">03 - Cartão de Crédito</option>
+            <option value="04">04 - Cartão de Débito</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small mb-1 fw-bold text-secondary">Valor do Pagamento (vPag)</label>
+        <input class="form-control form-control-sm font-monospace text-end fw-bold" id="tot_vPag" value="0,00" readonly style="background-color: var(--surface-secondary);" type="text"/>
+    </div>
+    <div class="col-md-4">
+        <small class="text-muted d-block" id="msg-tpag-ajuda" style="font-size: 11px;">
+            <i data-lucide="info" style="width: 12px; height: 12px;"></i>
+            Regra YA04-10: Para <strong>tPag=90</strong>, o valor <strong>vPag é obrigatoriamente 0,00</strong> e o grupo de duplicatas &lt;cobr&gt; é omitido.
+        </small>
+    </div>
+</div>
+<!-- Linha de Impostos e Tributos -->
+<div class="row g-2">
+<div class="col-md-3">
+<label class="form-label small mb-1 text-muted">Base de Cálculo ICMS (vBC)</label>
+<input class="form-control form-control-sm font-monospace text-end" id="tot_vBC" onchange="formatarInputVisualBR(this, 2, 2)" type="text"/>
+</div>
+<div class="col-md-3">
+<label class="form-label small mb-1 text-muted">Total ICMS (vICMS)</label>
+<input class="form-control form-control-sm font-monospace text-end" id="tot_vICMS" onchange="formatarInputVisualBR(this, 2, 2)" type="text"/>
+</div>
+<div class="col-md-3">
+<label class="form-label small mb-1 text-muted">Base ICMS ST (vBCST)</label>
+<input class="form-control form-control-sm font-monospace text-end" id="tot_vBCST" onchange="formatarInputVisualBR(this, 2, 2)" type="text"/>
+</div>
+<div class="col-md-3">
+<label class="form-label small mb-1 text-muted">Total ICMS ST (vST)</label>
+<input class="form-control form-control-sm font-monospace text-end" id="tot_vST" onchange="formatarInputVisualBR(this, 2, 2); calcularVNFAutomatico();" oninput="calcularVNFAutomatico()" type="text"/>
+</div>
+<div class="col-md-3">
+<label class="form-label small mb-1 text-muted">Total Imposto Importação (vII)</label>
+<input class="form-control form-control-sm font-monospace text-end" id="tot_vII" onchange="formatarInputVisualBR(this, 2, 2); calcularVNFAutomatico();" oninput="calcularVNFAutomatico()" type="text"/>
+</div>
+<div class="col-md-3">
+<label class="form-label small mb-1 text-muted">Total IPI (vIPI)</label>
+<input class="form-control form-control-sm font-monospace text-end" id="tot_vIPI" onchange="formatarInputVisualBR(this, 2, 2); calcularVNFAutomatico();" oninput="calcularVNFAutomatico()" type="text"/>
+</div>
+<div class="col-md-3">
+<label class="form-label small mb-1 text-muted">Total PIS (vPIS)</label>
+<input class="form-control form-control-sm font-monospace text-end" id="tot_vPIS" onchange="formatarInputVisualBR(this, 2, 2)" type="text"/>
+</div>
+<div class="col-md-3">
+<label class="form-label small mb-1 text-muted">Total COFINS (vCOFINS)</label>
+<input class="form-control form-control-sm font-monospace text-end" id="tot_vCOFINS" onchange="formatarInputVisualBR(this, 2, 2)" type="text"/>
+</div>
+</div>
+</div>
+</div></div>

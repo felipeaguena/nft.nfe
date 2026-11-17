@@ -1,0 +1,1348 @@
+import os
+import requests
+import base64
+from lxml import etree
+from signxml import XMLSigner, methods
+
+# Bypass check for deprecated methods to allow rsa-sha1 which is required by SEFAZ
+XMLSigner.check_deprecated_methods = lambda self: None
+
+from cryptography.hazmat.primitives.serialization import pkcs12
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+import hashlib
+import urllib3
+import re
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+from dotenv import load_dotenv
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
+
+if os.environ.get('VERCEL') == '1':
+    CERT_DIR = '/tmp/certificado'
+else:
+    CERT_DIR = os.path.join(os.path.dirname(__file__), 'certificado')
+
+try:
+    os.makedirs(CERT_DIR, exist_ok=True)
+except OSError:
+    pass
+
+
+# Suporte a injeção de Certificado via Base64 na Vercel (sem precisar subir o .pfx no Git)
+_env_cert_base64 = os.environ.get('CERT_PFX_BASE64', '').strip()
+if _env_cert_base64:
+    try:
+        _cloud_pfx_path = os.path.join(CERT_DIR, 'cloud_empresa.pfx')
+        with open(_cloud_pfx_path, 'wb') as _f_cloud:
+            _f_cloud.write(base64.b64decode(_env_cert_base64))
+        _env_cert_path = _cloud_pfx_path
+    except Exception as _e_b64:
+        print(f"Aviso ao carregar CERT_PFX_BASE64: {_e_b64}")
+        _env_cert_path = ''
+else:
+    _env_cert_path = os.environ.get('CERT_PFX_PATH', '').strip()
+
+DEFAULT_CERT_PATH = (
+    os.path.abspath(_env_cert_path)
+    if _env_cert_path and os.path.exists(_env_cert_path)
+    else os.path.join(CERT_DIR, 'certificado_empresa.pfx')
+)
+_env_cert_pass = os.environ.get('CERT_PFX_PASSWORD', '')
+DEFAULT_CERT_PASS = _env_cert_pass.encode('utf-8') if _env_cert_pass else b''
+
+CERT_PATH = DEFAULT_CERT_PATH
+CERT_PASS = DEFAULT_CERT_PASS
+
+def set_active_certificate(caminho, senha_bytes):
+    global CERT_PATH, CERT_PASS
+    CERT_PATH = caminho
+    CERT_PASS = senha_bytes
+
+def get_active_certificate_path():
+    return CERT_PATH
+
+def validar_e_extrair_info_pfx(pfx_data, senha_bytes):
+    private_key, certificate, additional_certificates = pkcs12.load_key_and_certificates(pfx_data, senha_bytes)
+    subject = certificate.subject.rfc4514_string()
+    issuer = certificate.issuer.rfc4514_string()
+    
+    cnpj = ""
+    m = re.search(r'([0-9]{14})', subject)
+    if m:
+        cnpj = m.group(1)
+    
+    return {
+        'status': 'success',
+        'assunto': subject,
+        'emissor': issuer,
+        'cnpj': cnpj,
+        'inicio': certificate.not_valid_before_utc.strftime('%d/%m/%Y %H:%M:%S'),
+        'fim': certificate.not_valid_after_utc.strftime('%d/%m/%Y %H:%M:%S')
+    }
+
+def carregar_certificado_salvo():
+    global CERT_PATH, CERT_PASS
+    # 1. Se CERT_PATH atual já existe e é válido, não precisa recarregar
+    if os.path.exists(CERT_PATH) and os.path.getsize(CERT_PATH) > 0:
+        return
+
+    nome_arq = None
+    senha_str = None
+
+    # 2. Tenta obter nome e senha do certificado salvo via Turso ou SQLite local
+    try:
+        from app import get_db_connection
+        conn = get_db_connection()
+        c = conn.cursor()
+        row_arq = c.execute("SELECT valor FROM sistema_config WHERE chave = 'certificado_ativo_arquivo'").fetchone()
+        row_pwd = c.execute("SELECT valor FROM sistema_config WHERE chave = 'certificado_ativo_senha'").fetchone()
+        conn.close()
+        if row_arq and row_arq['valor']:
+            nome_arq = row_arq['valor'].strip()
+        if row_pwd and row_pwd['valor']:
+            senha_str = row_pwd['valor'].strip()
+    except Exception as e_cfg:
+        pass
+
+    if not nome_arq:
+        nome_arq = os.environ.get('CERT_PFX_FILENAME', '').strip()
+    if not senha_str:
+        senha_str = os.environ.get('CERT_PFX_PASSWORD', '').strip()
+
+    caminho_cand = os.path.join(CERT_DIR, nome_arq)
+
+    # 3. Se não existe em disco, tenta baixar direto do Cloudflare R2
+    if not os.path.exists(caminho_cand) or os.path.getsize(caminho_cand) == 0:
+        try:
+            import r2_storage
+            # Tenta com chave 'certificado/<nome>' ou '<nome>'
+            ok_r2 = r2_storage.download_file_r2(f"certificado/{nome_arq}", caminho_cand)
+            if not ok_r2:
+                r2_storage.download_file_r2(nome_arq, caminho_cand)
+        except Exception as _e_r2_cert:
+            print(f"Aviso ao baixar certificado do R2: {_e_r2_cert}")
+
+    if os.path.exists(caminho_cand) and os.path.getsize(caminho_cand) > 0:
+        CERT_PATH = caminho_cand
+        CERT_PASS = senha_str.encode('utf-8')
+        return
+
+    # 4. Fallback: verifica qualquer arquivo .pfx/.p12 disponível na pasta CERT_DIR
+    if os.path.exists(CERT_DIR):
+        pfxs = [f for f in os.listdir(CERT_DIR) if f.lower().endswith(('.pfx', '.p12'))]
+        if pfxs:
+            cand_pj = [f for f in pfxs if any(k in f.lower() for k in ('cnpj', 'nft', 'empresa', 'nfe'))]
+            chosen = cand_pj[0] if cand_pj else pfxs[0]
+            CERT_PATH = os.path.join(CERT_DIR, chosen)
+            if not CERT_PASS:
+                env_pwd = os.environ.get('CERT_PFX_PASSWORD', '').strip().encode('utf-8')
+                test_pwds = [env_pwd, b''] if env_pwd else [b'']
+                for test_pwd in test_pwds:
+                    try:
+                        with open(CERT_PATH, 'rb') as f_test:
+                            pkcs12.load_key_and_certificates(f_test.read(), test_pwd)
+                        CERT_PASS = test_pwd
+                        break
+                    except Exception:
+                        pass
+
+
+def ensure_certificate_loaded():
+    global CERT_PATH, CERT_PASS
+    if not os.path.exists(CERT_PATH) or os.path.getsize(CERT_PATH) == 0:
+        carregar_certificado_salvo()
+
+# Executa carga inicial
+carregar_certificado_salvo()
+
+def get_certificate_info():
+    ensure_certificate_loaded()
+    if not os.path.exists(CERT_PATH):
+        return {'status': 'error', 'message': 'Nenhum certificado PFX/P12 encontrado na pasta de certificados.'}
+    
+    try:
+        with open(CERT_PATH, 'rb') as f:
+            pfx_data = f.read()
+
+            
+        info = validar_e_extrair_info_pfx(pfx_data, CERT_PASS)
+        info['arquivo'] = os.path.basename(CERT_PATH)
+        return info
+    except Exception as e:
+        return {'status': 'error', 'message': str(e), 'arquivo': os.path.basename(CERT_PATH) if os.path.exists(CERT_PATH) else ''}
+
+try:
+    import xmlsec
+except Exception as _e_xmlsec:
+    xmlsec = None
+    print(f"Aviso: xmlsec não disponível neste ambiente ({_e_xmlsec}).")
+import time
+from cryptography.hazmat.primitives import serialization
+
+def calcular_cdv(chave43):
+    pesos = [2, 3, 4, 5, 6, 7, 8, 9]
+    soma = 0
+    p_idx = 0
+    for ch in reversed(chave43):
+        soma += int(ch) * pesos[p_idx % len(pesos)]
+        p_idx += 1
+    resto = soma % 11
+    return 0 if resto in (0, 1) else 11 - resto
+
+from datetime import datetime, timezone, timedelta
+
+def sanitizar_xml_para_envio(xml_string, tpAmb=2):
+    """
+    Sanitiza e valida regras essenciais da SEFAZ para homologação ou produção antes da assinatura:
+    - Garante tag <tpAmb> condizente (1 ou 2)
+    - Em Homologação (tpAmb=2): força dest/xNome para 'NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL' (regra 598)
+    - Corrige dest/enderDest/cPais para '1600' se for '160' ou exterior sem código (regra 377)
+    - Corrige divergência de arredondamento em itens onde abs(vProd - round(qTrib * vUnTrib, 2)) > 0.01 (regra 630)
+    - Atualiza dhEmi e dhSaiEnt se a data de emissão estiver defasada/antiga (> 25 dias ou mês anterior)
+      e recalcula a Chave de Acesso de 44 dígitos e o cDV para que a chave bata com a competência AAMM atual (evita rejeição 228 e chave inválida)
+    Retorna: (xml_sanitizado_str, chave_44)
+    """
+    if isinstance(xml_string, (bytes, bytearray)):
+        xml_string = xml_string.decode('utf-8')
+    xml_string = xml_string.strip()
+    xml_string = re.sub(r'^\s*<\?xml[^>]*\?>', '', xml_string).strip()
+    
+    # Remove qualquer assinatura prévia para evitar conflito antes de sanitizar
+    xml_string = re.sub(r'<ds:Signature.*?</ds:Signature>', '', xml_string, flags=re.DOTALL)
+    xml_string = re.sub(r'<Signature.*?</Signature>', '', xml_string, flags=re.DOTALL)
+    xml_string = xml_string.replace(' xmlns:ds="http://www.w3.org/2000/09/xmldsig#"', '')
+    
+    doc = etree.fromstring(xml_string.encode('utf-8'))
+    inf_nfe = doc.find('.//{http://www.portalfiscal.inf.br/nfe}infNFe')
+    if inf_nfe is None:
+        for el in doc.iter():
+            if el.tag.split('}')[-1] == 'infNFe':
+                inf_nfe = el
+                break
+    if inf_nfe is None:
+        raise ValueError("Tag <infNFe> não encontrada no XML")
+        
+    # Garante que o documento raiz seja estritamente <NFe xmlns="http://www.portalfiscal.inf.br/nfe">,
+    # eliminando qualquer invólucro de lote, nfeProc, protNFe ou assinaturas residuais (elimina Rejeição 225)
+    inf_supl = doc.find('.//{http://www.portalfiscal.inf.br/nfe}infNFeSupl')
+    clean_nfe = etree.Element('{http://www.portalfiscal.inf.br/nfe}NFe', nsmap={None: 'http://www.portalfiscal.inf.br/nfe'})
+    clean_nfe.append(inf_nfe)
+    if inf_supl is not None:
+        clean_nfe.append(inf_supl)
+    doc = clean_nfe
+
+    ide = inf_nfe.find('{http://www.portalfiscal.inf.br/nfe}ide')
+    if ide is None:
+        raise ValueError("Tag <ide> não encontrada no XML")
+        
+    # Ajusta tpAmb na tag <ide>
+    tpAmb_el = ide.find('{http://www.portalfiscal.inf.br/nfe}tpAmb')
+    if tpAmb_el is not None:
+        tpAmb_el.text = str(tpAmb)
+
+    # Em homologação, se houver NFref apontando para nota de produção (ou inexistente em homologação),
+    # a SEFAZ SP Homologação rejeita com 267 (Chave referenciada inexistente).
+    # Preservamos a referência em infCpl para integridade visual/DANFE e removemos a tag <NFref>
+    if tpAmb == 2:
+        for nf_ref_el in ide.findall('{http://www.portalfiscal.inf.br/nfe}NFref'):
+            ref_nfe_txt = nf_ref_el.findtext('{http://www.portalfiscal.inf.br/nfe}refNFe') or ''
+            if ref_nfe_txt:
+                inf_adic = inf_nfe.find('{http://www.portalfiscal.inf.br/nfe}infAdic')
+                if inf_adic is not None:
+                    inf_cpl = inf_adic.find('{http://www.portalfiscal.inf.br/nfe}infCpl')
+                    if inf_cpl is not None and ref_nfe_txt not in (inf_cpl.text or ''):
+                        inf_cpl.text = f"{inf_cpl.text or ''} | NF-e Referenciada: {ref_nfe_txt}".strip(' |')
+            ide.remove(nf_ref_el)
+        
+    # Em homologação, xNome do destinatário DEVE ser estritamente o padrão fiscal obrigatório
+    dest = inf_nfe.find('{http://www.portalfiscal.inf.br/nfe}dest')
+    if dest is not None:
+        if tpAmb == 2:
+            xNome_dest = dest.find('{http://www.portalfiscal.inf.br/nfe}xNome')
+            if xNome_dest is not None:
+                xNome_dest.text = "NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL"
+        
+        # Corrige cPais para 1600 (China) ou 1058 (Brasil) preservando ordenação estrita XSD
+        ender_dest = dest.find('{http://www.portalfiscal.inf.br/nfe}enderDest')
+        if ender_dest is not None:
+            cPais_el = ender_dest.find('{http://www.portalfiscal.inf.br/nfe}cPais')
+            xPais_el = ender_dest.find('{http://www.portalfiscal.inf.br/nfe}xPais')
+            fone_el = ender_dest.find('{http://www.portalfiscal.inf.br/nfe}fone')
+            if cPais_el is not None:
+                if cPais_el.text in ('160', '16'):
+                    cPais_el.text = '1600'
+            else:
+                cPais_el = etree.Element('{http://www.portalfiscal.inf.br/nfe}cPais')
+                cPais_el.text = '1600'
+                if xPais_el is not None:
+                    ender_dest.insert(list(ender_dest).index(xPais_el), cPais_el)
+                elif fone_el is not None:
+                    ender_dest.insert(list(ender_dest).index(fone_el), cPais_el)
+                else:
+                    ender_dest.append(cPais_el)
+                    
+            if xPais_el is not None and cPais_el is not None and cPais_el.text == '1600':
+                xPais_el.text = 'CHINA REPUBLICA POPULAR'
+
+    # Corrige divergência de arredondamento em itens (Regras 629 e 630)
+    for det in inf_nfe.findall('{http://www.portalfiscal.inf.br/nfe}det'):
+        prod = det.find('{http://www.portalfiscal.inf.br/nfe}prod')
+        if prod is not None:
+            v_prod_el = prod.find('{http://www.portalfiscal.inf.br/nfe}vProd')
+            q_com_el = prod.find('{http://www.portalfiscal.inf.br/nfe}qCom')
+            v_un_com_el = prod.find('{http://www.portalfiscal.inf.br/nfe}vUnCom')
+            q_trib_el = prod.find('{http://www.portalfiscal.inf.br/nfe}qTrib')
+            v_un_trib_el = prod.find('{http://www.portalfiscal.inf.br/nfe}vUnTrib')
+            if v_prod_el is not None:
+                try:
+                    v_prod = float(v_prod_el.text)
+                    # Regra 629: vProd deve bater com qCom * vUnCom
+                    if q_com_el is not None and v_un_com_el is not None:
+                        q_com = float(q_com_el.text)
+                        v_un_com = float(v_un_com_el.text)
+                        if q_com > 0 and abs(v_prod - round(q_com * v_un_com, 2)) >= 0.009:
+                            new_unit_com = v_prod / q_com
+                            v_un_com_el.text = f"{new_unit_com:.8f}".rstrip('0').rstrip('.')
+                            
+                    # Regra 630: vProd deve bater com qTrib * vUnTrib
+                    if q_trib_el is not None and v_un_trib_el is not None:
+                        q_trib = float(q_trib_el.text)
+                        v_un_trib = float(v_un_trib_el.text)
+                        if q_trib > 0 and abs(v_prod - round(q_trib * v_un_trib, 2)) >= 0.009:
+                            new_unit_trib = v_prod / q_trib
+                            v_un_trib_el.text = f"{new_unit_trib:.8f}".rstrip('0').rstrip('.')
+                except (ValueError, TypeError):
+                    pass
+
+    # Verifica data de emissão
+    dhEmi_el = ide.find('{http://www.portalfiscal.inf.br/nfe}dhEmi')
+    atualizar_data = False
+    fuso_sp = timezone(timedelta(hours=-3))
+    now_sp = datetime.now(fuso_sp)
+    
+    if dhEmi_el is None or not dhEmi_el.text:
+        atualizar_data = True
+    else:
+        try:
+            dt_raw = dhEmi_el.text
+            dt_parsed = datetime.fromisoformat(dt_raw)
+            # Se a data for mais velha que 25 dias ou futura por mais de 10 min, ou de mês anterior
+            if (now_sp - dt_parsed).total_seconds() > 25 * 86400 or (now_sp - dt_parsed).total_seconds() < -600:
+                atualizar_data = True
+            elif dt_parsed.strftime('%y%m') != now_sp.strftime('%y%m'):
+                atualizar_data = True
+        except Exception:
+            atualizar_data = True
+            
+    chave_atual = re.sub(r'\D', '', inf_nfe.attrib.get('Id', ''))
+    
+    if atualizar_data or len(chave_atual) != 44:
+        dh_str = now_sp.strftime('%Y-%m-%dT%H:%M:%S-03:00')
+        if dhEmi_el is None:
+            dhEmi_el = etree.SubElement(ide, '{http://www.portalfiscal.inf.br/nfe}dhEmi')
+        dhEmi_el.text = dh_str
+        
+        dhSai_el = ide.find('{http://www.portalfiscal.inf.br/nfe}dhSaiEnt')
+        if dhSai_el is not None:
+            dhSai_el.text = dh_str
+            
+        aamm = now_sp.strftime('%y%m')
+        c_uf = ide.findtext('{http://www.portalfiscal.inf.br/nfe}cUF') or "35"
+        
+        emit = inf_nfe.find('{http://www.portalfiscal.inf.br/nfe}emit')
+        cnpj = "47998441000198"
+        if emit is not None:
+            cnpj_el = emit.find('{http://www.portalfiscal.inf.br/nfe}CNPJ')
+            if cnpj_el is not None and cnpj_el.text:
+                cnpj = re.sub(r'\D', '', cnpj_el.text).zfill(14)
+                
+        mod = ide.findtext('{http://www.portalfiscal.inf.br/nfe}mod') or "55"
+        serie_val = ide.findtext('{http://www.portalfiscal.inf.br/nfe}serie') or "1"
+        serie = str(int(serie_val)).zfill(3)
+        
+        nnf_val = ide.findtext('{http://www.portalfiscal.inf.br/nfe}nNF') or "1"
+        n_nf_9 = str(int(nnf_val)).zfill(9)
+        
+        tp_emis = ide.findtext('{http://www.portalfiscal.inf.br/nfe}tpEmis') or "1"
+        
+        c_nf_el = ide.find('{http://www.portalfiscal.inf.br/nfe}cNF')
+        if c_nf_el is not None and c_nf_el.text and len(c_nf_el.text) == 8:
+            c_nf_8 = c_nf_el.text
+        else:
+            c_nf_8 = str(int(time.time()))[-8:]
+            if c_nf_el is not None:
+                c_nf_el.text = c_nf_8
+            else:
+                c_nf_el = etree.SubElement(ide, '{http://www.portalfiscal.inf.br/nfe}cNF')
+                c_nf_el.text = c_nf_8
+                
+        chave43 = f"{c_uf}{aamm}{cnpj}{mod}{serie}{n_nf_9}{tp_emis}{c_nf_8}"
+        cdv = calcular_cdv(chave43)
+        chave44 = f"{chave43}{cdv}"
+        
+        cDV_el = ide.find('{http://www.portalfiscal.inf.br/nfe}cDV')
+        if cDV_el is not None:
+            cDV_el.text = str(cdv)
+        else:
+            cDV_el = etree.SubElement(ide, '{http://www.portalfiscal.inf.br/nfe}cDV')
+            cDV_el.text = str(cdv)
+            
+        inf_nfe.attrib['Id'] = f"NFe{chave44}"
+        chave_atual = chave44
+    else:
+        # Garante cDV e Id coerentes com a chave de 44 dígitos
+        c_uf = ide.findtext('{http://www.portalfiscal.inf.br/nfe}cUF') or "35"
+        chave43 = chave_atual[:43]
+        cdv_calculado = calcular_cdv(chave43)
+        chave44 = f"{chave43}{cdv_calculado}"
+        cDV_el = ide.find('{http://www.portalfiscal.inf.br/nfe}cDV')
+        if cDV_el is not None:
+            cDV_el.text = str(cdv_calculado)
+        inf_nfe.attrib['Id'] = f"NFe{chave44}"
+        chave_atual = chave44
+
+    # Garante estrita concordancia entre somatorio dos itens e o grupo <total><ICMSTot>
+    # (Evita Rejeicao 602 - PIS, 603 - COFINS, 538 - IPI, 534 - II, 531 - vProd, 535/610 - vNF)
+    total_node = inf_nfe.find('{http://www.portalfiscal.inf.br/nfe}total')
+    if total_node is not None:
+        icms_tot = total_node.find('{http://www.portalfiscal.inf.br/nfe}ICMSTot')
+        if icms_tot is not None:
+            sum_vprod = 0.0
+            sum_vfrete = 0.0
+            sum_vseg = 0.0
+            sum_vdesc = 0.0
+            sum_voutro = 0.0
+            sum_vii = 0.0
+            sum_vipi = 0.0
+            sum_vpis = 0.0
+            sum_vcofins = 0.0
+
+            for det in inf_nfe.findall('{http://www.portalfiscal.inf.br/nfe}det'):
+                prod_el = det.find('{http://www.portalfiscal.inf.br/nfe}prod')
+                if prod_el is not None:
+                    try: sum_vprod += float(prod_el.findtext('{http://www.portalfiscal.inf.br/nfe}vProd') or 0.0)
+                    except (ValueError, TypeError): pass
+                    try: sum_vfrete += float(prod_el.findtext('{http://www.portalfiscal.inf.br/nfe}vFrete') or 0.0)
+                    except (ValueError, TypeError): pass
+                    try: sum_vseg += float(prod_el.findtext('{http://www.portalfiscal.inf.br/nfe}vSeg') or 0.0)
+                    except (ValueError, TypeError): pass
+                    try: sum_vdesc += float(prod_el.findtext('{http://www.portalfiscal.inf.br/nfe}vDesc') or 0.0)
+                    except (ValueError, TypeError): pass
+                    try: sum_voutro += float(prod_el.findtext('{http://www.portalfiscal.inf.br/nfe}vOutro') or 0.0)
+                    except (ValueError, TypeError): pass
+
+                imp_el = det.find('{http://www.portalfiscal.inf.br/nfe}imposto')
+                if imp_el is not None:
+                    ii_v = imp_el.findtext('.//{http://www.portalfiscal.inf.br/nfe}II/{http://www.portalfiscal.inf.br/nfe}vII')
+                    if ii_v:
+                        try: sum_vii += float(ii_v)
+                        except (ValueError, TypeError): pass
+                    ipi_v = imp_el.findtext('.//{http://www.portalfiscal.inf.br/nfe}IPI//{http://www.portalfiscal.inf.br/nfe}vIPI')
+                    if ipi_v:
+                        try: sum_vipi += float(ipi_v)
+                        except (ValueError, TypeError): pass
+                    pis_v = imp_el.findtext('.//{http://www.portalfiscal.inf.br/nfe}PIS//{http://www.portalfiscal.inf.br/nfe}vPIS')
+                    if pis_v:
+                        try: sum_vpis += float(pis_v)
+                        except (ValueError, TypeError): pass
+                    cof_v = imp_el.findtext('.//{http://www.portalfiscal.inf.br/nfe}COFINS//{http://www.portalfiscal.inf.br/nfe}vCOFINS')
+                    if cof_v:
+                        try: sum_vcofins += float(cof_v)
+                        except (ValueError, TypeError): pass
+
+            # Atualiza vPIS (Regra W13-10 / Rejeicao 602)
+            v_pis_el = icms_tot.find('{http://www.portalfiscal.inf.br/nfe}vPIS')
+            if v_pis_el is not None:
+                v_pis_el.text = f"{sum_vpis:.2f}"
+            else:
+                etree.SubElement(icms_tot, '{http://www.portalfiscal.inf.br/nfe}vPIS').text = f"{sum_vpis:.2f}"
+
+            # Atualiza vCOFINS (Regra W14-10 / Rejeicao 603)
+            v_cof_el = icms_tot.find('{http://www.portalfiscal.inf.br/nfe}vCOFINS')
+            if v_cof_el is not None:
+                v_cof_el.text = f"{sum_vcofins:.2f}"
+            else:
+                etree.SubElement(icms_tot, '{http://www.portalfiscal.inf.br/nfe}vCOFINS').text = f"{sum_vcofins:.2f}"
+
+            # Atualiza vIPI (Regra W12-10 / Rejeicao 538)
+            v_ipi_el = icms_tot.find('{http://www.portalfiscal.inf.br/nfe}vIPI')
+            if v_ipi_el is not None:
+                v_ipi_el.text = f"{sum_vipi:.2f}"
+            else:
+                etree.SubElement(icms_tot, '{http://www.portalfiscal.inf.br/nfe}vIPI').text = f"{sum_vipi:.2f}"
+
+            # Atualiza vII (Regra W11-10 / Rejeicao 534)
+            v_ii_el = icms_tot.find('{http://www.portalfiscal.inf.br/nfe}vII')
+            if v_ii_el is not None:
+                v_ii_el.text = f"{sum_vii:.2f}"
+            else:
+                etree.SubElement(icms_tot, '{http://www.portalfiscal.inf.br/nfe}vII').text = f"{sum_vii:.2f}"
+
+            # Atualiza vProd se houver soma calculada dos itens
+            if sum_vprod > 0:
+                v_prod_tot_el = icms_tot.find('{http://www.portalfiscal.inf.br/nfe}vProd')
+                if v_prod_tot_el is not None:
+                    v_prod_tot_el.text = f"{sum_vprod:.2f}"
+
+            # Recalcula vNF segundo a Regra W16-10 da SEFAZ
+            def _get_f(tag):
+                el = icms_tot.find(f'{{http://www.portalfiscal.inf.br/nfe}}{tag}')
+                try: return float(el.text) if (el is not None and el.text) else 0.0
+                except (ValueError, TypeError): return 0.0
+
+            v_prod_cur = _get_f('vProd') or sum_vprod
+            v_desc_cur = _get_f('vDesc') or sum_vdesc
+            v_deson_cur = _get_f('vICMSDeson')
+            v_st_cur = _get_f('vST')
+            v_fcpst_cur = _get_f('vFCPST')
+            v_frete_cur = _get_f('vFrete') or sum_vfrete
+            v_seg_cur = _get_f('vSeg') or sum_vseg
+            v_outro_cur = _get_f('vOutro') or sum_voutro
+            v_ii_cur = sum_vii
+            v_ipi_cur = sum_vipi
+            v_ipidevol_cur = _get_f('vIPIDevol')
+
+            v_nf_calc = (v_prod_cur - v_desc_cur - v_deson_cur + v_st_cur + v_fcpst_cur +
+                         v_frete_cur + v_seg_cur + v_outro_cur + v_ii_cur + v_ipi_cur + v_ipidevol_cur)
+            v_nf_calc = max(0.0, v_nf_calc)
+            v_nf_str = f"{v_nf_calc:.2f}"
+
+            v_nf_el = icms_tot.find('{http://www.portalfiscal.inf.br/nfe}vNF')
+            if v_nf_el is not None:
+                v_nf_el.text = v_nf_str
+            else:
+                etree.SubElement(icms_tot, '{http://www.portalfiscal.inf.br/nfe}vNF').text = v_nf_str
+
+            # Ajusta vPag em <pag><detPag> para manter conformidade com vNF
+            pag_node = inf_nfe.find('{http://www.portalfiscal.inf.br/nfe}pag')
+            if pag_node is not None:
+                for det_pag in pag_node.findall('{http://www.portalfiscal.inf.br/nfe}detPag'):
+                    t_pag_el = det_pag.find('{http://www.portalfiscal.inf.br/nfe}tPag')
+                    v_pag_el = det_pag.find('{http://www.portalfiscal.inf.br/nfe}vPag')
+                    if t_pag_el is not None and v_pag_el is not None:
+                        if t_pag_el.text == '90':
+                            v_pag_el.text = '0.00'
+                        elif len(pag_node.findall('{http://www.portalfiscal.inf.br/nfe}detPag')) == 1:
+                            v_pag_el.text = v_nf_str
+
+    for el in doc.iter():
+        if el.text and el.text.isspace(): el.text = None
+        if el.tail and el.tail.isspace(): el.tail = None
+
+    xml_sanitizado = etree.tostring(doc, encoding='utf-8').decode('utf-8')
+    return xml_sanitizado, chave_atual
+
+def _assinar_elemento_xml(root, target_node, ref_id, private_key, certificate):
+    """
+    Assina digitalmente um no XML (<infNFe> ou <infEvento>) no padrao W3C XMLDSig exigido pela SEFAZ:
+    - Enveloped + Inclusive C14N
+    - Digest SHA1
+    - Signature RSA-SHA1
+    - Sem namespace prefix no elemento Signature (padrao estrito SEFAZ)
+    - Compativel nativamente com ambientes Serverless (Vercel / AWS Lambda) usando cryptography + lxml
+    - Utiliza xmlsec quando disponivel, com fallback automatico para criptografia pura
+    """
+    if xmlsec is not None:
+        try:
+            xmlsec.tree.add_ids(root, ['Id'])
+            signature_node = xmlsec.template.create(
+                root,
+                xmlsec.constants.TransformInclC14N,
+                xmlsec.constants.TransformRsaSha1,
+                ns=None
+            )
+            root.append(signature_node)
+
+            ref = xmlsec.template.add_reference(
+                signature_node,
+                xmlsec.constants.TransformSha1,
+                uri='#' + ref_id
+            )
+            xmlsec.template.add_transform(ref, xmlsec.constants.TransformEnveloped)
+            xmlsec.template.add_transform(ref, xmlsec.constants.TransformInclC14N)
+
+            key_info = xmlsec.template.ensure_key_info(signature_node)
+            xmlsec.template.add_x509_data(key_info)
+
+            for el in signature_node.iter():
+                if el.text and el.text.isspace():
+                    el.text = None
+                if el.tail and el.tail.isspace():
+                    el.tail = None
+
+            pem_k = private_key.private_bytes(
+                serialization.Encoding.PEM,
+                serialization.PrivateFormat.TraditionalOpenSSL,
+                serialization.NoEncryption()
+            )
+            pem_c = certificate.public_bytes(serialization.Encoding.PEM)
+
+            key = xmlsec.Key.from_memory(pem_k, xmlsec.constants.KeyDataFormatPem)
+            key.load_cert_from_memory(pem_c, xmlsec.constants.KeyDataFormatCertPem)
+
+            ctx = xmlsec.SignatureContext()
+            ctx.key = key
+            ctx.sign(signature_node)
+            return signature_node
+        except Exception as e_xmlsec_fail:
+            print(f"Aviso xmlsec, acionando fallback puro cryptography: {e_xmlsec_fail}")
+            sig_to_remove = root.find('.//{http://www.w3.org/2000/09/xmldsig#}Signature')
+            if sig_to_remove is not None:
+                root.remove(sig_to_remove)
+
+    # Assinatura pura em Python com cryptography e lxml C14N (Ambiente Vercel sem binario xmlsec)
+    c14n_target = etree.tostring(target_node, method='c14n', exclusive=True, with_comments=False)
+    digest_val = base64.b64encode(hashlib.sha1(c14n_target).digest()).decode('ascii')
+
+    NS_DS = 'http://www.w3.org/2000/09/xmldsig#'
+    sig = etree.Element(f'{{{NS_DS}}}Signature', nsmap={None: NS_DS})
+
+    signed_info = etree.SubElement(sig, f'{{{NS_DS}}}SignedInfo')
+    etree.SubElement(signed_info, f'{{{NS_DS}}}CanonicalizationMethod', Algorithm='http://www.w3.org/TR/2001/REC-xml-c14n-20010315')
+    etree.SubElement(signed_info, f'{{{NS_DS}}}SignatureMethod', Algorithm='http://www.w3.org/2000/09/xmldsig#rsa-sha1')
+
+    reference = etree.SubElement(signed_info, f'{{{NS_DS}}}Reference', URI='#' + ref_id)
+    transforms = etree.SubElement(reference, f'{{{NS_DS}}}Transforms')
+    etree.SubElement(transforms, f'{{{NS_DS}}}Transform', Algorithm='http://www.w3.org/2000/09/xmldsig#enveloped-signature')
+    etree.SubElement(transforms, f'{{{NS_DS}}}Transform', Algorithm='http://www.w3.org/TR/2001/REC-xml-c14n-20010315')
+
+    etree.SubElement(reference, f'{{{NS_DS}}}DigestMethod', Algorithm='http://www.w3.org/2000/09/xmldsig#sha1')
+    dv_el = etree.SubElement(reference, f'{{{NS_DS}}}DigestValue')
+    dv_el.text = digest_val
+
+    c14n_si = etree.tostring(signed_info, method='c14n', exclusive=True, with_comments=False)
+    sig_bytes = private_key.sign(c14n_si, padding.PKCS1v15(), hashes.SHA1())
+    sig_val = base64.b64encode(sig_bytes).decode('ascii')
+
+    sv_el = etree.SubElement(sig, f'{{{NS_DS}}}SignatureValue')
+    sv_el.text = sig_val
+
+    key_info = etree.SubElement(sig, f'{{{NS_DS}}}KeyInfo')
+    x509_data = etree.SubElement(key_info, f'{{{NS_DS}}}X509Data')
+    x509_cert = etree.SubElement(x509_data, f'{{{NS_DS}}}X509Certificate')
+    x509_cert.text = base64.b64encode(certificate.public_bytes(serialization.Encoding.DER)).decode('ascii')
+
+    root.append(sig)
+    return sig
+
+
+def assinar_xml(xml_string):
+    """
+    Assina o XML da NFe usando a engine nativa xmlsec. O nó a ser assinado é o <infNFe>.
+    Gera a assinatura padrão XMLDSig estrita exigida pela SEFAZ:
+    - Sem prefixo ds: (<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">)
+    - Sem namespace ds: declarado no nó raiz <NFe>
+    - Canonicalização inclusiva C14N (REC-xml-c14n-20010315) e enveloped-signature
+    - Elementos KeyInfo, X509Data, X509Certificate sem quebras de linha Base64
+    - Formato contínuo e compacto em 1 linha sem espaços ou quebras entre tags (elimina Rejeição 588)
+    - Validação de integridade criptográfica local antes do envio
+    """
+    if isinstance(xml_string, (bytes, bytearray)):
+        xml_string = xml_string.decode('utf-8')
+        
+    xml_string = xml_string.strip()
+    xml_string = re.sub(r'^\s*<\?xml[^>]*\?>', '', xml_string).strip()
+    
+    doc = etree.fromstring(xml_string.encode('utf-8'))
+    
+    # Remove qualquer assinatura pré-existente para manter apenas a assinatura válida
+    for old_sig in doc.findall('.//{http://www.w3.org/2000/09/xmldsig#}Signature'):
+        old_sig.getparent().remove(old_sig)
+    for old_sig in doc.findall('.//{http://www.portalfiscal.inf.br/nfe}Signature'):
+        old_sig.getparent().remove(old_sig)
+        
+    inf_nfe = doc.find('.//{http://www.portalfiscal.inf.br/nfe}infNFe')
+    if inf_nfe is None:
+        raise ValueError("Tag <infNFe> não encontrada para assinatura")
+        
+    ref_id = inf_nfe.attrib.get('Id', '')
+    if not ref_id:
+        raise ValueError("Atributo Id não encontrado na tag <infNFe>")
+
+    # Garante nó raiz NFe limpo sem prefixos ou namespaces indesejados
+    # e sem qualquer envoltório nfeProc, protNFe ou elementos inválidos
+    inf_supl = doc.find('.//{http://www.portalfiscal.inf.br/nfe}infNFeSupl')
+    nfe_root = etree.Element('{http://www.portalfiscal.inf.br/nfe}NFe', nsmap={None: 'http://www.portalfiscal.inf.br/nfe'})
+    nfe_root.append(inf_nfe)
+    if inf_supl is not None:
+        nfe_root.append(inf_supl)
+    doc = nfe_root
+
+    # Limpar espaços e quebras entre tags
+    for el in doc.iter():
+        if el.text and el.text.isspace():
+            el.text = None
+        if el.tail and el.tail.isspace():
+            el.tail = None
+
+    # Carrega a chave privada e certificado público do PFX
+    ensure_certificate_loaded()
+    with open(CERT_PATH, 'rb') as f:
+        pfx_data = f.read()
+
+    private_key, certificate, _ = pkcs12.load_key_and_certificates(pfx_data, CERT_PASS)
+
+    signature_node = _assinar_elemento_xml(doc, inf_nfe, ref_id, private_key, certificate)
+
+    # Sanitiza SignatureValue e X509Certificate para Base64 de linha única
+    sv_el = signature_node.find('.//{http://www.w3.org/2000/09/xmldsig#}SignatureValue')
+    if sv_el is not None and sv_el.text:
+        sv_el.text = ''.join(sv_el.text.split())
+        
+    cert_el = signature_node.find('.//{http://www.w3.org/2000/09/xmldsig#}X509Certificate')
+    if cert_el is not None and cert_el.text:
+        cert_el.text = ''.join(cert_el.text.split())
+
+    for el in doc.iter():
+        if el.text and el.text.isspace():
+            el.text = None
+        if el.tail and el.tail.isspace():
+            el.tail = None
+
+    xml_assinado_1line = etree.tostring(doc, encoding='utf-8').decode('utf-8').replace('\r', '').replace('\n', '')
+
+    # Validação local pré-envio quando xmlsec estiver disponível
+    if xmlsec is not None:
+        try:
+            d_test = etree.fromstring(xml_assinado_1line.encode('utf-8'))
+            xmlsec.tree.add_ids(d_test, ['Id'])
+            sig_test = d_test.find('.//{http://www.w3.org/2000/09/xmldsig#}Signature')
+            c_test = xmlsec.SignatureContext()
+            pem_c = certificate.public_bytes(serialization.Encoding.PEM)
+            c_test.key = xmlsec.Key.from_memory(pem_c, xmlsec.constants.KeyDataFormatCertPem)
+            c_test.verify(sig_test)
+        except Exception as _e_val:
+            print(f"Aviso na verificação local de assinatura: {_e_val}")
+
+    return xml_assinado_1line
+
+def enviar_nfe(xml_assinado, uf='SP', tpAmb=2):
+    urls = {
+        1: { # Produção
+            'SP': 'https://nfe.fazenda.sp.gov.br/ws/nfeautorizacao4.asmx'
+        },
+        2: { # Homologação
+            'SP': 'https://homologacao.nfe.fazenda.sp.gov.br/ws/nfeautorizacao4.asmx'
+        }
+    }
+    
+    url = urls.get(tpAmb, urls[2]).get(uf)
+    if not url:
+        raise ValueError(f"URL não configurada para UF {uf} e Ambiente {tpAmb}")
+    
+    # Salvaguarda: garante envio exclusivo do elemento <NFe> no lote <enviNFe>
+    if '<nfeProc' in xml_assinado:
+        try:
+            d_chk = etree.fromstring(xml_assinado.encode('utf-8'))
+            nfe_node = d_chk.find('.//{http://www.portalfiscal.inf.br/nfe}NFe')
+            if nfe_node is not None:
+                xml_assinado = etree.tostring(nfe_node, encoding='utf-8').decode('utf-8')
+        except Exception:
+            pass
+    xml_assinado_limpo = xml_assinado.replace('\n', '').replace('\r', '').strip()
+
+    # Gera idLote dinâmico para evitar 656 - Consumo Indevido por retransmissão de lote idêntico
+    id_lote = str(int(time.time()))[-8:]
+
+    soap_request = (
+        '<?xml version="1.0" encoding="utf-8"?>'
+        '<soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">'
+        '<soap12:Header>'
+        '<nfeCabecMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NFeAutorizacao4">'
+        '<cUF>35</cUF>'
+        '<versaoDados>4.00</versaoDados>'
+        '</nfeCabecMsg>'
+        '</soap12:Header>'
+        '<soap12:Body>'
+        '<nfeDadosMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NFeAutorizacao4">'
+        f'<enviNFe xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00"><idLote>{id_lote}</idLote><indSinc>1</indSinc>{xml_assinado_limpo}</enviNFe>'
+        '</nfeDadosMsg>'
+        '</soap12:Body>'
+        '</soap12:Envelope>'
+    )
+    
+    headers = {
+        'Content-Type': 'application/soap+xml; charset=utf-8'
+    }
+    
+    try:
+        from cryptography.hazmat.primitives import serialization
+        import tempfile
+        
+        ensure_certificate_loaded()
+        with open(CERT_PATH, 'rb') as f:
+            pfx_data = f.read()
+
+        private_key, certificate, _ = pkcs12.load_key_and_certificates(pfx_data, CERT_PASS)
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pem') as cert_file:
+            cert_file.write(private_key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.TraditionalOpenSSL,
+                encryption_algorithm=serialization.NoEncryption()
+            ))
+            cert_file.write(certificate.public_bytes(serialization.Encoding.PEM))
+            pem_path = cert_file.name
+
+        response = requests.post(url, data=soap_request.encode('utf-8'), headers=headers, cert=pem_path, verify=False)
+        os.unlink(pem_path)
+        
+        # Analisar o XML de retorno para pegar cStat e xMotivo
+        ret_root = etree.fromstring(response.content)
+        inf_prot = ret_root.find('.//{http://www.portalfiscal.inf.br/nfe}infProt')
+        
+        cstat_el = ret_root.find('.//{http://www.portalfiscal.inf.br/nfe}cStat')
+        xmotivo_el = ret_root.find('.//{http://www.portalfiscal.inf.br/nfe}xMotivo')
+        recibo_el = ret_root.find('.//{http://www.portalfiscal.inf.br/nfe}nRec')
+        prot_el = ret_root.find('.//{http://www.portalfiscal.inf.br/nfe}nProt')
+        
+        cstat = cstat_el.text if cstat_el is not None else ''
+        xmotivo = xmotivo_el.text if xmotivo_el is not None else ''
+        recibo = recibo_el.text if recibo_el is not None else ''
+        protocolo = prot_el.text if prot_el is not None else ''
+        
+        chave_ret = ''
+        # Se houver infProt com status específico da nota (ex: 100), prioriza
+        if inf_prot is not None:
+            cstat_prot = inf_prot.find('.//{http://www.portalfiscal.inf.br/nfe}cStat')
+            xmotivo_prot = inf_prot.find('.//{http://www.portalfiscal.inf.br/nfe}xMotivo')
+            prot_prot = inf_prot.find('.//{http://www.portalfiscal.inf.br/nfe}nProt')
+            ch_prot = inf_prot.find('.//{http://www.portalfiscal.inf.br/nfe}chNFe')
+            if cstat_prot is not None and cstat_prot.text:
+                cstat = cstat_prot.text
+            if xmotivo_prot is not None and xmotivo_prot.text:
+                xmotivo = xmotivo_prot.text
+            if prot_prot is not None and prot_prot.text:
+                protocolo = prot_prot.text
+            if ch_prot is not None and ch_prot.text:
+                chave_ret = ch_prot.text
+        
+        return {
+            'status': 'success',
+            'status_code': response.status_code,
+            'response_xml': response.text,
+            'cstat': cstat,
+            'xmotivo': xmotivo,
+            'recibo': recibo,
+            'protocolo': protocolo,
+            'chave': chave_ret
+        }
+    except Exception as e:
+        return {
+            'status': 'error',
+            'message': str(e)
+        }
+
+def enviar_evento_nfe(tpEvento, chave, nSeqEvento=1, descEvento="", detalhe_xml="", tpAmb=1, uf='SP'):
+    """
+    Emite eventos da NF-e (Cancelamento: 110111, Carta de Correção: 110110)
+    para o webservice NFeRecepcaoEvento4 da SEFAZ SP.
+    """
+    urls = {
+        1: { # Produção
+            'SP': 'https://nfe.fazenda.sp.gov.br/ws/nfeRecepcaoEvento4.asmx'
+        },
+        2: { # Homologação
+            'SP': 'https://homologacao.nfe.fazenda.sp.gov.br/ws/nfeRecepcaoEvento4.asmx'
+        }
+    }
+    
+    url = urls.get(tpAmb, urls[1]).get(uf)
+    if not url:
+        raise ValueError(f"URL de eventos não configurada para UF {uf} e Ambiente {tpAmb}")
+        
+    info_cert = get_certificate_info()
+    cnpj = info_cert.get('cnpj') or '47998441000198'
+    
+    from datetime import datetime, timezone, timedelta
+    fuso_sp = timezone(timedelta(hours=-3))
+    dh_evento = datetime.now(fuso_sp).strftime('%Y-%m-%dT%H:%M:%S-03:00')
+    
+    seq_str = str(nSeqEvento).zfill(2)
+    id_evento = f"ID{tpEvento}{chave}{seq_str}"
+    
+    xml_evento = f"""<evento xmlns="http://www.portalfiscal.inf.br/nfe" versao="1.00">
+  <infEvento Id="{id_evento}">
+    <cOrgao>35</cOrgao>
+    <tpAmb>{tpAmb}</tpAmb>
+    <CNPJ>{cnpj}</CNPJ>
+    <chNFe>{chave}</chNFe>
+    <dhEvento>{dh_evento}</dhEvento>
+    <tpEvento>{tpEvento}</tpEvento>
+    <nSeqEvento>{nSeqEvento}</nSeqEvento>
+    <verEvento>1.00</verEvento>
+    <detEvento versao="1.00">
+      <descEvento>{descEvento}</descEvento>
+      {detalhe_xml}
+    </detEvento>
+  </infEvento>
+</evento>"""
+
+    ensure_certificate_loaded()
+    with open(CERT_PATH, 'rb') as f:
+        pfx_data = f.read()
+
+    private_key, certificate, _ = pkcs12.load_key_and_certificates(pfx_data, CERT_PASS)
+    pem_k = private_key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.TraditionalOpenSSL, serialization.NoEncryption())
+    pem_c = certificate.public_bytes(serialization.Encoding.PEM)
+
+    # Assinatura digital do evento sobre a tag <infEvento>
+    root = etree.fromstring(xml_evento.encode('utf-8'))
+    infEvento = root.find('.//{http://www.portalfiscal.inf.br/nfe}infEvento')
+    if infEvento is None:
+        raise ValueError("Tag <infEvento> não encontrada para assinatura")
+        
+    ref_id = infEvento.attrib.get('Id', '')
+    
+    # Limpar espaços e quebras antes da assinatura
+    for el in root.iter():
+        if el.text and el.text.isspace():
+            el.text = None
+        if el.tail and el.tail.isspace():
+            el.tail = None
+
+    sig = _assinar_elemento_xml(root, infEvento, ref_id, private_key, certificate)
+    
+    # Sanitiza SignatureValue e X509Certificate para Base64 em linha única sem quebras
+    sv_el = sig.find('.//{http://www.w3.org/2000/09/xmldsig#}SignatureValue')
+    if sv_el is not None and sv_el.text:
+        sv_el.text = ''.join(sv_el.text.split())
+        
+    cert_el = sig.find('.//{http://www.w3.org/2000/09/xmldsig#}X509Certificate')
+    if cert_el is not None and cert_el.text:
+        cert_el.text = ''.join(cert_el.text.split())
+
+    for el in root.iter():
+        if el.text and el.text.isspace():
+            el.text = None
+        if el.tail and el.tail.isspace():
+            el.tail = None
+
+    xml_evento_assinado = etree.tostring(root, encoding='utf-8').decode('utf-8').replace('\n', '').replace('\r', '').strip()
+    
+    id_lote_evt = str(int(time.time()))[-8:]
+    soap_request = (
+        '<?xml version="1.0" encoding="utf-8"?>'
+        '<soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">'
+        '<soap12:Header>'
+        '<nfeCabecMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NFeRecepcaoEvento4">'
+        '<cUF>35</cUF>'
+        '<versaoDados>1.00</versaoDados>'
+        '</nfeCabecMsg>'
+        '</soap12:Header>'
+        '<soap12:Body>'
+        '<nfeDadosMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NFeRecepcaoEvento4">'
+        f'<envEvento xmlns="http://www.portalfiscal.inf.br/nfe" versao="1.00"><idLote>{id_lote_evt}</idLote>{xml_evento_assinado}</envEvento>'
+        '</nfeDadosMsg>'
+        '</soap12:Body>'
+        '</soap12:Envelope>'
+    )
+
+    headers = {
+        'Content-Type': 'application/soap+xml; charset=utf-8'
+    }
+    
+    import tempfile
+    
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.pem') as cert_file:
+        cert_file.write(pem_k)
+        cert_file.write(pem_c)
+        pem_path = cert_file.name
+
+    try:
+        response = requests.post(url, data=soap_request.encode('utf-8'), headers=headers, cert=pem_path, verify=False)
+    finally:
+        if os.path.exists(pem_path):
+            os.unlink(pem_path)
+
+
+def status_servico_nfe(tpAmb=1, uf='SP'):
+    """
+    Consulta o status operacional do WebService da SEFAZ (NFeStatusServico4).
+    cStat 107 = Serviço em Operação.
+    """
+    tpAmb = int(tpAmb or 1)
+    url = (
+        'https://nfe.fazenda.sp.gov.br/ws/nfestatusservico4.asmx'
+        if tpAmb == 1
+        else 'https://homologacao.nfe.fazenda.sp.gov.br/ws/nfestatusservico4.asmx'
+    )
+
+    cons_xml = (
+        f'<consStatServ xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">'
+        f'<tpAmb>{tpAmb}</tpAmb><cUF>35</cUF><xServ>STATUS</xServ></consStatServ>'
+    )
+    soap_request = (
+        '<?xml version="1.0" encoding="utf-8"?>'
+        '<soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
+        'xmlns:xsd="http://www.w3.org/2001/XMLSchema" '
+        'xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">'
+        '<soap12:Header><nfeCabecMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NFeStatusServico4">'
+        '<cUF>35</cUF><versaoDados>4.00</versaoDados></nfeCabecMsg></soap12:Header>'
+        f'<soap12:Body><nfeDadosMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NFeStatusServico4">{cons_xml}</nfeDadosMsg></soap12:Body>'
+        '</soap12:Envelope>'
+    )
+
+    ensure_certificate_loaded()
+    with open(CERT_PATH, 'rb') as f:
+        pfx_data = f.read()
+
+    private_key, certificate, _ = pkcs12.load_key_and_certificates(pfx_data, CERT_PASS)
+
+    import tempfile
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.pem') as cert_file:
+        cert_file.write(private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption()
+        ))
+        cert_file.write(certificate.public_bytes(serialization.Encoding.PEM))
+        pem_path = cert_file.name
+
+    try:
+        headers = {'Content-Type': 'application/soap+xml; charset=utf-8'}
+        response = requests.post(url, data=soap_request.encode('utf-8'), headers=headers, cert=pem_path, verify=False, timeout=12)
+        root = etree.fromstring(response.content)
+        ns = '{http://www.portalfiscal.inf.br/nfe}'
+        cstat_el = root.find(f'.//{ns}cStat')
+        xmotivo_el = root.find(f'.//{ns}xMotivo')
+        tmed_el = root.find(f'.//{ns}tMed')
+        dh_el = root.find(f'.//{ns}dhRecbto')
+
+        cstat = cstat_el.text if cstat_el is not None else 'ERRO'
+        xmotivo = xmotivo_el.text if xmotivo_el is not None else 'Resposta sem xMotivo'
+        return {
+            'status': 'success',
+            'online': str(cstat) == '107',
+            'cstat': cstat,
+            'xmotivo': xmotivo,
+            'tmed': tmed_el.text if tmed_el is not None else '-',
+            'dh_recbto': dh_el.text if dh_el is not None else '-',
+            'tpAmb': tpAmb,
+            'ambiente_nome': 'Produção' if tpAmb == 1 else 'Homologação',
+            'uf': uf
+        }
+    finally:
+        if os.path.exists(pem_path):
+            os.unlink(pem_path)
+            
+    try:
+        ret_root = etree.fromstring(response.content)
+    except Exception as e_xml_parse:
+        # Se a SEFAZ ou proxy retornou HTML de erro ou texto vazio
+        resp_preview = response.text[:300].strip() if response.text else ''
+        msg_erro = f"Resposta inválida da SEFAZ (HTTP {response.status_code}): {resp_preview or 'Sem conteúdo retornado'}"
+        return {
+            'status': 'error',
+            'status_code': response.status_code,
+            'message': msg_erro,
+            'xmotivo': msg_erro,
+            'cstat': str(response.status_code),
+            'response_xml': response.text
+        }
+    
+    inf_evento_ret = ret_root.find('.//{http://www.portalfiscal.inf.br/nfe}infEvento')
+    cstat = ""
+    xmotivo = ""
+    protocolo = ""
+    
+    if inf_evento_ret is not None:
+        cstat_el = inf_evento_ret.find('.//{http://www.portalfiscal.inf.br/nfe}cStat')
+        xmotivo_el = inf_evento_ret.find('.//{http://www.portalfiscal.inf.br/nfe}xMotivo')
+        prot_el = inf_evento_ret.find('.//{http://www.portalfiscal.inf.br/nfe}nProt')
+        if cstat_el is not None and cstat_el.text: cstat = cstat_el.text
+        if xmotivo_el is not None and xmotivo_el.text: xmotivo = xmotivo_el.text
+        if prot_el is not None and prot_el.text: protocolo = prot_el.text
+        
+    if not cstat:
+        cstat_el = ret_root.find('.//{http://www.portalfiscal.inf.br/nfe}cStat')
+        xmotivo_el = ret_root.find('.//{http://www.portalfiscal.inf.br/nfe}xMotivo')
+        if cstat_el is not None and cstat_el.text: cstat = cstat_el.text
+        if xmotivo_el is not None and xmotivo_el.text: xmotivo = xmotivo_el.text
+        
+    return {
+        'status': 'success',
+        'status_code': response.status_code,
+        'response_xml': response.text,
+        'xml_evento_assinado': xml_evento_assinado,
+        'cstat': cstat,
+        'xmotivo': xmotivo,
+        'protocolo': protocolo
+    }
+
+def cancelar_nfe(chave, protocolo_autorizacao, justificativa, tpAmb=1, uf='SP'):
+    """
+    Evento 110111 - Cancelamento de NF-e
+    """
+    justificativa = justificativa.strip()
+    if len(justificativa) < 15:
+        raise ValueError("A justificativa de cancelamento deve ter pelo menos 15 caracteres (SEFAZ).")
+        
+    detalhe_xml = f"""<nProt>{protocolo_autorizacao}</nProt>
+      <xJust>{justificativa}</xJust>"""
+      
+    return enviar_evento_nfe(
+        tpEvento="110111",
+        chave=chave,
+        nSeqEvento=1,
+        descEvento="Cancelamento",
+        detalhe_xml=detalhe_xml,
+        tpAmb=tpAmb,
+        uf=uf
+    )
+
+def carta_correcao_nfe(chave, texto_correcao, nSeqEvento=1, tpAmb=1, uf='SP'):
+    """
+    Evento 110110 - Carta de Correção Eletrônica (CC-e)
+    """
+    texto_correcao = texto_correcao.strip()
+    if len(texto_correcao) < 15:
+        raise ValueError("O texto da carta de correção deve ter no mínimo 15 caracteres (SEFAZ).")
+        
+    cond_uso = "A Carta de Correcao e disciplinada pelo paragrafo 1o-A do art. 7o do Convenio S/N, de 15 de dezembro de 1970 e pode ser utilizada para regularizacao de erro ocorrido na emissao de documento fiscal, desde que o erro nao esteja relacionado com: I - as variaveis que determinam o valor do imposto tais como: base de calculo, aliquota, diferenca de preco, quantidade, valor da operacao ou da prestacao; II - a correcao de dados cadastrais que implique mudanca do remetente ou do destinatario; III - a data de emissao ou de saida."
+    
+    detalhe_xml = f"""<xCorrecao>{texto_correcao}</xCorrecao>
+      <xCondUso>{cond_uso}</xCondUso>"""
+      
+    return enviar_evento_nfe(
+        tpEvento="110110",
+        chave=chave,
+        nSeqEvento=nSeqEvento,
+        descEvento="Carta de Correcao",
+        detalhe_xml=detalhe_xml,
+        tpAmb=tpAmb,
+        uf=uf
+    )
+
+def consultar_nfe(chave, tpAmb=1, uf='SP'):
+    """
+    Consulta a situação atual da NF-e perante a SEFAZ via WebService NFeConsultaProtocolo4.
+    Retorna o cStat geral, protocolo de autorização, eventos vinculados (cancelamento, CC-e) e dados fiscais.
+    """
+    chave = re.sub(r'\D', '', str(chave or '')).strip()
+    if len(chave) != 44:
+        raise ValueError("Chave de acesso inválida (deve conter exatamente 44 dígitos numéricos).")
+
+    url = 'https://nfe.fazenda.sp.gov.br/ws/nfeconsultaprotocolo4.asmx' if tpAmb == 1 else 'https://homologacao.nfe.fazenda.sp.gov.br/ws/nfeconsultaprotocolo4.asmx'
+
+    cons_xml = f'<consSitNFe xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00"><tpAmb>{tpAmb}</tpAmb><xServ>CONSULTAR</xServ><chNFe>{chave}</chNFe></consSitNFe>'
+    soap_request = (
+        '<?xml version="1.0" encoding="utf-8"?>'
+        '<soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">'
+        '<soap12:Header><nfeCabecMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NFeConsultaProtocolo4"><cUF>35</cUF><versaoDados>4.00</versaoDados></nfeCabecMsg></soap12:Header>'
+        f'<soap12:Body><nfeDadosMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NFeConsultaProtocolo4">{cons_xml}</nfeDadosMsg></soap12:Body>'
+        '</soap12:Envelope>'
+    )
+
+    headers = {'Content-Type': 'application/soap+xml; charset=utf-8'}
+
+    ensure_certificate_loaded()
+    with open(CERT_PATH, 'rb') as f:
+        pfx_data = f.read()
+
+    private_key, certificate, _ = pkcs12.load_key_and_certificates(pfx_data, CERT_PASS)
+
+    import tempfile
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.pem') as cert_file:
+        cert_file.write(private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption()
+        ))
+        cert_file.write(certificate.public_bytes(serialization.Encoding.PEM))
+        pem_path = cert_file.name
+
+    try:
+        response = requests.post(url, data=soap_request.encode('utf-8'), headers=headers, cert=pem_path, verify=False, timeout=15)
+        root = etree.fromstring(response.content)
+
+        ret_cons = root.find('.//{http://www.portalfiscal.inf.br/nfe}retConsSitNFe')
+        if ret_cons is None:
+            cstat_el = root.find('.//{http://www.portalfiscal.inf.br/nfe}cStat')
+            xmotivo_el = root.find('.//{http://www.portalfiscal.inf.br/nfe}xMotivo')
+            return {
+                'status': 'error',
+                'cstat': cstat_el.text if cstat_el is not None else 'ERRO',
+                'xmotivo': xmotivo_el.text if xmotivo_el is not None else 'Erro ao consultar a SEFAZ',
+                'chave': chave,
+                'tpAmb': tpAmb
+            }
+
+        cstat = ret_cons.findtext('{http://www.portalfiscal.inf.br/nfe}cStat') or ''
+        xmotivo = ret_cons.findtext('{http://www.portalfiscal.inf.br/nfe}xMotivo') or ''
+        dh_recbto = ret_cons.findtext('{http://www.portalfiscal.inf.br/nfe}dhRecbto') or ''
+
+        # InfProt (dados da autorização original)
+        inf_prot = ret_cons.find('.//{http://www.portalfiscal.inf.br/nfe}infProt')
+        prot_aut = ''
+        dh_aut = ''
+        cstat_aut = ''
+        xmotivo_aut = ''
+        dig_val = ''
+        if inf_prot is not None:
+            prot_aut = inf_prot.findtext('{http://www.portalfiscal.inf.br/nfe}nProt') or ''
+            dh_aut = inf_prot.findtext('{http://www.portalfiscal.inf.br/nfe}dhRecbto') or ''
+            cstat_aut = inf_prot.findtext('{http://www.portalfiscal.inf.br/nfe}cStat') or ''
+            xmotivo_aut = inf_prot.findtext('{http://www.portalfiscal.inf.br/nfe}xMotivo') or ''
+            dig_val = inf_prot.findtext('{http://www.portalfiscal.inf.br/nfe}digVal') or ''
+
+        # InfCanc legado (compatibilidade caso retorne)
+        inf_canc = ret_cons.find('.//{http://www.portalfiscal.inf.br/nfe}infCanc')
+        is_cancelada = (cstat == '101' or inf_canc is not None or 'cancelamento' in xmotivo.lower())
+        prot_canc = ''
+        dh_canc = ''
+        prot_canc_legado = ''
+        if inf_canc is not None:
+            prot_canc_legado = inf_canc.findtext('{http://www.portalfiscal.inf.br/nfe}nProt') or ''
+            dh_canc = inf_canc.findtext('{http://www.portalfiscal.inf.br/nfe}dhRecbto') or ''
+
+        # Eventos vinculados à NF-e (procEventoNFe)
+        eventos = []
+        for pe in ret_cons.findall('.//{http://www.portalfiscal.inf.br/nfe}procEventoNFe'):
+            inf_evt = pe.find('.//{http://www.portalfiscal.inf.br/nfe}infEvento')
+            ret_evt = pe.find('.//{http://www.portalfiscal.inf.br/nfe}retEvento/{http://www.portalfiscal.inf.br/nfe}infEvento')
+            
+            tipo_evt = inf_evt.findtext('{http://www.portalfiscal.inf.br/nfe}tpEvento') if inf_evt is not None else ''
+            desc_evt = inf_evt.findtext('.//{http://www.portalfiscal.inf.br/nfe}descEvento') if inf_evt is not None else ''
+            seq_evt = inf_evt.findtext('{http://www.portalfiscal.inf.br/nfe}nSeqEvento') if inf_evt is not None else ''
+            dh_evt = inf_evt.findtext('{http://www.portalfiscal.inf.br/nfe}dhEvento') if inf_evt is not None else ''
+            det_just = inf_evt.findtext('.//{http://www.portalfiscal.inf.br/nfe}xJust') if inf_evt is not None else ''
+            det_corr = inf_evt.findtext('.//{http://www.portalfiscal.inf.br/nfe}xCorrecao') if inf_evt is not None else ''
+            
+            nprot_evt = ret_evt.findtext('{http://www.portalfiscal.inf.br/nfe}nProt') if ret_evt is not None else ''
+            cstat_evt = ret_evt.findtext('{http://www.portalfiscal.inf.br/nfe}cStat') if ret_evt is not None else ''
+            xmotivo_evt = ret_evt.findtext('{http://www.portalfiscal.inf.br/nfe}xMotivo') if ret_evt is not None else ''
+            
+            if tipo_evt == '110111':
+                is_cancelada = True
+                if nprot_evt:
+                    prot_canc = nprot_evt
+                if not dh_canc and dh_evt:
+                    dh_canc = dh_evt
+
+            eventos.append({
+                'tipo': tipo_evt,
+                'descricao': desc_evt or ('Cancelamento' if tipo_evt == '110111' else ('Carta de Correção' if tipo_evt == '110110' else 'Evento')),
+                'sequencia': seq_evt,
+                'data': dh_evt,
+                'protocolo': nprot_evt,
+                'cstat': cstat_evt,
+                'motivo': xmotivo_evt,
+                'detalhe': det_just or det_corr or ''
+            })
+
+        # Se não encontrou nprot_evt do evento 110111 mas tem legado diferente do protocolo de autorização
+        if not prot_canc and prot_canc_legado and prot_canc_legado != prot_aut:
+            prot_canc = prot_canc_legado
+
+        # Situação simplificada amigável
+        if is_cancelada:
+            situacao_texto = "CANCELADA"
+            badge_classe = "danger"
+        elif cstat == '100' or cstat_aut == '100':
+            situacao_texto = "AUTORIZADA (EM USO)"
+            badge_classe = "success"
+        elif cstat in ('110', '205', '301', '302', '303'):
+            situacao_texto = "DENEGADA"
+            badge_classe = "warning"
+        else:
+            situacao_texto = xmotivo or "NÃO CONSTA / REJEITADA"
+            badge_classe = "secondary"
+
+        return {
+            'status': 'success',
+            'chave': chave,
+            'tpAmb': tpAmb,
+            'ambiente_nome': 'Produção' if tpAmb == 1 else 'Homologação',
+            'cstat': cstat,
+            'xmotivo': xmotivo,
+            'dh_recbto': dh_recbto,
+            'situacao': situacao_texto,
+            'badge_classe': badge_classe,
+            'is_cancelada': is_cancelada,
+            'protocolo_autorizacao': prot_aut,
+            'data_autorizacao': dh_aut,
+            'protocolo_cancelamento': prot_canc,
+            'data_cancelamento': dh_canc,
+            'digest_value': dig_val,
+            'eventos': eventos,
+            'raw_xml': response.text
+        }
+    finally:
+        if os.path.exists(pem_path):
+            os.unlink(pem_path)
+
+
+def status_servico_nfe(tpAmb=1, uf='SP'):
+    """
+    Consulta o status operacional do WebService da SEFAZ (NFeStatusServico4).
+    cStat 107 = Serviço em Operação.
+    """
+    tpAmb = int(tpAmb or 1)
+    url = (
+        'https://nfe.fazenda.sp.gov.br/ws/nfestatusservico4.asmx'
+        if tpAmb == 1
+        else 'https://homologacao.nfe.fazenda.sp.gov.br/ws/nfestatusservico4.asmx'
+    )
+
+    cons_xml = (
+        f'<consStatServ xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">'
+        f'<tpAmb>{tpAmb}</tpAmb><cUF>35</cUF><xServ>STATUS</xServ></consStatServ>'
+    )
+    soap_request = (
+        '<?xml version="1.0" encoding="utf-8"?>'
+        '<soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
+        'xmlns:xsd="http://www.w3.org/2001/XMLSchema" '
+        'xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">'
+        '<soap12:Header><nfeCabecMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NFeStatusServico4">'
+        '<cUF>35</cUF><versaoDados>4.00</versaoDados></nfeCabecMsg></soap12:Header>'
+        f'<soap12:Body><nfeDadosMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NFeStatusServico4">{cons_xml}</nfeDadosMsg></soap12:Body>'
+        '</soap12:Envelope>'
+    )
+
+    ensure_certificate_loaded()
+    with open(CERT_PATH, 'rb') as f:
+        pfx_data = f.read()
+
+    private_key, certificate, _ = pkcs12.load_key_and_certificates(pfx_data, CERT_PASS)
+
+    import tempfile
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.pem') as cert_file:
+        cert_file.write(private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption()
+        ))
+        cert_file.write(certificate.public_bytes(serialization.Encoding.PEM))
+        pem_path = cert_file.name
+
+    try:
+        headers = {'Content-Type': 'application/soap+xml; charset=utf-8'}
+        response = requests.post(url, data=soap_request.encode('utf-8'), headers=headers, cert=pem_path, verify=False, timeout=12)
+        root = etree.fromstring(response.content)
+        ns = '{http://www.portalfiscal.inf.br/nfe}'
+        cstat_el = root.find(f'.//{ns}cStat')
+        xmotivo_el = root.find(f'.//{ns}xMotivo')
+        tmed_el = root.find(f'.//{ns}tMed')
+        dh_el = root.find(f'.//{ns}dhRecbto')
+
+        cstat = cstat_el.text if cstat_el is not None else 'ERRO'
+        xmotivo = xmotivo_el.text if xmotivo_el is not None else 'Resposta sem xMotivo'
+        return {
+            'status': 'success',
+            'online': str(cstat) == '107',
+            'cstat': cstat,
+            'xmotivo': xmotivo,
+            'tmed': tmed_el.text if tmed_el is not None else '-',
+            'dh_recbto': dh_el.text if dh_el is not None else '-',
+            'tpAmb': tpAmb,
+            'ambiente_nome': 'Produção' if tpAmb == 1 else 'Homologação',
+            'uf': uf
+        }
+    finally:
+        if os.path.exists(pem_path):
+            os.unlink(pem_path)
+
+

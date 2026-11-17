@@ -1,0 +1,77 @@
+  <!-- TOPBAR MODERNA NO PADRÃO DO PREVIEW (COMPONENTE ÚNICO COMPARTILHADO) -->
+  <header class="nft-topbar">
+    <div class="nft-topbar-left">
+      <button class="btn-nft d-lg-none" onclick="document.body.classList.toggle('sidebar-mobile-open')" title="Abrir Menu" type="button" style="padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface);">
+        <i data-lucide="menu" style="width: 16px; height: 16px;"></i>
+      </button>
+      <div class="nft-brand-icon">N</div>
+      <!-- Topbar Pill Dropdown: Seleção Dinâmica de Emitente -->
+      <div class="dropdown d-inline-block" id="topbar-emitente-dropdown">
+        <div class="nft-topbar-pill" data-bs-toggle="dropdown" aria-expanded="false" title="Clique para alternar a Empresa Emitente" style="cursor: pointer;" id="topbar-emitente-pill">
+          <i data-lucide="building-2" style="width: 14px; height: 14px; color: #2563EB;"></i>
+          <span id="topbar-emitente-nome" class="fw-semibold">NFT Logistics LTDA</span>
+          <span class="pill-tag font-monospace" id="topbar-emitente-cnpj">47.998.441/0001-98</span>
+          <i data-lucide="chevron-down" style="width: 11px; height: 11px; color: #94A3B8;"></i>
+        </div>
+        <ul class="dropdown-menu shadow-lg border-0 mt-2 py-2" id="topbar-emitente-menu" style="min-width: 300px; max-height: 360px; overflow-y: auto; border-radius: 12px; z-index: 1060;">
+          <li class="dropdown-header text-uppercase small fw-bold px-3 py-1 text-muted" style="font-size: 0.72rem; letter-spacing: 0.05em;">Empresas Emitentes Cadastradas</li>
+          <li><hr class="dropdown-divider my-1"></li>
+          <li id="topbar-emitente-loading" class="px-3 py-2 text-muted small"><span class="spinner-border spinner-border-sm me-2"></span>Carregando emitentes...</li>
+        </ul>
+      </div>
+      <span class="nft-topbar-divider">/</span>
+      <div class="d-inline-flex align-items-center gap-2" title="Módulo Atual / Referência" style="font-size: 0.85rem; color: var(--heading);">
+        <i data-lucide="file-text" style="width: 14px; height: 14px;" class="text-muted"></i>
+        <span id="topbar-titulo-modulo" class="fw-semibold">{{ topbar_modulo | default('NFT Logistics') }}</span>
+        <span class="pill-tag" style="background-color: #EFF6FF; color: #2563EB;" id="topbar-status-tag">{{ topbar_tag | default('Sistema') }}</span>
+      </div>
+    </div>
+    <div class="nft-topbar-right">
+      <div class="nft-status-pill success" id="topbar-sefaz-pill" onclick="abrirModalStatusSefaz()" style="cursor: pointer;" title="Clique para verificar o status em tempo real da SEFAZ e Certificado A1">
+        <span class="nft-status-dot"></span>
+        <span id="topbar-sefaz-label">SEFAZ Online</span>
+      </div>
+      <button class="nft-btn-circle" id="topbar-btn-ajuda" onclick="abrirModalAjudaSistema()" title="Central de Ajuda &amp; Atalhos do Sistema" type="button" aria-label="Ajuda">?</button>
+      <button class="nft-btn-circle theme-toggle-btn" id="topbar-btn-theme" onclick="toggleTheme()" title="Alternar Modo Claro / Escuro" type="button" aria-label="Alternar Tema">
+        <i data-lucide="moon" style="width: 14px; height: 14px;"></i>
+      </button>
+      <div class="dropdown d-inline-block" id="topbar-user-dropdown">
+        <div class="nft-topbar-pill" id="topbar-user-pill" data-bs-toggle="dropdown" aria-expanded="false" style="padding: 3px 10px 3px 6px; gap: 8px; cursor: pointer;" title="Usuário Administrador Autenticado">
+          <div id="topbar-user-avatar-wrap" style="width: 24px; height: 24px; border-radius: 50%; background: #0F172A; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; overflow: hidden; flex-shrink: 0;">A</div>
+          <span id="topbar-user-name" style="font-size: 12px; font-weight: 600;">Admin</span>
+          <i data-lucide="chevron-down" style="width: 11px; height: 11px; color: #94A3B8;"></i>
+        </div>
+        <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2 py-2" id="topbar-user-menu" style="min-width: 230px; border-radius: 12px; z-index: 1060; font-size: 0.82rem;">
+          <li class="px-3 py-2 border-bottom">
+            <div class="fw-bold text-truncate" id="topbar-dropdown-user-name">Administrador</div>
+            <small class="text-muted d-block text-truncate" id="topbar-dropdown-user-role">Acesso Total</small>
+          </li>
+          <li id="topbar-menu-certificados">
+            <button type="button" class="dropdown-item d-flex align-items-center gap-2 py-2" onclick="abrirModalGerenciarCertificados()">
+              <i data-lucide="key-round" style="width: 14px; height: 14px;" class="text-primary"></i>
+              <span>Gerenciar Certificados A1</span>
+            </button>
+          </li>
+          <li id="topbar-menu-usuarios">
+            <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="/usuarios">
+              <i data-lucide="users" style="width: 14px; height: 14px;" class="text-secondary"></i>
+              <span>Usuários Autorizados</span>
+            </a>
+          </li>
+          <li id="topbar-menu-editar-perfil" class="d-none">
+            <button type="button" id="btn-topbar-editar-perfil" class="dropdown-item d-flex align-items-center gap-2 py-2" onclick="abrirModalEditarProprioPerfil()">
+              <i data-lucide="user-cog" style="width: 14px; height: 14px;" class="text-primary"></i>
+              <span>Editar Perfil</span>
+            </button>
+          </li>
+          <li><hr class="dropdown-divider my-1"></li>
+          <li>
+            <button type="button" class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger fw-semibold" onclick="logoutSistema()">
+              <i data-lucide="log-out" style="width: 14px; height: 14px;"></i>
+              <span>Sair do Sistema</span>
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </header>

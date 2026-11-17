@@ -1,0 +1,65 @@
+# Variáveis de Ambiente (Segurança Crítica)
+.env*
+!.env.example
+
+# Vercel & Build
+.vercel/
+.next/
+node_modules/
+
+# Python & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+*.pyo
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+
+# Certificados Digitais, Sessões e Chaves Privadas (Segurança)
+**/*.pfx
+**/*.p12
+**/*.pem
+**/*.key
+**/*.crt
+gerador/certificado/*.pfx
+gerador/certificado/*.p12
+gerador/certificado/*.pem
+gerador/certificado/*.key
+gerador/certificado/*.crt
+gerador/siscomex_session.json
+siscomex_session.json
+
+# Banco de Dados Local (contém dados fiscais e configurações)
+gerador/database.db
+*.db
+*.sqlite
+*.sqlite3
+
+# Arquivos Gerados de Downloads, Rascunhos, DUIMPs e Uploads (Armazenados no Turso / Cloudflare R2)
+gerador/downloads/*
+!gerador/downloads/.gitkeep
+gerador/rascunhos/*
+!gerador/rascunhos/.gitkeep
+gerador/DUIMP Importada/*
+!gerador/DUIMP Importada/.gitkeep
+gerador/certificado/*
+!gerador/certificado/.gitkeep
+gerador/static/uploads/empresas/*
+gerador/static/uploads/avatars/*
+!gerador/static/uploads/avatars/user_1.png
+DUIMP Importada/
+
+# Logs e Temporários
+*.log
+*.tmp
+*.bak
+test_out.txt
+last_compact.txt
+last_290.xml
+test_webp.pdf
+

@@ -1,0 +1,107 @@
+<!-- ABA: SEFAZ HISTORICO E ENVIO -->
+<div class="tab-pane fade" id="historico-sefaz" role="tabpanel">
+    <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge px-2 py-1 d-flex align-items-center gap-1 bg-success-subtle text-success fw-bold"><i data-lucide="activity"></i> SEFAZ</span>
+            <span class="text-muted">/</span>
+            <h6 class="mb-0 fw-bold d-flex align-items-center gap-2"><i data-lucide="send"></i> Emissão &amp; Histórico</h6>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <small class="text-muted d-none d-md-inline">Ambiente Oficial de Emissão SEFAZ. Documentos com validade fiscal.</small>
+            <button class="btn btn-dark d-inline-flex align-items-center justify-content-center p-2 rounded shadow-sm border-0" data-bs-toggle="modal" data-bs-target="#modalFerramentasHomologacao" id="btn-ferramentas-homologacao" title="Ferramentas para sistema de homologação" type="button" style="background-color: #111827; width: 34px; height: 34px;">
+                <i data-lucide="file" style="width: 16px; height: 16px; color: #ffffff;"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-12 text-center py-4 border rounded bg-light">
+            <div class="d-flex flex-wrap justify-content-center align-items-center gap-2 mb-2">
+                <button class="btn-nft fw-bold d-inline-flex align-items-center gap-2 shadow" id="btn-enviar-sefaz-prod" onclick="enviarNfeSefaz(1)" type="button">
+                    <i data-lucide="send"></i>
+                    <span>Assinar e Enviar NF-e para SEFAZ</span>
+                </button>
+                <button class="btn-nft btn-nft-info fw-bold d-inline-flex align-items-center gap-2 shadow" id="btn-consultar-sefaz-prod" onclick="consultarSituacaoNfeSefazProd()" title="Consultar Situação da NF-e na SEFAZ" type="button">
+                    <i data-lucide="search"></i>
+                    <span>Consultar SEFAZ</span>
+                </button>
+                <button class="btn-nft btn-nft-warning fw-bold d-inline-flex align-items-center gap-2 shadow" id="btn-cce-sefaz-prod" onclick="solicitarCartaCorrecaoProd()" title="Emitir Carta de Correção Eletrônica (CC-e)" type="button">
+                    <i data-lucide="file-edit"></i>
+                    <span>Carta de Correção</span>
+                </button>
+                <button class="btn-nft btn-nft-danger fw-bold d-inline-flex align-items-center gap-2 shadow" id="btn-cancelar-sefaz-prod" onclick="solicitarCancelarNfeProd()" title="Cancelar NF-e Homologada" type="button">
+                    <i data-lucide="x-circle"></i>
+                    <span>Cancelar NF</span>
+                </button>
+            </div>
+            <div class="mt-2 text-muted small">Certifique-se de que a nota e o certificado estão válidos antes de emitir ou cancelar eventos fiscais.</div>
+        </div>
+
+        <div class="col-12 mt-4">
+            <h6 class="fw-bold mb-2"><i data-lucide="history"></i> Histórico de Envios nesta Sessão</h6>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered table-hover font-monospace text-center align-middle mb-0" style="font-size: 12px; table-layout: auto;">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="min-width: 105px; width: 115px;" class="text-center">Data/Hora</th>
+                            <th style="min-width: 75px; width: 85px;" class="text-center">NF-e</th>
+                            <th style="min-width: 90px; width: 100px;" class="text-center">Ambiente</th>
+                            <th style="min-width: 80px; width: 90px;" class="text-center">Arquivos</th>
+                            <th style="min-width: 280px;" class="text-center">Chave da NF-e</th>
+                            <th style="min-width: 75px; width: 85px;" class="text-center">cStat</th>
+                            <th style="min-width: 220px;" class="text-start">Motivo</th>
+                            <th style="min-width: 125px; width: 140px;" class="text-center">Recibo/Protocolo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-historico-sefaz">
+                        <tr><td colspan="8" class="text-muted py-3">Nenhum envio realizado nesta sessão ainda.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: FERRAMENTAS PARA SISTEMA DE HOMOLOGAÇÃO -->
+<div aria-hidden="true" aria-labelledby="modalFerramentasHomologacaoLabel" class="modal fade" id="modalFerramentasHomologacao" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <i data-lucide="file" style="width: 18px; height: 18px;"></i>
+                    <h5 class="modal-title fw-bold mb-0" id="modalFerramentasHomologacaoLabel" style="font-size: 1rem;">
+                        Ferramentas para sistema de homologação
+                    </h5>
+                </div>
+                <button aria-label="Fechar" class="btn-close btn-close-white" data-bs-dismiss="modal" type="button"></button>
+            </div>
+            <div class="modal-body p-4 text-center bg-light">
+                <p class="small text-muted mb-3">
+                    Ambiente de testes (Homologação). As operações disparadas abaixo não possuem valor fiscal e servem exclusivamente para testes de comunicação e validação de schema.
+                </p>
+                <div class="d-grid gap-2">
+                    <button class="btn-nft fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow py-2" id="btn-enviar-sefaz" onclick="enviarNfeSefaz(2)" type="button" data-bs-dismiss="modal">
+                        <i data-lucide="send"></i>
+                        <span>Assinar e Enviar NF-e para SEFAZ (Homologação)</span>
+                    </button>
+                    <button class="btn-nft btn-nft-info fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow py-2" id="btn-consultar-sefaz-homolog" onclick="consultarSituacaoNfeSefazHomolog()" title="Consultar Situação da NF-e na SEFAZ (Homologação)" type="button" data-bs-dismiss="modal">
+                        <i data-lucide="search"></i>
+                        <span>Consultar SEFAZ (Homologação)</span>
+                    </button>
+                    <button class="btn-nft btn-nft-warning fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow py-2" id="btn-cce-sefaz-homolog" onclick="solicitarCartaCorrecaoHomolog()" title="Emitir Carta de Correção Eletrônica (CC-e) em Homologação" type="button" data-bs-dismiss="modal">
+                        <i data-lucide="file-edit"></i>
+                        <span>Carta de Correção (Homologação)</span>
+                    </button>
+                    <button class="btn-nft btn-nft-danger fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow py-2" id="btn-cancelar-sefaz-homolog" onclick="solicitarCancelarNfeHomolog()" title="Cancelar NF-e em Homologação" type="button" data-bs-dismiss="modal">
+                        <i data-lucide="x-circle"></i>
+                        <span>Cancelar NF (Homologação)</span>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer bg-white py-2">
+                <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal" type="button">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+

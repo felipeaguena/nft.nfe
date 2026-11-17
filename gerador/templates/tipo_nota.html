@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <link href="/static/img/brand/nftlogo.webp" rel="icon" type="image/webp"/>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Tipo de Nota (Impostos &amp; Regras Padrão) - NFT Logistics</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <!-- NFT Logistics Theme (Light & Dark) -->
+    <link href="/static/css/nft-theme.css?v=4.1" rel="stylesheet"/>
+    <link href="/static/css/nft-sidebar.css?v=4.3" rel="stylesheet"/>
+    <script src="/static/js/theme.js"></script>
+    <!-- Lucide Icons -->
+    <script src="/static/js/lucide.min.js"></script>
+    <script src="/static/js/nft-dialogs.js"></script>
+    <script defer src="/static/js/nft-sidebar.js?v=2.8"></script>
+    <script defer src="/static/js/nft-shortcuts.js?v=1.0"></script>
+</head>
+<body class="has-sidebar">
+{% set sidebar_active = 'tipo_nota' %}
+{% include 'partials/sidebar.html' %}
+
+<!-- ÁREA PRINCIPAL DE CONTEÚDO -->
+<div class="nft-main-wrapper">
+  {% set topbar_modulo = 'Tipo de Nota (Impostos)' %}
+  {% set topbar_tag = 'Configurações' %}
+  {% include 'partials/topbar.html' %}
+
+    <div class="container-fluid py-3 px-3 px-md-4">
+        <!-- Cabeçalho da Página -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom gap-2">
+            <div>
+                <h4 class="fw-bold mb-0 d-flex align-items-center gap-2 text-heading">
+                    <i class="text-primary" data-lucide="tag"></i>
+                    <span>Tipo de Nota (Impostos &amp; Regras Padrão por Operação)</span>
+                </h4>
+                <small class="text-muted">Gerencie os modelos de operação, CFOP, enquadramentos fiscais, CSTs e observações padrão aplicados automaticamente em todas as notas</small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn-nft btn-nft-primary d-flex align-items-center gap-1 shadow-sm" onclick="abrirModalConfigRegimes()" title="Acessar e editar regras padrão de Suspensão, Isenção, Recolhimento e Imunidade">
+                    <i data-lucide="sliders"></i>
+                    <span>Enquadramentos Fiscais</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Conteúdo Principal em 2 Colunas -->
+        <div class="row g-3">
+            <!-- Coluna Esquerda: Lista de Operações Cadastradas -->
+            <div class="col-lg-4">
+                <div class="card border shadow-sm" style="min-height: 640px; display: flex; flex-direction: column;">
+                    <div class="card-header d-flex justify-content-between align-items-center py-2 text-secondary bg-body-tertiary">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="fw-bold">Operações Cadastradas</span>
+                            <span class="badge bg-secondary-subtle text-secondary" id="badge-total-operacoes" style="font-size: 11px;">0</span>
+                        </div>
+                        <button class="btn-nft d-flex align-items-center gap-1" onclick="novaOperacao()" type="button">
+                            <i data-lucide="plus"></i> Nova
+                        </button>
+                    </div>
+                    <div class="card-body p-2 d-flex flex-column" style="flex: 1 1 auto;">
+                        <div class="mb-2">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-body-tertiary"><i data-lucide="search" style="width: 14px; height: 14px;"></i></span>
+                                <input type="text" id="filtro-operacoes" class="form-control" placeholder="Buscar operação ou CFOP..." oninput="filtrarOperacoesCadastradas(this.value)"/>
+                                <button class="btn btn-outline-secondary" type="button" onclick="limparFiltroOperacoes()" title="Limpar filtro">
+                                    <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted d-block mt-1 ps-1" style="font-size: 11px;">
+                                <i data-lucide="move" style="width: 11px; height: 11px;"></i> Arraste as operações para reorganizar a ordem de exibição
+                            </small>
+                        </div>
+                        <div class="list-group flex-grow-1" id="lista-operacoes" style="min-height: 520px; max-height: 600px; overflow-y: auto;">
+                            <div class="text-center text-muted py-4 small">Carregando operações...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna Direita: Formulário de Configuração -->
+            <div class="col-lg-8">
+                <div class="card border shadow-sm" style="min-height: 640px;">
+                    <div class="card-header d-flex justify-content-between align-items-center py-2 text-secondary bg-body-tertiary flex-wrap gap-2">
+                        <span id="titulo-form-op">Configuração da Operação:<br/>
+                            <strong id="lbl-op-nome">Nova Operação</strong>
+                        </span>
+                        <div class="d-flex align-items-center gap-1 flex-wrap">
+                            <button class="btn-nft d-flex align-items-center gap-1" id="btn-excluir-op" onclick="excluirOperacaoAtual()" style="display:none;" type="button">
+                                <i data-lucide="trash-2"></i>
+                                <span>Excluir</span>
+                            </button>
+                            <button class="btn-nft fw-bold d-flex align-items-center gap-1 shadow-sm" onclick="salvarOperacao()" type="button">
+                                <i data-lucide="save"></i>
+                                <span>Salvar Configuração</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body py-3">
+                        <form id="form-tipo-nota" onsubmit="event.preventDefault(); salvarOperacao();">
+                            <input id="op_id" type="hidden"/>
+                            <div class="row g-3">
+                                <div class="col-md-5">
+                                    <label class="form-label small fw-bold">Nome da Operação (Natureza da Operação - natOp)</label>
+                                    <input class="form-control form-control-sm text-primary fw-bold" id="op_nome" placeholder="Ex: ADMISSAO TEMPORARIA, OUTRAS ENTRADAS..." type="text"/>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-bold">CFOP Padrão</label>
+                                    <input class="form-control form-control-sm fw-bold" id="op_cfop" placeholder="Ex: 3930, 7930, 5914" type="text"/>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-bold">Tipo da NF (tpNF)</label>
+                                    <select class="form-select form-select-sm fw-bold" id="op_tp_nf">
+                                        <option value="0">0 - Entrada</option>
+                                        <option value="1">1 - Saída</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-bold">Destino Operação (idDest)</label>
+                                    <select class="form-select form-select-sm fw-bold" id="op_id_dest">
+                                        <option value="1">1 - Interna (mesma UF)</option>
+                                        <option value="2">2 - Interestadual</option>
+                                        <option selected value="3">3 - Com exterior</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <label class="form-label small fw-bold mb-0">Enquadramento / Regime Fiscal</label>
+                                        <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-primary fw-bold" onclick="abrirModalConfigRegimes()" title="Editar regras dos enquadramentos fiscais" style="font-size: 11px;">
+                                            ⚙️ Editar Regras
+                                        </button>
+                                    </div>
+                                    <div class="row g-2 align-items-center">
+                                        <div class="col-md-6">
+                                            <select class="form-select form-select-sm fw-bold border-primary" id="op_regime" onchange="if(window.atualizarResumoRegimeForm) window.atualizarResumoRegimeForm(this.value)">
+                                                <option value="SUSPENSAO">Suspensão (Admissão Temp. / Feiras)</option>
+                                                <option value="ISENCAO">Isenção (Benefício Fiscal Legal)</option>
+                                                <option value="RECOLHIMENTO">Recolhimento (Tributada Regularmente)</option>
+                                                <option value="IMUNIDADE">Imunidade (Reexportação / Exportação)</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="p-2 border rounded bg-light d-flex align-items-center" style="min-height: 44px;">
+                                                <small id="op_regime_info" class="text-muted fw-semibold" style="font-size: 11px; line-height: 1.35;"></small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label small fw-bold">Meio de Pagamento Padrão (tPag)</label>
+                                    <select class="form-select form-select-sm fw-bold" id="op_t_pag">
+                                        <option value="90">90 - Sem Pagamento (Padrão Remessas, Retornos, Admissão, Reexp.)</option>
+                                        <option value="99">99 - Outros (Câmbio / Internacional)</option>
+                                        <option value="01">01 - Dinheiro</option>
+                                        <option value="15">15 - Boleto Bancário</option>
+                                        <option value="16">16 - Depósito Bancário</option>
+                                        <option value="17">17 - Pagamento Instantâneo (PIX)</option>
+                                        <option value="03">03 - Cartão de Crédito</option>
+                                        <option value="04">04 - Cartão de Débito</option>
+                                    </select>
+                                </div>
+
+                                <!-- ICMS -->
+                                <div class="col-12"><h6 class="border-bottom pb-1 mb-1 mt-2 fw-bold">1. ICMS</h6></div>
+                                <div class="col-md-6">
+                                    <label class="form-label small">Origem da Mercadoria (orig)</label>
+                                    <select class="form-select form-select-sm" id="op_orig">
+                                        <option value="0">0 - Nacional</option>
+                                        <option selected value="1">1 - Estrangeira - Importação direta</option>
+                                        <option value="2">2 - Estrangeira - Adquirida no mercado interno</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small">CSOSN / CST ICMS</label>
+                                    <select class="form-select form-select-sm" id="op_csosn"></select>
+                                </div>
+
+                                <!-- IPI -->
+                                <div class="col-12"><h6 class="border-bottom pb-1 mb-1 mt-2 fw-bold">2. IPI</h6></div>
+                                <div class="col-md-6">
+                                    <label class="form-label small">Código de Enquadramento (cEnq)</label>
+                                    <input class="form-control form-control-sm" id="op_c_enq" placeholder="Ex: 102, 999" type="text"/>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small">CST IPI</label>
+                                    <select class="form-select form-select-sm" id="op_cst_ipi"></select>
+                                </div>
+                                <input type="hidden" id="op_p_ipi" value="0.00"/>
+                                <input type="hidden" id="op_aliquota_ii" value="0.00"/>
+
+                                <!-- PIS & COFINS -->
+                                <div class="col-12"><h6 class="border-bottom pb-1 mb-1 mt-2 fw-bold">3. PIS &amp; COFINS</h6></div>
+                                <div class="col-md-6">
+                                    <label class="form-label small">CST PIS</label>
+                                    <select class="form-select form-select-sm" id="op_cst_pis"></select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small">CST COFINS</label>
+                                    <select class="form-select form-select-sm" id="op_cst_cofins"></select>
+                                </div>
+                                <input type="hidden" id="op_p_pis" value="0.00"/>
+                                <input type="hidden" id="op_p_cofins" value="0.00"/>
+
+                                <!-- OBSERVAÇÕES -->
+                                <div class="col-12"><h6 class="border-bottom pb-1 mb-1 mt-2 fw-bold">4. Observações Padronizadas da Operação</h6></div>
+                                <div class="col-12">
+                                    <label class="form-label small">Texto Sugerido para Informações Complementares (infCpl)</label>
+                                    <textarea class="form-control form-control-sm" id="op_inf_cpl" placeholder="Texto que será sugerido no rodapé da nota para esta operação..." rows="4"></textarea>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card-footer bg-body-tertiary py-2 px-3">
+                        <span class="small text-muted">As configurações salvas ficam gravadas no banco de dados e refletem em tempo real no preenchimento de todas as notas.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap 5 Bundle JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/static/js/nft-operacoes-manager.js?v=3.1"></script>
+<script>
+    let operacoesCache = [];
+    window.operacoesCache = operacoesCache;
+
+    function getVal(id) {
+        const el = document.getElementById(id);
+        return el ? (el.value || '') : '';
+    }
+    function setVal(id, val) {
+        const el = document.getElementById(id);
+        if (el) el.value = (val !== undefined && val !== null) ? val : '';
+    }
+    window.getVal = getVal;
+    window.setVal = setVal;
+
+    function determinarRegimePorOperacao(op) {
+        if (!op) return 'SUSPENSAO';
+        const nome = String(op.nome_operacao || '').toUpperCase();
+        if (nome.includes('REEXPORT') || nome.includes('EXPORT')) return 'IMUNIDADE';
+        if (nome.includes('ISEN')) return 'ISENCAO';
+        if (nome.includes('NACIONALIZ') || nome.includes('RECOLH') || nome.includes('VENDA')) return 'RECOLHIMENTO';
+        return 'SUSPENSAO';
+    }
+
+    async function carregarCSTsOficiais() {
+        try {
+            const resp = await fetch('/api/csts');
+            const data = await resp.json();
+            if (data.status === 'success' && data.csts) {
+                const selCsosn = document.getElementById('op_csosn');
+                if (selCsosn) {
+                    const cur = selCsosn.value;
+                    selCsosn.innerHTML = '';
+                    const grpCsosn = document.createElement('optgroup');
+                    grpCsosn.label = 'Simples Nacional (CSOSN)';
+                    const grpIcms = document.createElement('optgroup');
+                    grpIcms.label = 'Regime Normal (CST ICMS)';
+                    (data.csts.csosn || []).forEach(c => grpCsosn.appendChild(new Option(c.codigo_descricao, c.codigo)));
+                    (data.csts.icms || []).forEach(c => grpIcms.appendChild(new Option(c.codigo_descricao, c.codigo)));
+                    selCsosn.appendChild(grpCsosn);
+                    selCsosn.appendChild(grpIcms);
+                    selCsosn.value = cur || '102';
+                }
+
+                const selIpi = document.getElementById('op_cst_ipi');
+                if (selIpi) {
+                    const cur = selIpi.value;
+                    selIpi.innerHTML = '';
+                    const grpEnt = document.createElement('optgroup');
+                    grpEnt.label = 'Entradas / Importação';
+                    const grpSai = document.createElement('optgroup');
+                    grpSai.label = 'Saídas / Exportação';
+                    (data.csts.ipi || []).forEach(c => {
+                        const opt = new Option(c.codigo_descricao, c.codigo);
+                        if (c.aplicacao === 'ENTRADA' || c.aplicacao === 'IMPORTACAO') grpEnt.appendChild(opt);
+                        else grpSai.appendChild(opt);
+                    });
+                    selIpi.appendChild(grpEnt);
+                    selIpi.appendChild(grpSai);
+                    selIpi.value = cur || '05';
+                }
+
+                ['op_cst_pis', 'op_cst_cofins'].forEach(id => {
+                    const sel = document.getElementById(id);
+                    if (sel) {
+                        const cur = sel.value;
+                        sel.innerHTML = '';
+                        const grpSai = document.createElement('optgroup');
+                        grpSai.label = 'Saídas / Exportação';
+                        const grpEnt = document.createElement('optgroup');
+                        grpEnt.label = 'Entradas / Importação';
+                        (data.csts.pis_cofins || []).forEach(c => {
+                            const opt = new Option(c.codigo_descricao, c.codigo);
+                            if (c.aplicacao === 'SAIDA' || c.aplicacao === 'EXPORTACAO') grpSai.appendChild(opt);
+                            else grpEnt.appendChild(opt);
+                        });
+                        sel.appendChild(grpSai);
+                        sel.appendChild(grpEnt);
+                        sel.value = cur || '07';
+                    }
+                });
+            }
+        } catch (e) {
+            console.warn('Erro ao carregar CSTs oficiais:', e);
+        }
+    }
+
+    function carregarTiposOperacao(selecionarNome = null) {
+        fetch('/tipos_operacao')
+            .then(res => res.json())
+            .then(data => {
+                operacoesCache = data || [];
+                window.operacoesCache = operacoesCache;
+
+                if (typeof window.renderizarListaOperacoesCadastradas === 'function') {
+                    window.renderizarListaOperacoesCadastradas(operacoesCache);
+                }
+
+                if (selecionarNome) {
+                    const op = operacoesCache.find(o => o.nome_operacao.toUpperCase() === selecionarNome.toUpperCase());
+                    if (op) selecionarOperacaoParaEdicao(op);
+                } else if (operacoesCache.length > 0 && !getVal('op_id')) {
+                    selecionarOperacaoParaEdicao(operacoesCache[0]);
+                }
+            })
+            .catch(err => console.error('Erro ao carregar operações:', err));
+    }
+    window.carregarTiposOperacao = carregarTiposOperacao;
+
+    function novaOperacao() {
+        setVal('op_id', '');
+        setVal('op_nome', '');
+        setVal('op_cfop', '3930');
+        setVal('op_tp_nf', '0');
+        setVal('op_id_dest', '3');
+        setVal('op_regime', 'SUSPENSAO');
+        setVal('op_t_pag', '90');
+        setVal('op_orig', '1');
+        setVal('op_csosn', '102');
+        setVal('op_c_enq', '102');
+        setVal('op_cst_ipi', '05');
+        setVal('op_p_ipi', '0.00');
+        setVal('op_aliquota_ii', '0.00');
+        setVal('op_cst_pis', '07');
+        setVal('op_p_pis', '0.00');
+        setVal('op_cst_cofins', '07');
+        setVal('op_p_cofins', '0.00');
+        setVal('op_inf_cpl', '');
+
+        const lbl = document.getElementById('lbl-op-nome');
+        if (lbl) lbl.innerText = 'Nova Operação';
+        const btnExc = document.getElementById('btn-excluir-op');
+        if (btnExc) btnExc.style.display = 'none';
+        if (typeof window.atualizarResumoRegimeForm === 'function') {
+            window.atualizarResumoRegimeForm('SUSPENSAO');
+        }
+    }
+    window.novaOperacao = novaOperacao;
+
+    function selecionarOperacaoParaEdicao(op) {
+        if (!op) return;
+        setVal('op_id', op.id);
+        setVal('op_nome', op.nome_operacao);
+        setVal('op_cfop', op.cfop_padrao);
+        setVal('op_tp_nf', (op.tp_nf !== undefined && op.tp_nf !== null) ? op.tp_nf : '0');
+        setVal('op_id_dest', (op.id_dest !== undefined && op.id_dest !== null) ? op.id_dest : '3');
+        const regOp = op.regime_tributario || determinarRegimePorOperacao(op);
+        setVal('op_regime', regOp);
+        if (typeof window.atualizarResumoRegimeForm === 'function') {
+            window.atualizarResumoRegimeForm(regOp);
+        }
+        setVal('op_t_pag', op.t_pag || '90');
+        setVal('op_orig', op.orig_padrao || '1');
+        setVal('op_csosn', op.csosn_icms);
+        setVal('op_c_enq', op.c_enq_ipi);
+        setVal('op_cst_ipi', op.cst_ipi);
+        setVal('op_p_ipi', op.p_ipi || '0.00');
+        setVal('op_aliquota_ii', op.aliquota_ii || '0.00');
+        setVal('op_cst_pis', op.cst_pis);
+        setVal('op_p_pis', op.p_pis || '0.00');
+        setVal('op_cst_cofins', op.cst_cofins);
+        setVal('op_p_cofins', op.p_cofins || '0.00');
+        setVal('op_inf_cpl', op.inf_cpl_padrao || '');
+
+        const lbl = document.getElementById('lbl-op-nome');
+        if (lbl) lbl.innerText = op.nome_operacao;
+        const btnExc = document.getElementById('btn-excluir-op');
+        if (btnExc) btnExc.style.display = 'inline-flex';
+    }
+    window.selecionarOperacaoParaEdicao = selecionarOperacaoParaEdicao;
+
+    async function salvarOperacao() {
+        const nome = (getVal('op_nome') || '').trim();
+        if (!nome) {
+            if (window.nftAlert) {
+                await window.nftAlert('Informe o Nome da Operação!', { title: 'Campo Obrigatório', type: 'warning' });
+            } else {
+                alert('Informe o Nome da Operação!');
+            }
+            document.getElementById('op_nome')?.focus();
+            return;
+        }
+
+        function parseNumVal(v) {
+            if (v === null || v === undefined) return 0;
+            const s = String(v).replace(/\s/g, '').replace(',', '.');
+            const n = parseFloat(s);
+            return isNaN(n) ? 0 : n;
+        }
+
+        const payload = {
+            id: getVal('op_id') || '',
+            nome_operacao: nome,
+            cfop_padrao: (getVal('op_cfop') || '').trim(),
+            tp_nf: getVal('op_tp_nf') || '0',
+            id_dest: getVal('op_id_dest') || '3',
+            regime_tributario: getVal('op_regime') || 'SUSPENSAO',
+            t_pag: getVal('op_t_pag') || '90',
+            orig_padrao: getVal('op_orig') || '1',
+            csosn_icms: (getVal('op_csosn') || '').trim(),
+            c_enq_ipi: (getVal('op_c_enq') || '').trim(),
+            cst_ipi: (getVal('op_cst_ipi') || '').trim(),
+            p_ipi: parseNumVal(getVal('op_p_ipi')),
+            aliquota_ii: parseNumVal(getVal('op_aliquota_ii')),
+            cst_pis: (getVal('op_cst_pis') || '').trim(),
+            p_pis: parseNumVal(getVal('op_p_pis')),
+            cst_cofins: (getVal('op_cst_cofins') || '').trim(),
+            p_cofins: parseNumVal(getVal('op_p_cofins')),
+            inf_cpl_padrao: getVal('op_inf_cpl') || ''
+        };
+
+        try {
+            const res = await fetch('/tipos_operacao', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const text = await res.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (jsonErr) {
+                throw new Error(text.slice(0, 150) || 'Resposta inválida do servidor');
+            }
+
+            if (!res.ok || data.status === 'error' || data.error) {
+                const msg = data.error || data.message || `Erro do servidor (status ${res.status})`;
+                if (window.nftAlert) {
+                    await window.nftAlert(msg, { title: 'Erro ao Salvar', type: 'danger' });
+                } else {
+                    alert(msg);
+                }
+                return;
+            }
+
+            if (data.id) setVal('op_id', data.id);
+
+            if (window.nftToast) {
+                window.nftToast(data.message || `Operação '${nome}' salva com sucesso!`, { type: 'success' });
+            } else if (window.nftAlert) {
+                await window.nftAlert(data.message || `Operação '${nome}' salva com sucesso!`, { title: 'Operação Salva', type: 'success' });
+            }
+
+            carregarTiposOperacao(nome);
+        } catch (err) {
+            console.error('Erro ao salvar operação:', err);
+            if (window.nftAlert) {
+                await window.nftAlert('Falha ao salvar operação: ' + err.message, { title: 'Aviso', type: 'danger' });
+            }
+        }
+    }
+    window.salvarOperacao = salvarOperacao;
+
+    async function excluirOperacaoAtual() {
+        const id = getVal('op_id');
+        const nome = getVal('op_nome');
+        if (!id) return;
+        const conf = await nftConfirm(`Deseja realmente excluir a operação '${nome}'?\n\nEsta ação removerá permanentemente a operação cadastrada do banco de dados.`, {
+            title: 'Excluir Operação',
+            type: 'danger',
+            confirmText: 'Sim, Excluir'
+        });
+        if (!conf) return;
+
+        fetch(`/tipos_operacao/${id}`, { method: 'DELETE' })
+            .then(res => res.json())
+            .then(() => {
+                if (window.nftToast) window.nftToast('Operação excluída com sucesso!', { type: 'success' });
+                novaOperacao();
+                carregarTiposOperacao();
+            });
+    }
+    window.excluirOperacaoAtual = excluirOperacaoAtual;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons();
+        }
+        await carregarCSTsOficiais();
+        carregarTiposOperacao();
+    });
+</script>
+</body>
+</html>

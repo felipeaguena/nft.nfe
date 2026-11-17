@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR">
+<head>
+    <!-- Favicon -->
+    <link href="/static/img/brand/nftlogo.webp" rel="icon" type="image/webp"/>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Empresas &amp; Cadastros - NFT Logistics</title>
+<!-- Bootstrap 5 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<!-- NFT Logistics Theme (Light & Dark) -->
+<link href="/static/css/nft-theme.css?v=4.1" rel="stylesheet"/>
+<link href="/static/css/nft-sidebar.css?v=4.3" rel="stylesheet"/>
+<script src="/static/js/theme.js"></script>
+<!-- Lucide Icons -->
+<script src="/static/js/lucide.min.js"></script>
+<script src="/static/js/nft-dialogs.js"></script>
+<script defer src="/static/js/nft-sidebar.js?v=2.7"></script>
+<script defer src="/static/js/nft-shortcuts.js?v=1.0"></script>
+<script defer src="/static/js/nft-regex-visual.js?v=1.0"></script>
+<style>
+    /* Forçar visualmente letras maiúsculas em todos os campos de texto da página e modais */
+    input[type="text"], input[type="search"], textarea, .form-control {
+        text-transform: uppercase;
+    }
+
+    /* Cores personalizadas e exclusivas para cada categoria na tabela de Empresas (removendo interferência de .badge global) */
+    .badge-cat {
+        display: inline-block;
+        padding: 0.35rem 0.65rem;
+        font-size: 0.75rem;
+        font-weight: 700 !important;
+        border-radius: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        line-height: 1;
+    }
+    .badge-cat-emitente {
+        background-color: rgba(37, 99, 235, 0.15) !important;
+        color: #2563eb !important;
+        border: 1px solid rgba(37, 99, 235, 0.35) !important;
+    }
+    .badge-cat-cliente {
+        background-color: rgba(16, 185, 129, 0.15) !important;
+        color: #059669 !important;
+        border: 1px solid rgba(16, 185, 129, 0.35) !important;
+    }
+    .badge-cat-transportadora {
+        background-color: rgba(245, 158, 11, 0.18) !important;
+        color: #d97706 !important;
+        border: 1px solid rgba(245, 158, 11, 0.4) !important;
+    }
+    .badge-cat-armazem {
+        background-color: rgba(6, 182, 212, 0.15) !important;
+        color: #0891b2 !important;
+        border: 1px solid rgba(6, 182, 212, 0.35) !important;
+    }
+    .badge-cat-desembaraco {
+        background-color: rgba(239, 68, 68, 0.15) !important;
+        color: #dc2626 !important;
+        border: 1px solid rgba(239, 68, 68, 0.35) !important;
+    }
+    .badge-cat-exportador {
+        background-color: rgba(100, 116, 139, 0.18) !important;
+        color: #475569 !important;
+        border: 1px solid rgba(100, 116, 139, 0.35) !important;
+    }
+    .badge-cat-default {
+        background-color: rgba(107, 114, 128, 0.15) !important;
+        color: #4b5563 !important;
+        border: 1px solid rgba(107, 114, 128, 0.35) !important;
+    }
+
+    [data-bs-theme="dark"] .badge-cat-emitente, [data-theme="dark"] .badge-cat-emitente {
+        background-color: rgba(59, 130, 246, 0.22) !important;
+        color: #60a5fa !important;
+        border-color: rgba(59, 130, 246, 0.45) !important;
+    }
+    [data-bs-theme="dark"] .badge-cat-cliente, [data-theme="dark"] .badge-cat-cliente {
+        background-color: rgba(16, 185, 129, 0.22) !important;
+        color: #34d399 !important;
+        border-color: rgba(16, 185, 129, 0.45) !important;
+    }
+    [data-bs-theme="dark"] .badge-cat-transportadora, [data-theme="dark"] .badge-cat-transportadora {
+        background-color: rgba(245, 158, 11, 0.25) !important;
+        color: #fbbf24 !important;
+        border-color: rgba(245, 158, 11, 0.45) !important;
+    }
+    [data-bs-theme="dark"] .badge-cat-armazem, [data-theme="dark"] .badge-cat-armazem {
+        background-color: rgba(6, 182, 212, 0.22) !important;
+        color: #38bdf8 !important;
+        border-color: rgba(6, 182, 212, 0.45) !important;
+    }
+    [data-bs-theme="dark"] .badge-cat-desembaraco, [data-theme="dark"] .badge-cat-desembaraco {
+        background-color: rgba(239, 68, 68, 0.22) !important;
+        color: #f87171 !important;
+        border-color: rgba(239, 68, 68, 0.45) !important;
+    }
+    [data-bs-theme="dark"] .badge-cat-exportador, [data-theme="dark"] .badge-cat-exportador {
+        background-color: rgba(148, 163, 184, 0.25) !important;
+        color: #cbd5e1 !important;
+        border-color: rgba(148, 163, 184, 0.45) !important;
+    }
+</style>
+</head>
+<body class="has-sidebar">
+{% set sidebar_active = 'empresas' %}
+{% include 'partials/sidebar.html' %}
+<!-- ÁREA PRINCIPAL DE CONTEÚDO (DESLOCADA PELA SIDEBAR) -->
+<div class="nft-main-wrapper">
+  {% set topbar_modulo = 'Empresas & Filiais' %}
+  {% set topbar_tag = 'Cadastros' %}
+  {% include 'partials/topbar.html' %}
+<div class="container-fluid px-4 py-3">
+<!-- Cabeçalho da Página -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom gap-2">
+<div class="d-flex align-items-center gap-3">
+<button class="btn-nft d-lg-none" onclick="document.body.classList.toggle('sidebar-mobile-open')" title="Abrir Menu" type="button">
+<i data-lucide="menu" style="width: 16px; height: 16px;"></i>
+</button>
+<div>
+<h4 class="mb-0 fw-bold d-flex align-items-center gap-2">
+<i class="text-primary" data-lucide="building-2"></i>
+<span>Empresas &amp; Cadastros</span>
+</h4>
+<small class="text-muted">Gerenciamento de Emitentes, Clientes, Transportadoras e Armazéns</small>
+</div>
+</div>
+</div>
+<!-- Abas de Navegação -->
+<ul class="nav nav-tabs mb-3" id="empresasTabs" role="tablist">
+<li class="nav-item" role="presentation">
+<button class="nav-link active fw-bold d-flex align-items-center gap-2" data-bs-target="#tab-lista" data-bs-toggle="tab" id="tab-lista-btn" role="tab" type="button">
+<i data-lucide="list" style="width: 16px; height: 16px;"></i>
+<span>Listagem de Empresas</span>
+</button>
+</li>
+<li class="nav-item" role="presentation">
+<button class="nav-link fw-bold d-flex align-items-center gap-2" data-bs-target="#tab-nova" data-bs-toggle="tab" id="tab-nova-btn" role="tab" type="button">
+<i data-lucide="plus-circle" style="width: 16px; height: 16px;"></i>
+<span>Nova Empresa</span>
+</button>
+</li>
+</ul>
+<!-- Conteúdo das Abas -->
+<div class="tab-content">
+<!-- ABA 1: LISTAGEM DE EMPRESAS -->
+<div class="tab-pane fade show active card shadow-sm border mb-3 mt-3 p-3" id="tab-lista" role="tabpanel">
+<div class="row g-2 align-items-center mb-3">
+<div class="col-md-3">
+<select class="form-select form-select-sm" id="filtro-tipo" onchange="filtrarEmpresas()">
+<option value="">Todas as Categorias</option>
+<option value="Emitente">Emitente</option>
+<option value="Cliente">Cliente</option>
+<option value="Transportadora">Transportadora</option>
+<option value="Armazem">Armazém</option>
+<option value="Local de Desembaraço">Local de Desembaraço</option>
+</select>
+</div>
+<div class="col-md-5">
+<div class="input-group input-group-sm">
+<span class="input-group-text"><i data-lucide="search" style="width: 14px; height: 14px;"></i></span>
+<input class="form-control form-control-sm" id="search-empresa" oninput="filtrarEmpresas()" placeholder="Buscar por Nome, CNPJ..." type="text"/>
+<button class="btn-nft" onclick="document.getElementById('search-empresa').value=''; filtrarEmpresas();" type="button">Limpar</button>
+</div>
+</div>
+<div class="col-md-4 text-md-end text-muted small">
+                                    Total: <span class="fw-bold text-heading" id="lbl-total-empresas">0</span> cadastros.
+                                </div>
+</div>
+<div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
+<table class="table table-hover table-sm align-middle mb-0">
+<thead class="table-light sticky-top">
+<tr>
+<th>Tipo</th>
+<th>Nome / Razão Social</th>
+<th>CNPJ/CPF</th>
+<th>Município/UF</th>
+<th class="text-end">Ações</th>
+</tr>
+</thead>
+<tbody id="tbody-empresas">
+<tr>
+<td class="text-center py-4 text-muted" colspan="5">Carregando cadastros...</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- ABA 2: NOVA EMPRESA -->
+<div class="tab-pane fade card shadow-sm border mb-3 mt-3 p-4" id="tab-nova" role="tabpanel">
+<form id="formEmpresa">
+<h6 class="border-bottom pb-2 fw-bold text-primary mb-3">Dados Principais</h6>
+<div class="row g-3 mb-4">
+<div class="col-md-3">
+<label class="form-label small fw-bold">Categoria / Tipo</label>
+<select class="form-select form-select-sm" id="cad_tipo" required="">
+<option value="Emitente">Emitente</option>
+<option value="Cliente">Cliente</option>
+<option value="Transportadora">Transportadora</option>
+<option value="Armazem">Armazém</option>
+<option value="Local de Desembaraço">Local de Desembaraço</option>
+</select>
+</div>
+<div class="col-md-3">
+<label class="form-label small fw-bold mb-1">Localização</label>
+<select class="form-select form-select-sm fw-bold border-primary" id="cad_localidade" onchange="aoMudarLocalidade('cad')">
+<option value="Brasil" selected>Brasil</option>
+<option value="Exterior">Exterior</option>
+</select>
+</div>
+<div class="col-md-6">
+<label class="form-label small fw-bold">Nome / Razão Social</label>
+<input class="form-control form-control-sm" id="cad_nome" required="" type="text"/>
+</div>
+<div class="col-md-4">
+<label class="form-label small fw-bold">Apelido</label>
+<input class="form-control form-control-sm" id="cad_apelido" placeholder="Nome Fantasia / Apelido" type="text"/>
+</div>
+<div class="col-md-4">
+<label class="form-label small fw-bold">CNPJ / CPF / IdEstrangeiro</label>
+<input class="form-control form-control-sm mask-cnpj-cpf" id="cad_cnpj_cpf" placeholder="00.000.000/0000-00" type="text"/>
+</div>
+<div class="col-md-4">
+<label class="form-label small fw-bold">Inscrição Estadual</label>
+<input class="form-control form-control-sm" id="cad_ie" type="text"/>
+</div>
+<div class="col-md-4">
+<label class="form-label small fw-bold">Ind. IE</label>
+<select class="form-select form-select-sm" id="cad_ind_ie">
+<option value="1">Contribuinte</option>
+<option value="2">Isento de Contribuição</option>
+<option value="9">Não Contribuinte</option>
+</select>
+</div>
+<div class="col-md-4">
+<label class="form-label small fw-bold">Telefone</label>
+<input class="form-control form-control-sm mask-telefone" id="cad_fone" placeholder="(00) 00000-0000" type="text"/>
+</div>
+</div>
+<h6 class="border-bottom pb-2 fw-bold text-primary mb-3">Endereço</h6>
+<div class="row g-3">
+<!-- Linha 1: CEP (4), Logradouro (6), Número (2) = 12 colunas -->
+<div class="col-md-4">
+<label class="form-label small fw-bold" for="cad_cep">CEP</label>
+<div class="input-group input-group-sm">
+<input class="form-control form-control-sm font-monospace" id="cad_cep" onblur="buscarCepCad()" placeholder="00000-000 ou 99999-999" type="text"/>
+<button class="btn-nft" onclick="buscarCepCad()" title="Consultar CEP" type="button"><i data-lucide="search" style="width: 14px; height: 14px;"></i></button>
+</div>
+</div>
+<div class="col-md-6">
+<label class="form-label small fw-bold" for="cad_logradouro">Logradouro</label>
+<input class="form-control form-control-sm" id="cad_logradouro" placeholder="Rua, Avenida, etc." type="text"/>
+</div>
+<div class="col-md-2">
+<label class="form-label small fw-bold" for="cad_numero">Número</label>
+<input class="form-control form-control-sm font-monospace" id="cad_numero" placeholder="Ex: 123" type="text"/>
+</div>
+
+<!-- Linha 2: Complemento (6), Bairro (6) = 12 colunas -->
+<div class="col-md-6">
+<label class="form-label small fw-bold" for="cad_complemento">Complemento</label>
+<input class="form-control form-control-sm" id="cad_complemento" placeholder="Sala, Bloco, Galpão, Andar..." type="text"/>
+</div>
+<div class="col-md-6">
+<label class="form-label small fw-bold" for="cad_bairro">Bairro</label>
+<input class="form-control form-control-sm" id="cad_bairro" placeholder="Nome do Bairro" type="text"/>
+</div>
+
+<!-- Linha 3: Município (6), UF (2), Cód. Mun. IBGE (4) = 12 colunas -->
+<div class="col-md-6">
+<label class="form-label small fw-bold" for="cad_municipio">Município</label>
+<input class="form-control form-control-sm" id="cad_municipio" placeholder="Nome do Município" type="text"/>
+</div>
+<div class="col-md-2">
+<label class="form-label small fw-bold" for="cad_uf">UF</label>
+<input class="form-control form-control-sm text-uppercase text-center font-monospace fw-bold" id="cad_uf" maxlength="2" placeholder="UF" type="text"/>
+</div>
+<div class="col-md-4">
+<label class="form-label small fw-bold" for="cad_cmun">Cód. Mun. (IBGE)</label>
+<input class="form-control form-control-sm font-monospace" id="cad_cmun" placeholder="Ex: 3550308" type="text"/>
+</div>
+
+<!-- Linha 4: País (8), Cód. País BACEN (4) = 12 colunas -->
+<div class="col-md-8 position-relative">
+<label class="form-label small fw-bold" for="cad_xpais">País (Nome)</label>
+<input autocomplete="off" class="form-control form-control-sm fw-bold" id="cad_xpais" onblur="aoPerderFocoPaisEmpresa('cad')" onfocus="aoDigitarPaisAutocompleteEmpresa('cad')" oninput="aoDigitarPaisAutocompleteEmpresa('cad')" placeholder="Digite para filtrar e selecionar o País..." type="text" value="Brasil"/>
+<div class="dropdown-menu shadow w-100 overflow-auto p-1" id="dropdown_menu_cad_xpais" style="max-height: 250px; display: none; position: absolute; z-index: 1060; top: 100%; left: 0;"></div>
+</div>
+<div class="col-md-4">
+<label class="form-label small fw-bold" for="cad_cpais">Cód. BACEN (&lt;cPais&gt;)</label>
+<input class="form-control form-control-sm font-monospace fw-bold bg-light" id="cad_cpais" readonly="" type="text" value="1058"/>
+</div>
+</div>
+<div class="mt-4 text-end">
+<button class="btn-nft fw-bold px-4 d-inline-flex align-items-center gap-2" type="submit">
+<i data-lucide="save"></i> Salvar Empresa
+                                    </button>
+</div>
+</form>
+</div>
+</div>
+</div>
+</div>
+<!-- Scripts Bootstrap e Funções -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide) lucide.createIcons();
+            const qParam = new URLSearchParams(window.location.search).get('q');
+            if (qParam) {
+                const elQ = document.getElementById('search-empresa');
+                if (elQ) elQ.value = qParam;
+            }
+            carregarEmpresas();
+            carregarDatalistPaises();
+        });
+
+        let empresasCache = [];
+
+        function carregarEmpresas() {
+            fetch('/api/empresas')
+                .then(r => r.json())
+                .then(data => {
+                    empresasCache = data;
+                    filtrarEmpresas();
+                })
+                .catch(err => {
+                    document.getElementById('tbody-empresas').innerHTML = `<tr><td colspan="5" class="text-center text-danger py-3">Erro ao carregar empresas: ${err}</td></tr>`;
+                });
+        }
+
+        function filtrarEmpresas() {
+            const tipo = document.getElementById('filtro-tipo').value;
+            const q = (document.getElementById('search-empresa').value || '').trim().toLowerCase();
+            
+            let filtrados = empresasCache;
+            if (tipo) {
+                filtrados = filtrados.filter(e => e.tipo === tipo);
+            }
+            if (q) {
+                filtrados = filtrados.filter(e => 
+                    (e.nome && e.nome.toLowerCase().includes(q)) || 
+                    (e.cnpj_cpf && e.cnpj_cpf.toLowerCase().includes(q))
+                );
+            }
+
+            renderizarEmpresas(filtrados);
+        }
+
+        function renderizarEmpresas(lista) {
+            const tbody = document.getElementById('tbody-empresas');
+            document.getElementById('lbl-total-empresas').innerText = lista.length;
+            if (!lista || lista.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">Nenhum cadastro encontrado.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            lista.forEach(e => {
+                const tipoNormalizado = (e.tipo || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+                let badgeClass = 'badge-cat-default';
+
+                if (tipoNormalizado === 'emitente') {
+                    badgeClass = 'badge-cat-emitente';
+                } else if (tipoNormalizado === 'cliente') {
+                    badgeClass = 'badge-cat-cliente';
+                } else if (tipoNormalizado === 'transportadora') {
+                    badgeClass = 'badge-cat-transportadora';
+                } else if (tipoNormalizado.includes('armazem')) {
+                    badgeClass = 'badge-cat-armazem';
+                } else if (tipoNormalizado.includes('desembaraco')) {
+                    badgeClass = 'badge-cat-desembaraco';
+                } else if (tipoNormalizado === 'exportador') {
+                    badgeClass = 'badge-cat-exportador';
+                }
+                
+                let logoThumbHtml = '';
+                if (e.logo_url) {
+                    logoThumbHtml = `<img src="${e.logo_url}" alt="Logo" class="rounded border shadow-sm me-2 flex-shrink-0" style="width: 32px; height: 32px; object-fit: contain; background: #fff;" onerror="this.style.display='none'">`;
+                } else if (tipoNormalizado === 'emitente') {
+                    logoThumbHtml = `<img src="/static/img/brand/NFTLogoBlackCompact.png" alt="Logo" class="rounded border shadow-sm me-2 flex-shrink-0" style="width: 32px; height: 32px; object-fit: contain; background: #fff;" onerror="this.style.display='none'">`;
+                } else {
+                    const init = ((e.nome || 'E').trim().substring(0, 2)).toUpperCase();
+                    logoThumbHtml = `<div class="rounded border text-secondary fw-bold me-2 flex-shrink-0 d-inline-flex align-items-center justify-content-center bg-light" style="width: 32px; height: 32px; font-size: 11px;">${init}</div>`;
+                }
+
+                const showNome = e.apelido ? `${e.nome} <br><small class="text-muted">(${e.apelido})</small>` : e.nome;
+
+                html += `
+                    <tr>
+                        <td><span class="badge-cat ${badgeClass}">${e.tipo || '-'}</span></td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                ${logoThumbHtml}
+                                <div>
+                                    <div class="fw-bold text-dark">${e.nome}</div>
+                                    ${e.apelido ? `<small class="text-muted">(${e.apelido})</small>` : ''}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="font-monospace">${e.cnpj_cpf || '-'}</td>
+                        <td>${e.municipio || '-'}/${e.uf || '-'}</td>
+                        <td class="text-end">
+                            <button class="btn-nft py-0 px-2 me-1" onclick="abrirModalEditar(${e.id})" title="Editar">
+                                <i data-lucide="edit" style="width: 14px; height: 14px;"></i>
+                            </button>
+                            <button class="btn-nft py-0 px-2 me-1" onclick="duplicarEmpresa(${e.id})" title="Duplicar Cadastro">
+                                <i data-lucide="copy" style="width: 14px; height: 14px;"></i>
+                            </button>
+                            <button class="btn-nft py-0 px-2" onclick="deletarEmpresa(${e.id})" title="Excluir">
+                                <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+            if (window.lucide) lucide.createIcons();
+        }
+
+        async function deletarEmpresa(id) {
+            const confirmar = await window.nftConfirm('Deseja realmente excluir este cadastro de empresa/parceiro?', {
+                title: 'Confirmar Exclusão',
+                type: 'danger',
+                confirmText: 'Sim, Excluir',
+                cancelText: 'Cancelar',
+                icon: 'trash-2'
+            });
+            if (confirmar) {
+                fetch('/api/empresas/' + id, {method: 'DELETE'})
+                    .then(() => carregarEmpresas());
+            }
+        }
+
+        function abrirModalEditar(id) {
+            const emp = empresasCache.find(e => e.id === id);
+            if (!emp) return;
+            
+            document.getElementById('edit_id').value = emp.id;
+            document.getElementById('edit_tipo').value = emp.tipo || 'Cliente';
+            document.getElementById('edit_nome').value = (emp.nome || '').toUpperCase();
+            document.getElementById('edit_apelido').value = (emp.apelido || '').toUpperCase();
+            document.getElementById('edit_cnpj_cpf').value = emp.cnpj_cpf || '';
+            document.getElementById('edit_ie').value = (emp.ie || '').toUpperCase();
+            document.getElementById('edit_ind_ie').value = emp.ind_ie || '1';
+            document.getElementById('edit_fone').value = emp.fone || '';
+            document.getElementById('edit_cep').value = emp.cep || '';
+            document.getElementById('edit_logradouro').value = (emp.logradouro || '').toUpperCase();
+            document.getElementById('edit_numero').value = (emp.numero || '').toUpperCase();
+            document.getElementById('edit_complemento').value = (emp.complemento || '').toUpperCase();
+            document.getElementById('edit_bairro').value = (emp.bairro || '').toUpperCase();
+            document.getElementById('edit_municipio').value = (emp.municipio || '').toUpperCase();
+            document.getElementById('edit_uf').value = (emp.uf || '').toUpperCase();
+            document.getElementById('edit_cmun').value = emp.cmun || '';
+            document.getElementById('edit_xpais').value = (emp.xpais || 'Brasil').toUpperCase();
+            document.getElementById('edit_cpais').value = emp.cpais || '1058';
+
+            const ehExterior = (emp.uf === 'EX') || (emp.cpais && String(emp.cpais) !== '1058') || (emp.xpais && emp.xpais.trim().toUpperCase() !== 'BRASIL');
+            document.getElementById('edit_localidade').value = ehExterior ? 'Exterior' : 'Brasil';
+            aplicarRegrasExterior('edit', ehExterior);
+
+            carregarLogoNoModal(emp);
+
+            const modal = new bootstrap.Modal(document.getElementById('modalEditarEmpresa'));
+            modal.show();
+        }
+
+        
+        // === GESTÃO DO LOGOTIPO DA EMPRESA (CRUD R2 + TURSO/SQLITE) ===
+        let empresaLogoAtual = '';
+
+        function exibirLogoPreview(url) {
+            const imgEl = document.getElementById('img_edit_logo_preview');
+            const phEl = document.getElementById('ph_edit_logo_preview');
+            const btnRemover = document.getElementById('btn_edit_logo_remover');
+            
+            if (url) {
+                imgEl.src = url;
+                imgEl.style.display = 'block';
+                imgEl.classList.remove('d-none');
+                if (phEl) {
+                    phEl.classList.add('d-none');
+                    phEl.style.setProperty('display', 'none', 'important');
+                }
+                if (btnRemover) btnRemover.style.display = 'inline-flex';
+            } else {
+                imgEl.src = '';
+                imgEl.style.display = 'none';
+                imgEl.classList.add('d-none');
+                if (phEl) {
+                    phEl.classList.remove('d-none');
+                    phEl.style.setProperty('display', 'flex', 'important');
+                }
+                if (btnRemover) btnRemover.style.display = 'none';
+            }
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function carregarLogoNoModal(emp) {
+            empresaLogoAtual = emp.logo_url || '';
+            const statusEl = document.getElementById('txt_edit_logo_status');
+            if (statusEl) statusEl.innerText = '';
+
+            const tipoNorm = (emp.tipo || '').toLowerCase();
+            const ehEmitente = tipoNorm.includes('emitente');
+
+            if (empresaLogoAtual) {
+                exibirLogoPreview(empresaLogoAtual);
+            } else if (ehEmitente) {
+                const urlBusca = `/api/empresas/${emp.id}/logo?v=${Date.now()}`;
+                const testImg = new Image();
+                testImg.onload = function() {
+                    exibirLogoPreview(urlBusca);
+                };
+                testImg.onerror = function() {
+                    exibirLogoPreview('');
+                };
+                testImg.src = urlBusca;
+            } else {
+                exibirLogoPreview('');
+            }
+        }
+
+        async function aoSelecionarArquivoLogo(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+
+            const empId = document.getElementById('edit_id').value;
+            if (!empId) {
+                alert('Salve os dados da empresa antes de carregar o logotipo.');
+                return;
+            }
+
+            // Exibição instantânea e sobreposição imediata do preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                exibirLogoPreview(e.target.result);
+            };
+            reader.readAsDataURL(file);
+
+            const statusEl = document.getElementById('txt_edit_logo_status');
+            if (statusEl) statusEl.innerHTML = '<span class="text-primary fw-bold"><span class="spinner-border spinner-border-sm me-1"></span>Enviando ao R2...</span>';
+
+            const formData = new FormData();
+            formData.append('foto', file);
+
+            try {
+                const res = await fetch(`/api/empresas/${empId}/logo`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (res.ok && data.status === 'success') {
+                    empresaLogoAtual = data.logo_url;
+                    exibirLogoPreview(data.logo_url);
+                    if (statusEl) statusEl.innerHTML = '<span class="text-success fw-bold"><i data-lucide="check" style="width: 14px; height: 14px;"></i> Salvo com sucesso!</span>';
+                    if (window.lucide) lucide.createIcons();
+                    carregarEmpresas();
+                    if (typeof window.carregarEmitentesTopbar === 'function') {
+                        window.carregarEmitentesTopbar();
+                    }
+                } else {
+                    alert(data.error || 'Erro ao enviar o logotipo.');
+                    if (statusEl) statusEl.innerText = '';
+                    exibirLogoPreview(empresaLogoAtual);
+                }
+            } catch (err) {
+                alert('Erro ao enviar imagem: ' + err);
+                if (statusEl) statusEl.innerText = '';
+                exibirLogoPreview(empresaLogoAtual);
+            } finally {
+                event.target.value = '';
+            }
+        }
+
+        async function removerLogoEmpresa() {
+            const empId = document.getElementById('edit_id').value;
+            if (!empId) return;
+
+            const confirmar = await window.nftConfirm('Deseja realmente remover o logotipo oficial desta empresa?', {
+                title: 'Remover Logotipo',
+                type: 'danger',
+                confirmText: 'Sim, Remover',
+                cancelText: 'Cancelar',
+                icon: 'trash-2'
+            });
+            if (!confirmar) return;
+
+            const statusEl = document.getElementById('txt_edit_logo_status');
+            if (statusEl) statusEl.innerHTML = '<span class="text-danger">Removendo...</span>';
+
+            try {
+                const res = await fetch(`/api/empresas/${empId}/logo`, {
+                    method: 'DELETE'
+                });
+                const data = await res.json();
+                if (res.ok && data.status === 'success') {
+                    empresaLogoAtual = '';
+                    exibirLogoPreview('');
+                    if (statusEl) statusEl.innerHTML = '<span class="text-muted">Logotipo removido.</span>';
+                    carregarEmpresas();
+                    if (typeof window.carregarEmitentesTopbar === 'function') {
+                        window.carregarEmitentesTopbar();
+                    }
+                } else {
+                    alert(data.error || 'Erro ao remover logotipo.');
+                    if (statusEl) statusEl.innerText = '';
+                }
+            } catch (err) {
+                alert('Erro na requisição: ' + err);
+                if (statusEl) statusEl.innerText = '';
+            }
+        }
+
+        function duplicarEmpresa(id) {
+            const emp = empresasCache.find(e => e.id === id);
+            if (!emp) return;
+
+            // Preenche o formulário da aba "Nova Empresa" com os dados do cadastro existente
+            document.getElementById('cad_tipo').value = emp.tipo || 'Cliente';
+            document.getElementById('cad_nome').value = (emp.nome ? `${emp.nome} (CÓPIA)` : '').toUpperCase();
+            document.getElementById('cad_apelido').value = (emp.apelido || '').toUpperCase();
+            document.getElementById('cad_cnpj_cpf').value = emp.cnpj_cpf || '';
+            document.getElementById('cad_ie').value = (emp.ie || '').toUpperCase();
+            document.getElementById('cad_ind_ie').value = emp.ind_ie || '1';
+            document.getElementById('cad_fone').value = emp.fone || '';
+            document.getElementById('cad_cep').value = emp.cep || '';
+            document.getElementById('cad_logradouro').value = (emp.logradouro || '').toUpperCase();
+            document.getElementById('cad_numero').value = (emp.numero || '').toUpperCase();
+            document.getElementById('cad_complemento').value = (emp.complemento || '').toUpperCase();
+            document.getElementById('cad_bairro').value = (emp.bairro || '').toUpperCase();
+            document.getElementById('cad_municipio').value = (emp.municipio || '').toUpperCase();
+            document.getElementById('cad_uf').value = (emp.uf || '').toUpperCase();
+            document.getElementById('cad_cmun').value = emp.cmun || '';
+            document.getElementById('cad_xpais').value = (emp.xpais || 'Brasil').toUpperCase();
+            document.getElementById('cad_cpais').value = emp.cpais || '1058';
+
+            const ehExterior = (emp.uf === 'EX') || (emp.cpais && String(emp.cpais) !== '1058') || (emp.xpais && emp.xpais.trim().toUpperCase() !== 'BRASIL');
+            document.getElementById('cad_localidade').value = ehExterior ? 'Exterior' : 'Brasil';
+            aplicarRegrasExterior('cad', ehExterior);
+
+            // Alterna para a aba Nova Empresa e foca no campo Nome
+            const tabNovaBtn = document.getElementById('tab-nova-btn');
+            if (tabNovaBtn) tabNovaBtn.click();
+            setTimeout(() => {
+                const elNome = document.getElementById('cad_nome');
+                if (elNome) {
+                    elNome.focus();
+                    elNome.select();
+                }
+            }, 200);
+        }
+
+        async function salvarEdicaoEmpresa() {
+            const id = document.getElementById('edit_id').value;
+            const obj = {
+                tipo: document.getElementById('edit_tipo').value,
+                nome: (document.getElementById('edit_nome').value || '').trim().toUpperCase(),
+                apelido: (document.getElementById('edit_apelido').value || '').trim().toUpperCase(),
+                cnpj_cpf: (document.getElementById('edit_cnpj_cpf').value || '').trim(),
+                ie: (document.getElementById('edit_ie').value || '').trim().toUpperCase(),
+                ind_ie: document.getElementById('edit_ind_ie').value,
+                fone: (document.getElementById('edit_fone').value || '').trim(),
+                cep: (document.getElementById('edit_cep').value || '').trim(),
+                logradouro: (document.getElementById('edit_logradouro').value || '').trim().toUpperCase(),
+                numero: (document.getElementById('edit_numero').value || '').trim().toUpperCase(),
+                complemento: (document.getElementById('edit_complemento').value || '').trim().toUpperCase(),
+                bairro: (document.getElementById('edit_bairro').value || '').trim().toUpperCase(),
+                municipio: (document.getElementById('edit_municipio').value || '').trim().toUpperCase(),
+                cmun: (document.getElementById('edit_cmun').value || '').trim(),
+                uf: (document.getElementById('edit_uf').value || '').trim().toUpperCase(),
+                xpais: (document.getElementById('edit_xpais').value || '').trim().toUpperCase(),
+                cpais: (document.getElementById('edit_cpais').value || '').trim()
+            };
+            try {
+                const res = await fetch('/api/empresas/' + id, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(obj)
+                });
+                if(res.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('modalEditarEmpresa')).hide();
+                    carregarEmpresas();
+                } else {
+                    alert('Erro ao editar o cadastro.');
+                }
+            } catch (err) {
+                alert('Erro: ' + err);
+            }
+        }
+
+        // SALVAR NOVA EMPRESA
+        document.getElementById('formEmpresa').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const obj = {
+                tipo: document.getElementById('cad_tipo').value,
+                nome: (document.getElementById('cad_nome').value || '').trim().toUpperCase(),
+                apelido: (document.getElementById('cad_apelido').value || '').trim().toUpperCase(),
+                cnpj_cpf: (document.getElementById('cad_cnpj_cpf').value || '').trim(),
+                ie: (document.getElementById('cad_ie').value || '').trim().toUpperCase(),
+                ind_ie: document.getElementById('cad_ind_ie').value,
+                fone: (document.getElementById('cad_fone').value || '').trim(),
+                cep: (document.getElementById('cad_cep').value || '').trim(),
+                logradouro: (document.getElementById('cad_logradouro').value || '').trim().toUpperCase(),
+                numero: (document.getElementById('cad_numero').value || '').trim().toUpperCase(),
+                complemento: (document.getElementById('cad_complemento').value || '').trim().toUpperCase(),
+                bairro: (document.getElementById('cad_bairro').value || '').trim().toUpperCase(),
+                municipio: (document.getElementById('cad_municipio').value || '').trim().toUpperCase(),
+                cmun: (document.getElementById('cad_cmun').value || '').trim(),
+                uf: (document.getElementById('cad_uf').value || '').trim().toUpperCase(),
+                xpais: (document.getElementById('cad_xpais').value || '').trim().toUpperCase(),
+                cpais: (document.getElementById('cad_cpais').value || '').trim()
+            };
+            try {
+                const res = await fetch('/api/empresas', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(obj)
+                });
+                if(res.ok) {
+                    alert('Cadastro salvo com sucesso!');
+                    e.target.reset();
+                    aplicarRegrasExterior('cad', false);
+                    carregarEmpresas();
+                    document.getElementById('tab-lista-btn').click();
+                } else {
+                    alert('Erro ao salvar o cadastro.');
+                }
+            } catch (err) {
+                alert('Erro: ' + err);
+            }
+        });
+
+        // MASKS (CNPJ/CPF and Fone) e conversão automática para MAIÚSCULAS
+        document.addEventListener('input', function (e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                if (e.target.classList.contains('mask-cnpj-cpf')) {
+                    let v = e.target.value.replace(/\D/g, '');
+                    if (v.length <= 11) {
+                        v = v.replace(/(\d{3})(\d)/, '$1.$2');
+                        v = v.replace(/(\d{3})(\d)/, '$1.$2');
+                        v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                    } else {
+                        v = v.replace(/^(\d{2})(\d)/, '$1.$2');
+                        v = v.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+                        v = v.replace(/\.(\d{3})(\d)/, '.$1/$2');
+                        v = v.replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+                        if (v.length > 18) v = v.substring(0, 18);
+                    }
+                    e.target.value = v;
+                    return;
+                }
+                if (e.target.classList.contains('mask-telefone')) {
+                    let v = e.target.value.replace(/\D/g, '');
+                    if (v.length > 11) v = v.substring(0, 11);
+                    if (v.length > 10) {
+                        v = v.replace(/^(\d{2})(\d{5})(\d{4}).*/, '($1) $2-$3');
+                    } else if (v.length > 5) {
+                        v = v.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, '($1) $2-$3');
+                    } else if (v.length > 2) {
+                        v = v.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
+                    }
+                    e.target.value = v;
+                    return;
+                }
+                // Converte em tempo real qualquer outro campo de texto para maiúsculas preservando posição do cursor
+                if (e.target.type === 'text' || e.target.type === 'search' || e.target.tagName === 'TEXTAREA') {
+                    const start = e.target.selectionStart;
+                    const end = e.target.selectionEnd;
+                    const valorOriginal = e.target.value;
+                    const valorMaiusculo = valorOriginal.toUpperCase();
+                    if (valorOriginal !== valorMaiusculo) {
+                        e.target.value = valorMaiusculo;
+                        if (start !== null && end !== null) {
+                            e.target.setSelectionRange(start, end);
+                        }
+                    }
+                }
+            }
+        });
+
+        let paisesBacenCache = [];
+
+        function carregarDatalistPaises() {
+            fetch('/api/localidades/paises')
+                .then(r => r.json())
+                .then(data => {
+                    paisesBacenCache = data || [];
+                    const datalist = document.getElementById('datalist-paises');
+                    if (datalist) {
+                        datalist.innerHTML = paisesBacenCache.map(p => 
+                            `<option value="${p.nome}" data-codigo="${p.codigo}">${p.codigo} - ${p.nome}</option>`
+                        ).join('');
+                    }
+                })
+                .catch(err => console.warn("Erro ao carregar lista de países:", err));
+        }
+
+        function aplicarRegrasExterior(prefix, ehExterior) {
+            const cnpjElem = document.getElementById(prefix + '_cnpj_cpf');
+            const ieElem = document.getElementById(prefix + '_ie');
+            const indIeElem = document.getElementById(prefix + '_ind_ie');
+            const munElem = document.getElementById(prefix + '_municipio');
+            const ufElem = document.getElementById(prefix + '_uf');
+            const cmunElem = document.getElementById(prefix + '_cmun');
+            const xpaisElem = document.getElementById(prefix + '_xpais');
+            const cpaisElem = document.getElementById(prefix + '_cpais');
+
+            if (ehExterior) {
+                if (cnpjElem) {
+                    cnpjElem.disabled = true;
+                    cnpjElem.value = '';
+                    cnpjElem.classList.add('bg-light');
+                }
+                if (ieElem) {
+                    ieElem.disabled = true;
+                    ieElem.value = '';
+                    ieElem.classList.add('bg-light');
+                }
+                if (indIeElem) {
+                    indIeElem.disabled = true;
+                    indIeElem.value = '9';
+                    indIeElem.classList.add('bg-light');
+                }
+                if (ufElem) {
+                    ufElem.value = 'EX';
+                    ufElem.readOnly = true;
+                    ufElem.classList.add('bg-light');
+                }
+                if (munElem) {
+                    munElem.value = 'Exterior';
+                }
+                if (cmunElem) {
+                    cmunElem.value = '9999999';
+                }
+                if (xpaisElem && (xpaisElem.value.trim().toUpperCase() === 'BRASIL' || !xpaisElem.value.trim())) {
+                    xpaisElem.value = '';
+                    if (cpaisElem) cpaisElem.value = '';
+                }
+            } else {
+                if (cnpjElem) {
+                    cnpjElem.disabled = false;
+                    cnpjElem.classList.remove('bg-light');
+                }
+                if (ieElem) {
+                    ieElem.disabled = false;
+                    ieElem.classList.remove('bg-light');
+                }
+                if (indIeElem) {
+                    indIeElem.disabled = false;
+                    indIeElem.classList.remove('bg-light');
+                }
+                if (ufElem) {
+                    ufElem.readOnly = false;
+                    ufElem.classList.remove('bg-light');
+                    if (ufElem.value === 'EX') ufElem.value = '';
+                }
+                if (munElem && munElem.value === 'Exterior') {
+                    munElem.value = '';
+                }
+                if (cmunElem && cmunElem.value === '9999999') {
+                    cmunElem.value = '';
+                }
+                if (xpaisElem && (!xpaisElem.value.trim() || xpaisElem.value.trim().toUpperCase() !== 'BRASIL')) {
+                    xpaisElem.value = 'Brasil';
+                    if (cpaisElem) cpaisElem.value = '1058';
+                }
+            }
+        }
+
+        function aoMudarLocalidade(prefix) {
+            const locSelect = document.getElementById(prefix + '_localidade');
+            const ehExterior = locSelect ? (locSelect.value === 'Exterior') : false;
+            aplicarRegrasExterior(prefix, ehExterior);
+        }
+
+        function aoDigitarPaisAutocompleteEmpresa(prefix) {
+            const input = document.getElementById(`${prefix}_xpais`);
+            const dropdown = document.getElementById(`dropdown_menu_${prefix}_xpais`);
+            if (!input || !dropdown) return;
+            
+            const termo = (input.value || '').trim().toUpperCase();
+            let filtrados = [];
+            if (!termo) {
+                filtrados = paisesBacenCache.slice(0, 40);
+            } else {
+                filtrados = paisesBacenCache.filter(p => 
+                    p.nome.toUpperCase().includes(termo) || String(p.codigo).includes(termo)
+                ).slice(0, 40);
+            }
+
+            if (filtrados.length === 0) {
+                dropdown.innerHTML = '<div class="dropdown-item small text-muted text-center py-2">Nenhum país encontrado</div>';
+                dropdown.style.display = 'block';
+                return;
+            }
+
+            dropdown.innerHTML = filtrados.map(p => {
+                const nomeEsc = (p.nome || '').replace(/'/g, "\\'");
+                return `<button type="button" class="dropdown-item small py-1 d-flex justify-content-between align-items-center" onmousedown="selecionarPaisEmpresa('${prefix}', '${p.codigo}', '${nomeEsc}')">
+                    <span class="fw-semibold text-truncate me-2">${p.nome}</span>
+                    <span class="badge bg-secondary-subtle text-secondary font-monospace">${p.codigo}</span>
+                </button>`;
+            }).join('');
+            dropdown.style.display = 'block';
+        }
+
+        function selecionarPaisEmpresa(prefix, codigo, nome) {
+            const xpaisElem = document.getElementById(`${prefix}_xpais`);
+            const cpaisElem = document.getElementById(`${prefix}_cpais`);
+            if (xpaisElem) xpaisElem.value = nome;
+            if (cpaisElem) cpaisElem.value = codigo;
+
+            const dropdown = document.getElementById(`dropdown_menu_${prefix}_xpais`);
+            if (dropdown) dropdown.style.display = 'none';
+
+            if (codigo !== '1058') {
+                const locSelect = document.getElementById(`${prefix}_localidade`);
+                if (locSelect && locSelect.value !== 'Exterior') {
+                    locSelect.value = 'Exterior';
+                    aplicarRegrasExterior(prefix, true);
+                }
+            } else {
+                const locSelect = document.getElementById(`${prefix}_localidade`);
+                if (locSelect && locSelect.value !== 'Brasil') {
+                    locSelect.value = 'Brasil';
+                    aplicarRegrasExterior(prefix, false);
+                }
+            }
+        }
+
+        function aoPerderFocoPaisEmpresa(prefix) {
+            setTimeout(() => {
+                const dropdown = document.getElementById(`dropdown_menu_${prefix}_xpais`);
+                if (dropdown) dropdown.style.display = 'none';
+                aoMudarPaisEmpresa(prefix);
+            }, 250);
+        }
+
+        function aoMudarPaisEmpresa(prefix) {
+            const xpaisElem = document.getElementById(prefix + '_xpais');
+            const cpaisElem = document.getElementById(prefix + '_cpais');
+            if (!xpaisElem) return;
+
+            const val = (xpaisElem.value || '').trim().toUpperCase();
+            if (paisesBacenCache.length > 0 && val) {
+                const encontrado = paisesBacenCache.find(p => p.nome.toUpperCase() === val || p.codigo === val);
+                if (encontrado) {
+                    if (cpaisElem) cpaisElem.value = encontrado.codigo;
+                    xpaisElem.value = encontrado.nome;
+                    if (encontrado.codigo !== '1058') {
+                        const locSelect = document.getElementById(prefix + '_localidade');
+                        if (locSelect && locSelect.value !== 'Exterior') {
+                            locSelect.value = 'Exterior';
+                            aplicarRegrasExterior(prefix, true);
+                        }
+                    } else {
+                        const locSelect = document.getElementById(prefix + '_localidade');
+                        if (locSelect && locSelect.value !== 'Brasil') {
+                            locSelect.value = 'Brasil';
+                            aplicarRegrasExterior(prefix, false);
+                        }
+                    }
+                    return;
+                }
+            }
+            if (val === 'BRASIL') {
+                if (cpaisElem) cpaisElem.value = '1058';
+            }
+        }
+
+        function resetarPaisEmpresa(prefix) {
+            const xpaisElem = document.getElementById(prefix + '_xpais');
+            const cpaisElem = document.getElementById(prefix + '_cpais');
+            const locSelect = document.getElementById(prefix + '_localidade');
+            if (xpaisElem) xpaisElem.value = 'Brasil';
+            if (cpaisElem) cpaisElem.value = '1058';
+            if (locSelect) {
+                locSelect.value = 'Brasil';
+                aplicarRegrasExterior(prefix, false);
+            }
+        }
+
+        // BUSCA DE CEP AUTOMATICA
+        function processarRetornoCep(data, prefixo) {
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+            if (data.exterior) {
+                document.getElementById(prefixo + '_logradouro').value = 'EXTERIOR';
+                document.getElementById(prefixo + '_bairro').value = 'EXTERIOR';
+                document.getElementById(prefixo + '_municipio').value = 'Exterior';
+                document.getElementById(prefixo + '_uf').value = 'EX';
+                document.getElementById(prefixo + '_cmun').value = '9999999';
+                document.getElementById(prefixo + '_xpais').value = 'CHINA, REPUBLICA POPULAR';
+                document.getElementById(prefixo + '_cpais').value = '160';
+                const locSelect = document.getElementById(prefixo + '_localidade');
+                if (locSelect) {
+                    locSelect.value = 'Exterior';
+                    aplicarRegrasExterior(prefixo, true);
+                }
+            } else {
+                if(data.logradouro) document.getElementById(prefixo + '_logradouro').value = data.logradouro;
+                if(data.bairro) document.getElementById(prefixo + '_bairro').value = data.bairro;
+                if(data.localidade) document.getElementById(prefixo + '_municipio').value = data.localidade;
+                if(data.uf) document.getElementById(prefixo + '_uf').value = data.uf;
+                if(data.ibge) document.getElementById(prefixo + '_cmun').value = data.ibge;
+                document.getElementById(prefixo + '_xpais').value = 'Brasil';
+                document.getElementById(prefixo + '_cpais').value = '1058';
+                const locSelect = document.getElementById(prefixo + '_localidade');
+                if (locSelect) {
+                    locSelect.value = 'Brasil';
+                    aplicarRegrasExterior(prefixo, false);
+                }
+            }
+        }
+
+        function buscarCepCad() {
+            const cepInput = document.getElementById('cad_cep').value.trim();
+            if(!cepInput) return;
+            fetch('/api/localidades/cep/' + encodeURIComponent(cepInput))
+                .then(r => r.json())
+                .then(data => processarRetornoCep(data, 'cad'))
+                .catch(err => console.error(err));
+        }
+
+        function buscarCepEdit() {
+            const cepInput = document.getElementById('edit_cep').value.trim();
+            if(!cepInput) return;
+            fetch('/api/localidades/cep/' + encodeURIComponent(cepInput))
+                .then(r => r.json())
+                .then(data => processarRetornoCep(data, 'edit'))
+                .catch(err => console.error(err));
+        }
+    </script>
+<!-- Modal Edição de Empresa -->
+<div class="modal fade" id="modalEditarEmpresa" tabindex="-1">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+<div class="modal-header bg-light">
+<h5 class="modal-title fw-bold"><i class="me-2" data-lucide="edit" style="width: 18px; height: 18px;"></i>Editar Empresa</h5>
+<button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<form id="formEditEmpresa">
+<input id="edit_id" type="hidden"/>
+
+<!-- Seção: Logotipo Oficial da Empresa (DANFE / Impressão) -->
+<h6 class="border-bottom pb-2 fw-bold text-primary mb-3 d-flex align-items-center justify-content-between">
+    <span><i data-lucide="image" class="me-2" style="width: 16px; height: 16px;"></i>Logotipo da Empresa (DANFE / Cabeçalho)</span>
+    <span class="badge bg-primary-subtle text-primary small" style="font-size: 0.72rem; font-weight: 600;">Padrão Oficial 1:1</span>
+</h6>
+<div class="card bg-light border-0 p-3 mb-4 rounded-3">
+    <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-3">
+        <!-- Preview Quadrado (com sobreposição absoluta garantida) -->
+        <div class="position-relative bg-white border rounded shadow-sm flex-shrink-0" 
+             style="width: 86px; height: 86px; min-width: 86px; max-width: 86px; overflow: hidden;" id="wrap_edit_logo_preview">
+            <!-- Placeholder com id: ph_edit_logo_preview -->
+            <div id="ph_edit_logo_preview" class="text-muted text-center p-1 d-flex flex-column align-items-center justify-content-center" 
+                 style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; font-size: 11px;">
+                <i data-lucide="image" style="width: 24px; height: 24px; stroke-width: 1.5;" class="mb-1 text-secondary"></i>
+                <span class="small fw-semibold text-secondary">1:1 Quadrado</span>
+            </div>
+            <!-- Imagem que sobrepõe completamente o placeholder quando carregada -->
+            <img id="img_edit_logo_preview" src="" alt="Logotipo" 
+                 style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; background-color: #ffffff; z-index: 2; display: none;" />
+        </div>
+
+        <!-- Controles e Instruções -->
+        <div class="flex-grow-1">
+            <div class="d-flex flex-wrap gap-2 mb-2 align-items-center">
+                <input type="file" id="input_edit_logo_file" accept="image/png,image/jpeg,image/webp" style="display: none;" onchange="aoSelecionarArquivoLogo(event)" />
+                <button type="button" class="btn-nft btn-sm fw-semibold" onclick="document.getElementById('input_edit_logo_file').click()">
+                    <i data-lucide="upload" style="width: 14px; height: 14px;" class="me-1"></i> Carregar Logotipo
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger" id="btn_edit_logo_remover" style="border-radius: 6px; font-size: 0.8rem; display: none;" onclick="removerLogoEmpresa()">
+                    <i data-lucide="trash-2" style="width: 14px; height: 14px;" class="me-1"></i> Remover
+                </button>
+                <span id="txt_edit_logo_status" class="small align-self-center"></span>
+            </div>
+            <div class="alert alert-warning py-2 px-3 mb-0 small d-flex align-items-center gap-2" style="font-size: 0.77rem; border-radius: 6px; line-height: 1.4;">
+                <i data-lucide="info" style="width: 16px; height: 16px; flex-shrink: 0;" class="text-warning"></i>
+                <div>
+                    <strong>Instrução Obrigatória:</strong> A imagem <u>DEVE SER QUADRADA</u> (proporção 1:1, ex: 500×500 px, formato PNG ou JPG). Essa imagem será usada no cabeçalho do PDF do DANFE para este emitente conforme layout oficial.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h6 class="border-bottom pb-2 fw-bold text-primary mb-3">Dados Principais</h6>
+<div class="row g-3 mb-4">
+<div class="col-md-3">
+<label class="form-label small fw-bold">Categoria / Tipo</label>
+<select class="form-select form-select-sm" id="edit_tipo" required="">
+<option value="Emitente">Emitente</option>
+<option value="Cliente">Cliente</option>
+<option value="Transportadora">Transportadora</option>
+<option value="Armazem">Armazém</option>
+<option value="Local de Desembaraço">Local de Desembaraço</option>
+</select>
+</div>
+<div class="col-md-3">
+<label class="form-label small fw-bold mb-1">Localização</label>
+<select class="form-select form-select-sm fw-bold border-primary" id="edit_localidade" onchange="aoMudarLocalidade('edit')">
+<option value="Brasil" selected>Brasil</option>
+<option value="Exterior">Exterior</option>
+</select>
+</div>
+<div class="col-md-6">
+<label class="form-label small fw-bold">Nome / Razão Social</label>
+<input class="form-control form-control-sm" id="edit_nome" required="" type="text"/>
+</div>
+<div class="col-md-4">
+<label class="form-label small fw-bold">Apelido</label>
+<input class="form-control form-control-sm" id="edit_apelido" placeholder="Nome Fantasia / Apelido" type="text"/>
+</div>
+<div class="col-md-4">
+<label class="form-label small fw-bold" id="lbl_edit_cnpj_cpf">CNPJ / CPF</label>
+<input class="form-control form-control-sm mask-cnpj-cpf" id="edit_cnpj_cpf" placeholder="00.000.000/0000-00" type="text"/>
+</div>
+<div class="col-md-4">
+<label class="form-label small fw-bold" id="lbl_edit_ie">Inscrição Estadual (IE)</label>
+<input class="form-control form-control-sm" id="edit_ie" type="text"/>
+</div>
+<div class="col-md-4">
+<label class="form-label small fw-bold" id="lbl_edit_ind_ie">Ind. IE</label>
+<select class="form-select form-select-sm" id="edit_ind_ie">
+<option value="1">Contribuinte</option>
+<option value="2">Isento de Contribuição</option>
+<option value="9">Não Contribuinte</option>
+</select>
+</div>
+<div class="col-md-4">
+<label class="form-label small fw-bold">Telefone</label>
+<input class="form-control form-control-sm mask-telefone" id="edit_fone" placeholder="(00) 00000-0000" type="text"/>
+</div>
+</div>
+<h6 class="border-bottom pb-2 fw-bold text-primary mb-3">Endereço</h6>
+<div class="row g-3">
+<!-- Linha 1: CEP (4), Logradouro (6), Número (2) = 12 colunas -->
+<div class="col-md-4">
+<label class="form-label small fw-bold" for="edit_cep">CEP</label>
+<div class="input-group input-group-sm">
+<input class="form-control form-control-sm font-monospace" id="edit_cep" onblur="buscarCepEdit()" placeholder="00000-000" type="text"/>
+<button class="btn-nft" onclick="buscarCepEdit()" title="Consultar CEP" type="button"><i data-lucide="search" style="width: 14px; height: 14px;"></i></button>
+</div>
+</div>
+<div class="col-md-6">
+<label class="form-label small fw-bold" for="edit_logradouro">Logradouro</label>
+<input class="form-control form-control-sm" id="edit_logradouro" placeholder="Rua, Avenida, etc." type="text"/>
+</div>
+<div class="col-md-2">
+<label class="form-label small fw-bold" for="edit_numero">Número</label>
+<input class="form-control form-control-sm font-monospace" id="edit_numero" placeholder="Ex: 123" type="text"/>
+</div>
+
+<!-- Linha 2: Complemento (6), Bairro (6) = 12 colunas -->
+<div class="col-md-6">
+<label class="form-label small fw-bold" for="edit_complemento">Complemento</label>
+<input class="form-control form-control-sm" id="edit_complemento" placeholder="Sala, Bloco, Galpão, Andar..." type="text"/>
+</div>
+<div class="col-md-6">
+<label class="form-label small fw-bold" for="edit_bairro">Bairro</label>
+<input class="form-control form-control-sm" id="edit_bairro" placeholder="Nome do Bairro" type="text"/>
+</div>
+
+<!-- Linha 3: Município (6), UF (2), Cód. Mun. IBGE (4) = 12 colunas -->
+<div class="col-md-6">
+<label class="form-label small fw-bold" for="edit_municipio">Município</label>
+<input class="form-control form-control-sm" id="edit_municipio" placeholder="Nome do Município" type="text"/>
+</div>
+<div class="col-md-2">
+<label class="form-label small fw-bold" for="edit_uf">UF</label>
+<input class="form-control form-control-sm text-uppercase text-center font-monospace fw-bold" id="edit_uf" maxlength="2" placeholder="UF" type="text"/>
+</div>
+<div class="col-md-4">
+<label class="form-label small fw-bold" for="edit_cmun">Cód. Mun. (IBGE)</label>
+<input class="form-control form-control-sm font-monospace" id="edit_cmun" placeholder="Ex: 3550308" type="text"/>
+</div>
+
+<!-- Linha 4: País (8), Cód. País BACEN (4) = 12 colunas -->
+<div class="col-md-8 position-relative">
+<label class="form-label small fw-bold" for="edit_xpais">País (Nome)</label>
+<input autocomplete="off" class="form-control form-control-sm fw-bold" id="edit_xpais" onblur="aoPerderFocoPaisEmpresa('edit')" onfocus="aoDigitarPaisAutocompleteEmpresa('edit')" oninput="aoDigitarPaisAutocompleteEmpresa('edit')" placeholder="Digite para filtrar e selecionar o País..." type="text"/>
+<div class="dropdown-menu shadow w-100 overflow-auto p-1" id="dropdown_menu_edit_xpais" style="max-height: 250px; display: none; position: absolute; z-index: 1060; top: 100%; left: 0;"></div>
+</div>
+<div class="col-md-4">
+<label class="form-label small fw-bold" for="edit_cpais">Cód. BACEN (&lt;cPais&gt;)</label>
+<input class="form-control form-control-sm font-monospace fw-bold bg-light" id="edit_cpais" readonly="" type="text"/>
+</div>
+</div>
+</form>
+</div>
+<div class="modal-footer bg-light">
+<button class="btn-nft" data-bs-dismiss="modal" type="button">Cancelar</button>
+<button class="btn-nft fw-bold" onclick="salvarEdicaoEmpresa()" type="button">Salvar Alterações</button>
+</div>
+</div>
+</div>
+</div>
+<datalist id="datalist-paises"></datalist>
+</body>
+</html>

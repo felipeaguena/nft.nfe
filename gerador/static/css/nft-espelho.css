@@ -1,0 +1,627 @@
+/* ==============================================================================
+   NFT LOGISTICS - ESPELHO DO DOCUMENTO FISCAL (SIDEBAR OVERLAY / DRAWER)
+   Baseado no Design System de preview_novo_layout.html
+   ============================================================================== */
+
+/* Backdrop Escurecido / Translúcido */
+.nft-espelho-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 1070;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.25s;
+}
+
+.nft-espelho-backdrop.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Sidebar Overlay Deslizante (Slide-Over Drawer da Direita) */
+.nft-espelho-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 720px;
+  max-width: 96vw;
+  height: 100vh;
+  background-color: #F8FAFC;
+  box-shadow: -12px 0 40px rgba(15, 23, 42, 0.22);
+  z-index: 1075;
+  transform: translateX(100%);
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #0F172A;
+}
+
+.nft-espelho-drawer.active {
+  transform: translateX(0);
+}
+
+/* Topo / Header da Sidebar */
+.nft-espelho-header {
+  padding: 16px 22px;
+  background-color: #FFFFFF;
+  border-bottom: 1px solid #E2E8F0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.nft-espelho-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nft-espelho-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #0F172A;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.nft-espelho-subtitle {
+  font-size: 12px;
+  color: #64748B;
+  margin: 0;
+}
+
+.nft-espelho-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Botões do Topo */
+.nft-espelho-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid #CBD5E1;
+  background-color: #FFFFFF;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.nft-espelho-btn:hover {
+  background-color: #F1F5F9;
+  border-color: #94A3B8;
+  color: #0F172A;
+}
+
+.nft-espelho-btn.primary {
+  background-color: #2563EB;
+  border-color: #2563EB;
+  color: #FFFFFF;
+}
+
+.nft-espelho-btn.primary:hover {
+  background-color: #1D4ED8;
+  border-color: #1D4ED8;
+}
+
+.nft-espelho-btn-close {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid #E2E8F0;
+  background-color: #FFFFFF;
+  color: #64748B;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 15px;
+  transition: all 0.15s ease;
+}
+
+.nft-espelho-btn-close:hover {
+  background-color: #FEE2E2;
+  border-color: #FCA5A5;
+  color: #DC2626;
+}
+
+/* Corpo com Rolagem Suave */
+.nft-espelho-body {
+  padding: 20px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Tag / Banner de Documento Não Oficial */
+.nft-espelho-disclaimer-banner {
+  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+  border: 1px solid #F59E0B;
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #92400E;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.nft-espelho-disclaimer-banner .disclaimer-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+/* Folha de Papel A4 com Sombra (Paper Canvas) */
+.nft-espelho-paper {
+  background-color: #FFFFFF;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 14px 28px -6px rgba(15, 23, 42, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.04);
+  font-size: 11.5px;
+  color: #1E293B;
+  line-height: 1.45;
+}
+
+/* Cabeçalho da Folha (DANFE Auxiliar) */
+.nft-paper-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 2px solid #0F172A;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  gap: 16px;
+}
+
+.nft-paper-title {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #0F172A;
+  text-transform: uppercase;
+}
+
+.nft-paper-subtitle {
+  font-size: 11px;
+  color: #64748B;
+  margin-top: 2px;
+}
+
+.nft-paper-nf-badge {
+  text-align: right;
+  background-color: #F8FAFC;
+  border: 1px solid #CBD5E1;
+  border-radius: 8px;
+  padding: 6px 12px;
+}
+
+.nft-paper-nf-num {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0F172A;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.nft-paper-nf-sub {
+  font-size: 10px;
+  color: #64748B;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* Grid de Configurações Globais da NF */
+.nft-paper-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  background-color: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+
+@media (max-width: 600px) {
+  .nft-paper-meta-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.nft-meta-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.nft-meta-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.nft-meta-value {
+  font-size: 11px;
+  font-weight: 700;
+  color: #0F172A;
+  word-break: break-word;
+}
+
+.nft-meta-value.badge-pill {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  width: fit-content;
+  margin-top: 2px;
+}
+
+/* Card Destinatário e Emitente */
+.nft-paper-parties {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+@media (max-width: 600px) {
+  .nft-paper-parties {
+    grid-template-columns: 1fr;
+  }
+}
+
+.nft-party-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 11px;
+}
+
+.nft-party-title {
+  font-size: 10px;
+  font-weight: 800;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+  border-bottom: 1px dashed #E2E8F0;
+  padding-bottom: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nft-party-name {
+  font-weight: 700;
+  color: #0F172A;
+  margin-bottom: 2px;
+  font-size: 11.5px;
+}
+
+.nft-party-doc {
+  color: #64748B;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+}
+
+.nft-party-address {
+  color: #475569;
+  font-size: 10px;
+  margin-top: 3px;
+}
+
+/* Seção de Título de Tabela */
+.nft-section-title {
+  font-weight: 800;
+  font-size: 11px;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin: 14px 0 6px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Tabela de Produtos / Serviços */
+.nft-paper-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  margin-bottom: 14px;
+}
+
+.nft-paper-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.nft-paper-table th {
+  background-color: #F8FAFC;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  border-bottom: 1px solid #CBD5E1;
+  padding: 6px 8px;
+  white-space: nowrap;
+}
+
+.nft-paper-table td {
+  padding: 7px 8px;
+  border-bottom: 1px solid #F1F5F9;
+  vertical-align: top;
+  font-size: 11px;
+}
+
+.nft-paper-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.nft-paper-table tbody tr:hover {
+  background-color: #F8FAFC;
+}
+
+.nft-item-desc {
+  font-weight: 600;
+  color: #0F172A;
+  line-height: 1.35;
+}
+
+.nft-item-infad {
+  font-size: 10px;
+  color: #2563EB;
+  margin-top: 2px;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+/* Totais no Papel */
+.nft-paper-totals-box {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 14px;
+  border-top: 1px solid #E2E8F0;
+  padding-top: 12px;
+  margin-top: 10px;
+}
+
+@media (max-width: 600px) {
+  .nft-paper-totals-box {
+    grid-template-columns: 1fr;
+  }
+}
+
+.nft-paper-tributos-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  background-color: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 10.5px;
+}
+
+.nft-paper-totals-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nft-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: #475569;
+}
+
+.nft-total-row strong {
+  font-family: 'JetBrains Mono', monospace;
+  color: #0F172A;
+}
+
+.nft-total-row.grand-total {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 2px solid #0F172A;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0F172A;
+}
+
+.nft-total-row.grand-total strong {
+  font-size: 15px;
+  color: #16A34A;
+}
+
+/* Transporte e Cobrança Resumido */
+.nft-paper-extra-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed #E2E8F0;
+  font-size: 10.5px;
+}
+
+.nft-extra-item {
+  color: #475569;
+}
+
+.nft-extra-item strong {
+  color: #0F172A;
+}
+
+/* Informações Complementares */
+.nft-paper-infcpl {
+  margin-top: 12px;
+  background-color: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 10px;
+  color: #475569;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.nft-paper-infcpl strong {
+  color: #0F172A;
+  display: block;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  font-size: 9.5px;
+}
+
+/* Rodapé Fiscal Informativo */
+.nft-paper-footer {
+  margin-top: 16px;
+  padding-top: 10px;
+  border-top: 1px dashed #CBD5E1;
+  font-size: 10px;
+  color: #94A3B8;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* Botão Flutuante Rápido (Dock FAB) */
+.nft-espelho-fab-trigger {
+  position: fixed;
+  right: 18px;
+  bottom: 24px;
+  z-index: 1040;
+  background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 50px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: inherit;
+}
+
+.nft-espelho-fab-trigger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.45);
+  background: linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%);
+}
+
+.nft-espelho-fab-trigger:active {
+  transform: translateY(0);
+}
+
+/* SUPORTE AO TEMA ESCURO (DARK MODE) */
+[data-theme="dark"] .nft-espelho-drawer {
+  background-color: #0B1120;
+  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.65);
+}
+
+[data-theme="dark"] .nft-espelho-header {
+  background-color: #0F172A;
+  border-bottom: 1px solid #1E293B;
+}
+
+[data-theme="dark"] .nft-espelho-title {
+  color: #F8FAFC;
+}
+
+[data-theme="dark"] .nft-espelho-subtitle {
+  color: #94A3B8;
+}
+
+[data-theme="dark"] .nft-espelho-btn {
+  background-color: #1E293B;
+  border-color: #334155;
+  color: #E2E8F0;
+}
+
+[data-theme="dark"] .nft-espelho-btn:hover {
+  background-color: #334155;
+  border-color: #475569;
+  color: #FFFFFF;
+}
+
+[data-theme="dark"] .nft-espelho-btn-close {
+  background-color: #1E293B;
+  border-color: #334155;
+  color: #94A3B8;
+}
+
+[data-theme="dark"] .nft-espelho-btn-close:hover {
+  background-color: #7F1D1D;
+  border-color: #991B1B;
+  color: #FCA5A5;
+}
+
+/* ESTILOS PARA IMPRESSÃO (@media print) */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .nft-espelho-paper,
+  .nft-espelho-paper * {
+    visibility: visible;
+  }
+  .nft-espelho-paper {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  .nft-espelho-drawer {
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    transform: none !important;
+  }
+  .nft-espelho-backdrop,
+  .nft-espelho-header,
+  .nft-espelho-fab-trigger,
+  .nft-espelho-disclaimer-banner {
+    display: none !important;
+  }
+}

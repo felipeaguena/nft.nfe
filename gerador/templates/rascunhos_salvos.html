@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <link href="/static/img/brand/nftlogo.webp" rel="icon" type="image/webp"/>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Rascunhos Salvos - NFT Logistics</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <!-- NFT Logistics Theme (Light & Dark) -->
+    <link href="/static/css/nft-theme.css?v=4.1" rel="stylesheet"/>
+    <link href="/static/css/nft-sidebar.css?v=4.3" rel="stylesheet"/>
+    <script src="/static/js/theme.js"></script>
+    <!-- Lucide Icons -->
+    <script src="/static/js/lucide.min.js"></script>
+    <script src="/static/js/nft-dialogs.js"></script>
+    <script defer src="/static/js/nft-sidebar.js?v=2.8"></script>
+    <script defer src="/static/js/nft-shortcuts.js?v=1.0"></script>
+    <style>
+        .card-rascunhos-lista {
+            background-color: var(--surface) !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 12px !important;
+            overflow: hidden !important;
+        }
+        .card-rascunhos-lista .table {
+            margin-bottom: 0 !important;
+        }
+        .card-rascunhos-lista .table tbody tr:last-child td {
+            border-bottom: 0 !important;
+        }
+        .btn-nft-action-round {
+            width: 30px !important;
+            height: 30px !important;
+            min-width: 30px !important;
+            border-radius: 9999px !important;
+            padding: 0 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+    </style>
+</head>
+<body class="has-sidebar">
+{% set sidebar_active = 'rascunhos_salvos' %}
+{% include 'partials/sidebar.html' %}
+
+<!-- ÁREA PRINCIPAL DE CONTEÚDO -->
+<div class="nft-main-wrapper">
+  {% set topbar_modulo = 'Rascunhos Salvos' %}
+  {% set topbar_tag = 'Operações' %}
+  {% include 'partials/topbar.html' %}
+
+    <div class="container-fluid py-3 px-3 px-md-4">
+        <!-- Cabeçalho da Página -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom gap-2">
+            <div>
+                <h4 class="fw-bold mb-0 d-flex align-items-center gap-2 text-heading">
+                    <i class="text-primary" data-lucide="folder-clock"></i>
+                    <span>Rascunhos Salvos</span>
+                    <span class="badge bg-info-subtle text-info fw-bold" id="badge-total-rascunhos-modal" style="font-size: 0.78rem;">0</span>
+                </h4>
+                <small class="text-muted">Gerencie seus rascunhos de notas fiscais gerados no XML Rascunho, XML DI/DUIMP e Nova NF</small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1" onclick="carregarListaRascunhos()" title="Atualizar Lista" type="button">
+                    <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
+                    <span>Atualizar</span>
+                </button>
+                <a class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1 shadow-sm" href="/nova_nf?nova_nota=1">
+                    <i data-lucide="plus-circle" style="width: 14px; height: 14px;"></i>
+                    <span>Nova NF</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Filtros e Barra de Pesquisa -->
+        <div class="card shadow-sm border mb-3 p-3">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-5">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-body-tertiary"><i data-lucide="search" style="width: 14px; height: 14px;"></i></span>
+                        <input class="form-control form-control-sm" id="filtro_busca_rascunho" oninput="filtrarTabelaRascunhos()" placeholder="Buscar por referência, arquivo ou chave..." type="text"/>
+                        <button class="btn btn-outline-secondary" onclick="document.getElementById('filtro_busca_rascunho').value=''; filtrarTabelaRascunhos();" title="Limpar busca" type="button">
+                            <i data-lucide="x" style="width: 12px; height: 12px;"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-body-tertiary"><i data-lucide="layers" style="width: 14px; height: 14px;"></i></span>
+                        <select class="form-select form-select-sm" id="filtro_origem_rascunho" onchange="carregarListaRascunhos()">
+                            <option value="">Todas as Origens</option>
+                            <option value="Nova NF">Nova NF</option>
+                            <option value="XML Rascunho">XML Rascunho</option>
+                            <option value="XML da DI ou DUIMP">XML da DI ou DUIMP</option>
+                            <option value="DUIMP Importada">DUIMP Importada</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-body-tertiary"><i data-lucide="folder" style="width: 14px; height: 14px;"></i></span>
+                        <select class="form-select form-select-sm" id="filtro_cat_rascunho" onchange="carregarListaRascunhos()">
+                            <option value="">Todas as Categorias</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-1 text-end">
+                    <small class="text-muted fw-semibold" id="info-rodape-rascunhos">0 itens</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabela de Rascunhos -->
+        <div class="table-responsive border rounded shadow-sm overflow-hidden card-rascunhos-lista">
+            <table class="table table-sm table-hover align-middle mb-0 small">
+                <thead class="table-light sticky-top">
+                    <tr>
+                        <th style="width: 22%;">Referência Interna</th>
+                        <th style="width: 15%;">Categoria / Origem</th>
+                        <th style="width: 20%;">Tipo de Operação</th>
+                        <th class="text-center" style="width: 6%;" title="Quantidade de Itens">Qtd.</th>
+                        <th class="text-end" style="width: 12%;">Valor Total</th>
+                        <th style="width: 14%;">Última Atualização</th>
+                        <th class="text-center" style="width: 11%;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-lista-rascunhos">
+                    <tr>
+                        <td class="text-center text-muted py-4" colspan="7">Carregando rascunhos...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap 5 Bundle JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    let rascunhosCacheLista = [];
+
+    function getVal(id) {
+        const el = document.getElementById(id);
+        return el ? (el.value || '') : '';
+    }
+
+    function formatarNumeroVisualBR(val, minDec = 2, maxDec = 2) {
+        const num = parseFloat(val) || 0;
+        return num.toLocaleString('pt-BR', { minimumFractionDigits: minDec, maximumFractionDigits: maxDec });
+    }
+
+    async function carregarCategoriasRascunhos() {
+        try {
+            const respCats = await fetch('/api/rascunhos/categorias');
+            const cats = await respCats.json();
+            const selCat = document.getElementById('filtro_cat_rascunho');
+            if (selCat && Array.isArray(cats)) {
+                const valAtual = selCat.value;
+                selCat.innerHTML = '<option value="">Todas as Categorias</option>';
+                cats.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c;
+                    opt.textContent = c;
+                    if (c === valAtual) opt.selected = true;
+                    selCat.appendChild(opt);
+                });
+            }
+        } catch (e) {}
+    }
+
+    async function carregarListaRascunhos() {
+        const tbody = document.getElementById('tbody-lista-rascunhos');
+        if (!tbody) return;
+
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm me-2"></span>Carregando rascunhos salvos...</td></tr>`;
+
+        const cat = getVal('filtro_cat_rascunho') || '';
+        const origem = getVal('filtro_origem_rascunho') || '';
+        const busca = (getVal('filtro_busca_rascunho') || '').trim();
+
+        const params = new URLSearchParams();
+        if (cat) params.append('categoria', cat);
+        if (origem) params.append('origem', origem);
+        if (busca) params.append('busca', busca);
+
+        try {
+            const resp = await fetch('/api/rascunhos?' + params.toString());
+            const data = await resp.json();
+            rascunhosCacheLista = data.rascunhos || [];
+
+            renderizarTabelaRascunhos(rascunhosCacheLista);
+            atualizarContadores(rascunhosCacheLista.length);
+        } catch (err) {
+            console.error('Erro ao carregar rascunhos:', err);
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">Erro ao carregar lista de rascunhos: ${err.message || err}</td></tr>`;
+        }
+    }
+
+    function atualizarContadores(total) {
+        const badgeModal = document.getElementById('badge-total-rascunhos-modal');
+        if (badgeModal) badgeModal.innerText = total;
+        const badgePag = document.getElementById('badge-total-rascunhos-pagina');
+        if (badgePag) badgePag.innerText = `${total} rascunho(s)`;
+        const infoRodape = document.getElementById('info-rodape-rascunhos');
+        if (infoRodape) infoRodape.innerText = `${total} item(ns)`;
+        document.querySelectorAll('.badge-counter-rascunhos').forEach(el => {
+            el.innerText = total;
+        });
+    }
+
+    function renderizarTabelaRascunhos(lista) {
+        const tbody = document.getElementById('tbody-lista-rascunhos');
+        if (!tbody) return;
+
+        if (!lista || lista.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-5">
+                <i data-lucide="inbox" style="width: 32px; height: 32px; display: block; margin: 0 auto 8px auto; opacity: 0.5;"></i>
+                Nenhum rascunho encontrado para os filtros selecionados.
+            </td></tr>`;
+            if (window.lucide) lucide.createIcons({ root: tbody });
+            return;
+        }
+
+        let html = '';
+        lista.forEach(r => {
+            const isOrigemDuimpImp = (r.origem || '') === 'DUIMP Importada';
+            const isOrigemDI = (r.origem || '').includes('DI');
+            const isOrigemNova = (r.origem || '').includes('Nova');
+            const badgeOrigemClass = isOrigemDuimpImp ? 'badge-origem-duimp-imp' : (isOrigemNova ? 'badge-origem-nova' : (isOrigemDI ? 'badge-origem-di' : 'badge-origem-rasc'));
+            const iconeOrigem = isOrigemDuimpImp ? 'cloud-download' : (isOrigemNova ? 'plus-circle' : (isOrigemDI ? 'globe' : 'file-code'));
+            const dataFmt = r.data_atualizacao_formatada || (r.data_atualizacao ? r.data_atualizacao.slice(0, 16).replace('T', ' ') : (r.data_criacao_formatada || '-'));
+            const valTotalFmt = formatarNumeroVisualBR(r.valor_total || 0, 2, 2);
+            const refEsc = (r.referencia_interna || '').replace(/'/g, "\\'");
+            const origEsc = (r.origem || '').replace(/'/g, "\\'");
+
+            html += `
+            <tr id="tr-rascunho-${r.id}">
+                <td>
+                    <div class="d-flex align-items-center gap-1">
+                        <i data-lucide="tag" style="width: 13px; height: 13px; color: var(--text-muted); flex-shrink: 0;"></i>
+                        <strong class="text-truncate" style="max-width: 220px;" title="${r.referencia_interna || 'Sem referência'}">
+                            ${r.referencia_interna || '<span class="text-muted fst-italic">Sem referência</span>'}
+                        </strong>
+                    </div>
+                    <small class="text-muted font-monospace d-block text-truncate" style="font-size: 10.5px; max-width: 220px;">#${r.id} ${r.nome_arquivo_original ? '• ' + r.nome_arquivo_original : ''}</small>
+                </td>
+                <td>
+                    <div class="d-flex flex-column align-items-start gap-1">
+                        <span class="texto-categoria-rascunho text-truncate" style="max-width: 150px;" title="Categoria: ${r.categoria || 'Geral'}">
+                            ${r.categoria || 'Geral'}
+                        </span>
+                        <span class="badge badge-origem-base ${badgeOrigemClass}" title="Origem: ${r.origem || 'Nova NF'}">
+                            <i data-lucide="${iconeOrigem}" style="width: 11px; height: 11px;"></i>
+                            <span>${r.origem || 'Nova NF'}</span>
+                        </span>
+                    </div>
+                </td>
+                <td>
+                    <span class="text-truncate d-inline-block text-secondary" style="max-width: 220px; font-size: 11.5px; vertical-align: middle;" title="${r.tipo_operacao || '-'}">
+                        ${r.tipo_operacao || '<span class="text-muted">-</span>'}
+                    </span>
+                </td>
+                <td class="text-center small text-muted font-monospace">
+                    ${r.qtd_itens !== undefined && r.qtd_itens !== null ? r.qtd_itens : 0}
+                </td>
+                <td class="text-end fw-bold text-success font-monospace" style="font-size: 12px; white-space: nowrap;">
+                    R$ ${valTotalFmt}
+                </td>
+                <td class="small text-muted font-monospace" style="white-space: nowrap; font-size: 11.5px;">
+                    <span class="d-inline-flex align-items-center gap-1">
+                        <i data-lucide="clock" style="width: 12px; height: 12px;"></i>
+                        <span>${dataFmt}</span>
+                    </span>
+                </td>
+                <td class="text-center">
+                    <div class="d-flex justify-content-center align-items-center gap-1">
+                        <button type="button" class="btn-nft btn-nft-action-round" onclick="abrirRascunhoNoModulo(${r.id}, '${origEsc}')" title="Abrir e carregar este rascunho">
+                            <i data-lucide="folder-open" style="width: 13px; height: 13px;"></i>
+                        </button>
+                        <button type="button" class="btn-nft btn-nft-action-round" onclick="duplicarRascunho(${r.id}, '${refEsc}', this)" title="Duplicar Rascunho">
+                            <i data-lucide="copy" style="width: 13px; height: 13px;"></i>
+                        </button>
+                        <button type="button" class="btn-nft btn-nft-danger btn-nft-action-round" onclick="excluirRascunho(${r.id}, '${refEsc}')" title="Excluir este rascunho">
+                            <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>`;
+        });
+
+        tbody.innerHTML = html;
+        if (window.lucide) lucide.createIcons({ root: tbody });
+    }
+
+    function filtrarTabelaRascunhos() {
+        const termo = (document.getElementById('filtro_busca_rascunho')?.value || '').toLowerCase().trim();
+        if (!termo) {
+            renderizarTabelaRascunhos(rascunhosCacheLista);
+            atualizarContadores(rascunhosCacheLista.length);
+            return;
+        }
+        const filtrados = rascunhosCacheLista.filter(r => {
+            return (
+                (r.referencia_interna || '').toLowerCase().includes(termo) ||
+                (r.nome_arquivo_original || '').toLowerCase().includes(termo) ||
+                (r.categoria || '').toLowerCase().includes(termo) ||
+                (r.tipo_operacao || '').toLowerCase().includes(termo) ||
+                (r.chave_acesso || '').toLowerCase().includes(termo)
+            );
+        });
+        renderizarTabelaRascunhos(filtrados);
+        atualizarContadores(filtrados.length);
+    }
+
+    function abrirRascunhoNoModulo(id, origemRascunho) {
+        const orig = String(origemRascunho || '');
+        let rota = '/rascunho';
+        if (orig === 'Nova NF') {
+            rota = '/nova_nf';
+        } else if (orig.includes('DI') || orig.includes('DUIMP')) {
+            rota = '/di_duimp';
+        }
+        window.location.href = `${rota}?carregar_rascunho=${encodeURIComponent(id)}`;
+    }
+
+    async function duplicarRascunho(id, ref, btnEl) {
+        const conf = await nftConfirm(`Deseja realmente duplicar o rascunho #${id}${ref ? ' (' + ref + ')' : ''}?\n\nUma cópia independente será criada mantendo os mesmos dados e itens.`, {
+            title: 'Confirmar Duplicação',
+            type: 'info',
+            confirmText: 'Sim, Duplicar',
+            cancelText: 'Cancelar',
+            icon: 'copy'
+        });
+        if (!conf) return;
+
+        const oldIconHtml = btnEl ? btnEl.innerHTML : '';
+        if (btnEl) {
+            btnEl.disabled = true;
+            btnEl.innerHTML = '<span class="spinner-border spinner-border-sm" style="width: 12px; height: 12px; border-width: 1.5px;"></span>';
+        }
+
+        try {
+            const resp = await fetch(`/api/rascunhos/${id}/duplicar`, { method: 'POST' });
+            const data = await resp.json();
+            if (!resp.ok || !data.success) {
+                if (window.nftAlert) await nftAlert(data.error || 'Erro ao duplicar rascunho.', { type: 'danger', title: 'Erro' });
+                return;
+            }
+            if (typeof nftToast === 'function') {
+                nftToast(data.message || 'Rascunho duplicado com sucesso!', 'success');
+            }
+
+            if (data.rascunho) {
+                rascunhosCacheLista.unshift(data.rascunho);
+                renderizarTabelaRascunhos(rascunhosCacheLista);
+                const novaLinha = document.getElementById(`tr-rascunho-${data.rascunho.id}`);
+                if (novaLinha) {
+                    novaLinha.classList.add('table-success');
+                    setTimeout(() => novaLinha.classList.remove('table-success'), 2000);
+                }
+                atualizarContadores(rascunhosCacheLista.length);
+            } else {
+                carregarListaRascunhos();
+            }
+        } catch (err) {
+            console.error('Erro ao duplicar rascunho:', err);
+            if (window.nftAlert) await nftAlert('Erro inesperado ao duplicar rascunho: ' + err.message, { type: 'danger', title: 'Erro' });
+        } finally {
+            if (btnEl) {
+                btnEl.disabled = false;
+                btnEl.innerHTML = oldIconHtml;
+                if (window.lucide) lucide.createIcons({ root: btnEl });
+            }
+        }
+    }
+
+    async function excluirRascunho(id, ref) {
+        const conf = await nftConfirm(`Deseja realmente excluir o rascunho #${id}${ref ? ' (' + ref + ')' : ''}?\n\nEsta ação não poderá ser desfeita e o rascunho será removido permanentemente.`, {
+            title: 'Confirmar Exclusão',
+            type: 'danger',
+            confirmText: 'Sim, Excluir',
+            cancelText: 'Cancelar',
+            icon: 'trash-2'
+        });
+        if (!conf) return;
+
+        try {
+            const resp = await fetch(`/api/rascunhos/${id}`, { method: 'DELETE' });
+            if (!resp.ok) {
+                if (window.nftAlert) await nftAlert('Erro ao excluir rascunho.', { type: 'danger', title: 'Erro' });
+                return;
+            }
+            if (typeof nftToast === 'function') nftToast('Rascunho excluído com sucesso.', 'success');
+            carregarListaRascunhos();
+        } catch (err) {
+            console.error('Erro ao excluir rascunho:', err);
+            if (window.nftAlert) await nftAlert('Erro inesperado ao excluir rascunho: ' + err.message, { type: 'danger', title: 'Erro' });
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons();
+        }
+        await carregarCategoriasRascunhos();
+        carregarListaRascunhos();
+    });
+</script>
+</body>
+</html>

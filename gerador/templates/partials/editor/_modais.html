@@ -1,0 +1,498 @@
+<!-- MODAL: Salvar Rascunho -->
+<div aria-hidden="true" aria-labelledby="modalSalvarRascunhoLabel" class="modal fade" id="modalSalvarRascunho" tabindex="-1">
+<div class="modal-dialog modal-dialog-centered">
+<div class="modal-content shadow-lg border-0">
+<div class="modal-header border-bottom">
+<h5 class="modal-title d-flex align-items-center gap-2" id="modalSalvarRascunhoLabel">
+<i data-lucide="bookmark-plus" style="width: 20px; height: 20px;"></i>
+<span>{{ editor_cfg.modal_rascunho_titulo }}</span>
+</h5>
+<button aria-label="Fechar" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body p-4">
+<div class="mb-3">
+<label class="form-label fw-bold text-muted small text-uppercase">Referência Interna</label>
+<div class="input-group input-group-sm">
+<span class="input-group-text bg-body-tertiary"><i data-lucide="tag" style="width: 16px; height: 16px;"></i></span>
+<input class="form-control form-control-sm" id="rascunho_ref_input" placeholder="{{ editor_cfg.modal_rascunho_placeholder }}" type="text"/>
+</div>
+<div class="form-text">Esta referência permite identificar rapidamente seu trabalho em andamento.</div>
+</div>
+<div class="mb-3">
+<label class="form-label fw-bold text-muted small text-uppercase">Categoria do Rascunho</label>
+<div class="input-group input-group-sm">
+<span class="input-group-text bg-body-tertiary"><i data-lucide="folder" style="width: 16px; height: 16px;"></i></span>
+<select class="form-select form-select-sm" id="rascunho_cat_select" onchange="verificarCategoriaOutra(this)">
+<option {% if editor_modo == 'di_duimp' %}selected=""{% endif %} value="Importação">Importação</option>
+<option {% if editor_modo != 'di_duimp' %}selected=""{% endif %} value="Geral">Geral</option>
+<option value="Exportação">Exportação</option>
+<option value="Remessa">Remessa</option>
+<option value="Devolução">Devolução</option>
+<option value="Venda">Venda</option>
+<option value="__nova__">+ Nova Categoria...</option>
+</select>
+</div>
+<input class="form-control form-control-sm mt-2 d-none" id="rascunho_cat_custom" placeholder="Digite o nome da nova categoria..." type="text"/>
+</div>
+<div class="card bg-body-tertiary border-0 p-3 mb-2 rounded-3">
+<div class="row g-2 small">
+<div class="col-6">
+<span class="text-muted d-block">Origem:</span>
+<span class="badge {{ editor_cfg.badge_class }} bg-info-subtle text-info fw-bold"><i data-lucide="{{ editor_cfg.icone_origem }}" style="width: 12px; height: 12px; vertical-align: -1px;"></i> {{ editor_cfg.nome_modulo }}</span>
+</div>
+<div class="col-6">
+<span class="text-muted d-block">Tipo de Operação:</span>
+<span class="fw-semibold text-truncate d-block" id="rascunho_modal_op_preview">-</span>
+</div>
+<div class="col-6 mt-2">
+<span class="text-muted d-block">Qtd. Itens:</span>
+<span class="fw-bold fs-6 font-monospace" id="rascunho_modal_itens_preview">0</span>
+</div>
+<div class="col-6 mt-2">
+<span class="text-muted d-block">Valor Total Estimado:</span>
+<span class="fw-bold fs-6 text-success" id="rascunho_modal_valor_preview">R$ 0,00</span>
+</div>
+</div>
+</div>
+<div class="small text-muted text-center mt-2">
+<i data-lucide="shield-check" style="width: 14px; height: 14px; vertical-align: -2px;"></i> O rascunho é gravado em arquivo isolado seguro e indexado no banco de dados.
+                </div>
+</div>
+<div class="modal-footer border-top bg-body-tertiary">
+<button class="btn-nft" data-bs-dismiss="modal" type="button">Cancelar</button>
+<button class="btn-nft d-inline-flex align-items-center gap-2" onclick="confirmarSalvarRascunho()" type="button">
+<i data-lucide="save" style="width: 16px; height: 16px;"></i>
+<span>Gravar Rascunho</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+{% if editor_modo == 'di_duimp' %}
+<!-- MODAL: Importar DUIMP por Número (Portal Único Siscomex) -->
+<div aria-hidden="true" aria-labelledby="modalImportarDuimpLabel" class="modal fade" id="modalImportarDuimp" tabindex="-1">
+<div class="modal-dialog modal-lg modal-dialog-centered">
+<div class="modal-content shadow-lg border-0">
+<div class="modal-header border-bottom">
+<div class="d-flex align-items-center gap-2">
+<div class="p-2 rounded-circle bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+<i data-lucide="cloud-download" style="width: 20px; height: 20px;"></i>
+</div>
+<div>
+<h5 class="modal-title fw-bold mb-0" id="modalImportarDuimpLabel">Importar DUIMP por Número</h5>
+<small class="text-muted">Integração Direta • Portal Único Siscomex / API Oficial</small>
+</div>
+</div>
+<button aria-label="Fechar" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body p-4">
+<!-- Card Informativo com Detalhes do Processo -->
+<div class="card border-0 bg-body-tertiary p-3 mb-3 rounded-3">
+<h6 class="fw-bold d-flex align-items-center gap-2 mb-2 text-primary" style="font-size: 13.5px;">
+<i data-lucide="info" style="width: 16px; height: 16px;"></i>
+<span>Informações Importantes sobre o Processo</span>
+</h6>
+<div class="small text-secondary d-flex flex-column gap-2" style="font-size: 12.5px; line-height: 1.55;">
+<div>
+<strong>• Consulta Oficial sem Arquivos:</strong> Não é necessário possuir arquivos XML, extratos prévios ou planilhas. A consulta puxa todos os dados cadastrais, itens e tributos diretamente pelo número da declaração.
+</div>
+<div>
+<strong>• Autenticação & Certificado Digital:</strong> O sistema utiliza o Certificado Digital ICP-Brasil da empresa para autenticação mTLS segura junto ao Portal Único Siscomex, assegurando conformidade aduaneira e sigilo fiscal.
+</div>
+<div>
+<strong>• Versão Vigente Automática:</strong> A integração identifica e recupera automaticamente a versão mais recente e vigente da DUIMP (incluindo retificações aprovadas).
+</div>
+<div>
+<strong>• Armazenamento e Rascunho Prévio:</strong> O arquivo oficial importado é arquivado na pasta dedicada <code>DUIMP Importada</code> e um novo rascunho com Origem <strong>"DUIMP Importada"</strong> é criado com a referência pré-preenchida com o número da DUIMP, pronto para abertura imediata com todos os campos preenchidos.
+</div>
+</div>
+</div>
+<!-- Campo para Digitar a DUIMP -->
+<div class="mb-2">
+<label class="form-label fw-bold text-muted small text-uppercase mb-1" for="inputNumeroDuimp">
+Número da DUIMP <span class="text-danger">*</span>
+</label>
+<div class="input-group">
+<span class="input-group-text bg-body-tertiary font-monospace text-muted" style="height: 36px; min-height: 36px;">
+<i data-lucide="file-text" style="width: 16px; height: 16px;"></i>
+</span>
+<input autocomplete="off" class="form-control font-monospace text-uppercase" id="inputNumeroDuimp" maxlength="30" oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9-]/g, '')" onkeydown="if(event.key === 'Enter') { event.preventDefault(); acionarConfirmacaoImportarDuimp(); }" placeholder="Ex: 24BR00001001899" type="text" style="height: 36px; min-height: 36px; font-size: 0.875rem;"/>
+<button class="btn btn-primary fw-bold d-inline-flex align-items-center gap-2 px-3" id="btnImportarDuimpModal" onclick="acionarConfirmacaoImportarDuimp()" type="button" style="height: 36px; min-height: 36px; font-size: 0.875rem; line-height: 1.5; padding: 0.375rem 0.75rem;">
+<i data-lucide="cloud-download" style="width: 15px; height: 15px;"></i>
+<span>Importar</span>
+</button>
+</div>
+<div class="form-text small mt-1 text-muted">
+<i data-lucide="help-circle" style="width: 13px; height: 13px; vertical-align: -2px;"></i>
+Padrão Siscomex: 2 dígitos do ano + "BR" + sequência numérica (ex: <strong>24BR00001001899</strong>).
+</div>
+</div>
+</div>
+<div class="modal-footer border-top bg-body-tertiary d-flex justify-content-between">
+<button class="btn-nft" data-bs-dismiss="modal" type="button">Cancelar</button>
+<button class="btn-nft fw-bold d-inline-flex align-items-center gap-2" onclick="acionarConfirmacaoImportarDuimp()" type="button">
+<i data-lucide="arrow-right" style="width: 16px; height: 16px;"></i>
+<span>Avançar para Confirmação</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+{% endif %}
+<!-- MODAL: Importar Certificado Digital (A1) -->
+<div aria-hidden="true" aria-labelledby="modalImportarCertificadoLabel" class="modal fade" id="modalImportarCertificado" tabindex="-1">
+<div class="modal-dialog modal-lg modal-dialog-centered">
+<div class="modal-content shadow-lg border-0">
+<div class="modal-header border-bottom">
+<div class="d-flex align-items-center gap-2">
+<div class="p-2 rounded-circle bg-success-subtle text-success d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+<i data-lucide="file-key" style="width: 20px; height: 20px;"></i>
+</div>
+<div>
+<h5 class="modal-title fw-bold mb-0" id="modalImportarCertificadoLabel">Importar Certificado Digital (A1)</h5>
+<small class="text-muted">Instalação e ativação imediata de arquivo .pfx / .p12 para emissão fiscal</small>
+</div>
+</div>
+<button aria-label="Fechar" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body p-4">
+<!-- Instruções e Requisitos do Certificado -->
+<div class="card border-0 bg-body-tertiary p-3 mb-3 rounded-3">
+<h6 class="fw-bold d-flex align-items-center gap-2 mb-2 text-success" style="font-size: 13.5px;">
+<i data-lucide="info" style="width: 16px; height: 16px;"></i>
+<span>Instruções Importantes sobre o Certificado</span>
+</h6>
+<div class="small text-secondary d-flex flex-column gap-2" style="font-size: 12.5px; line-height: 1.55;">
+<div>
+<strong>• Formato Suportado:</strong> O arquivo deve ser um certificado padrão ICP-Brasil A1 com extensão <code>.pfx</code> ou <code>.p12</code> (contendo a chave privada e os certificados intermediários).
+</div>
+<div>
+<strong>• Senha de Instalação:</strong> Certificados A1 são protegidos por senha. Informe a senha fornecida pela Autoridade Certificadora para validação e desbloqueio imediato.
+</div>
+<div>
+<strong>• Ativação Automática:</strong> Ao instalar, o certificado é salvo de forma segura no servidor e ativado automaticamente para assinatura de NF-e, consultas na SEFAZ e integração aduaneira.
+</div>
+</div>
+</div>
+<!-- Campo Drag and Drop / Selecionar Arquivo PFX -->
+<div class="mb-3">
+<label class="form-label fw-bold text-muted small text-uppercase mb-1">
+Arquivo do Certificado Digital (.pfx / .p12) <span class="text-danger">*</span>
+</label>
+<div class="dropzone-pfx p-4 text-center" id="dropzone-certificado" onclick="document.getElementById('inputArquivoPfx').click()">
+<i data-lucide="upload-cloud" style="width: 40px; height: 40px; color: var(--primary); margin-bottom: 8px;"></i>
+<div class="fw-bold mb-1">Arraste seu arquivo .pfx aqui ou clique para selecionar</div>
+<div class="small text-muted">Formatos aceitos: <strong>.pfx</strong> ou <strong>.p12</strong></div>
+<div class="mt-2 text-success fw-bold font-monospace d-none" id="pfx-file-name-display">
+<i data-lucide="check-circle" style="width: 15px; height: 15px; vertical-align: -2px;"></i>
+<span id="pfx-file-name-text"></span>
+</div>
+</div>
+<input accept=".pfx,.p12" class="d-none" id="inputArquivoPfx" onchange="aoSelecionarArquivoPfx(this)" type="file"/>
+</div>
+<!-- Campo Senha do Certificado -->
+<div class="mb-2">
+<label class="form-label fw-bold text-muted small text-uppercase mb-1" for="inputSenhaCertificado">
+Senha do Certificado Digital <span class="text-danger">*</span>
+</label>
+<div class="input-group">
+<span class="input-group-text bg-body-tertiary text-muted" style="height: 36px; min-height: 36px;">
+<i data-lucide="lock" style="width: 16px; height: 16px;"></i>
+</span>
+<input autocomplete="current-password" class="form-control" id="inputSenhaCertificado" onkeydown="if(event.key === 'Enter') { event.preventDefault(); submeterImportarCertificado(); }" placeholder="Digite a senha do certificado..." type="password" value="" style="height: 36px; min-height: 36px; font-size: 0.875rem;"/>
+<button class="btn btn-outline-secondary" onclick="alternarVisibilidadeSenhaCertificado()" title="Visualizar / Ocultar Senha" type="button" style="height: 36px; min-height: 36px; padding: 0.375rem 0.75rem;">
+<i data-lucide="eye" id="icone-olho-senha-cert" style="width: 16px; height: 16px;"></i>
+</button>
+</div>
+<div class="form-text small mt-1 text-muted">
+<i data-lucide="shield" style="width: 13px; height: 13px; vertical-align: -2px;"></i>
+Utilizada para decodificar a chave privada na assinatura e transmissão de documentos fiscais.
+</div>
+</div>
+</div>
+<div class="modal-footer border-top bg-body-tertiary d-flex justify-content-between">
+<button class="btn-nft" data-bs-dismiss="modal" type="button">Cancelar</button>
+<button class="btn-nft btn-nft-success-solid fw-bold d-inline-flex align-items-center gap-2" id="btnInstalarCertificadoModal" onclick="submeterImportarCertificado()" type="button" style="height: 36px; min-height: 36px; font-size: 0.875rem;">
+<i data-lucide="shield-check" style="width: 16px; height: 16px;"></i>
+<span>Instalar Certificado</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- MODAL: Listagem de Rascunhos Salvos -->
+<div aria-hidden="true" aria-labelledby="modalListaRascunhosLabel" class="modal fade" id="modalListaRascunhos" tabindex="-1">
+<div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" style="max-width: 95vw; width: 1350px;">
+<div class="modal-content shadow-lg border-0">
+<div class="modal-header border-bottom">
+<div>
+<h5 class="modal-title d-flex align-items-center gap-2 mb-0" id="modalListaRascunhosLabel">
+<i data-lucide="folder-clock" style="width: 20px; height: 20px;"></i>
+<span>Rascunhos Salvos</span>
+<span class="badge bg-info-subtle text-info fw-bold" id="badge-total-rascunhos-modal">0</span>
+</h5>
+<p class="text-muted small mb-0 mt-1">Gerencie seus rascunhos de notas fiscais gerados no XML Rascunho e no XML DI/DUIMP.</p>
+</div>
+<button aria-label="Fechar" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body p-3">
+<!-- Filtros e Barra de Pesquisa -->
+<div class="row g-2 mb-3">
+<div class="col-md-5">
+<div class="input-group input-group-sm">
+<span class="input-group-text bg-body-tertiary"><i data-lucide="search" style="width: 14px; height: 14px;"></i></span>
+<input class="form-control form-control-sm" id="filtro_busca_rascunho" oninput="filtrarTabelaRascunhos()" placeholder="Buscar por referência, arquivo ou chave..." type="text"/>
+</div>
+</div>
+<div class="col-md-3">
+<div class="input-group input-group-sm">
+<span class="input-group-text bg-body-tertiary"><i data-lucide="layers" style="width: 14px; height: 14px;"></i></span>
+<select class="form-select form-select-sm" id="filtro_origem_rascunho" onchange="carregarListaRascunhos()">
+<option value="">Todas as Origens</option>
+<option value="XML da DI ou DUIMP">XML da DI ou DUIMP</option>
+<option value="DUIMP Importada">DUIMP Importada</option>
+<option value="XML Rascunho">XML Rascunho</option>
+<option value="Nova NF">Nova NF</option>
+</select>
+</div>
+</div>
+<div class="col-md-3">
+<div class="input-group input-group-sm">
+<span class="input-group-text bg-body-tertiary"><i data-lucide="folder" style="width: 14px; height: 14px;"></i></span>
+<select class="form-select form-select-sm" id="filtro_cat_rascunho" onchange="carregarListaRascunhos()">
+<option value="">Todas as Categorias</option>
+</select>
+</div>
+</div>
+<div class="col-md-1 d-flex">
+<button class="btn-nft w-100" onclick="carregarListaRascunhos()" title="Atualizar Lista" type="button">
+<i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
+</button>
+</div>
+</div>
+<!-- Tabela de Rascunhos -->
+<div class="table-responsive border rounded-3" style="max-height: 480px;">
+<table class="table table-sm table-hover align-middle mb-0 small">
+<thead class="table-light sticky-top">
+<tr>
+<th style="width: 22%;">Referência Interna</th>
+<th style="width: 15%;">Categoria / Origem</th>
+<th style="width: 20%;">Tipo de Operação</th>
+<th class="text-center" style="width: 6%;" title="Quantidade de Itens">Qtd.</th>
+<th class="text-end" style="width: 12%;">Valor Total</th>
+<th style="width: 14%;">Última Atualização</th>
+<th class="text-center" style="width: 11%;">Ações</th>
+</tr>
+</thead>
+<tbody id="tbody-lista-rascunhos">
+<tr>
+<td class="text-center text-muted py-4" colspan="7">Carregando rascunhos...</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="modal-footer border-top bg-body-tertiary d-flex justify-content-between">
+<div class="small text-muted" id="info-rodape-rascunhos">
+                    Carregando registros...
+                </div>
+<button class="btn-nft" data-bs-dismiss="modal" type="button">Fechar</button>
+</div>
+</div>
+</div>
+</div>
+<!-- MODAL: CONFIGURAÇÃO DE TIPO DE NOTA (IMPOSTOS & REGRAS PADRÃO POR OPERAÇÃO) -->
+<div aria-hidden="true" aria-labelledby="modalTipoNotaLabel" class="modal fade" id="modalTipoNota" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" style="max-width: 95vw; width: 1350px;">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header border-bottom py-2 px-3 bg-body-tertiary">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge px-2 py-1 d-flex align-items-center gap-1 bg-primary-subtle text-primary fw-bold">
+                        <i data-lucide="settings"></i> Configurações
+                    </span>
+                    <span class="text-muted">/</span>
+                    <h5 class="modal-title fs-6 fw-bold mb-0 d-flex align-items-center gap-2" id="modalTipoNotaLabel">
+                        <i data-lucide="tag"></i>
+                        <span>Tipo de Nota (Impostos &amp; Regras Padrão por Operação)</span>
+                    </h5>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn-nft btn-nft-primary d-flex align-items-center gap-1 shadow-sm" onclick="abrirModalConfigRegimes()" title="Acessar e editar regras padrão de Suspensão, Isenção, Recolhimento e Imunidade">
+                        <i data-lucide="sliders"></i>
+                        <span>⚙️ Enquadramentos Fiscais</span>
+                    </button>
+                    <button aria-label="Fechar" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+                </div>
+            </div>
+            <div class="modal-body p-3">
+                <div class="row g-3 mt-1">
+                    <div class="col-md-4">
+                        <div class="card border shadow-sm" style="min-height: 640px; display: flex; flex-direction: column;">
+                            <div class="card-header d-flex justify-content-between align-items-center py-2 text-secondary bg-body-tertiary">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="fw-bold">Operações Cadastradas</span>
+                                    <span class="badge bg-secondary-subtle text-secondary" id="badge-total-operacoes" style="font-size: 11px;">0</span>
+                                </div>
+                                <button class="btn-nft d-flex align-items-center gap-1" onclick="novaOperacao()"><i data-lucide="plus"></i> Nova</button>
+                            </div>
+                            <div class="card-body p-2 d-flex flex-column" style="flex: 1 1 auto;">
+                                <!-- Barra de busca e filtro em tempo real -->
+                                <div class="mb-2">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-body-tertiary"><i data-lucide="search" style="width: 14px; height: 14px;"></i></span>
+                                        <input type="text" id="filtro-operacoes" class="form-control" placeholder="Buscar operação ou CFOP..." oninput="filtrarOperacoesCadastradas(this.value)">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="limparFiltroOperacoes()" title="Limpar filtro"><i data-lucide="x" style="width: 14px; height: 14px;"></i></button>
+                                    </div>
+                                    <small class="text-muted d-block mt-1 ps-1" style="font-size: 11px;">
+                                        <i data-lucide="move" style="width: 11px; height: 11px;"></i> Arraste as operações para reorganizar a ordem de exibição
+                                    </small>
+                                </div>
+                                <!-- Lista ampliada na vertical -->
+                                <div class="list-group flex-grow-1" id="lista-operacoes" style="min-height: 520px; max-height: 580px; overflow-y: auto;">
+                                    <!-- Preenchido dinamicamente via JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card border shadow-sm" style="min-height: 640px;">
+                            <div class="card-header d-flex justify-content-between align-items-center py-2 text-secondary bg-body-tertiary">
+                                <span id="titulo-form-op">Configuração da Operação:<br/>
+                                <strong id="lbl-op-nome">Nova Operação</strong></span>
+                                <div class="d-flex align-items-center gap-1 flex-wrap">
+                                    <button class="btn-nft d-flex align-items-center gap-1" onclick="capturarImpostosDoXmlAtual()">
+                                        <i data-lucide="download"></i>
+                                        <span>Puxar Impostos do XML</span>
+                                    </button>
+                                    <button class="btn-nft d-flex align-items-center gap-1" id="btn-excluir-op" onclick="excluirOperacaoAtual()" style="display:none;">
+                                        <i data-lucide="trash-2"></i>
+                                        <span>Excluir</span>
+                                    </button>
+                                    <button class="btn-nft fw-bold d-flex align-items-center gap-1 shadow-sm" onclick="salvarOperacao()">
+                                        <i data-lucide="save"></i>
+                                        <span>Salvar Configuração</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body py-3">
+                                <form id="form-tipo-nota">
+                                    <input id="op_id" type="hidden"/>
+                                    <div class="row g-3">
+                                        <div class="col-md-5">
+                                            <label class="form-label small fw-bold">Nome da Operação (Natureza da Operação - natOp)</label>
+                                            <input class="form-control form-control-sm text-primary fw-bold" id="op_nome" placeholder="Ex: ADMISSAO TEMPORARIA, OUTRAS ENTRADAS..." type="text"/>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label small fw-bold">CFOP Padrão</label>
+                                            <input class="form-control form-control-sm fw-bold" id="op_cfop" placeholder="Ex: 3930, 7930, 5914" type="text"/>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label small fw-bold">Tipo da NF (tpNF)</label>
+                                            <select class="form-select form-select-sm fw-bold" id="op_tp_nf">
+                                                <option value="0">0 - Entrada</option>
+                                                <option value="1">1 - Saída</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small fw-bold">Destino Operação (idDest)</label>
+                                            <select class="form-select form-select-sm fw-bold" id="op_id_dest">
+                                                <option value="1">1 - Interna (mesma UF)</option>
+                                                <option value="2">2 - Interestadual</option>
+                                                <option selected="" value="3">3 - Com exterior</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <label class="form-label small fw-bold mb-0">Enquadramento / Regime Fiscal</label>
+                                                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-primary fw-bold" onclick="abrirModalConfigRegimes()" title="Editar regras dos enquadramentos fiscais" style="font-size: 11px;">
+                                                    ⚙️ Editar Regras
+                                                </button>
+                                            </div>
+                                            <div class="row g-2 align-items-center">
+                                                <div class="col-md-6">
+                                                    <select class="form-select form-select-sm fw-bold border-primary" id="op_regime" onchange="if(window.atualizarResumoRegimeForm) window.atualizarResumoRegimeForm(this.value)">
+                                                        <option value="SUSPENSAO">Suspensão (Admissão Temp. / Feiras)</option>
+                                                        <option value="ISENCAO">Isenção (Benefício Fiscal Legal)</option>
+                                                        <option value="RECOLHIMENTO">Recolhimento (Tributada Regularmente)</option>
+                                                        <option value="IMUNIDADE">Imunidade (Reexportação / Exportação)</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="p-2 border rounded bg-light d-flex align-items-center" style="min-height: 44px;">
+                                                        <small id="op_regime_info" class="text-muted fw-semibold" style="font-size: 11px; line-height: 1.35;"></small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label small fw-bold">Meio de Pagamento Padrão (tPag)</label>
+                                            <select class="form-select form-select-sm fw-bold" id="op_t_pag">
+                                                <option value="90">90 - Sem Pagamento (Padrão Remessas, Retornos, Admissão, Reexp.)</option>
+                                                <option value="99">99 - Outros (Câmbio / Internacional)</option>
+                                                <option value="01">01 - Dinheiro</option>
+                                                <option value="15">15 - Boleto Bancário</option>
+                                                <option value="16">16 - Depósito Bancário</option>
+                                                <option value="17">17 - Pagamento Instantâneo (PIX)</option>
+                                                <option value="03">03 - Cartão de Crédito</option>
+                                                <option value="04">04 - Cartão de Débito</option>
+                                            </select>
+                                        </div>
+                                        <!-- ICMS -->
+                                        <div class="col-12"><h6 class="border-bottom pb-1 mb-1 mt-2 fw-bold">1. ICMS</h6></div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small">Origem da Mercadoria (orig)</label>
+                                            <select class="form-select form-select-sm" id="op_orig">
+                                                <option value="0">0 - Nacional</option>
+                                                <option selected="" value="1">1 - Estrangeira - Importação direta</option>
+                                                <option value="2">2 - Estrangeira - Adquirida no mercado interno</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small">CSOSN / CST ICMS</label>
+                                            <select class="form-select form-select-sm" id="op_csosn"></select>
+                                        </div>
+                                        <!-- IPI -->
+                                        <div class="col-12"><h6 class="border-bottom pb-1 mb-1 mt-2 fw-bold">2. IPI</h6></div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small">Código de Enquadramento (cEnq)</label>
+                                            <input class="form-control form-control-sm" id="op_c_enq" placeholder="Ex: 102, 999" type="text"/>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small">CST IPI</label>
+                                            <select class="form-select form-select-sm" id="op_cst_ipi"></select>
+                                        </div>
+                                        <input type="hidden" id="op_p_ipi" value="0.00"/>
+                                        <input type="hidden" id="op_aliquota_ii" value="0.00"/>
+                                        <!-- PIS & COFINS -->
+                                        <div class="col-12"><h6 class="border-bottom pb-1 mb-1 mt-2 fw-bold">3. PIS &amp; COFINS</h6></div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small">CST PIS</label>
+                                            <select class="form-select form-select-sm" id="op_cst_pis"></select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small">CST COFINS</label>
+                                            <select class="form-select form-select-sm" id="op_cst_cofins"></select>
+                                        </div>
+                                        <input type="hidden" id="op_p_pis" value="0.00"/>
+                                        <input type="hidden" id="op_p_cofins" value="0.00"/>
+                                        <!-- INFORMACOES COMPLEMENTARES -->
+                                        <div class="col-12"><h6 class="border-bottom pb-1 mb-1 mt-2 fw-bold">5. Observações Padronizadas da Operação</h6></div>
+                                        <div class="col-12">
+                                            <label class="form-label small">Texto Sugerido para Informações Complementares (infCpl)</label>
+                                            <textarea class="form-control form-control-sm" id="op_inf_cpl" placeholder="Texto que será sugerido no rodapé da nota para esta operação..." rows="3"></textarea>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top bg-body-tertiary d-flex justify-content-between py-2 px-3">
+                <span class="small text-muted">As configurações salvas ficam gravadas no banco de dados e refletem em tempo real no preenchimento da nota.</span>
+                <button class="btn-nft" data-bs-dismiss="modal" type="button">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+

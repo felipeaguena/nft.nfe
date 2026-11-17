@@ -1,0 +1,9 @@
+{
+  "regions": ["gru1"],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api/index.py?__path=/$1"
+    }
+  ]
+}

@@ -1,0 +1,136 @@
+<!-- MENU LATERAL FIXO (COMPONENTE ÚNICO COMPARTILHADO) -->
+<aside class="nft-sidebar" id="nftSidebar">
+    <div class="nft-sidebar-header">
+        <a class="sidebar-brand-link" href="/" title="NFT Logistics - Retornar ao Início">
+            <div class="sidebar-brand-logo-wrap">
+                <img alt="NFT" class="logo-theme-black" src="/static/img/brand/NFT%20Logo%20(3).webp"/>
+                <img alt="NFT" class="logo-theme-white" src="/static/img/brand/NFT%20Logo%20(11).webp"/>
+            </div>
+        </a>
+        <button aria-label="Recolher / Fixar Menu" class="sidebar-toggle-btn" onclick="toggleSidebar()" title="Recolher / Fixar Menu Lateral" type="button">
+            <i data-lucide="chevron-left"></i>
+        </button>
+    </div>
+
+    <div class="nft-sidebar-body">
+        <!-- Busca rápida com atalho / -->
+        <div class="nft-sidebar-search-wrap">
+            <div class="nft-sidebar-search">
+                <span class="search-icon"><i data-lucide="search" style="width: 14px; height: 14px;"></i></span>
+                <input type="text" id="nftSidebarSearch" placeholder="Buscar nota, ref, DI..." autocomplete="off"/>
+                <span class="search-kbd">/</span>
+            </div>
+        </div>
+
+        <!-- Grupo: Operações -->
+        <div class="nft-sidebar-group">
+            <div class="sidebar-section-title">Operações</div>
+            <ul class="nft-sidebar-nav">
+                <li class="nft-sidebar-item">
+                    <a class="nft-sidebar-btn {{ 'active' if sidebar_active == 'portal' else '' }}" href="/" title="Portal Inicial">
+                        <span class="sidebar-icon"><i data-lucide="layout-grid"></i></span>
+                        <span class="sidebar-label">Início / Módulos</span>
+                    </a>
+                </li>
+                <li class="nft-sidebar-item">
+                    <a class="nft-sidebar-btn {{ 'active' if sidebar_active == 'nova_nf' else '' }}" href="/nova_nf?nova_nota=1" title="Módulo Nova NF (Sem XML)">
+                        <span class="sidebar-icon"><i data-lucide="file-plus-2"></i></span>
+                        <span class="sidebar-label">Nova NF</span>
+                    </a>
+                </li>
+                <li class="nft-sidebar-item">
+                    <a class="nft-sidebar-btn {{ 'active' if sidebar_active == 'rascunho' else '' }}" href="/rascunho?nova_nota=1" title="Módulo XML Rascunho">
+                        <span class="sidebar-icon"><i data-lucide="file-code"></i></span>
+                        <span class="sidebar-label">XML Rascunho</span>
+                    </a>
+                </li>
+                <li class="nft-sidebar-item">
+                    <a class="nft-sidebar-btn {{ 'active' if sidebar_active == 'di_duimp' else '' }}" href="/di_duimp?nova_nota=1" title="Módulo XML da DI ou DUIMP">
+                        <span class="sidebar-icon"><i data-lucide="globe"></i></span>
+                        <span class="sidebar-label">XML da DI ou DUIMP</span>
+                    </a>
+                </li>
+                <li class="nft-sidebar-item">
+                    <a class="nft-sidebar-btn {{ 'active' if sidebar_active == 'rascunhos_salvos' else '' }}" href="/rascunhos_salvos" title="Ver e gerenciar Rascunhos Salvos">
+                        <span class="sidebar-icon"><i data-lucide="folder-clock"></i></span>
+                        <span class="sidebar-label">Rascunhos Salvos</span>
+                        <span class="badge sidebar-badge badge-counter-rascunhos bg-info-subtle text-info fw-bold" id="sidebar-rascunhos-badge">0</span>
+                    </a>
+                </li>
+                <li class="nft-sidebar-item">
+                    <a class="nft-sidebar-btn {{ 'active' if sidebar_active == 'relatorios' else '' }}" href="/relatorios" title="Relatório de Notas Fiscais Geradas">
+                        <span class="sidebar-icon"><i data-lucide="file-spreadsheet"></i></span>
+                        <span class="sidebar-label">Relatórios / Notas</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Grupo: Configurações -->
+        <div class="nft-sidebar-group">
+            <div class="sidebar-section-title">Configurações</div>
+            <ul class="nft-sidebar-nav">
+                <li class="nft-sidebar-item">
+                    <a class="nft-sidebar-btn {{ 'active' if sidebar_active == 'unidades_tributaveis' else '' }}" href="/unidades_tributaveis" title="Unidades Tributáveis &amp; Abreviações">
+                        <span class="sidebar-icon"><i data-lucide="scale"></i></span>
+                        <span class="sidebar-label">Unidades Tributáveis</span>
+                    </a>
+                </li>
+                <li class="nft-sidebar-item">
+                    <a class="nft-sidebar-btn {{ 'active' if sidebar_active == 'tipo_nota' else '' }}" href="/tipo_nota" title="Configuração de Impostos &amp; Regras por Operação">
+                        <span class="sidebar-icon"><i data-lucide="sliders-horizontal"></i></span>
+                        <span class="sidebar-label">Tipo de Nota (Impostos)</span>
+                    </a>
+                </li>
+                <li class="nft-sidebar-item">
+                    <a class="nft-sidebar-btn {{ 'active' if sidebar_active == 'banco_ncm' else '' }}" href="/banco_ncm" title="Grande Tabela NCM &amp; Impostos">
+                        <span class="sidebar-icon"><i data-lucide="book-open"></i></span>
+                        <span class="sidebar-label">Banco NCM</span>
+                    </a>
+                </li>
+                <li class="nft-sidebar-item">
+                    <a class="nft-sidebar-btn {{ 'active' if sidebar_active == 'empresas' else '' }}" href="/empresas" title="Gestão de Empresas e Cadastros">
+                        <span class="sidebar-icon"><i data-lucide="building-2"></i></span>
+                        <span class="sidebar-label">Empresas</span>
+                    </a>
+                </li>
+                <li class="nft-sidebar-item">
+                    <a class="nft-sidebar-btn {{ 'active' if sidebar_active == 'localidades' else '' }}" href="/localidades" title="Localidades Oficiais (BACEN, IBGE, CEPs)">
+                        <span class="sidebar-icon"><i data-lucide="map-pin"></i></span>
+                        <span class="sidebar-label">Localidades</span>
+                    </a>
+                </li>
+                <li class="nft-sidebar-item">
+                    <a class="nft-sidebar-btn {{ 'active' if sidebar_active == 'feiras' else '' }}" href="/feiras" title="Descrição da Feira (Feiras do Ano)">
+                        <span class="sidebar-icon"><i data-lucide="calendar-days"></i></span>
+                        <span class="sidebar-label">Descrição da Feira</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Card de Status do Certificado A1 -->
+    <div class="nft-sidebar-card" id="nftSidebarCertCard">
+        <div class="nft-sidebar-card-title d-flex justify-content-between align-items-center mb-1">
+            <div class="d-flex align-items-center gap-1">
+                <i data-lucide="shield-check" style="width: 15px; height: 15px; color: #16A34A; stroke-width: 1.75px;"></i>
+                <span style="font-size: 0.8rem; font-weight: 700;">Certificado Digital</span>
+            </div>
+            <span class="badge bg-success-subtle text-success small" style="font-size: 0.65rem;" id="sidebar-cert-badge">Ativo</span>
+        </div>
+        <div class="nft-sidebar-card-desc">
+            <div class="fw-bold text-truncate" id="sidebar-cert-empresa" title="NFT Logistics LTDA" style="max-width: 175px; color: #0F172A; font-size: 0.78rem;">NFT Logistics LTDA</div>
+            <div class="text-muted small mt-0" style="font-size: 0.73rem;">Válido até <strong id="sidebar-cert-validade">23/02/2027</strong></div>
+            <div class="small" style="font-size: 0.73rem;">Ambiente: <span style="color: #16A34A; font-weight: 700;">Produção</span></div>
+        </div>
+    </div>
+
+    <!-- Rodapé da Sidebar -->
+    <div class="nft-sidebar-footer">
+        <div class="sidebar-footer-info">
+            <span>Emissor de NFe</span>
+            <span>v3.0.0</span>
+        </div>
+    </div>
+</aside>

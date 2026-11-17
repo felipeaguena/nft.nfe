@@ -1,0 +1,5826 @@
+/**
+ * Motor Unificado do Editor NF-e (Rascunho, Nova NF e DI/DUIMP).
+ * Depende de nft-editor-modos.js carregado previamente.
+ */
+    let itensTable = null;
+    let xmlOriginalData = "";
+    let itensCache = [];
+    let operacoesCache = [];
+    let impostoModeloXml = null;
+    window.itensCache = itensCache;
+    window.operacoesCache = operacoesCache;
+
+    // Redireciona para a página independente de Tipo de Nota (Impostos)
+    function abrirModalTipoNota() {
+        window.location.href = '/tipo_nota';
+    }
+    window.abrirModalTipoNota = abrirModalTipoNota;
+
+    // Atalho compatível para abrir o popup Tipo de Nota
+    function abrirAbaTipoNota(event) {
+        if (event && event.preventDefault) event.preventDefault();
+        abrirModalTipoNota();
+    }
+    window.abrirAbaTipoNota = abrirAbaTipoNota;
+
+
+    // Funcoes seguras para leitura e escrita de elementos do DOM (evitam crashes de null)
+    function setVal(id, val) {
+        const el = document.getElementById(id);
+        if (el) {
+            if (el.tagName === 'SELECT') {
+                const sVal = (val !== undefined && val !== null) ? String(val) : "";
+                const clean = sVal.split(' - ')[0].trim();
+                el.value = sVal;
+                if (!el.value && clean) {
+                    el.value = clean;
+                }
+            } else {
+                el.value = (val !== undefined && val !== null) ? val : "";
+            }
+        }
+    }
+
+    function getVal(id) {
+        const el = document.getElementById(id);
+        return el ? el.value : "";
+    }
+
+    // === GERACAO DINAMICA DE CHAVE DE ACESSO DA NF-E (44 DIGITOS - SEFAZ MOC) ===
+    const UF_IBGE_MAP = {
+        'RO': '11', 'AC': '12', 'AM': '13', 'RR': '14', 'PA': '15', 'AP': '16', 'TO': '17',
+        'MA': '21', 'PI': '22', 'CE': '23', 'RN': '24', 'PB': '25', 'PE': '26', 'AL': '27',
+        'SE': '28', 'BA': '29', 'MG': '31', 'ES': '32', 'RJ': '33', 'SP': '35', 'PR': '41',
+        'SC': '42', 'RS': '43', 'MS': '50', 'MT': '51', 'GO': '52', 'DF': '53'
+    };
+
+    function calcularDVChave(chave43) {
+        if (!chave43 || chave43.length !== 43) return "";
+        let soma = 0;
+        let peso = 2;
+        for (let i = chave43.length - 1; i >= 0; i--) {
+            soma += parseInt(chave43.charAt(i), 10) * peso;
+            peso = (peso === 9) ? 2 : peso + 1;
+        }
+        const resto = soma % 11;
+        return (resto === 0 || resto === 1) ? 0 : (11 - resto);
+    }
+
+    function obterCodigoUF() {
+        const cMun = (getVal('emit_cMun') || '').trim();
+        if (cMun.length >= 2 && /^\d+$/.test(cMun.slice(0, 2))) {
+            return cMun.slice(0, 2);
+        }
+        const uf = (getVal('emit_UF') || '').trim().toUpperCase();
+        if (UF_IBGE_MAP[uf]) {
+            return UF_IBGE_MAP[uf];
+        }
+        return getVal('cUF') || '35';
+    }
+
+    // Verifica se a chave (44 dígitos) pertence à nota informada: CNPJ (pos 7-20), série (23-25) e nNF (26-34)
+    function chaveCorrespondeNota(chave44, cnpj14, serie3, nnf9) {
+        return !!chave44 && chave44.length === 44 &&
+            chave44.substr(6, 14) === cnpj14 &&
+            chave44.substr(22, 3) === serie3 &&
+            chave44.substr(25, 9) === nnf9;
+    }
+
+    // Busca no histórico SEFAZ (colunas: 4 = Chave, 5 = cStat, 6 = Motivo) uma chave AUTORIZADA/CANCELADA da nota atual
+    function obterChaveAutorizadaHistoricoParaNota(cnpj14, serie3, nnf9) {
+        const linhas = document.querySelectorAll('#tbody-historico-sefaz tr');
+        for (const tr of linhas) {
+            const cells = tr.querySelectorAll('td');
+            if (cells.length < 6) continue;
+            const chave = (cells[4].innerText || cells[4].textContent || '').replace(/\D/g, '');
+            if (chave.length !== 44) continue;
+            const cstat = (cells[5].innerText || cells[5].textContent || '').replace(/\D/g, '').slice(0, 3);
+            const motivo = (cells[6] ? (cells[6].getAttribute('title') || cells[6].innerText || '') : '').toLowerCase();
+            const rejeitada = motivo.includes('rejei') || (Number(cstat) >= 200 && cstat !== '801');
+            const autorizada = !rejeitada && (['100', '101', '135', '136', '150', '151', '155'].includes(cstat) ||
+                motivo.includes('autorizado o uso') || motivo.includes('cancelamento de nf-e homologado'));
+            if (autorizada && chaveCorrespondeNota(chave, cnpj14, serie3, nnf9)) {
+                return chave;
+            }
+        }
+        return '';
+    }
+
+    function calcularChaveAcessoDinamica() {
+        const cUF = obterCodigoUF();
+        setVal('cUF', cUF);
+
+        let aamm = "";
+        const dh = getVal('dhEmi');
+        if (dh && dh.length >= 7) {
+            const parts = dh.split('-');
+            if (parts.length >= 2) {
+                aamm = parts[0].slice(-2) + parts[1].padStart(2, '0');
+            }
+        }
+        if (!aamm || aamm.length !== 4) {
+            const now = new Date();
+            aamm = String(now.getFullYear()).slice(-2) + String(now.getMonth() + 1).padStart(2, '0');
+        }
+
+        const cnpjRaw = (getVal('emit_CNPJ') || '').replace(/\D/g, '');
+        const cnpjPadded = cnpjRaw.padStart(14, '0').slice(-14);
+
+        const mod = (getVal('mod') || '55').padStart(2, '0').slice(-2);
+
+        let serieRaw = (getVal('serie') || '1').replace(/\D/g, '');
+        if (!serieRaw) serieRaw = '1';
+        const seriePadded = serieRaw.padStart(3, '0').slice(-3);
+
+        let nNFRaw = (getVal('nNF') || '1').replace(/\D/g, '');
+        if (!nNFRaw) nNFRaw = '1';
+        const nNFPadded = nNFRaw.padStart(9, '0').slice(-9);
+
+        // Chave IMUTÁVEL apenas para a MESMA nota (CNPJ + série + nNF) já AUTORIZADA/CANCELADA na SEFAZ.
+        // Rejeições (ex.: 225) e notas com outro número NÃO travam o cálculo dinâmico.
+        const chaveAutorizadaRegistrada = obterChaveAutorizadaHistoricoParaNota(cnpjPadded, seriePadded, nNFPadded);
+        if (chaveAutorizadaRegistrada) {
+            window._chaveAcessoBloqueada = true;
+            setVal('chaveAcesso', chaveAutorizadaRegistrada);
+            setVal('chaveAcessoDisplay', chaveAutorizadaRegistrada.replace(/(\d{4})/g, '$1 ').trim());
+            return;
+        }
+        if (window._chaveAcessoBloqueada) {
+            // Trava definida externamente (ex.: retorno da SEFAZ): mantém somente se a chave atual for da mesma nota
+            const chaveAtual = (getVal('chaveAcesso') || getVal('chaveAcessoDisplay') || '').replace(/\D/g, '');
+            if (chaveAtual.length === 44 && chaveCorrespondeNota(chaveAtual, cnpjPadded, seriePadded, nNFPadded)) {
+                return;
+            }
+            window._chaveAcessoBloqueada = false;
+        }
+
+        const tpEmis = (getVal('tpEmis') || '1').slice(0, 1);
+
+        let cNF = (getVal('cNF') || '').replace(/\D/g, '');
+        if (!cNF || cNF.length !== 8) {
+            cNF = String(Math.floor(10000000 + Math.random() * 90000000));
+            setVal('cNF', cNF);
+        }
+
+        const chave43 = `${cUF}${aamm}${cnpjPadded}${mod}${seriePadded}${nNFPadded}${tpEmis}${cNF}`;
+        if (chave43.length === 43) {
+            const dv = calcularDVChave(chave43);
+            setVal('cDV', dv);
+            const chaveCompleta = `${chave43}${dv}`;
+            setVal('chaveAcesso', chaveCompleta);
+            const chaveFormatada = chaveCompleta.replace(/(\d{4})/g, '$1 ').trim();
+            setVal('chaveAcessoDisplay', chaveFormatada);
+        } else {
+            setVal('chaveAcessoDisplay', chave43);
+        }
+    }
+    window.calcularChaveAcessoDinamica = calcularChaveAcessoDinamica;
+
+    function copiarChaveAcesso() {
+        const chave = getVal('chaveAcesso') || (getVal('chaveAcessoDisplay') || '').replace(/\s+/g, '');
+        if (!chave || chave.length < 44) {
+            alert("Chave de acesso incompleta ou ainda não gerada.");
+            return;
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(chave).then(() => {
+                const btn = document.getElementById('btnCopiarChave');
+                if (btn) {
+                    const originalHtml = btn.innerHTML;
+                    btn.innerHTML = "✅ Copiado!";
+                    btn.classList.remove('btn-outline-secondary');
+                    btn.classList.add('btn-success');
+                    setTimeout(() => {
+                        btn.innerHTML = originalHtml;
+                        btn.classList.remove('btn-success');
+                        btn.classList.add('btn-outline-secondary');
+                    }, 2000);
+                }
+            }).catch(() => {
+                if (window.nftPrompt) {
+                    window.nftPrompt("Copie a chave de acesso abaixo:", chave, { title: "Chave de Acesso", icon: "key" });
+                } else {
+                    prompt("Copie a chave de acesso abaixo:", chave);
+                }
+            });
+        } else {
+            if (window.nftPrompt) {
+                window.nftPrompt("Copie a chave de acesso abaixo:", chave, { title: "Chave de Acesso", icon: "key" });
+            } else {
+                prompt("Copie a chave de acesso abaixo:", chave);
+            }
+        }
+    }
+
+    // === MANIPULAÇÃO DE DATA E HORA DA NOTA (dhEmi e dhSaiEnt) ===
+    function converterParaInputDatetime(val) {
+        if (!val) return '';
+        const str = String(val).trim();
+        if (str.length >= 16 && str.includes('T')) {
+            return str.substring(0, 16);
+        }
+        if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+            const now = new Date();
+            const h = String(now.getHours()).padStart(2, '0');
+            const m = String(now.getMinutes()).padStart(2, '0');
+            return `${str}T${h}:${m}`;
+        }
+        return '';
+    }
+
+    function definirDataHoraAgora(fieldId) {
+        const now = new Date();
+        const ano = now.getFullYear();
+        const mes = String(now.getMonth() + 1).padStart(2, '0');
+        const dia = String(now.getDate()).padStart(2, '0');
+        const horas = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        const fmt = `${ano}-${mes}-${dia}T${horas}:${min}`;
+        setVal(fieldId, fmt);
+        if (fieldId === 'dhEmi') {
+            aoAlterarDataEmissao();
+        }
+    }
+
+    function copiarDataEmissaoParaSaida() {
+        const dhEmiVal = getVal('dhEmi');
+        if (!dhEmiVal) {
+            definirDataHoraAgora('dhEmi');
+        }
+        setVal('dhSaiEnt', getVal('dhEmi'));
+    }
+
+    function aoAlterarDataEmissao() {
+        // Se a data de saida/entrada estiver vazia, sincroniza automaticamente
+        if (!getVal('dhSaiEnt')) {
+            setVal('dhSaiEnt', getVal('dhEmi'));
+        }
+        // Recalcula o AAMM na chave de acesso SEFAZ
+        calcularChaveAcessoDinamica();
+    }
+
+    // === FORMATADORES VISUAIS BR (APENAS PARA LEITURA NO FRONT-END) ===
+    function formatarNumeroVisualBR(valor, minDec = 2, maxDec = 2) {
+        if (valor === undefined || valor === null || valor === '') return '';
+        const strVal = String(valor).trim();
+        if (strVal === '') return '';
+        
+        let num;
+        if (strVal.includes(',') && strVal.includes('.')) {
+            num = parseFloat(strVal.replace(/\./g, '').replace(',', '.'));
+        } else if (strVal.includes(',')) {
+            num = parseFloat(strVal.replace(',', '.'));
+        } else {
+            num = parseFloat(strVal);
+        }
+        if (isNaN(num)) return valor;
+        return num.toLocaleString('pt-BR', {
+            minimumFractionDigits: minDec,
+            maximumFractionDigits: maxDec
+        });
+    }
+
+    function formatarMoedaVisualBR(cell) {
+        return formatarNumeroVisualBR(cell.getValue(), 2, 2);
+    }
+
+    function formatarAliquotaVisualBR(cell) {
+        const val = cell.getValue();
+        if (val === undefined || val === null || val === '') return '';
+        return formatarNumeroVisualBR(val, 2, 2);
+    }
+
+    function formatarQtdVisualBR(cell) {
+        const val = cell.getValue();
+        if (val === undefined || val === null || val === '') return '';
+        const strVal = String(val).trim();
+        let decs = 2;
+        if (strVal.includes('.')) {
+            const decPart = strVal.split('.')[1];
+            if (decPart && decPart.length > 2) {
+                decs = Math.min(decPart.length, 4);
+            }
+        } else if (strVal.includes(',')) {
+            const decPart = strVal.split(',')[1];
+            if (decPart && decPart.length > 2) {
+                decs = Math.min(decPart.length, 4);
+            }
+        }
+        return formatarNumeroVisualBR(val, decs, decs);
+    }
+
+    function formatarQTribVisualBR(cell) {
+        const rowData = cell.getRow().getData();
+        const cellEl = cell.getElement();
+        const valVisual = formatarQtdVisualBR(cell);
+
+        const isManual = (rowData.qTrib_manual === true || rowData.qTrib_manual === 'true' || rowData.qTrib_manual === 1);
+        if (isManual) {
+            if (cellEl) {
+                cellEl.classList.add('cell-qtrib-manual');
+                cellEl.title = "Quantidade Tributável editada manualmente";
+            }
+            return `<span class="fw-bold" style="color: #b45309;">${valVisual}</span>`;
+        } else {
+            if (cellEl) {
+                cellEl.classList.remove('cell-qtrib-manual');
+                cellEl.removeAttribute('title');
+            }
+            return valVisual;
+        }
+    }
+
+    function isOperacaoReexportacao() {
+        const nomeOp = String(getVal('select_operacao') || getVal('natOp') || '').toUpperCase();
+        const cfopStr = String(getVal('cfop_padrao') || '').trim();
+        const regime = String(getVal('select_regime_padrao') || '').toUpperCase();
+        return nomeOp.includes('REEXPORTA') || 
+               nomeOp.includes('RETORNO DE FEIRA') || 
+               cfopStr === '7930' || 
+               cfopStr === '7949' || 
+               regime === 'IMUNIDADE';
+    }
+
+    function formatarUnitarioVisualBR(cell) {
+        const val = cell.getValue();
+        if (val === undefined || val === null || val === '') return '';
+        const strVal = String(val).trim();
+        let decs = 2;
+        if (strVal.includes('.')) {
+            const decPart = strVal.split('.')[1];
+            if (decPart && decPart.length > 2) {
+                decs = Math.min(decPart.length, 4);
+            }
+        } else if (strVal.includes(',')) {
+            const decPart = strVal.split(',')[1];
+            if (decPart && decPart.length > 2) {
+                decs = Math.min(decPart.length, 4);
+            }
+        }
+        return formatarNumeroVisualBR(val, decs, decs);
+    }
+
+    // Mutador de edição: caso o usuário digite com vírgula ou pontos, limpa para formato decimal puro (SEFAZ)
+    function mutatorLimparNumero(value) {
+        if (value === undefined || value === null || value === '') return value;
+        const strVal = String(value).trim();
+        if (strVal === '') return '';
+        if (strVal.includes(',') && strVal.includes('.')) {
+            return strVal.replace(/\./g, '').replace(',', '.');
+        } else if (strVal.includes(',')) {
+            return strVal.replace(',', '.');
+        }
+        return strVal;
+    }
+
+    function formatarInputVisualBR(inputEl, minDec = 2, maxDec = 2) {
+        if (!inputEl) return;
+        const val = inputEl.value;
+        inputEl.value = formatarNumeroVisualBR(val, minDec, maxDec);
+    }
+
+    function parseNum(val) {
+        if (val === undefined || val === null || val === '') return 0;
+        const s = String(val).trim();
+        if (s === '') return 0;
+        if (s.includes(',') && s.includes('.')) {
+            return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
+        } else if (s.includes(',')) {
+            return parseFloat(s.replace(',', '.')) || 0;
+        }
+        return parseFloat(s) || 0;
+    }
+
+    // Recalcula o Valor Total da NF (vNF) somando os componentes da nota (Regra W16 SEFAZ)
+    function calcularVNFAutomatico() {
+        const vProd = parseNum(getVal('tot_vProd'));
+        const vFrete = parseNum(getVal('tot_vFrete'));
+        const vSeg = parseNum(getVal('tot_vSeg'));
+        const vOutro = parseNum(getVal('tot_vOutro'));
+        const vDesc = parseNum(getVal('tot_vDesc'));
+        const vII = parseNum(getVal('tot_vII'));
+        const vIPI = parseNum(getVal('tot_vIPI'));
+        const vST = parseNum(getVal('tot_vST'));
+
+        // Regra SEFAZ: vNF = vProd - vDesc + vST + vFrete + vSeg + vOutro + vII + vIPI
+        const vNF = (vProd - vDesc) + vST + vFrete + vSeg + vOutro + vII + vIPI;
+        
+        const formatado = formatarNumeroVisualBR(vNF.toFixed(2), 2, 2);
+        setVal('tot_vNF', formatado);
+        setVal('vNF', formatado);
+    }
+
+    // Varre os itens da grade e calcula os totais correspondentes
+    function recalcularTotaisDosItens(silencioso = false) {
+        const itens = (itensTable) ? itensTable.getData() : itensCache;
+        if (!itens || itens.length === 0) {
+            if (!silencioso) alert("Nenhum item carregado na grade para calcular os totais.");
+            return;
+        }
+
+        let somaProd = 0;
+        let somaFrete = 0;
+        let somaOutro = 0;
+        let somaIPI = 0;
+        let somaII = 0;
+        let somaPIS = 0;
+        let somaCOFINS = 0;
+
+        itens.forEach(item => {
+            somaProd += parseNum(item.vProd);
+            somaFrete += parseNum(item.vFrete);
+            somaOutro += parseNum(item.vOutro);
+            somaIPI += parseNum(item.vIPI);
+            somaII += parseNum(item.vII);
+
+            const cstPis = String(item.CST_PIS || '').replace(/\D/g, '').padStart(2, '0');
+            const cstCof = String(item.CST_COFINS || '').replace(/\D/g, '').padStart(2, '0');
+
+            // Regras SEFAZ W13 e W14: CSTs 04 a 09 sao isentas/nao tributadas/suspensas e nao geram vPIS/vCOFINS
+            if (!['04', '05', '06', '07', '08', '09'].includes(cstPis)) {
+                somaPIS += parseNum(item.vPIS);
+            }
+            if (!['04', '05', '06', '07', '08', '09'].includes(cstCof)) {
+                somaCOFINS += parseNum(item.vCOFINS);
+            }
+        });
+
+        setVal('tot_vProd', formatarNumeroVisualBR(somaProd.toFixed(2), 2, 2));
+        setVal('tot_vFrete', formatarNumeroVisualBR(somaFrete.toFixed(2), 2, 2));
+        setVal('tot_vOutro', formatarNumeroVisualBR(somaOutro.toFixed(2), 2, 2));
+        setVal('tot_vIPI', formatarNumeroVisualBR(somaIPI.toFixed(2), 2, 2));
+        setVal('tot_vII', formatarNumeroVisualBR(somaII.toFixed(2), 2, 2));
+        setVal('tot_vPIS', formatarNumeroVisualBR(somaPIS.toFixed(2), 2, 2));
+        setVal('tot_vCOFINS', formatarNumeroVisualBR(somaCOFINS.toFixed(2), 2, 2));
+
+        // Recalcula vNF com base nos novos totais
+        calcularVNFAutomatico();
+
+        if (!silencioso) {
+            alert(`Totais e Valor Total da NF recalculados com sucesso com base nos ${itens.length} itens da nota!`);
+        }
+    }
+
+    // === CÂMBIO OFICIAL PTAX & PARÂMETROS DE RATEIO (BANCO CENTRAL & COMEX) ===
+    let cotacaoPtaxCache = null;
+
+    function carregarMoedasPtax() {
+        fetch('/api/ptax/moedas')
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success' && data.moedas && data.moedas.length > 0) {
+                    const sel = document.getElementById('ptax_moeda');
+                    const valAtual = sel.value || 'USD';
+                    sel.innerHTML = '';
+                    
+                    data.moedas.forEach(m => {
+                        const opt = document.createElement('option');
+                        opt.value = m.simbolo;
+                        opt.textContent = `${m.simbolo} - ${m.nomeFormatado}`;
+                        if (m.simbolo === valAtual) opt.selected = true;
+                        sel.appendChild(opt);
+                    });
+
+                    const optOutra = document.createElement('option');
+                    optOutra.value = 'OUTRA';
+                    optOutra.textContent = 'Outra Moeda / Digitar...';
+                    sel.appendChild(optOutra);
+                }
+            })
+            .catch(() => {
+                // Fallback silencioso mantendo as opções padrão do HTML
+            });
+    }
+
+    function aoMudarMoedaPtax() {
+        const sel = document.getElementById('ptax_moeda');
+        const customInput = document.getElementById('ptax_moeda_custom');
+        if (sel && sel.value === 'OUTRA') {
+            if (customInput) {
+                customInput.style.display = 'block';
+                customInput.focus();
+            }
+        } else {
+            if (customInput) customInput.style.display = 'none';
+        }
+        const moeda = obterMoedaSelecionada();
+        const lblMoedaBar = document.getElementById('lbl-bar-ptax-moeda');
+        if (lblMoedaBar) lblMoedaBar.innerText = moeda;
+    }
+
+    function obterMoedaSelecionada() {
+        const sel = document.getElementById('ptax_moeda');
+        if (sel && sel.value === 'OUTRA') {
+            const custom = (getVal('ptax_moeda_custom') || '').trim().toUpperCase();
+            return custom || 'USD';
+        }
+        return (sel ? sel.value : 'USD') || 'USD';
+    }
+
+    function definirMoedaSelecionada(moedaCod) {
+        if (!moedaCod) return;
+        const cod = String(moedaCod).trim().toUpperCase();
+        const sel = document.getElementById('ptax_moeda');
+        const customInput = document.getElementById('ptax_moeda_custom');
+        if (!sel) return;
+        let optExiste = Array.from(sel.options).some(o => o.value === cod);
+        if (optExiste) {
+            sel.value = cod;
+            if (customInput) customInput.style.display = 'none';
+        } else {
+            sel.value = 'OUTRA';
+            if (customInput) {
+                customInput.style.display = 'block';
+                customInput.value = cod;
+            }
+        }
+        aoMudarMoedaPtax();
+    }
+
+    function definirDataPtaxHoje() {
+        const inputData = document.getElementById('ptax_data');
+        if (inputData) {
+            const hoje = new Date();
+            const yyyy = hoje.getFullYear();
+            const mm = String(hoje.getMonth() + 1).padStart(2, '0');
+            const dd = String(hoje.getDate()).padStart(2, '0');
+            inputData.value = `${yyyy}-${mm}-${dd}`;
+        }
+    }
+
+    function consultarCotacaoPtax(silencioso = false) {
+        const moeda = obterMoedaSelecionada();
+        const dataCotacao = getVal('ptax_data');
+        const btn = document.getElementById('btn-consultar-ptax');
+        const spinner = document.getElementById('spinner-ptax');
+
+        if (btn) btn.disabled = true;
+        if (spinner) spinner.classList.remove('d-none');
+
+        const url = `/api/ptax/cotacao?moeda=${encodeURIComponent(moeda)}&data=${encodeURIComponent(dataCotacao)}`;
+        
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                if (btn) btn.disabled = false;
+                if (spinner) spinner.classList.add('d-none');
+
+                if (data.error || data.status !== 'success') {
+                    if (!silencioso) {
+                        alert(data.error || "Não foi possível obter a cotação PTAX. Você pode informar o valor manualmente no campo.");
+                    }
+                    return;
+                }
+
+                cotacaoPtaxCache = data;
+                
+                // Atualiza campos de cotação
+                const vendaFmt = formatarNumeroVisualBR(data.cotacao_venda, 4, 4);
+                const compraFmt = formatarNumeroVisualBR(data.cotacao_compra, 4, 4);
+                setVal('ptax_cotacao_venda', vendaFmt);
+                setVal('ptax_cotacao_compra', compraFmt);
+                if (!getVal('ptax_taxa_utilizada')) {
+                    setVal('ptax_taxa_utilizada', vendaFmt);
+                }
+
+                // Atualiza badge de boletim
+                const boxInfo = document.getElementById('box-info-boletim');
+                if (boxInfo) {
+                    boxInfo.style.display = 'block';
+                    document.getElementById('lbl-boletim-detalhe').innerText = `${data.tipo_boletim} - ${data.data_cotacao} ${data.hora_cotacao || ''}`;
+                    document.getElementById('lbl-boletim-datahora').innerText = `Venda: R$ ${vendaFmt} | Compra: R$ ${compraFmt} | Cotação Oficial Bacen Olinda`;
+                }
+
+                // Atualiza barra de status da aba 2
+                const lblTaxaBar = document.getElementById('lbl-bar-ptax-taxa');
+                if (lblTaxaBar) lblTaxaBar.innerText = `R$ ${vendaFmt}`;
+                const lblMoedaBar = document.getElementById('lbl-bar-ptax-moeda');
+                if (lblMoedaBar) lblMoedaBar.innerText = data.moeda;
+
+                // Se checkbox de infCpl estiver marcado
+                const chkInfCpl = document.getElementById('chk_ptax_infcpl');
+                if (chkInfCpl && chkInfCpl.checked) {
+                    gravarPtaxEmInfCpl(data.moeda, vendaFmt, data.tipo_boletim, data.data_cotacao, false);
+                }
+
+                if (!silencioso) {
+                    alert(`✅ Cotação PTAX obtida com sucesso!\nMoeda: ${data.moeda}\nTaxa Venda: R$ ${vendaFmt}\nBoletim: ${data.tipo_boletim} (${data.data_cotacao} ${data.hora_cotacao || ''})`);
+                }
+            })
+            .catch(err => {
+                if (btn) btn.disabled = false;
+                if (spinner) spinner.classList.add('d-none');
+                if (!silencioso) {
+                    alert("Erro ao conectar à API PTAX do Banco Central: " + err + "\nVocê pode digitar a taxa diretamente no campo.");
+                }
+            });
+    }
+
+    function gravarPtaxEmInfCpl(moeda, taxaVendaFmt, tipoBoletim, dataCotacao, alertar = true) {
+        let infCplAtual = getVal('infCpl') || '';
+        const textoPtax = `CAMBIO PTAX: 1 ${moeda} = R$ ${taxaVendaFmt} (${tipoBoletim} BACEN ${dataCotacao})`;
+
+        const regexPtax = /CAMBIO\s+PTAX\s*:\s*1\s+[A-Z]{3}\s*=\s*R\$\s*[\d.,]+[^\n\r]*/i;
+
+        if (regexPtax.test(infCplAtual)) {
+            infCplAtual = infCplAtual.replace(regexPtax, textoPtax);
+        } else {
+            infCplAtual = infCplAtual.trim() ? (infCplAtual.trim() + "  " + textoPtax) : textoPtax;
+        }
+
+        setVal('infCpl', infCplAtual);
+        if (alertar) {
+            alert(`Câmbio PTAX (${moeda} = R$ ${taxaVendaFmt}) registrado nas Informações Complementares da nota!`);
+        }
+    }
+
+    function aplicarCotacaoNasObservacoes(alertar = true) {
+        const taxa = getVal('ptax_cotacao_venda') || getVal('ptax_taxa_utilizada');
+        if (!taxa || parseNum(taxa) <= 0) {
+            if (alertar) alert("Puxe ou informe a Taxa PTAX antes de gravar nas observações.");
+            return;
+        }
+        const moeda = obterMoedaSelecionada();
+        const tipoBoletim = (cotacaoPtaxCache && cotacaoPtaxCache.tipo_boletim) ? cotacaoPtaxCache.tipo_boletim : 'PTAX';
+        const dataCotacao = (cotacaoPtaxCache && cotacaoPtaxCache.data_cotacao) ? cotacaoPtaxCache.data_cotacao : (getVal('ptax_data') || '');
+        gravarPtaxEmInfCpl(moeda, taxa, tipoBoletim, dataCotacao, alertar);
+    }
+
+    // Funções de manipulação e sincronização da Nota Fiscal Referenciada (refNFe)
+    function aoDigitarRefNFe(inputEl) {
+        if (!inputEl) return;
+        const limpo = (inputEl.value || '').replace(/\D/g, '').slice(0, 44);
+        inputEl.value = limpo;
+        atualizarBadgeRefNFe(limpo.length);
+        if (limpo.length === 44) {
+            sincronizarRefNFeComInfCpl(false);
+        }
+        if (typeof verificarAvisoRefNFeOperacao === 'function') {
+            verificarAvisoRefNFeOperacao();
+        }
+    }
+
+    function atualizarBadgeRefNFe(qtd) {
+        const badge = document.getElementById('refNFe_badge');
+        if (!badge) return;
+        badge.innerText = `${qtd} / 44 dígitos`;
+        if (qtd === 44) {
+            badge.className = "badge bg-success font-monospace";
+        } else if (qtd > 0) {
+            badge.className = "badge bg-warning text-dark font-monospace";
+        } else {
+            badge.className = "badge bg-secondary font-monospace";
+        }
+    }
+
+    function sincronizarRefNFeComInfCpl(alertar = false) {
+        const chave = (getVal('refNFe') || '').replace(/\D/g, '').trim();
+        if (chave.length !== 44) {
+            if (alertar) {
+                alert(`A Chave de Acesso da NF referenciada deve conter exatamente 44 dígitos numéricos (atualmente: ${chave.length}).`);
+            }
+            return;
+        }
+
+        let infCplAtual = getVal('infCpl') || '';
+        const textoRef = `NF-e Referenciada: ${chave}`;
+        const regexRef = /NF-e\s+Referenciada\s*:\s*\d{44}/i;
+
+        if (regexRef.test(infCplAtual)) {
+            infCplAtual = infCplAtual.replace(regexRef, textoRef);
+        } else {
+            infCplAtual = infCplAtual.trim() ? (infCplAtual.trim() + "  " + textoRef) : textoRef;
+        }
+
+        setVal('infCpl', infCplAtual);
+        if (typeof verificarAvisoRefNFeOperacao === 'function') {
+            verificarAvisoRefNFeOperacao();
+        }
+        if (alertar) {
+            alert("Nota Referenciada incluída com sucesso nas Informações Complementares (infCpl)!");
+        }
+    }
+
+    function limparRefNFe() {
+        setVal('refNFe', '');
+        atualizarBadgeRefNFe(0);
+        let infCplAtual = getVal('infCpl') || '';
+        const regexRef = /\s*NF-e\s+Referenciada\s*:\s*\d{44}/gi;
+        if (regexRef.test(infCplAtual)) {
+            infCplAtual = infCplAtual.replace(regexRef, '').trim();
+            setVal('infCpl', infCplAtual);
+        }
+        if (typeof verificarAvisoRefNFeOperacao === 'function') {
+            verificarAvisoRefNFeOperacao();
+        }
+    }
+
+    // === VINCULAR DESCRIÇÃO DA FEIRA EM infCpl ===
+    let feirasInfCplCache = [];
+
+    async function carregarFeirasParaInfCpl() {
+        try {
+            const resp = await fetch('/api/feiras');
+            if (!resp.ok) return;
+            feirasInfCplCache = await resp.json() || [];
+
+            const sel = document.getElementById('select_feira_infcpl');
+            if (!sel) return;
+
+            const valAtual = sel.value;
+            sel.innerHTML = '<option value="">Selecione uma feira para adicionar em infCpl...</option>';
+            feirasInfCplCache.forEach(f => {
+                const ano = extrairAnoPrazo(f);
+                const opt = document.createElement('option');
+                opt.value = f.id;
+                opt.textContent = `${f.nome} (${ano}) - ${f.data_feira} - ${f.local}`;
+                sel.appendChild(opt);
+            });
+            if (valAtual) sel.value = valAtual;
+            sincronizarSelectFeiraComInfCpl();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        } catch (err) {
+            console.error("Erro ao carregar feiras para infCpl:", err);
+        }
+    }
+
+    function extrairAnoPrazo(feira) {
+        if (!feira) return new Date().getFullYear().toString();
+        if (feira.deadline) {
+            const m = String(feira.deadline).match(/\b(20\d{2})\b/);
+            if (m) return m[1];
+        }
+        if (feira.data_feira) {
+            const m = String(feira.data_feira).match(/\b(20\d{2})\b/);
+            if (m) return m[1];
+        }
+        return new Date().getFullYear().toString();
+    }
+
+        function obterCfopAtual() {
+        let cfop = String(getVal('cfop_padrao') || '').trim();
+        if (!cfop && typeof obterCfopOperacaoAtiva === 'function') {
+            cfop = String(obterCfopOperacaoAtiva() || '').trim();
+        }
+        if (!cfop) {
+            const lbl = document.getElementById('lbl-cfop-ativo')?.innerText?.trim();
+            if (lbl && lbl !== '-' && /^\d+$/.test(lbl)) {
+                cfop = lbl;
+            }
+        }
+        if (!cfop && typeof itensTable !== 'undefined' && itensTable && typeof itensTable.getData === 'function') {
+            const itens = itensTable.getData();
+            if (itens && itens.length > 0 && itens[0].CFOP) {
+                cfop = String(itens[0].CFOP).trim();
+            }
+        }
+        return cfop;
+    }
+    window.obterCfopAtual = obterCfopAtual;
+
+    function atualizarAjudaTextoFeira() {
+        const lbl = document.getElementById('lbl-ajuda-texto-feira');
+        if (!lbl) return;
+        const cfop = obterCfopAtual();
+        if (cfop.startsWith('19') || cfop.startsWith('29')) {
+            lbl.innerHTML = 'Insere o texto: <code>CARGA RETORNANDO DA FEIRA {Feira} {Ano} REALIZADA ENTRE {Data} NO {Local} BRASIL. {Endereço}</code>';
+        } else if (cfop.startsWith('79')) {
+            lbl.innerHTML = 'Insere o texto: <code>REEXPORTAÇÃO TOTAL DE CARGAS QUE PARTICIPARAM DA FEIRA {Feira} {Ano} REALIZADA ENTRE {Data} NO {Local} BRASIL. {Endereço}</code>';
+        } else {
+            lbl.innerHTML = 'Insere o texto: <code>CARGA DESTINADA A {Feira} {Ano} A SER REALIZADA ENTRE {Data} NO {Local} BRASIL. {Endereço}</code>';
+        }
+    }
+    window.atualizarAjudaTextoFeira = atualizarAjudaTextoFeira;
+
+    function gerarTextoFeiraInfCpl(feira) {
+        if (!feira) return '';
+        const nomeFeira = (feira.nome || '').trim();
+        const ano = extrairAnoPrazo(feira);
+        const dataFeira = (feira.data_feira || '').trim();
+        const localEntrega = (feira.local || '').trim();
+        const endereco = (feira.endereco_local || '').trim();
+
+        const cfop = obterCfopAtual();
+        let prefixo = '';
+
+        if (cfop.startsWith('19') || cfop.startsWith('29')) {
+            prefixo = `CARGA RETORNANDO DA FEIRA ${nomeFeira} ${ano} REALIZADA ENTRE ${dataFeira} NO ${localEntrega} BRASIL.`;
+        } else if (cfop.startsWith('79')) {
+            prefixo = `REEXPORTAÇÃO TOTAL DE CARGAS QUE PARTICIPARAM DA FEIRA ${nomeFeira} ${ano} REALIZADA ENTRE ${dataFeira} NO ${localEntrega} BRASIL.`;
+        } else {
+            prefixo = `CARGA DESTINADA A ${nomeFeira} ${ano} A SER REALIZADA ENTRE ${dataFeira} NO ${localEntrega} BRASIL.`;
+        }
+
+        if (endereco) {
+            prefixo += ` ${endereco}`;
+        }
+        return prefixo;
+    }
+
+    function aoSelecionarFeiraInfCpl(selEl) {
+        if (!selEl || !selEl.value) return;
+        aplicarTextoFeiraSelecionada(false);
+    }
+
+    function aplicarTextoFeiraSelecionada(alertar = false) {
+        const sel = document.getElementById('select_feira_infcpl');
+        if (!sel || !sel.value) {
+            if (alertar) alert("Selecione uma feira na lista antes de inserir.");
+            return;
+        }
+
+        const feiraId = parseInt(sel.value, 10);
+        const feira = feirasInfCplCache.find(f => f.id === feiraId);
+        if (!feira) return;
+
+        const textoFeira = gerarTextoFeiraInfCpl(feira);
+        if (!textoFeira) return;
+
+        let infCplAtual = getVal('infCpl') || '';
+        const regexFeira = /(?:CARGA RETORNANDO DA FEIRA|REEXPORTAÇÃO TOTAL DE CARGAS QUE PARTICIPARAM DA FEIRA|REEXPORTACAO TOTAL DE CARGAS QUE PARTICIPARAM DA FEIRA|CARGA DESTINADA A)\s+.*?(?=(?:\r?\n|  |TX\s+BACEN|TX\s+SISCOMEX|NF-e\s+Referenciada|$))/i;
+
+        if (regexFeira.test(infCplAtual)) {
+            infCplAtual = infCplAtual.replace(regexFeira, textoFeira);
+        } else {
+            infCplAtual = infCplAtual.trim() ? (infCplAtual.trim() + "  " + textoFeira) : textoFeira;
+        }
+
+        setVal('infCpl', infCplAtual);
+        atualizarAjudaTextoFeira();
+        if (window.triggerAutoSave) window.triggerAutoSave();
+        if (alertar) {
+            alert("Dados da feira inseridos com sucesso nas Informações Complementares (infCpl)!");
+        }
+    }
+
+    function limparTextoFeiraInfCpl() {
+        const sel = document.getElementById('select_feira_infcpl');
+        if (sel) sel.value = '';
+
+        let infCplAtual = getVal('infCpl') || '';
+        const regexFeira = /\s*(?:CARGA RETORNANDO DA FEIRA|REEXPORTAÇÃO TOTAL DE CARGAS QUE PARTICIPARAM DA FEIRA|REEXPORTACAO TOTAL DE CARGAS QUE PARTICIPARAM DA FEIRA|CARGA DESTINADA A)\s+.*?(?=(?:\r?\n|  |TX\s+BACEN|TX\s+SISCOMEX|NF-e\s+Referenciada|$))/gi;
+        if (regexFeira.test(infCplAtual)) {
+            infCplAtual = infCplAtual.replace(regexFeira, '').trim();
+            setVal('infCpl', infCplAtual);
+            if (window.triggerAutoSave) window.triggerAutoSave();
+        }
+    }
+
+    function sincronizarSelectFeiraComInfCpl() {
+        const infCplAtual = (getVal('infCpl') || '').toUpperCase();
+        const sel = document.getElementById('select_feira_infcpl');
+        const temTextoFeira = infCplAtual.includes('CARGA DESTINADA A') || 
+                              infCplAtual.includes('CARGA RETORNANDO DA FEIRA') || 
+                              infCplAtual.includes('REEXPORTAÇÃO TOTAL') || 
+                              infCplAtual.includes('REEXPORTACAO TOTAL');
+        if (!sel || !feirasInfCplCache.length || !temTextoFeira) return;
+        const encontrada = feirasInfCplCache.find(f => f.nome && infCplAtual.includes(f.nome.toUpperCase()));
+        if (encontrada) {
+            sel.value = encontrada.id;
+        }
+        atualizarAjudaTextoFeira();
+    }
+
+    async function executarConversaoCambialItens(modo = 'recalcular') {
+        const itens = (itensTable) ? itensTable.getData() : (itensCache || []);
+        if (!itens || itens.length === 0) {
+            const avisoItens = "Nenhum item carregado na grade para recalcular a conversão.";
+            if (window.nftAlert) {
+                await window.nftAlert(avisoItens, { title: "Sem Itens", type: "warning" });
+            } else {
+                alert(avisoItens);
+            }
+            return;
+        }
+
+        // Obtém o PTAX Novo do campo ptax_cotacao_venda (Nova Taxa PTAX Venda)
+        let ptaxNovo = parseNum(getVal('ptax_cotacao_venda'));
+        const taxaCabecalhoUtilizada = parseNum(getVal('ptax_taxa_utilizada'));
+
+        // Se ptax_cotacao_venda estiver zerado, tenta obter de ptax_taxa_utilizada
+        if (ptaxNovo <= 0) {
+            ptaxNovo = taxaCabecalhoUtilizada;
+        }
+
+        if (ptaxNovo <= 0) {
+            const avisoTaxa = "Informe a nova Taxa PTAX no campo 'Nova Taxa PTAX Venda (R$)' ou clique em 'Puxar Bacen' antes de recalcular a conversão.";
+            if (window.nftAlert) {
+                await window.nftAlert(avisoTaxa, { title: "Nova Taxa PTAX Necessária", type: "warning" });
+            } else {
+                alert(avisoTaxa);
+            }
+            const el = document.getElementById('ptax_cotacao_venda') || document.getElementById('ptax_taxa_utilizada');
+            if (el) el.focus();
+            return;
+        }
+
+        // Verifica se há câmbio utilizado registrado nos itens ou no cabeçalho
+        const temCambioUtilizado = itens.some(it => parseNum(it.taxa_conversao) > 0 || taxaCabecalhoUtilizada > 0 || parseNum(it.vUnCom_moeda_origem) > 0);
+        if (!temCambioUtilizado) {
+            const msgAviso = "Para recalcular a conversão, é necessário informar o 'Câmbio Utilizado' (na coluna do item ou no campo 'Taxa PTAX Venda Utilizada').\n\nInforme a taxa utilizada original para que o sistema possa desconverter o valor dos itens.";
+            if (window.nftAlert) {
+                await window.nftAlert(msgAviso, { title: "Câmbio Utilizado Necessário", type: "warning" });
+            } else {
+                alert(msgAviso);
+            }
+            const elUtilizada = document.getElementById('ptax_taxa_utilizada');
+            if (elUtilizada) elUtilizada.focus();
+            return;
+        }
+
+        const moeda = (typeof obterMoedaSelecionada === 'function') ? obterMoedaSelecionada() : (getVal('ptax_moeda') || 'USD');
+        const dataPtax = getVal('ptax_data');
+        const dataFmt = dataPtax ? dataPtax.split('-').reverse().join('/') : new Date().toLocaleDateString('pt-BR');
+        const ptaxNovoFmt = formatarNumeroVisualBR(ptaxNovo, 4, 4);
+
+        // Identifica câmbio anterior representativo
+        const itemComTaxa = itens.find(it => parseNum(it.taxa_conversao) > 0);
+        const cambioAnteriorExemplo = itemComTaxa ? parseNum(itemComTaxa.taxa_conversao) : (taxaCabecalhoUtilizada > 0 ? taxaCabecalhoUtilizada : 0);
+        const cambioAnteriorFmt = cambioAnteriorExemplo > 0 ? formatarNumeroVisualBR(cambioAnteriorExemplo, 4, 4) : null;
+
+        // Se a taxa nova for exatamente igual ao câmbio utilizado
+        if (cambioAnteriorExemplo > 0 && Math.abs(ptaxNovo - cambioAnteriorExemplo) < 0.00001) {
+            const msgMesmaTaxa = 
+                `A nova taxa PTAX informada (R$ ${ptaxNovoFmt}) é idêntica ao Câmbio Utilizado atual (R$ ${cambioAnteriorFmt}).\n\n` +
+                `Para recalcular a conversão com uma variação cambial, informe uma taxa diferente no campo "Nova Taxa PTAX Venda (R$)" ou clique em "Puxar Bacen".\n\n` +
+                `Deseja mesmo assim reprocessar a base desconvertida de todos os itens?`;
+            let prosseguir = false;
+            if (window.nftConfirm) {
+                prosseguir = await window.nftConfirm(msgMesmaTaxa, {
+                    title: "Taxa Idêntica ao Câmbio Atual",
+                    type: "warning",
+                    icon: "help-circle",
+                    confirmText: "Sim, Reprocessar",
+                    cancelText: "Ajustar Taxa"
+                });
+            } else {
+                prosseguir = confirm(msgMesmaTaxa.replace(/<[^>]+>/g, ''));
+            }
+            if (!prosseguir) {
+                const elNova = document.getElementById('ptax_cotacao_venda');
+                if (elNova) elNova.focus();
+                return;
+            }
+        }
+
+        const tituloModal = 'Recalcular Conversão Cambial PTAX';
+        const mensagemAlerta = 
+            `⚠️ <strong>Recálculo de Conversão Cambial PTAX</strong>\n\n` +
+            `Esta ação irá <strong>recalcular todos os itens</strong> da nota fiscal:\n` +
+            `1. Dividirá o <strong>V. Unit. Com.</strong> pelo <strong>Câmbio Utilizado</strong> para apurar o valor desconvertido (moeda de origem);\n` +
+            `2. Multiplicará o valor desconvertido pelo <strong>Novo PTAX (R$ ${ptaxNovoFmt})</strong> gerando o novo V. Unitário e V. Total.\n\n` +
+            `📋 <strong>Parâmetros do Recálculo:</strong>\n` +
+            `• <strong>Moeda:</strong> ${moeda}\n` +
+            (cambioAnteriorFmt ? `• <strong>Câmbio Utilizado Anterior:</strong> R$ ${cambioAnteriorFmt}\n` : '') +
+            `• <strong>Novo Câmbio PTAX:</strong> R$ ${ptaxNovoFmt}\n` +
+            `• <strong>Data da Cotação:</strong> ${dataFmt}\n` +
+            `• <strong>Itens Afetados:</strong> ${itens.length} item(ns)\n\n` +
+            `Deseja confirmar o recálculo dos valores?`;
+
+        let confirmado = false;
+        if (window.nftConfirm) {
+            confirmado = await window.nftConfirm(mensagemAlerta, {
+                title: tituloModal,
+                type: 'warning',
+                icon: 'refresh-cw',
+                confirmText: 'Sim, Recalcular Conversão',
+                cancelText: 'Cancelar'
+            });
+        } else {
+            confirmado = confirm(mensagemAlerta.replace(/<[^>]+>/g, ''));
+        }
+
+        if (!confirmado) {
+            return;
+        }
+
+        let afetados = 0;
+        itens.forEach(it => {
+            const vUnComAtual = parseNum(it.vUnCom);
+            const qComNum = parseNum(it.qCom) || 1;
+
+            // Obtém o câmbio utilizado do item ou cabeçalho
+            let cambioUtilizado = parseNum(it.taxa_conversao);
+            if (cambioUtilizado <= 0) {
+                cambioUtilizado = taxaCabecalhoUtilizada;
+            }
+
+            // Calcula o valor desconvertido na moeda de origem (V. Unit. Moeda)
+            let valorDesconvertidoUnit = 0;
+            if (cambioUtilizado > 0 && vUnComAtual > 0) {
+                // Cálculo solicitado: V. Unit. Com. dividido pelo Câmbio Utilizado
+                valorDesconvertidoUnit = vUnComAtual / cambioUtilizado;
+            } else if (parseNum(it.vUnCom_moeda_origem) > 0) {
+                valorDesconvertidoUnit = parseNum(it.vUnCom_moeda_origem);
+            } else if (cambioUtilizado > 0 && parseNum(it.vProd) > 0) {
+                valorDesconvertidoUnit = (parseNum(it.vProd) / cambioUtilizado) / qComNum;
+            } else {
+                valorDesconvertidoUnit = vUnComAtual;
+            }
+
+            const valorDesconvertidoTotal = valorDesconvertidoUnit * qComNum;
+
+            // Grava a base desconvertida nos itens
+            it.vUnCom_moeda_origem = valorDesconvertidoUnit.toFixed(4);
+            it.vUnTrib_moeda_origem = it.vUnCom_moeda_origem;
+            it.vProd_moeda_origem = valorDesconvertidoTotal.toFixed(2);
+
+            // Multiplica pelo valor do PTAX novo
+            const novoVUnCom = valorDesconvertidoUnit * ptaxNovo;
+            const novoVProd = novoVUnCom * qComNum;
+
+            it.vUnCom = novoVUnCom.toFixed(4);
+            it.vProd = novoVProd.toFixed(2);
+            it.moeda_conversao = moeda;
+            it.taxa_conversao = ptaxNovo.toFixed(4);
+
+            // Preserva Quantidade Tributável (qTrib) se editada manualmente
+            const isManualTrib = (it.qTrib_manual === true || it.qTrib_manual === 'true' || it.qTrib_manual === 1);
+            const qTribNum = parseNum(it.qTrib);
+            if (isManualTrib && qTribNum > 0) {
+                // Mantém qTrib inalterado e apenas recalcula vUnTrib = vProd / qTrib
+                it.vUnTrib = (novoVProd / qTribNum).toFixed(4);
+            } else {
+                it.vUnTrib = novoVUnCom.toFixed(4);
+            }
+
+            // Atualiza Base de Cálculo do II
+            const vFrete = parseNum(it.vFrete);
+            const vSeg = parseNum(it.vSeg);
+            it.vBC_II = (novoVProd + vFrete + vSeg).toFixed(2);
+            afetados++;
+        });
+
+        // Atualiza a taxa utilizada no cabeçalho para refletir o novo câmbio dos itens
+        setVal('ptax_taxa_utilizada', ptaxNovoFmt);
+
+        // Atualiza grade Tabulator criando nova referência de array e forçando redesenho
+        itensCache = itens.map(it => ({ ...it }));
+        if (itensTable) {
+            itensTable.replaceData(itensCache).then(() => {
+                itensTable.redraw(true);
+            }).catch(() => {
+                itensTable.setData(itensCache);
+                itensTable.redraw(true);
+            });
+        }
+        if (typeof recalcularTotaisDosItens === 'function') {
+            recalcularTotaisDosItens(true);
+        }
+        if (typeof atualizarBadgesRateioEItens === 'function') {
+            atualizarBadgesRateioEItens();
+        }
+        if (document.getElementById('chk_ptax_infcpl')?.checked && typeof aplicarCotacaoNasObservacoes === 'function') {
+            aplicarCotacaoNasObservacoes(false);
+        }
+        if (typeof window.nftRegistrarSnapshot === 'function') {
+            window.nftRegistrarSnapshot('Recálculo de Câmbio PTAX');
+        }
+        if (typeof window.triggerAutoSave === 'function') {
+            window.triggerAutoSave();
+        }
+
+        const msgSucesso = `Conversão cambial recalculada com sucesso para os ${afetados} item(ns)!\n\n• Moeda: ${moeda}\n• Novo Câmbio PTAX: R$ ${ptaxNovoFmt}\n• Câmbio Utilizado Atualizado nos Itens: R$ ${ptaxNovoFmt}`;
+        if (window.nftAlert) {
+            await window.nftAlert(msgSucesso, {
+                title: 'Recálculo Concluído com Sucesso',
+                type: 'success',
+                icon: 'check-circle-2'
+            });
+        } else {
+            alert(msgSucesso);
+        }
+    }
+
+    async function aplicarMoedaETaxaUtilizadaAosItens() {
+        const moeda = (typeof obterMoedaSelecionada === 'function') ? obterMoedaSelecionada() : (getVal('ptax_moeda') || 'USD');
+        let taxa = parseNum(getVal('ptax_taxa_utilizada'));
+        if (taxa <= 0) {
+            taxa = parseNum(getVal('ptax_cotacao_venda'));
+            if (taxa > 0) {
+                setVal('ptax_taxa_utilizada', formatarNumeroVisualBR(taxa, 4, 4));
+            }
+        }
+
+        if (taxa <= 0) {
+            const msgAviso = "Informe uma 'Taxa PTAX Venda Utilizada' válida (maior que zero) antes de incluir nos itens.";
+            if (window.nftAlert) {
+                await window.nftAlert(msgAviso, { title: "Taxa PTAX Necessária", type: "warning" });
+            } else {
+                alert(msgAviso);
+            }
+            const el = document.getElementById('ptax_taxa_utilizada') || document.getElementById('ptax_cotacao_venda');
+            if (el) el.focus();
+            return;
+        }
+
+        const itens = (itensTable) ? itensTable.getData() : (itensCache || []);
+        if (!itens || itens.length === 0) {
+            const msgSemItens = "Nenhum item carregado na grade para aplicar a moeda e taxa.";
+            if (window.nftAlert) {
+                await window.nftAlert(msgSemItens, { title: "Sem Itens", type: "warning" });
+            } else {
+                alert(msgSemItens);
+            }
+            return;
+        }
+
+        const taxaFmt = formatarNumeroVisualBR(taxa, 4, 4);
+        const msgConfirm = 
+            `⚠️ <strong>Fixar Moeda e Câmbio de Base nos Itens</strong>\n\n` +
+            `Deseja incluir a moeda <strong>${moeda}</strong> e a taxa PTAX utilizada de <strong>R$ ${taxaFmt}</strong> em todos os <strong>${itens.length}</strong> item(ns)?\n\n` +
+            `⚙️ <strong>Impacto nos Itens:</strong>\n` +
+            `• <strong>Moeda Conv.:</strong> gravada como <em>${moeda}</em>;\n` +
+            `• <strong>Câmbio Utilizado:</strong> gravado como <em>R$ ${taxaFmt}</em>;\n` +
+            `• <strong>Valor da Moeda (Base de Recálculo):</strong> calculado dividindo o valor em Reais pela taxa utilizada (<em>V. Prod ÷ Taxa</em> e <em>V. Unit ÷ Taxa</em>), permitindo futuros recálculos de câmbio exatos e seguros.`;
+
+        let confirmado = false;
+        if (window.nftConfirm) {
+            confirmado = await window.nftConfirm(msgConfirm, {
+                title: 'Confirmar Aplicação nos Itens',
+                type: 'info',
+                icon: 'coins',
+                confirmText: 'Sim, Incluir nos Itens',
+                cancelText: 'Cancelar'
+            });
+        } else {
+            confirmado = confirm(msgConfirm.replace(/<[^>]+>/g, ''));
+        }
+
+        if (!confirmado) return;
+
+        if (window.nftRegistrarSnapshot) {
+            window.nftRegistrarSnapshot('Inclusão de Moeda e Taxa PTAX Base nos Itens');
+        }
+
+        let afetados = 0;
+        itens.forEach(it => {
+            const qCom = parseNum(it.qCom) || 1;
+            const vProdBRL = parseNum(it.vProd);
+            const vUnComBRL = parseNum(it.vUnCom);
+            const vUnTribBRL = parseNum(it.vUnTrib || it.vUnCom);
+
+            let vProdMoeda = 0;
+            let vUnComMoeda = 0;
+            let vUnTribMoeda = 0;
+
+            if (vProdBRL > 0) {
+                vProdMoeda = vProdBRL / taxa;
+                vUnComMoeda = (vUnComBRL > 0) ? (vUnComBRL / taxa) : (vProdMoeda / qCom);
+                vUnTribMoeda = (vUnTribBRL > 0) ? (vUnTribBRL / taxa) : vUnComMoeda;
+            } else if (parseNum(it.vProd_moeda_origem) > 0) {
+                vProdMoeda = parseNum(it.vProd_moeda_origem);
+                vUnComMoeda = parseNum(it.vUnCom_moeda_origem) || (vProdMoeda / qCom);
+                vUnTribMoeda = parseNum(it.vUnTrib_moeda_origem) || vUnComMoeda;
+                it.vProd = (vProdMoeda * taxa).toFixed(2);
+                it.vUnCom = (vUnComMoeda * taxa).toFixed(4);
+                it.vUnTrib = (vUnTribMoeda * taxa).toFixed(4);
+            }
+
+            it.moeda_conversao = moeda;
+            it.taxa_conversao = taxa.toFixed(4);
+            it.vProd_moeda_origem = vProdMoeda.toFixed(2);
+            it.vUnCom_moeda_origem = vUnComMoeda.toFixed(4);
+            it.vUnTrib_moeda_origem = vUnTribMoeda.toFixed(4);
+            afetados++;
+        });
+
+        itensCache = itens.map(it => ({ ...it }));
+        if (itensTable) {
+            itensTable.replaceData(itensCache).then(() => {
+                itensTable.redraw(true);
+            }).catch(() => {
+                itensTable.setData(itensCache);
+                itensTable.redraw(true);
+            });
+        }
+        if (typeof recalcularTotaisDosItens === 'function') {
+            recalcularTotaisDosItens(true);
+        }
+        if (typeof atualizarBadgesRateioEItens === 'function') {
+            atualizarBadgesRateioEItens();
+        }
+        if (document.getElementById('chk_ptax_infcpl')?.checked && typeof aplicarCotacaoNasObservacoes === 'function') {
+            aplicarCotacaoNasObservacoes(false);
+        }
+        if (typeof window.triggerAutoSave === 'function') {
+            window.triggerAutoSave();
+        }
+
+        const msgSucesso = `Moeda ${moeda} e Câmbio PTAX R$ ${taxaFmt} incluídos com sucesso em todos os ${afetados} item(ns)!\n\nOs valores da moeda de origem foram calculados e registrados como base de recálculo cambial.`;
+        if (window.nftAlert) {
+            await window.nftAlert(msgSucesso, {
+                title: 'Itens Atualizados com Sucesso',
+                type: 'success',
+                icon: 'check-circle-2'
+            });
+        } else {
+            alert(msgSucesso);
+        }
+    }
+
+    async function converterItensComTaxaPtax() {
+        return executarConversaoCambialItens('converter');
+    }
+
+    async function recalcularConversaoItens() {
+        return executarConversaoCambialItens('recalcular');
+    }
+
+    // === ALGORITMO DE RATEIO PROPORCIONAL CENTAVO-EXATO (HARE-NIEMEYER) ===
+    function calcularRateioProporcional(itens, valorTotal, criterio = 'vProd', casasDecimais = 2) {
+        if (!itens || itens.length === 0 || valorTotal <= 0) {
+            return Array(itens ? itens.length : 0).fill((0).toFixed(casasDecimais));
+        }
+
+        const fator = Math.pow(10, casasDecimais);
+        const n = itens.length;
+        const pesos = itens.map(it => {
+            let p = 0;
+            if (criterio === 'qCom') p = parseNum(it.qCom);
+            else if (criterio === 'igual') p = 1;
+            else p = parseNum(it.vProd); // Padrão Comex: vProd
+            return Math.max(0, p);
+        });
+
+        const somaPesos = pesos.reduce((a, b) => a + b, 0);
+
+        if (somaPesos <= 0) {
+            const valIndividual = Math.floor((valorTotal / n) * fator) / fator;
+            const dist = Array(n).fill(valIndividual);
+            let diffUnidades = Math.round((valorTotal - (valIndividual * n)) * fator);
+            for (let i = 0; i < diffUnidades; i++) {
+                dist[i % n] = Math.round((dist[i % n] + (1 / fator)) * fator) / fator;
+            }
+            return dist.map(v => v.toFixed(casasDecimais));
+        }
+
+        const exatos = pesos.map(p => (valorTotal * p) / somaPesos);
+        const unidadesPiso = exatos.map(v => Math.floor(Math.round(v * fator)));
+        const somaPiso = unidadesPiso.reduce((a, b) => a + b, 0);
+        const unidadesTotal = Math.round(valorTotal * fator);
+        let unidadesRestantes = unidadesTotal - somaPiso;
+
+        const restos = exatos.map((v, idx) => ({
+            idx: idx,
+            resto: (v * fator) - unidadesPiso[idx]
+        }));
+        restos.sort((a, b) => b.resto - a.resto);
+
+        for (let i = 0; i < unidadesRestantes; i++) {
+            const targetIdx = restos[i % n].idx;
+            unidadesPiso[targetIdx] += 1;
+        }
+
+        return unidadesPiso.map(c => (c / fator).toFixed(casasDecimais));
+    }
+
+    async function executarRateioGlobal(silencioso = false) {
+        const itens = (itensTable) ? itensTable.getData() : itensCache;
+        if (!itens || itens.length === 0) {
+            alert("Nenhum item carregado para executar o rateio. Importe um XML de modelo primeiro.");
+            return;
+        }
+
+        if (window.nftRegistrarSnapshot) {
+            window.nftRegistrarSnapshot('Rateio de Despesas');
+        }
+
+        const vAFRMM = parseNum(getVal('rateio_vAFRMM'));
+        const vSiscomex = parseNum(getVal('rateio_vSiscomex'));
+        const vFrete = parseNum(getVal('rateio_vFrete'));
+        const vSeg = parseNum(getVal('rateio_vSeg'));
+        const vOutro = parseNum(getVal('rateio_vOutro'));
+        const criterio = getVal('rateio_criterio') || 'vProd';
+
+        const chkSiscomexDespAdu = document.getElementById('chk_siscomex_despadu') ? document.getElementById('chk_siscomex_despadu').checked : true;
+        const chkSiscomexOutro = document.getElementById('chk_siscomex_outro') ? document.getElementById('chk_siscomex_outro').checked : true;
+        const chkSiscomexInfCpl = document.getElementById('chk_siscomex_infcpl') ? document.getElementById('chk_siscomex_infcpl').checked : true;
+
+        // Se todos os campos estiverem zerados (0,00)
+        if (vAFRMM <= 0 && vSiscomex <= 0 && vFrete <= 0 && vSeg <= 0 && vOutro <= 0) {
+            const confirmaZerado = await window.nftConfirm(
+                "Os campos de Rateio Global de Despesas estão preenchidos com 0,00 (zerados).\n\n" +
+                "Confirma que os dados estão zerados e que os itens serão repassados SEM valores adicionais de despesas?\n\n" +
+                "(Desta forma, será transmitido somente o valor da mercadoria e eventuais custos já informados diretamente nos itens)", {
+                    title: "Zerar Despesas Rateadas",
+                    type: "warning",
+                    confirmText: "Sim, Manter Zerado",
+                    cancelText: "Voltar e Informar"
+                }
+            );
+            if (!confirmaZerado) {
+                return;
+            }
+
+            // Zera as despesas rateadas em todos os itens
+            itens.forEach(it => {
+                it.vAFRMM = '0.00';
+                if (chkSiscomexDespAdu) it.vDespAdu = '0.00';
+                it.vFrete = '0.00';
+                it.vSeg = '0.00';
+                it.vOutro = '0.00';
+                it.vBC_II = parseNum(it.vProd).toFixed(2);
+            });
+
+            itensCache = itens;
+            if (itensTable) {
+                itensTable.setData(itensCache);
+            }
+
+            recalcularTotaisDosItens(true);
+            atualizarBadgesRateioEItens();
+
+            if (!silencioso) {
+                alert("✅ Confirmado: Despesas rateadas zeradas com sucesso em todos os itens!\nSerá repassado somente o valor da mercadoria e custos próprios.");
+            }
+            return;
+        }
+
+        // Identifica campos que foram preenchidos com 0,00
+        const camposZerados = [];
+        if (vAFRMM <= 0) camposZerados.push("Marinha Mercante (AFRMM)");
+        if (vSiscomex <= 0) camposZerados.push("Taxa Siscomex");
+        if (vFrete <= 0) camposZerados.push("Frete");
+        if (vSeg <= 0) camposZerados.push("Seguro");
+        if (vOutro <= 0) camposZerados.push("Outras Despesas");
+
+        // 1. Distribuições proporcionais exatas
+        const distAFRMM = (vAFRMM > 0) ? calcularRateioProporcional(itens, vAFRMM, criterio) : null;
+        const distSiscomex = (vSiscomex > 0) ? calcularRateioProporcional(itens, vSiscomex, criterio) : null;
+        const distFrete = (vFrete > 0) ? calcularRateioProporcional(itens, vFrete, criterio) : null;
+        const distSeg = (vSeg > 0) ? calcularRateioProporcional(itens, vSeg, criterio) : null;
+        const distOutro = (vOutro > 0) ? calcularRateioProporcional(itens, vOutro, criterio) : null;
+
+        // 2. Aplicação direta aos itens (garantindo que campos zerados recebam 0.00)
+        itens.forEach((it, idx) => {
+            if (distAFRMM) {
+                it.vAFRMM = distAFRMM[idx];
+            } else {
+                it.vAFRMM = '0.00';
+            }
+
+            if (distSiscomex) {
+                const parcSiscomex = distSiscomex[idx];
+                if (chkSiscomexDespAdu) {
+                    it.vDespAdu = parcSiscomex;
+                }
+                if (chkSiscomexOutro) {
+                    const extraOutro = distOutro ? parseNum(distOutro[idx]) : 0;
+                    it.vOutro = (parseNum(parcSiscomex) + extraOutro).toFixed(2);
+                }
+            } else {
+                if (chkSiscomexDespAdu) it.vDespAdu = '0.00';
+                if (distOutro) {
+                    it.vOutro = distOutro[idx];
+                } else {
+                    it.vOutro = '0.00';
+                }
+            }
+
+            if (distFrete) {
+                it.vFrete = distFrete[idx];
+            } else {
+                it.vFrete = '0.00';
+            }
+
+            if (distSeg) {
+                it.vSeg = distSeg[idx];
+            } else {
+                it.vSeg = '0.00';
+            }
+
+            // Recalcula Base de Cálculo do II (vBC_II = vProd + vFrete + vSeg)
+            it.vBC_II = (parseNum(it.vProd) + parseNum(it.vFrete) + parseNum(it.vSeg)).toFixed(2);
+        });
+
+        itensCache = itens;
+        if (itensTable) {
+            itensTable.setData(itensCache);
+        }
+
+        // 3. Atualizar infCpl com a Taxa Siscomex se solicitado
+        if (chkSiscomexInfCpl) {
+            let infCplAtual = getVal('infCpl') || '';
+            const regexSiscomex = /TX\s+SISCOMEX\s+R\$\s*:\s*[\d.,]+/i;
+            if (vSiscomex > 0) {
+                const siscomexFmt = formatarNumeroVisualBR(vSiscomex, 2, 2);
+                const textoSiscomex = `TX SISCOMEX R$ : ${siscomexFmt}`;
+                if (regexSiscomex.test(infCplAtual)) {
+                    infCplAtual = infCplAtual.replace(regexSiscomex, textoSiscomex);
+                } else {
+                    infCplAtual = infCplAtual.trim() ? (infCplAtual.trim() + "  " + textoSiscomex) : textoSiscomex;
+                }
+            } else {
+                if (regexSiscomex.test(infCplAtual)) {
+                    infCplAtual = infCplAtual.replace(regexSiscomex, '').trim();
+                }
+            }
+            setVal('infCpl', infCplAtual);
+        }
+
+        // 4. Recalcular totais da nota
+        recalcularTotaisDosItens(true);
+        atualizarBadgesRateioEItens();
+
+        if (!silencioso) {
+            let msg = `✅ Rateio global executado com sucesso em todos os ${itens.length} itens!\n\n`;
+            if (vAFRMM > 0) msg += `⚓ Marinha Mercante (AFRMM): R$ ${formatarNumeroVisualBR(vAFRMM, 2, 2)} distribuídos no campo vAFRMM\n`;
+            if (vSiscomex > 0) msg += `• Taxa Siscomex: R$ ${formatarNumeroVisualBR(vSiscomex, 2, 2)} rateados em vDespAdu` + (chkSiscomexOutro ? ' e somados em vOutro\n' : '\n');
+            if (vFrete > 0) msg += `• Frete Total: R$ ${formatarNumeroVisualBR(vFrete, 2, 2)} rateados em vFrete\n`;
+            if (vSeg > 0) msg += `• Seguro Total: R$ ${formatarNumeroVisualBR(vSeg, 2, 2)} rateados em vSeg\n`;
+            if (vOutro > 0 && !vSiscomex) msg += `• Outras Despesas: R$ ${formatarNumeroVisualBR(vOutro, 2, 2)} rateados em vOutro\n`;
+            if (camposZerados.length > 0) {
+                msg += `\nℹ️ Campos zerados (0,00) repassados sem valores: ${camposZerados.join(', ')}.\n`;
+            }
+            msg += `\nOs totais da nota fiscal (ICMSTot e vNF) foram recalculados automaticamente.`;
+            alert(msg);
+        }
+    }
+
+    function reaplicarRateioItens() {
+        executarRateioGlobal(false);
+    }
+
+    async function converterValorItensEmFOB() {
+        const itens = (itensTable) ? itensTable.getData() : (itensCache || []);
+        if (!itens || itens.length === 0) {
+            const msgSemItens = "Nenhum item carregado na grade para converter em FOB.";
+            if (window.nftAlert) await window.nftAlert(msgSemItens, { title: "Sem Itens", type: "warning" });
+            else alert(msgSemItens);
+            return;
+        }
+
+        // Verifica se os itens possuem frete rateado ou se há frete no cabeçalho
+        const freteTotalItens = itens.reduce((acc, it) => acc + (parseNum(it.vFrete) || 0), 0);
+        const freteCabecalho = parseNum(getVal('rateio_vFrete'));
+
+        if (freteTotalItens <= 0 && freteCabecalho <= 0) {
+            const msgSemFrete = "Não há valor de frete nos itens nem no campo 'Frete Total (vFrete)' da aba '1. Operação' para abater e converter em FOB.";
+            if (window.nftAlert) await window.nftAlert(msgSemFrete, { title: "Frete Não Encontrado", type: "warning" });
+            else alert(msgSemFrete);
+            return;
+        }
+
+        const valorFreteFmt = formatarNumeroVisualBR(freteTotalItens > 0 ? freteTotalItens : freteCabecalho, 2, 2);
+        const qtdItensComFrete = itens.filter(it => parseNum(it.vFrete) > 0).length || itens.length;
+
+        const msgConfirmacao = 
+            `⚠️ <strong>Converter Valor dos Itens em FOB</strong>\n\n` +
+            `Esta ação irá converter os valores dos itens para <strong>FOB (Free On Board)</strong> abatendo o frete:\n\n` +
+            `• <strong>Subtrair o frete rateado</strong> de cada item do seu <strong>Valor Unitário (V. Unit. Com.)</strong> e <strong>Valor Total (vProd)</strong>;\n` +
+            `• <strong>Zerar o valor de Frete (vFrete)</strong> de todos os ${itens.length} item(ns);\n` +
+            `• <strong>Excluir o 'Frete Total (vFrete)'</strong> da aba <em>1. Operação</em>;\n` +
+            `• <strong>Recalcular automaticamente os totais</strong> da NF-e (vProd, tot_vFrete e vNF).\n\n` +
+            `📋 <strong>Resumo:</strong>\n` +
+            `• Total de Frete a ser abatido: <strong>R$ ${valorFreteFmt}</strong>\n` +
+            `• Itens impactados: <strong>${qtdItensComFrete}</strong> item(ns)\n\n` +
+            `Deseja prosseguir com a conversão para FOB?`;
+
+        let confirmado = false;
+        if (window.nftConfirm) {
+            confirmado = await window.nftConfirm(msgConfirmacao, {
+                title: "Converter Itens em FOB",
+                type: "warning",
+                icon: "package-minus",
+                confirmText: "Sim, Converter em FOB",
+                cancelText: "Cancelar"
+            });
+        } else {
+            confirmado = confirm(msgConfirmacao.replace(/<[^>]+>/g, ''));
+        }
+
+        if (!confirmado) return;
+
+        if (window.nftRegistrarSnapshot) {
+            window.nftRegistrarSnapshot('Antes de Converter Itens em FOB');
+        }
+
+        // Se os itens ainda não tinham frete rateado individualmente, mas o cabeçalho tinha frete:
+        let distFrete = null;
+        if (freteTotalItens <= 0 && freteCabecalho > 0) {
+            const criterio = (document.getElementById('rateio_criterio')?.value) || 'vProd';
+            distFrete = calcularRateioProporcional(itens, freteCabecalho, criterio, 2);
+        }
+
+        let totalAbatido = 0;
+        let itensAlterados = 0;
+
+        itens.forEach((it, idx) => {
+            const qCom = parseNum(it.qCom) || 1;
+            const qTrib = parseNum(it.qTrib) || qCom;
+            const vUnComAtual = parseNum(it.vUnCom);
+            const vProdAtual = parseNum(it.vProd);
+
+            // Determina o frete deste item (já rateado ou proporcional)
+            const vFreteItem = (distFrete) ? parseNum(distFrete[idx]) : (parseNum(it.vFrete) || 0);
+
+            if (vFreteItem > 0) {
+                totalAbatido += vFreteItem;
+                itensAlterados++;
+
+                // Subtrai o frete do valor total e unitário
+                const novoVProd = Math.max(0, vProdAtual - vFreteItem);
+                const novoVUnCom = novoVProd / qCom;
+
+                it.vProd = novoVProd.toFixed(2);
+                it.vUnCom = novoVUnCom.toFixed(4);
+                it.vUnTrib = (novoVProd / qTrib).toFixed(4);
+
+                // Se o item possuir base em moeda estrangeira gravada, atualiza também
+                const taxa = parseNum(it.taxa_conversao) || parseNum(getVal('ptax_taxa_utilizada')) || parseNum(getVal('ptax_cotacao_venda'));
+                if (taxa > 0) {
+                    it.vProd_moeda_origem = (novoVProd / taxa).toFixed(2);
+                    it.vUnCom_moeda_origem = (novoVUnCom / taxa).toFixed(4);
+                    it.vUnTrib_moeda_origem = it.vUnCom_moeda_origem;
+                }
+
+                // Zera o frete do item
+                it.vFrete = '0.00';
+
+                // Recalcula Base de Cálculo do II (vBC_II = novoVProd + vFrete (0) + vSeg)
+                const vSeg = parseNum(it.vSeg);
+                it.vBC_II = (novoVProd + vSeg).toFixed(2);
+            } else {
+                it.vFrete = '0.00';
+                const vSeg = parseNum(it.vSeg);
+                it.vBC_II = (vProdAtual + vSeg).toFixed(2);
+            }
+        });
+
+        // Exclui o Frete Total da aba 1. Operação
+        setVal('rateio_vFrete', '0,00');
+        const fbFrete = document.getElementById('fb-rateio_vFrete');
+        if (fbFrete) fbFrete.innerHTML = '';
+
+        // Atualiza a grade Tabulator
+        itensCache = itens.map(it => ({ ...it }));
+        if (itensTable) {
+            itensTable.replaceData(itensCache).then(() => {
+                itensTable.redraw(true);
+            }).catch(() => {
+                itensTable.setData(itensCache);
+                itensTable.redraw(true);
+            });
+        }
+
+        // Recalcula totais dos itens (tot_vProd, tot_vFrete = 0, vNF, etc.)
+        if (typeof recalcularTotaisDosItens === 'function') {
+            recalcularTotaisDosItens(true);
+        }
+        if (typeof atualizarBadgesRateioEItens === 'function') {
+            atualizarBadgesRateioEItens();
+        }
+        if (typeof window.nftRegistrarSnapshot === 'function') {
+            window.nftRegistrarSnapshot('Itens Convertidos em FOB');
+        }
+        if (typeof window.triggerAutoSave === 'function') {
+            window.triggerAutoSave();
+        }
+
+        const msgSucesso = `Conversão para FOB concluída com sucesso!\n\n` +
+            `• ${itensAlterados} item(ns) tiveram o frete subtraído de seus valores;\n` +
+            `• Total de frete abatido: R$ ${formatarNumeroVisualBR(totalAbatido, 2, 2)};\n` +
+            `• Frete dos itens e 'Frete Total (vFrete)' da aba 1 zerados com sucesso.`;
+
+        if (window.nftAlert) {
+            await window.nftAlert(msgSucesso, {
+                title: "Conversão em FOB Concluída",
+                type: "success",
+                icon: "check-circle-2"
+            });
+        } else {
+            alert(msgSucesso);
+        }
+    }
+
+    function abrirPainelRateio() {
+        const tabEl = document.getElementById('cabecalho-tab');
+        if (tabEl) {
+            bootstrap.Tab.getOrCreateInstance(tabEl).show();
+            setTimeout(() => {
+                const card = document.getElementById('card-parametros-rateio-ptax');
+                if (card) {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    card.classList.add('border-primary');
+                    card.classList.add('shadow');
+                    setTimeout(() => {
+                        card.classList.remove('border-primary');
+                        card.classList.remove('shadow');
+                    }, 2200);
+                }
+            }, 150);
+        }
+    }
+
+    function atualizarBadgesRateioEItens() {
+        const nItens = (itensTable ? itensTable.getData().length : itensCache.length) || 0;
+        
+        const b1 = document.getElementById('badge-itens-para-rateio');
+        if (b1) b1.innerText = `${nItens} item(ns) para rateio`;
+        
+        const b2 = document.getElementById('lbl-qtd-itens-rateio');
+        if (b2) b2.innerText = nItens;
+
+        const afrmmVal = formatarNumeroVisualBR(parseNum(getVal('rateio_vAFRMM')), 2, 2);
+        const siscomexVal = formatarNumeroVisualBR(parseNum(getVal('rateio_vSiscomex')), 2, 2);
+        const outroVal = formatarNumeroVisualBR(parseNum(getVal('rateio_vOutro')), 2, 2);
+
+        const lblAfrmm = document.getElementById('lbl-bar-rateio-afrmm');
+        if (lblAfrmm) lblAfrmm.innerText = `R$ ${afrmmVal}`;
+
+        const lblSis = document.getElementById('lbl-bar-rateio-siscomex');
+        if (lblSis) lblSis.innerText = `R$ ${siscomexVal}`;
+
+        const lblOutro = document.getElementById('lbl-bar-rateio-outro');
+        if (lblOutro) lblOutro.innerText = `R$ ${outroVal}`;
+        
+        const moeda = obterMoedaSelecionada();
+        const lblMoeda = document.getElementById('lbl-bar-ptax-moeda');
+        if (lblMoeda) lblMoeda.innerText = moeda;
+
+        const taxaVal = getVal('ptax_cotacao_venda');
+        const lblTaxa = document.getElementById('lbl-bar-ptax-taxa');
+        if (lblTaxa) lblTaxa.innerText = taxaVal ? `R$ ${taxaVal}` : 'R$ -';
+    }
+
+    // CSTs Oficiais e Estruturas de Seleção
+    let cstMapDescricao = {};
+    let cstMapICMS = {};
+    let cstMapIPI = {};
+    let cstMapPIS = {};
+    let cstOptionsICMS = [];
+    let cstOptionsIPI = [];
+    let cstOptionsPIS = [];
+
+    function formatarCstCell(cell) {
+        const val = cell.getValue();
+        if (!val) return '';
+        const clean = String(val).split(' - ')[0].trim();
+        const field = cell.getField ? cell.getField() : '';
+        let desc = '';
+        if (field === 'CST_IPI') {
+            desc = cstMapIPI[clean] || cstMapDescricao[clean] || val;
+        } else if (field === 'CSOSN') {
+            desc = cstMapICMS[clean] || cstMapDescricao[clean] || val;
+        } else if (field === 'CST_PIS' || field === 'CST_COFINS') {
+            desc = cstMapPIS[clean] || cstMapDescricao[clean] || val;
+        } else {
+            desc = cstMapDescricao[clean] || val;
+        }
+        return `<span title="${desc}" class="fw-semibold text-truncate d-inline-block" style="max-width: 100%; cursor: pointer;">${desc}</span>`;
+    }
+
+    function mutatorLimparCst(value) {
+        if (!value) return '';
+        const str = String(value).trim();
+        if (str.includes(' - ')) {
+            return str.split(' - ')[0].trim();
+        }
+        return str;
+    }
+
+    function atualizarEstadoInscricaoEstadual() {
+        const sel = document.getElementById('dest_indIEDest');
+        const ie = document.getElementById('dest_IE');
+        if (!sel || !ie) return;
+        if (sel.value === '1') {
+            ie.disabled = false;
+            ie.classList.remove('bg-light');
+            ie.placeholder = 'Inscrição Estadual';
+        } else {
+            ie.disabled = true;
+            ie.classList.add('bg-light');
+            ie.placeholder = (sel.value === '2') ? 'ISENTO (Desabilitado)' : 'Não Contribuinte (Desabilitado)';
+            if (sel.value === '9') ie.value = '';
+        }
+    }
+
+    function atualizarTipoDocumentoDestinatario() {
+        const tpDoc = document.getElementById('dest_tpDoc');
+        const docInput = document.getElementById('dest_CNPJ_CPF');
+        const lblDoc = document.getElementById('lbl_dest_CNPJ_CPF');
+        if (!tpDoc || !docInput) return;
+
+        const val = tpDoc.value;
+        if (val === 'Estrangeiro') {
+            docInput.disabled = false;
+            docInput.classList.remove('bg-light');
+            docInput.placeholder = 'Opcional (5 a 20 caracteres ou em branco)';
+            if (lblDoc) lblDoc.innerText = 'ID Estrangeiro (Opcional)';
+        } else {
+            docInput.disabled = false;
+            docInput.classList.remove('bg-light');
+            if (val === 'CPF') {
+                docInput.placeholder = '000.000.000-00';
+                if (lblDoc) lblDoc.innerText = 'CPF Destinatário';
+            } else {
+                docInput.placeholder = '00.000.000/0000-00';
+                if (lblDoc) lblDoc.innerText = 'CNPJ Destinatário';
+            }
+        }
+    }
+
+    function verificarAvisoZeradoRateio(inputEl) {
+        if (!inputEl) return;
+        const val = parseNum(inputEl.value);
+        const feedbackId = 'fb-' + inputEl.id;
+        let fb = document.getElementById(feedbackId);
+        if (!fb) {
+            fb = document.createElement('div');
+            fb.id = feedbackId;
+            fb.className = 'small mt-1';
+            if (inputEl.parentNode && inputEl.parentNode.parentNode) {
+                inputEl.parentNode.parentNode.appendChild(fb);
+            }
+        }
+        if (val === 0) {
+            fb.innerHTML = '<span class="badge bg-info-subtle text-info fw-bold" style="font-size: 10px;">ℹ️ Zerado (0,00): Sem rateio</span>';
+        } else {
+            fb.innerHTML = '';
+        }
+    }
+
+    async function carregarCSTsOficiais() {
+        try {
+            const resp = await fetch('/api/csts');
+            const data = await resp.json();
+            if (data.status === 'success' && data.csts) {
+                cstMapDescricao = {};
+                cstMapICMS = {};
+                cstMapIPI = {};
+                cstMapPIS = {};
+
+                (data.csts.icms_csosn || []).forEach(c => { cstMapICMS[c.codigo] = c.codigo_descricao; });
+                (data.csts.ipi || []).forEach(c => { cstMapIPI[c.codigo] = c.codigo_descricao; });
+                (data.csts.pis_cofins || []).forEach(c => { cstMapPIS[c.codigo] = c.codigo_descricao; });
+
+                data.csts.all.forEach(c => {
+                    cstMapDescricao[c.codigo] = c.codigo_descricao;
+                });
+
+                cstOptionsICMS = data.csts.icms_csosn.map(c => ({ label: c.codigo_descricao, value: c.codigo }));
+                cstOptionsIPI = data.csts.ipi.map(c => ({ label: c.codigo_descricao, value: c.codigo }));
+                cstOptionsPIS = data.csts.pis_cofins.map(c => ({ label: c.codigo_descricao, value: c.codigo }));
+
+                const selCsosn = document.getElementById('op_csosn');
+                if (selCsosn) {
+                    const cur = selCsosn.value;
+                    selCsosn.innerHTML = '';
+                    const grpCsosn = document.createElement('optgroup');
+                    grpCsosn.label = 'Simples Nacional (CSOSN)';
+                    const grpIcms = document.createElement('optgroup');
+                    grpIcms.label = 'Regime Normal (CST ICMS)';
+                    data.csts.csosn.forEach(c => grpCsosn.appendChild(new Option(c.codigo_descricao, c.codigo)));
+                    data.csts.icms.forEach(c => grpIcms.appendChild(new Option(c.codigo_descricao, c.codigo)));
+                    selCsosn.appendChild(grpCsosn);
+                    selCsosn.appendChild(grpIcms);
+                    if (cur) selCsosn.value = cur;
+                    else selCsosn.value = '102';
+                }
+
+                const selIpi = document.getElementById('op_cst_ipi');
+                if (selIpi) {
+                    const cur = selIpi.value;
+                    selIpi.innerHTML = '';
+                    const grpEnt = document.createElement('optgroup');
+                    grpEnt.label = 'Entradas / Importação';
+                    const grpSai = document.createElement('optgroup');
+                    grpSai.label = 'Saídas / Exportação';
+                    data.csts.ipi.forEach(c => {
+                        const opt = new Option(c.codigo_descricao, c.codigo);
+                        if (c.aplicacao === 'ENTRADA' || c.aplicacao === 'IMPORTACAO') grpEnt.appendChild(opt);
+                        else grpSai.appendChild(opt);
+                    });
+                    selIpi.appendChild(grpEnt);
+                    selIpi.appendChild(grpSai);
+                    if (cur) selIpi.value = cur;
+                    else selIpi.value = '05';
+                }
+
+                ['op_cst_pis', 'op_cst_cofins'].forEach(id => {
+                    const sel = document.getElementById(id);
+                    if (sel) {
+                        const cur = sel.value;
+                        sel.innerHTML = '';
+                        const grpSai = document.createElement('optgroup');
+                        grpSai.label = 'Saídas / Exportação';
+                        const grpEnt = document.createElement('optgroup');
+                        grpEnt.label = 'Entradas / Importação';
+                        data.csts.pis_cofins.forEach(c => {
+                            const opt = new Option(c.codigo_descricao, c.codigo);
+                            if (c.aplicacao === 'SAIDA' || c.aplicacao === 'EXPORTACAO') grpSai.appendChild(opt);
+                            else grpEnt.appendChild(opt);
+                        });
+                        sel.appendChild(grpSai);
+                        sel.appendChild(grpEnt);
+                        if (cur) sel.value = cur;
+                        else sel.value = '07';
+                    }
+                });
+
+                if (itensTable) {
+                    itensTable.updateColumnDefinition("CSOSN", {
+                        editor: "list",
+                        editorParams: { values: cstOptionsICMS, autocomplete: true, listOnEmpty: true, freetext: false, clearable: true }
+                    });
+                    itensTable.updateColumnDefinition("CST_IPI", {
+                        editor: "list",
+                        editorParams: { values: cstOptionsIPI, autocomplete: true, listOnEmpty: true, freetext: false, clearable: true }
+                    });
+                    itensTable.updateColumnDefinition("CST_PIS", {
+                        editor: "list",
+                        editorParams: { values: cstOptionsPIS, autocomplete: true, listOnEmpty: true, freetext: false, clearable: true }
+                    });
+                    itensTable.updateColumnDefinition("CST_COFINS", {
+                        editor: "list",
+                        editorParams: { values: cstOptionsPIS, autocomplete: true, listOnEmpty: true, freetext: false, clearable: true }
+                    });
+                    itensTable.redraw(true);
+                }
+            }
+        } catch(err) {
+            console.error("Erro ao carregar CSTs oficiais:", err);
+        }
+    }
+
+    // Função para obter o CFOP do Tipo de Operação ativo
+    function obterCfopOperacaoAtiva() {
+        const cfopHidden = getVal('cfop_padrao');
+        if (cfopHidden) return cfopHidden;
+        const sel = document.getElementById('select_operacao');
+        const nomeOp = sel ? sel.value : '';
+        if (nomeOp && typeof operacoesCache !== 'undefined' && Array.isArray(operacoesCache)) {
+            const op = operacoesCache.find(o => o.nome_operacao && o.nome_operacao.toUpperCase() === nomeOp.toUpperCase());
+            if (op && op.cfop_padrao) return op.cfop_padrao;
+        }
+        return '';
+    }
+
+    // Excluir Itens Selecionados com Modal Moderno (nftConfirm)
+    async function excluirItensSelecionados() {
+        if (!itensTable) return;
+        const selectedRows = itensTable.getSelectedRows();
+        if (!selectedRows || selectedRows.length === 0) {
+            if (window.nftAlert) {
+                await window.nftAlert("Selecione pelo menos um item da grade usando a caixa de seleção para excluir.", {
+                    type: "warning",
+                    title: "Nenhum Item Selecionado"
+                });
+            } else {
+                alert("Selecione pelo menos um item da grade usando a caixa de seleção para excluir.");
+            }
+            return;
+        }
+
+        const qtd = selectedRows.length;
+        const confirmMsg = `Deseja realmente excluir ${qtd === 1 ? 'o item selecionado' : `os ${qtd} itens selecionados`} da nota fiscal?\n\nEsta operação removerá os itens da grade e os totais serão recalculados automaticamente.`;
+        
+        let confirmado = false;
+        if (window.nftConfirm) {
+            confirmado = await window.nftConfirm(confirmMsg, {
+                title: qtd === 1 ? 'Confirmar Exclusão de Item' : 'Confirmar Exclusão de Itens',
+                type: 'danger',
+                confirmText: 'Sim, Excluir',
+                cancelText: 'Cancelar',
+                icon: 'trash-2'
+            });
+        } else {
+            confirmado = confirm(confirmMsg);
+        }
+
+        if (!confirmado) return;
+
+        if (window.nftRegistrarSnapshot) {
+            window.nftRegistrarSnapshot(qtd === 1 ? 'Exclusão de 1 Item' : `Exclusão de ${qtd} Itens`);
+        }
+
+        const selectedData = selectedRows.map(r => r.getData());
+        itensCache = itensCache.filter(it => !selectedData.includes(it));
+        // Reindexar nItem sequencialmente
+        itensCache.forEach((it, idx) => {
+            it.nItem = String(idx + 1);
+        });
+
+        itensTable.setData(itensCache);
+        const badgeItens = document.getElementById('itens-badge');
+        if (badgeItens) badgeItens.innerText = itensCache.length;
+
+        recalcularTotaisDosItens(true);
+        atualizarBadgesRateioEItens();
+
+        if (window.nftAlert) {
+            await window.nftAlert(`${qtd === 1 ? 'Item excluído' : `${qtd} itens excluídos`} com sucesso!`, {
+                type: 'success',
+                title: 'Exclusão Concluída'
+            });
+        }
+    }
+
+    // Duplicar Itens Selecionados com Modal Moderno (nftConfirm)
+    async function duplicarItensSelecionados() {
+        if (!itensTable) return;
+        const selectedRows = itensTable.getSelectedRows();
+        if (!selectedRows || selectedRows.length === 0) {
+            if (window.nftAlert) {
+                await window.nftAlert("Selecione pelo menos um item da grade usando a caixa de seleção para duplicar.", {
+                    type: "warning",
+                    title: "Nenhum Item Selecionado"
+                });
+            } else {
+                alert("Selecione pelo menos um item da grade usando a caixa de seleção para duplicar.");
+            }
+            return;
+        }
+
+        const qtd = selectedRows.length;
+        const confirmMsg = `Deseja duplicar ${qtd === 1 ? 'o item selecionado' : `os ${qtd} itens selecionados`}?\n\nNovas cópias dos itens serão inseridas na grade com cálculos e regras atualizados.`;
+
+        let confirmado = false;
+        if (window.nftConfirm) {
+            confirmado = await window.nftConfirm(confirmMsg, {
+                title: qtd === 1 ? 'Confirmar Duplicação de Item' : 'Confirmar Duplicação de Itens',
+                type: 'info',
+                confirmText: 'Sim, Duplicar',
+                cancelText: 'Cancelar',
+                icon: 'copy'
+            });
+        } else {
+            confirmado = confirm(confirmMsg);
+        }
+
+        if (!confirmado) return;
+
+        const cfopOp = obterCfopOperacaoAtiva();
+        const novosItens = [];
+
+        selectedRows.forEach(r => {
+            const itemOrig = r.getData();
+            const clone = JSON.parse(JSON.stringify(itemOrig));
+            if (cfopOp) {
+                clone.CFOP = cfopOp;
+            }
+            const qCom = parseNum(clone.qCom);
+            const vUnCom = parseNum(clone.vUnCom);
+            if (qCom > 0 && vUnCom > 0) {
+                clone.vProd = (qCom * vUnCom).toFixed(2);
+            }
+            const vFrete = parseNum(clone.vFrete);
+            const vSeg = parseNum(clone.vSeg);
+            clone.vBC_II = (parseNum(clone.vProd) + vFrete + vSeg).toFixed(2);
+
+            novosItens.push(clone);
+        });
+
+        itensCache = itensCache.concat(novosItens);
+        const diGeral = (document.getElementById('import_nDI')?.value || '').trim();
+        itensCache.forEach((it, idx) => {
+            it.nItem = String(idx + 1);
+            if (!it.nSeqAdic) it.nSeqAdic = it.nItem;
+            if (diGeral && (!it.nDI || it.nDI.trim() === '')) {
+                it.nDI = diGeral;
+            }
+            if (typeof window.montarTextoInfAdProd === 'function') {
+                it.infAdProd = window.montarTextoInfAdProd(it);
+            }
+        });
+
+        itensTable.setData(itensCache);
+        const badgeItens = document.getElementById('itens-badge');
+        if (badgeItens) badgeItens.innerText = itensCache.length;
+
+        recalcularTotaisDosItens(true);
+        atualizarBadgesRateioEItens();
+
+        if (window.nftAlert) {
+            await window.nftAlert(`${qtd === 1 ? 'Item duplicado' : `${qtd} itens duplicados`} com sucesso!`, {
+                type: 'success',
+                title: 'Duplicação Concluída'
+            });
+        }
+    }
+
+    // Zerar Impostos (II, IPI, PIS, COFINS) de todos os itens com confirmação de alteração de dados
+    async function zerarImpostosTodosItensComConfirmacao() {
+        if (typeof window.abrirModalZerarImpostos === 'function') {
+            await window.abrirModalZerarImpostos();
+            return;
+        }
+        const itens = (itensCache && Array.isArray(itensCache) && itensCache.length > 0)
+            ? itensCache
+            : ((typeof itensTable !== 'undefined' && itensTable) ? itensTable.getData() : (window.itensCache || []));
+
+        if (!itens || itens.length === 0) {
+            if (window.nftAlert) {
+                await window.nftAlert("Nenhum item carregado na grade para zerar impostos.", {
+                    type: "warning",
+                    title: "Nenhum Item Encontrado"
+                });
+            } else {
+                alert("Nenhum item carregado na grade para zerar impostos.");
+            }
+            return;
+        }
+
+        const qtd = itens.length;
+        const confirmMsg = `Atenção: Esta ação irá alterar os dados da nota fiscal, zerando a Base de Cálculo, Alíquota (%) e Valor dos seguintes impostos em ${qtd === 1 ? '1 item' : `todos os ${qtd} itens`}:\n\n• Imposto de Importação (II): Base de Cálculo e Valor\n• IPI: Base de Cálculo, % Alíquota e Valor\n• PIS: Base de Cálculo, % Alíquota e Valor\n• COFINS: Base de Cálculo, % Alíquota e Valor\n\nTodos os totais da nota fiscal e do rateio serão recalculados automaticamente.\n\nDeseja confirmar a alteração nos dados?`;
+
+        let confirmado = false;
+        if (window.nftConfirm) {
+            confirmado = await window.nftConfirm(confirmMsg, {
+                title: 'Alerta de Alteração de Dados - Zerar Impostos',
+                type: 'warning',
+                confirmText: 'Confirmar',
+                cancelText: 'Cancelar',
+                icon: 'alert-triangle'
+            });
+        } else {
+            confirmado = confirm(confirmMsg);
+        }
+
+        if (!confirmado) return;
+
+        itens.forEach(it => {
+            // II (Imposto de Importação)
+            it.vBC_II = '0.00';
+            it.vII = '0.00';
+            if ('pII' in it || it.pII !== undefined) it.pII = '0.00';
+
+            // IPI
+            it.vBC_IPI = '0.00';
+            it.pIPI = '0.00';
+            it.vIPI = '0.00';
+
+            // PIS
+            it.vBC_PIS = '0.00';
+            it.pPIS = '0.00';
+            it.vPIS = '0.00';
+
+            // COFINS
+            it.vBC_COFINS = '0.00';
+            it.pCOFINS = '0.00';
+            it.vCOFINS = '0.00';
+        });
+
+        itensCache = itens;
+        window.itensCache = itens;
+
+        if (typeof itensTable !== 'undefined' && itensTable) {
+            itensTable.setData(itensCache);
+        }
+
+        if (typeof recalcularTotaisDosItens === 'function') {
+            recalcularTotaisDosItens(true);
+        }
+        if (typeof atualizarBadgesRateioEItens === 'function') {
+            atualizarBadgesRateioEItens();
+        }
+        if (typeof window.triggerAutoSave === 'function') {
+            window.triggerAutoSave();
+        }
+
+        if (window.nftAlert) {
+            await window.nftAlert(`Impostos (II, IPI, PIS e COFINS) zerados com sucesso em ${qtd === 1 ? '1 item' : `${qtd} itens`}!`, {
+                type: 'success',
+                title: 'Impostos Zerados'
+            });
+        }
+    }
+    window.zerarImpostosTodosItensComConfirmacao = zerarImpostosTodosItensComConfirmacao;
+
+    function adicionarNovoItem() {
+        if (window.abrirModalItemNovo) {
+            window.abrirModalItemNovo();
+        }
+    }
+
+    // Definicao de todas as colunas de det nItem
+    const colunasItensDef = [
+        {
+            title: "",
+            titleFormatter: function() {
+                return '<span title="Editar item" style="display: inline-flex; align-items: center; justify-content: center; color: #0ea5e9; cursor: help;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></span>';
+            },
+            headerTooltip: "Editar item no formulário",
+            field: "_acoes",
+            width: 44,
+            frozen: true,
+            hozAlign: "center",
+            headerHozAlign: "center",
+            headerSort: false,
+            formatter: function() {
+                return '<button type="button" class="btn-editar-item-grade" title="Editar este item no pop-up dedicado"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></button>';
+            },
+            cellClick: function(e, cell) {
+                e.stopPropagation();
+                const row = cell.getRow();
+                const rowData = row.getData();
+                if (window.abrirModalItemEditar) {
+                    window.abrirModalItemEditar(rowData, row.getPosition(true) - 1);
+                }
+            }
+        },
+        {
+            formatter: "rowSelection",
+            titleFormatter: "rowSelection",
+            hozAlign: "center",
+            headerHozAlign: "center",
+            headerSort: false,
+            width: 42,
+            frozen: true,
+            cellClick: function(e, cell) {
+                cell.getRow().toggleSelect();
+            }
+        },
+        {title:"Item", field:"nItem", width:65, frozen:true, hozAlign:"center", headerHozAlign:"center", editor:"input"},
+        {title:"Cód. Prod.", field:"cProd", width:130, frozen:true, editor:"input"},
+        {title:"Descrição do Produto", field:"xProd", width:280, editor:"input"},
+        {
+            title: "NCM",
+            field: "NCM",
+            width: 105,
+            editor: "input",
+            hozAlign: "center",
+            headerHozAlign: "center",
+            formatter: function(cell) {
+                const val = String(cell.getValue() || '').trim();
+                if (!val) return '<span class="text-muted" style="font-size:11px;">8 dígitos</span>';
+                const limpo = val.replace(/\D/g, '');
+                if (limpo.length === 8) {
+                    return `<span class="text-success fw-semibold font-monospace" title="NCM válido (8 dígitos)">${val}</span>`;
+                }
+                return `<span class="text-warning fw-bold font-monospace" title="NCM deve ter 8 dígitos (atual: ${limpo.length})">${val} <small style="font-size:9.5px; opacity:0.85;">(${limpo.length}/8)</small></span>`;
+            }
+        },
+        {
+            title: "CFOP",
+            field: "CFOP",
+            width: 90,
+            hozAlign: "center",
+            headerHozAlign: "center",
+            cssClass: "font-monospace",
+            formatter: function(cell) {
+                const val = String(cell.getValue() || '').trim();
+                if (!val) return '<span class="text-muted" style="font-size:11px;">4 dígitos</span>';
+                const limpo = val.replace(/\D/g, '');
+                if (limpo.length === 4 && /^[123567]/.test(limpo)) {
+                    return `<span class="text-primary fw-semibold" title="CFOP válido (4 dígitos)">${val}</span>`;
+                }
+                return `<span class="text-warning fw-bold" title="CFOP deve ter 4 dígitos">${val} <small style="font-size:9.5px; opacity:0.85;">(${limpo.length}/4)</small></span>`;
+            }
+        },
+        {title:"Un. Com.", field:"uCom", width:85, editor:"input"},
+        {title:"Qtd. Com.", field:"qCom", width:105, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarQtdVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"V. Unit. Com.", field:"vUnCom", width:120, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarUnitarioVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"V. Total Prod.", field:"vProd", width:125, hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, cssClass:"fw-bold text-primary"},
+        {title:"V. Unit. (Moeda)", field:"vUnCom_moeda_origem", width:120, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarUnitarioVisualBR, mutatorEdit:mutatorLimparNumero, cssClass:"font-monospace text-info"},
+        {title:"V. Total (Moeda)", field:"vProd_moeda_origem", width:125, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, mutatorEdit:mutatorLimparNumero, cssClass:"font-monospace text-info fw-semibold"},
+        {title:"Moeda Conv.", field:"moeda_conversao", width:85, hozAlign:"center", headerHozAlign:"center", cssClass:"font-monospace fw-semibold text-secondary"},
+        {title:"Câmbio Utilizado", field:"taxa_conversao", width:125, hozAlign:"right", headerHozAlign:"right", formatter:formatarUnitarioVisualBR, cssClass:"font-monospace text-secondary"},
+        {title:"Un. Trib.", field:"uTrib", width:85, editor:"input", hozAlign:"center", headerHozAlign:"center"},
+        {title:"Qtd. Trib.", field:"qTrib", width:110, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarQTribVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"Kg Líquido", field:"pesoL", width:110, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarQtdVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"V. Unit. Trib.", field:"vUnTrib", width:120, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarUnitarioVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"Informações Adicionais", field:"infAdProd", width:260, editor:"input"},
+        {title:"Frete", field:"vFrete", width:95, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"Outras Desp.", field:"vOutro", width:105, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"Nº DI", field:"nDI", width:125, editor:"input"},
+        {title:"Data DI", field:"dDI", width:110, editor:"input"},
+        {title:"Local Desemb.", field:"xLocDesemb", width:170, editor:"input"},
+        {title:"UF Desemb.", field:"UFDesemb", width:95, editor:"input"},
+        {title:"Data Desemb.", field:"dDesemb", width:115, editor:"input"},
+        {title:"Via Transp.", field:"tpViaTransp", width:95, editor:"input"},
+        {title:"AFRMM", field:"vAFRMM", width:95, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"Exportador", field:"cExportador", width:130, editor:"input"},
+        {title:"Nº Adição", field:"nAdicao", width:95, editor:"input"},
+        {title:"Seq. Adição", field:"nSeqAdic", width:95, editor:"input"},
+        {title:"Fabricante", field:"cFabricante", width:130, editor:"input"},
+        {
+            title: "Enquadramento",
+            field: "enquadramento",
+            width: 185,
+            editor: "list",
+            editorParams: function(cell) {
+                const configs = (typeof window.getRegimesConfigCache === 'function') ? window.getRegimesConfigCache() : (window.regimesConfigCache || {});
+                const lista = [];
+                Object.keys(configs).forEach(k => {
+                    const c = configs[k];
+                    const cfopTxt = c.cfop_padrao ? `(${c.cfop_padrao}) ` : '(----) ';
+                    lista.push({
+                        label: `${cfopTxt}${c.apelido || c.nome || k}`,
+                        value: k
+                    });
+                });
+                return { values: lista, autocomplete: true, listOnEmpty: true, freetext: false, clearable: false };
+            },
+            formatter: function(cell) {
+                let val = cell.getValue();
+                const configs = (typeof window.getRegimesConfigCache === 'function') ? window.getRegimesConfigCache() : (window.regimesConfigCache || {});
+                const row = cell.getRow ? cell.getRow() : null;
+                const d = row ? row.getData() : {};
+                const opRegime = document.getElementById('op_regime')?.value;
+
+                // Preenchimento automático com base nas configurações pré-definidas (sem exibir '(Padrão)')
+                if (!val || !configs[val]) {
+                    if (opRegime && configs[opRegime]) {
+                        val = opRegime;
+                    } else if (configs['SUSPENSAO']) {
+                        val = 'SUSPENSAO';
+                    } else {
+                        val = Object.keys(configs)[0] || 'SUSPENSAO';
+                    }
+                    if (d && d.enquadramento !== val) {
+                        d.enquadramento = val;
+                    }
+                }
+
+                const conf = configs[val];
+                const cfopTxt = conf && conf.cfop_padrao ? `(${conf.cfop_padrao}) ` : '(----) ';
+                const apelido = conf ? (conf.apelido || conf.nome || val) : val;
+                const labelTxt = `${cfopTxt}${apelido}`;
+                return `<span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold" style="font-size:11px; max-width: 175px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; vertical-align: middle;" title="${labelTxt}">${labelTxt}</span>`;
+            }
+        },
+        {title:"Origem", field:"orig", width:80, editor:"input"},
+        {title:"CSOSN/CST ICMS", field:"CSOSN", width:210, editor:"list", editorParams:{values:[], autocomplete:true, listOnEmpty:true, freetext:false, clearable:true}, formatter:formatarCstCell, mutatorEdit:mutatorLimparCst},
+        {title:"cEnq IPI", field:"cEnq", width:90, editor:"input"},
+        {title:"CST IPI", field:"CST_IPI", width:190, editor:"list", editorParams:{values:[], autocomplete:true, listOnEmpty:true, freetext:false, clearable:true}, formatter:formatarCstCell, mutatorEdit:mutatorLimparCst},
+        {title:"BC IPI", field:"vBC_IPI", width:100, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"% IPI", field:"pIPI", width:90, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarAliquotaVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"V. IPI", field:"vIPI", width:95, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"BC II", field:"vBC_II", width:100, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"% II", field:"aliquota_ii", width:90, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarAliquotaVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"V. II", field:"vII", width:95, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"Desp. Aduan.", field:"vDespAdu", width:110, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"V. IOF", field:"vIOF", width:95, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"CST PIS", field:"CST_PIS", width:190, editor:"list", editorParams:{values:[], autocomplete:true, listOnEmpty:true, freetext:false, clearable:true}, formatter:formatarCstCell, mutatorEdit:mutatorLimparCst},
+        {title:"BC PIS", field:"vBC_PIS", width:100, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"% PIS", field:"pPIS", width:90, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarAliquotaVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"V. PIS", field:"vPIS", width:95, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"CST COFINS", field:"CST_COFINS", width:190, editor:"list", editorParams:{values:[], autocomplete:true, listOnEmpty:true, freetext:false, clearable:true}, formatter:formatarCstCell, mutatorEdit:mutatorLimparCst},
+        {title:"BC COFINS", field:"vBC_COFINS", width:100, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"% COFINS", field:"pCOFINS", width:90, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarAliquotaVisualBR, mutatorEdit:mutatorLimparNumero},
+        {title:"V. COFINS", field:"vCOFINS", width:95, editor:"input", hozAlign:"right", headerHozAlign:"right", formatter:formatarMoedaVisualBR, mutatorEdit:mutatorLimparNumero}
+    ];
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // 1. Carregar Operações cadastradas do banco e CSTs oficiais
+        if (!getVal('dhEmi')) {
+            definirDataHoraAgora('dhEmi');
+        }
+        if (!getVal('dhSaiEnt')) {
+            copiarDataEmissaoParaSaida();
+        }
+        carregarCSTsOficiais();
+        carregarTiposOperacao();
+        carregarFeirasParaInfCpl();
+        atualizarCamposIdentificacao('0', '3');
+        atualizarEstadoInscricaoEstadual();
+        atualizarTipoDocumentoDestinatario();
+        calcularChaveAcessoDinamica();
+
+        // 2. Inicializar Câmbio PTAX e Parâmetros de Rateio
+        definirDataPtaxHoje();
+        carregarMoedasPtax();
+        atualizarBadgesRateioEItens();
+
+        // Listeners para atualizar badges quando valores forem alterados
+        ['rateio_vAFRMM', 'rateio_vSiscomex', 'rateio_vOutro', 'rateio_vFrete', 'ptax_cotacao_venda', 'ptax_taxa_utilizada'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', atualizarBadgesRateioEItens);
+                el.addEventListener('change', atualizarBadgesRateioEItens);
+            }
+        });
+
+        // 3. Inicializar tabela de Itens
+        itensTable = new Tabulator("#itens-table", {
+            data: [],
+            layout: "fitDataFill",
+            height: "560px",
+            columns: colunasItensDef,
+            selectable: true,
+            renderVertical: "basic",
+            renderHorizontal: "basic",
+            placeholder: "Nenhum item carregado. Selecione e carregue o XML acima."
+        });
+        window.itensTable = itensTable;
+
+        itensTable.on("dataChanged", function() {
+            if (window.triggerAutoSave) window.triggerAutoSave();
+        });
+        itensTable.on("rowDeleted", function() {
+            if (window.triggerAutoSave) window.triggerAutoSave();
+        });
+        itensTable.on("rowAdded", function() {
+            if (window.triggerAutoSave) window.triggerAutoSave();
+        });
+
+        itensTable.on("cellEdited", function(cell) {
+            const campo = cell.getField();
+            const row = cell.getRow();
+            const d = row.getData();
+
+            // 1. Seleção de Enquadramento Fiscal por Item
+            if (campo === 'enquadramento') {
+                const enqKey = cell.getValue();
+                const configs = (typeof window.getRegimesConfigCache === 'function') ? window.getRegimesConfigCache() : (window.regimesConfigCache || {});
+                const conf = (enqKey && configs[enqKey]) ? configs[enqKey] : null;
+                if (conf) {
+                    const updates = { enquadramento: enqKey };
+                    if (conf.csosn_icms) updates.CSOSN = conf.csosn_icms;
+                    if (conf.c_enq_ipi) updates.cEnq = conf.c_enq_ipi;
+                    if (conf.cst_ipi) updates.CST_IPI = conf.cst_ipi;
+                    if (conf.cst_pis) updates.CST_PIS = conf.cst_pis;
+                    if (conf.cst_cofins) updates.CST_COFINS = conf.cst_cofins;
+                    // Alíquotas e valores que já estão no item são rigorosamente preservados
+                    row.update(updates);
+                }
+            }
+
+            // 2. Cálculos automáticos de Bases (BC) e Valores (V.) ao alterar alíquotas ou bases
+            if (campo === 'pIPI') {
+                const pIpiVal = parseNum(cell.getValue());
+                let bcIpi = parseNum(d.vBC_IPI);
+                const updates = {};
+                if (bcIpi <= 0 && pIpiVal > 0) {
+                    bcIpi = parseNum(d.vProd);
+                    updates.vBC_IPI = bcIpi.toFixed(2);
+                }
+                updates.vIPI = (bcIpi * (pIpiVal / 100)).toFixed(2);
+                row.update(updates);
+            } else if (campo === 'vBC_IPI') {
+                const bcIpi = parseNum(cell.getValue());
+                const pIpiVal = parseNum(d.pIPI);
+                row.update({ vIPI: (bcIpi * (pIpiVal / 100)).toFixed(2) });
+            }
+
+            if (campo === 'pPIS') {
+                const pPisVal = parseNum(cell.getValue());
+                let bcPis = parseNum(d.vBC_PIS);
+                const updates = {};
+                if (bcPis <= 0 && pPisVal > 0) {
+                    bcPis = parseNum(d.vProd) + parseNum(d.vFrete) + parseNum(d.vSeg) + parseNum(d.vOutro);
+                    updates.vBC_PIS = bcPis.toFixed(2);
+                }
+                updates.vPIS = (bcPis * (pPisVal / 100)).toFixed(2);
+                row.update(updates);
+            } else if (campo === 'vBC_PIS') {
+                const bcPis = parseNum(cell.getValue());
+                const pPisVal = parseNum(d.pPIS);
+                row.update({ vPIS: (bcPis * (pPisVal / 100)).toFixed(2) });
+            }
+
+            if (campo === 'pCOFINS') {
+                const pCofVal = parseNum(cell.getValue());
+                let bcCof = parseNum(d.vBC_COFINS);
+                const updates = {};
+                if (bcCof <= 0 && pCofVal > 0) {
+                    bcCof = parseNum(d.vProd) + parseNum(d.vFrete) + parseNum(d.vSeg) + parseNum(d.vOutro);
+                    updates.vBC_COFINS = bcCof.toFixed(2);
+                }
+                updates.vCOFINS = (bcCof * (pCofVal / 100)).toFixed(2);
+                row.update(updates);
+            } else if (campo === 'vBC_COFINS') {
+                const bcCof = parseNum(cell.getValue());
+                const pCofVal = parseNum(d.pCOFINS);
+                row.update({ vCOFINS: (bcCof * (pCofVal / 100)).toFixed(2) });
+            }
+
+            if (campo === 'aliquota_ii') {
+                const pIIVal = parseNum(cell.getValue());
+                let bcII = parseNum(d.vBC_II);
+                const updates = {};
+                if (bcII <= 0 && pIIVal > 0) {
+                    bcII = parseNum(d.vProd) + parseNum(d.vFrete) + parseNum(d.vSeg);
+                    updates.vBC_II = bcII.toFixed(2);
+                }
+                updates.vII = (bcII * (pIIVal / 100)).toFixed(2);
+                row.update(updates);
+            } else if (campo === 'vBC_II') {
+                const bcII = parseNum(cell.getValue());
+                const pIIVal = parseNum(d.aliquota_ii);
+                if (pIIVal > 0) {
+                    row.update({ vII: (bcII * (pIIVal / 100)).toFixed(2) });
+                }
+            }
+
+            // 3. Cálculos automáticos de Unidade, Quantidade Tributável, Kg Líquido e Informações Adicionais
+            if (campo === 'pesoL') {
+                const pesoLVal = parseNum(cell.getValue());
+                const uTribStr = String(d.uTrib || '').trim().toUpperCase();
+                const cfopStr = String(d.CFOP || '').trim();
+                const natOpStr = String((typeof getVal === 'function' ? getVal('natOp') : '') || '').toUpperCase();
+                const isReexportOuKG = (uTribStr === 'KG' || cfopStr.startsWith('7') || natOpStr.includes('REEXPORT'));
+                const updates = {};
+
+                if (isReexportOuKG) {
+                    if (!d.uTrib || d.uTrib === '') {
+                        updates.uTrib = 'KG';
+                    }
+                    if (pesoLVal > 0) {
+                        updates.qTrib = pesoLVal.toFixed(4);
+                        const vProdVal = parseNum(d.vProd);
+                        if (vProdVal > 0) {
+                            updates.vUnTrib = (vProdVal / pesoLVal).toFixed(4);
+                        }
+                    }
+                }
+
+                // Atualização automática da coluna de Informações Adicionais (infAdProd)
+                const rowData = { ...d, ...updates, pesoL: cell.getValue() };
+                if (typeof window.montarTextoInfAdProd === 'function') {
+                    updates.infAdProd = window.montarTextoInfAdProd(rowData);
+                }
+
+                row.update(updates);
+                cell.checkHeight();
+            } else if (campo === 'nDI' || campo === 'nAdicao' || campo === 'nSeqAdic' || campo === 'nItem') {
+                if (typeof window.montarTextoInfAdProd === 'function') {
+                    const rowData = { ...d, [campo]: cell.getValue() };
+                    const novoInf = window.montarTextoInfAdProd(rowData);
+                    row.update({ infAdProd: novoInf });
+                }
+            } else if (campo === 'infAdProd') {
+                if (typeof window.montarTextoInfAdProd === 'function') {
+                    const rowData = { ...d, infAdProd: cell.getValue() };
+                    const novoInf = window.montarTextoInfAdProd(rowData);
+                    if (novoInf !== cell.getValue()) {
+                        row.update({ infAdProd: novoInf });
+                    }
+                }
+            } else if (campo === 'qTrib') {
+                const qTribVal = parseNum(cell.getValue());
+                const vProdVal = parseNum(d.vProd);
+                const uTribStr = String(d.uTrib || '').trim().toUpperCase();
+                const cfopStr = String(d.CFOP || '').trim();
+                const natOpStr = String((typeof getVal === 'function' ? getVal('natOp') : '') || '').toUpperCase();
+                const isReexportOuKG = (uTribStr === 'KG' || cfopStr.startsWith('7') || natOpStr.includes('REEXPORT'));
+                const updates = { qTrib_manual: (qTribVal > 0) };
+
+                if (qTribVal > 0 && vProdVal > 0) {
+                    updates.vUnTrib = (vProdVal / qTribVal).toFixed(4);
+                } else if (!cell.getValue() || cell.getValue() === '' || qTribVal <= 0) {
+                    updates.vUnTrib = '';
+                }
+
+                // Se for Reexportação ou uTrib KG, sincronizar pesoL caso esteja vazio ou zerado
+                if (isReexportOuKG && qTribVal > 0) {
+                    const pesoLAtual = parseNum(d.pesoL);
+                    if (pesoLAtual <= 0) {
+                        updates.pesoL = qTribVal.toFixed(4);
+                    }
+                }
+
+                const rowData = { ...d, ...updates, qTrib: cell.getValue() };
+                if (typeof window.montarTextoInfAdProd === 'function') {
+                    updates.infAdProd = window.montarTextoInfAdProd(rowData);
+                }
+
+                row.update(updates);
+                cell.checkHeight();
+            } else if (campo === 'vUnTrib') {
+                const vUnTribVal = parseNum(cell.getValue());
+                const qTribVal = parseNum(d.qTrib);
+                if (vUnTribVal > 0 && qTribVal > 0 && (!d.vProd || parseNum(d.vProd) <= 0)) {
+                    row.update({ vProd: (vUnTribVal * qTribVal).toFixed(2) });
+                }
+            } else if (campo === 'vProd') {
+                const qTribVal = parseNum(d.qTrib);
+                const vProdVal = parseNum(cell.getValue());
+                const updates = {};
+                if (qTribVal > 0 && vProdVal > 0) {
+                    updates.vUnTrib = (vProdVal / qTribVal).toFixed(4);
+                }
+                const taxaAnterior = parseNum(d.taxa_conversao) || parseNum(getVal('ptax_taxa_utilizada')) || parseNum(getVal('ptax_cotacao_venda'));
+                if (taxaAnterior > 0 && vProdVal > 0) {
+                    updates.vProd_moeda_origem = (vProdVal / taxaAnterior).toFixed(2);
+                }
+                if (Object.keys(updates).length > 0) {
+                    row.update(updates);
+                }
+            } else if (campo === 'uTrib') {
+                const uTribVal = String(cell.getValue() || '').trim().toUpperCase();
+                const updates = { uTrib: uTribVal };
+                const cfopStr = String(d.CFOP || '').trim();
+                const natOpStr = String((typeof getVal === 'function' ? getVal('natOp') : '') || '').toUpperCase();
+                const isReexportOuKG = (uTribVal === 'KG' || cfopStr.startsWith('7') || natOpStr.includes('REEXPORT'));
+
+                if (isReexportOuKG && uTribVal === 'KG') {
+                    const pesoLVal = parseNum(d.pesoL);
+                    const qTribVal = parseNum(d.qTrib);
+                    const vProdVal = parseNum(d.vProd);
+                    if (pesoLVal > 0 && (qTribVal <= 0 || !d.vUnTrib)) {
+                        updates.qTrib = pesoLVal.toFixed(4);
+                        if (vProdVal > 0) updates.vUnTrib = (vProdVal / pesoLVal).toFixed(4);
+                    } else if (qTribVal > 0 && pesoLVal <= 0) {
+                        updates.pesoL = qTribVal.toFixed(4);
+                    }
+                } else if (['UN', 'PARES', 'PAR', 'PC', 'PECAS', 'PECA'].includes(uTribVal)) {
+                    const vProdVal = parseNum(d.vProd);
+                    const qTribVal = parseNum(d.qCom);
+                    const novoVUnTrib = (vProdVal > 0 && qTribVal > 0) ? (vProdVal / qTribVal).toFixed(4) : (d.vUnCom || '');
+                    updates.qTrib = d.qCom;
+                    updates.vUnTrib = novoVUnTrib;
+                } else if (['M3', 'M2', 'METRO', 'LT'].includes(uTribVal) && String(d.uCom || '').trim().toUpperCase() !== uTribVal) {
+                    if (d.qTrib === d.qCom) {
+                        updates.qTrib = '';
+                        updates.vUnTrib = '';
+                    }
+                }
+                const rowData = { ...d, ...updates, uTrib: uTribVal };
+                if (typeof window.montarTextoInfAdProd === 'function') {
+                    updates.infAdProd = window.montarTextoInfAdProd(rowData);
+                }
+                row.update(updates);
+            } else if (campo === 'CFOP') {
+                const cfopVal = String(cell.getValue() || '').trim();
+                if (cfopVal.startsWith('7')) {
+                    const updates = {};
+                    if (!d.uTrib || d.uTrib === '') {
+                        updates.uTrib = 'KG';
+                    }
+                    const pesoLVal = parseNum(d.pesoL);
+                    const qTribVal = parseNum(d.qTrib);
+                    const vProdVal = parseNum(d.vProd);
+                    if (pesoLVal > 0 && (qTribVal <= 0 || !d.vUnTrib)) {
+                        updates.qTrib = pesoLVal.toFixed(4);
+                        if (vProdVal > 0) updates.vUnTrib = (vProdVal / pesoLVal).toFixed(4);
+                    }
+                    if (Object.keys(updates).length > 0) {
+                        row.update(updates);
+                    }
+                }
+            } else if (campo === 'qCom' || campo === 'vUnCom') {
+                const qComNum = parseNum(d.qCom);
+                const vUnComNum = parseNum(d.vUnCom);
+                if (qComNum > 0 && vUnComNum > 0) {
+                    const novoVProd = (qComNum * vUnComNum).toFixed(2);
+                    let qTribVal = parseNum(d.qTrib);
+                    const pesoLVal = parseNum(d.pesoL);
+                    const uTribStr = String(d.uTrib || '').trim().toUpperCase();
+                    const cfopStr = String(d.CFOP || '').trim();
+                    const natOpStr = String((typeof getVal === 'function' ? getVal('natOp') : '') || '').toUpperCase();
+                    const isReexportOuKG = (uTribStr === 'KG' || cfopStr.startsWith('7') || natOpStr.includes('REEXPORT'));
+
+                    if (isReexportOuKG && pesoLVal > 0 && qTribVal <= 0) {
+                        qTribVal = pesoLVal;
+                    }
+
+                    const vFreteNum = parseNum(d.vFrete);
+                    const vSegNum = parseNum(d.vSeg);
+                    const novoBCII = (parseNum(novoVProd) + vFreteNum + vSegNum).toFixed(2);
+                    const updates = { vProd: novoVProd, vBC_II: novoBCII };
+                    if (qTribVal > 0) {
+                        updates.qTrib = qTribVal.toFixed(4);
+                        updates.vUnTrib = (parseNum(novoVProd) / qTribVal).toFixed(4);
+                    }
+                    const taxaAnterior = parseNum(d.taxa_conversao) || parseNum(getVal('ptax_taxa_utilizada')) || parseNum(getVal('ptax_cotacao_venda'));
+                    if (taxaAnterior > 0) {
+                        updates.vProd_moeda_origem = (parseNum(novoVProd) / taxaAnterior).toFixed(2);
+                        updates.vUnCom_moeda_origem = (vUnComNum / taxaAnterior).toFixed(4);
+                        updates.taxa_conversao = taxaAnterior.toFixed(4);
+                        if (!d.moeda_conversao) {
+                            updates.moeda_conversao = (typeof obterMoedaSelecionada === 'function') ? obterMoedaSelecionada() : (getVal('ptax_moeda') || 'USD');
+                        }
+                    }
+                    row.update(updates);
+                }
+            } else if (campo === 'vUnCom_moeda_origem' || campo === 'vProd_moeda_origem') {
+                const taxa = parseNum(d.taxa_conversao) || parseNum(getVal('ptax_taxa_utilizada')) || parseNum(getVal('ptax_cotacao_venda'));
+                const qComNum = parseNum(d.qCom) || 1;
+                const moeda = d.moeda_conversao || ((typeof obterMoedaSelecionada === 'function') ? obterMoedaSelecionada() : (getVal('ptax_moeda') || 'USD'));
+                const vFreteNum = parseNum(d.vFrete);
+                const vSegNum = parseNum(d.vSeg);
+
+                if (campo === 'vUnCom_moeda_origem') {
+                    const vUnOrig = parseNum(cell.getValue());
+                    const updates = { moeda_conversao: moeda };
+                    if (taxa > 0) updates.taxa_conversao = taxa.toFixed(4);
+                    if (vUnOrig > 0) {
+                        const vProdOrig = (vUnOrig * qComNum).toFixed(2);
+                        updates.vProd_moeda_origem = vProdOrig;
+                        if (taxa > 0) {
+                            const novoVUnCom = (vUnOrig * taxa).toFixed(4);
+                            const novoVProd = (parseNum(vProdOrig) * taxa).toFixed(2);
+                            updates.vUnCom = novoVUnCom;
+                            if (!parseNum(d.qTrib) || parseNum(d.qTrib) === qComNum) updates.vUnTrib = novoVUnCom;
+                            updates.vProd = novoVProd;
+                            updates.vBC_II = (parseNum(novoVProd) + vFreteNum + vSegNum).toFixed(2);
+                        }
+                    }
+                    row.update(updates);
+                } else {
+                    const vProdOrig = parseNum(cell.getValue());
+                    const updates = { moeda_conversao: moeda };
+                    if (taxa > 0) updates.taxa_conversao = taxa.toFixed(4);
+                    if (vProdOrig > 0) {
+                        const vUnOrig = (vProdOrig / qComNum).toFixed(4);
+                        updates.vUnCom_moeda_origem = vUnOrig;
+                        if (taxa > 0) {
+                            const novoVProd = (vProdOrig * taxa).toFixed(2);
+                            const novoVUnCom = (parseNum(vUnOrig) * taxa).toFixed(4);
+                            updates.vProd = novoVProd;
+                            updates.vUnCom = novoVUnCom;
+                            if (!parseNum(d.qTrib) || parseNum(d.qTrib) === qComNum) updates.vUnTrib = novoVUnCom;
+                            updates.vBC_II = (parseNum(novoVProd) + vFreteNum + vSegNum).toFixed(2);
+                        }
+                    }
+                    row.update(updates);
+                }
+            } else if (campo === 'vFrete' || campo === 'vSeg') {
+                // Atualização automática de BC II ao alterar componentes aduaneiros do frete ou seguro
+                const vProdNum = parseNum(d.vProd);
+                const vFreteNum = parseNum(d.vFrete);
+                const vSegNum = parseNum(d.vSeg);
+                const novoBCII = (vProdNum + vFreteNum + vSegNum).toFixed(2);
+                row.update({ vBC_II: novoBCII });
+            }
+
+            if (['vProd', 'vFrete', 'vOutro', 'vSeg', 'vIPI', 'vII', 'vPIS', 'vCOFINS', 'vBC_IPI', 'vBC_II', 'vBC_PIS', 'vBC_COFINS', 'pIPI', 'pPIS', 'pCOFINS', 'aliquota_ii', 'enquadramento', 'vAFRMM', 'vDespAdu', 'qCom', 'vUnCom', 'vProd_moeda_origem', 'vUnCom_moeda_origem'].includes(campo)) {
+                recalcularTotaisDosItens(true);
+                atualizarBadgesRateioEItens();
+            }
+        });
+
+        // 4. Listener para redimensionar tabela ao abrir a aba
+        const itensTabBtn = document.getElementById('itens-tab');
+        if (itensTabBtn) {
+            itensTabBtn.addEventListener('shown.bs.tab', function () {
+                if (typeof window.sincronizarInfAdProdTodosItens === 'function') {
+                    window.sincronizarInfAdProdTodosItens(false);
+                }
+                setTimeout(() => {
+                    if (itensTable) {
+                        itensTable.redraw(true);
+                    }
+                }, 60);
+            });
+        }
+    });
+
+    function recarregarTabelaItens() {
+        if (itensTable) {
+            itensTable.redraw(true);
+        }
+    }
+
+    // === GERENCIAMENTO DE TIPOS DE OPERACAO ===
+    function carregarTiposOperacao(selecionarNome = null) {
+        fetch('/tipos_operacao')
+            .then(res => res.json())
+            .then(async data => {
+                operacoesCache = data || [];
+                window.operacoesCache = operacoesCache;
+                
+                // 1. Atualiza Select da Aba 1 (Cabecalho)
+                const sel = document.getElementById('select_operacao');
+                sel.innerHTML = '<option value="">-- Selecione uma Operação --</option>';
+                
+                operacoesCache.forEach(op => {
+                    const opt = document.createElement('option');
+                    opt.value = op.nome_operacao;
+                    opt.textContent = `(${op.cfop_padrao}) ${op.nome_operacao}`;
+                    sel.appendChild(opt);
+                });
+
+                // 2. Atualiza Lista da Aba de Configurações (Tipo de Nota)
+                if (typeof window.renderizarListaOperacoesCadastradas === 'function') {
+                    window.renderizarListaOperacoesCadastradas(operacoesCache);
+                } else {
+                    const lista = document.getElementById('lista-operacoes');
+                    if (lista) {
+                        lista.innerHTML = '';
+                        operacoesCache.forEach(op => {
+                            const item = document.createElement('a');
+                            item.href = "#";
+                            item.className = "list-group-item list-group-item-action py-2";
+                            const tipoTxt = (op.tp_nf == '1') ? '1 - Saída' : '0 - Entrada';
+                            const destTxt = (op.id_dest == '1') ? 'Interna' : (op.id_dest == '2' ? 'Interestadual' : 'Exterior');
+                            item.innerHTML = `<strong>(${op.cfop_padrao}) ${op.nome_operacao}</strong><br><small class='text-muted'>${tipoTxt} | Destino: ${destTxt} | ICMS: ${op.csosn_icms} | IPI: ${op.cst_ipi}</small>`;
+                            item.onclick = (e) => {
+                                e.preventDefault();
+                                selecionarOperacaoParaEdicao(op);
+                            };
+                            lista.appendChild(item);
+                        });
+                    }
+                }
+
+                // 3. Determina qual operação selecionar e aplicar
+                let opParaSelecionar = selecionarNome;
+
+                // Se não foi passada explicitamente, busca a última escolha persistida no banco de dados
+                if (!opParaSelecionar) {
+                    try {
+                        const moduloCfg = (typeof getEditorModoConfig === 'function') ? getEditorModoConfig().moduloConfig : 'rascunho';
+                        const resUltima = await fetch(`/api/config/ultima_operacao?modulo=${encodeURIComponent(moduloCfg)}`);
+                        const dataUltima = await resUltima.json();
+                        if (dataUltima && dataUltima.status === 'success' && dataUltima.ultima_operacao) {
+                            const existe = operacoesCache.some(o => o.nome_operacao.toUpperCase() === dataUltima.ultima_operacao.toUpperCase());
+                            if (existe) {
+                                opParaSelecionar = dataUltima.ultima_operacao;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn("Erro ao buscar ultima operacao:", e);
+                    }
+                }
+
+                if (opParaSelecionar && sel) {
+                    sel.value = opParaSelecionar;
+                    aoSelecionarOperacao(opParaSelecionar, false);
+                } else if (sel && sel.value) {
+                    aoSelecionarOperacao(sel.value, false);
+                }
+
+                // Se uma operacao foi salva ou informada, sincroniza o formulario da Aba 4
+                if (selecionarNome) {
+                    const opObj = operacoesCache.find(o => 
+                        (o.nome_operacao && o.nome_operacao.toUpperCase() === selecionarNome.toUpperCase()) ||
+                        (o.id && String(o.id) === String(selecionarNome))
+                    );
+                    if (opObj && typeof selecionarOperacaoParaEdicao === 'function') {
+                        selecionarOperacaoParaEdicao(opObj);
+                    }
+                }
+            });
+    }
+
+    function atualizarCamposIdentificacao(tpVal, idDestVal) {
+        if (tpVal !== undefined && tpVal !== null && tpVal !== '') {
+            setVal('tpNF', tpVal);
+        }
+        if (idDestVal !== undefined && idDestVal !== null && idDestVal !== '') {
+            setVal('idDest', idDestVal);
+        }
+
+        const rawTp = getVal('tpNF') || '0';
+        const rawDest = getVal('idDest') || '3';
+
+        const tpText = (rawTp === '1') ? '1 - Saída' : '0 - Entrada';
+        setVal('tpNF_desc', tpText);
+
+        let destText = '3 - Com exterior';
+        if (rawDest === '1') destText = '1 - Interna (mesma UF)';
+        else if (rawDest === '2') destText = '2 - Interestadual';
+        setVal('idDest_desc', destText);
+
+        const lblTp = document.getElementById('lbl-tp-nf-ativo');
+        if (lblTp) lblTp.innerText = tpText;
+
+        const lblDest = document.getElementById('lbl-id-dest-ativo');
+        if (lblDest) lblDest.innerText = destText;
+    }
+
+    // Cache de unidades tributáveis NCM
+    let ncmUnidadesCache = {};
+
+    async function obterUnidadesTributaveisNCM(ncms) {
+        const faltantes = ncms.filter(n => {
+            const clean = String(n || '').replace(/\D/g, '');
+            return clean && !ncmUnidadesCache[clean];
+        });
+
+        if (faltantes.length > 0) {
+            try {
+                const res = await fetch('/api/ncm/unidades_tributaveis', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ncms: faltantes })
+                });
+                const data = await res.json();
+                if (data && typeof data === 'object') {
+                    Object.assign(ncmUnidadesCache, data);
+                }
+            } catch (e) {
+                console.warn("Erro ao buscar unidades tributáveis NCM:", e);
+            }
+        }
+        return ncmUnidadesCache;
+    }
+
+    // Regras de Unidades Estatísticas de Exportação (uTrib / qTrib / vUnTrib)
+    async function aplicarRegrasExportacaoUnidades(itens, exibirAlerta = false) {
+        if (!itens || itens.length === 0) return { processados: 0, manuais: 0 };
+
+        const ncms = itens.map(it => it.NCM).filter(Boolean);
+        const ncmMap = await obterUnidadesTributaveisNCM(ncms);
+        const pesoLTotal = parseNum(getVal('transp_pesoL'));
+        const ehReexportacao = (typeof isOperacaoReexportacao === 'function') ? isOperacaoReexportacao() : false;
+
+        const itensKGIndices = [];
+        const itensManuais = [];
+        let itensProcessados = 0;
+
+        itens.forEach((it, idx) => {
+            const cleanNcm = String(it.NCM || '').replace(/\D/g, '');
+            const info = ncmMap[cleanNcm] || {};
+            const uTribOficial = (info.utrib || it.uTrib || 'UN').trim().toUpperCase();
+
+            it.uTrib = uTribOficial;
+
+            const uComUpper = String(it.uCom || '').trim().toUpperCase();
+            const vProdNum = parseNum(it.vProd);
+            const isManualTrib = (it.qTrib_manual === true || it.qTrib_manual === 'true' || it.qTrib_manual === 1);
+
+            // Se for reexportação ou se tiver quantidade tributável manual já inserida, preserva estritamente
+            if (isManualTrib || (ehReexportacao && parseNum(it.qTrib) > 0)) {
+                it.qTrib_manual = true;
+                const qTribNum = parseNum(it.qTrib);
+                if (vProdNum > 0 && qTribNum > 0) {
+                    it.vUnTrib = (vProdNum / qTribNum).toFixed(4);
+                }
+                itensProcessados++;
+                return;
+            }
+
+            // Se a unidade comercial já for idêntica à tributável oficial
+            if (uComUpper && uComUpper === uTribOficial) {
+                it.qTrib = it.qCom;
+                it.vUnTrib = (vProdNum > 0 && parseNum(it.qTrib) > 0)
+                    ? (vProdNum / parseNum(it.qTrib)).toFixed(4)
+                    : (it.vUnCom || '');
+                itensProcessados++;
+                return;
+            }
+
+            // Casos específicos por unidade tributável:
+            if (uTribOficial === 'KG') {
+                const pesoLItem = parseNum(it.pesoL || it.kg_liquido || it.peso_liquido);
+                if (pesoLItem > 0) {
+                    it.qTrib = pesoLItem.toFixed(4);
+                    if (vProdNum > 0) {
+                        it.vUnTrib = (vProdNum / pesoLItem).toFixed(4);
+                    }
+                    if (typeof window.montarTextoInfAdProd === 'function') {
+                        it.infAdProd = window.montarTextoInfAdProd(it);
+                    }
+                    itensProcessados++;
+                    return;
+                }
+                itensKGIndices.push(idx);
+            } else if (uTribOficial === 'PARES' || uTribOficial === 'PAR') {
+                // "se for Pares, que puxe de quantidade comercializada e assim por diantes"
+                it.qTrib = it.qCom;
+                const qTribNum = parseNum(it.qTrib);
+                it.vUnTrib = (vProdNum > 0 && qTribNum > 0) ? (vProdNum / qTribNum).toFixed(4) : (it.vUnCom || '');
+                itensProcessados++;
+            } else if (['UN', 'PC', 'PECAS', 'PECA', 'CENTO'].includes(uTribOficial)) {
+                it.qTrib = it.qCom;
+                const qTribNum = parseNum(it.qTrib);
+                it.vUnTrib = (vProdNum > 0 && qTribNum > 0) ? (vProdNum / qTribNum).toFixed(4) : (it.vUnCom || '');
+                itensProcessados++;
+            } else if (uTribOficial === '1000UN') {
+                const qComNum = parseNum(it.qCom);
+                if (['1000UN', 'MIL'].includes(uComUpper)) {
+                    it.qTrib = it.qCom;
+                } else if (['UN', 'PC'].includes(uComUpper) && qComNum > 0) {
+                    it.qTrib = (qComNum / 1000).toFixed(4);
+                } else {
+                    it.qTrib = '';
+                }
+                const qTribNum = parseNum(it.qTrib);
+                it.vUnTrib = (vProdNum > 0 && qTribNum > 0) ? (vProdNum / qTribNum).toFixed(4) : '';
+                if (it.qTrib) itensProcessados++; else itensManuais.push(it);
+            } else if (uTribOficial === 'DUZIA') {
+                const qComNum = parseNum(it.qCom);
+                if (['DUZIA', 'DZ'].includes(uComUpper)) {
+                    it.qTrib = it.qCom;
+                } else if (['UN', 'PC'].includes(uComUpper) && qComNum > 0) {
+                    it.qTrib = (qComNum / 12).toFixed(4);
+                } else {
+                    it.qTrib = '';
+                }
+                const qTribNum = parseNum(it.qTrib);
+                it.vUnTrib = (vProdNum > 0 && qTribNum > 0) ? (vProdNum / qTribNum).toFixed(4) : '';
+                if (it.qTrib) itensProcessados++; else itensManuais.push(it);
+            } else {
+                // "se não der para calcular ou for muito complexo, deixe em branco para preenchimento manual como M3 que não tem como puxar de outro lugar nem calcular automaticamente sem uma origem de referencia"
+                it.qTrib = '';
+                it.vUnTrib = '';
+                itensManuais.push(it);
+            }
+        });
+
+        // Processamento dos itens em KG com base no Peso Líquido (transp_pesoL)
+        if (itensKGIndices.length > 0) {
+            if (pesoLTotal > 0) {
+                const subItensKG = itensKGIndices.map(idx => itens[idx]);
+                const pesosDist = calcularRateioProporcional(subItensKG, pesoLTotal, 'vProd', 4);
+                itensKGIndices.forEach((origIdx, kIdx) => {
+                    const it = itens[origIdx];
+                    it.qTrib = pesosDist[kIdx];
+                    const vProdNum = parseNum(it.vProd);
+                    const qTribNum = parseNum(it.qTrib);
+                    it.vUnTrib = (vProdNum > 0 && qTribNum > 0) ? (vProdNum / qTribNum).toFixed(4) : '';
+                    if (!it.pesoL || parseNum(it.pesoL) <= 0) {
+                        it.pesoL = it.qTrib;
+                    }
+                    if (typeof window.montarTextoInfAdProd === 'function') {
+                        it.infAdProd = window.montarTextoInfAdProd(it);
+                    }
+                    itensProcessados++;
+                });
+            } else {
+                // Peso Líquido não informado no cabeçalho
+                itensKGIndices.forEach(origIdx => {
+                    const it = itens[origIdx];
+                    const uComUpper = String(it.uCom || '').trim().toUpperCase();
+                    if (['KG', 'KILO', 'QUILOGRAMA'].includes(uComUpper)) {
+                        it.qTrib = it.qCom;
+                        const vProdNum = parseNum(it.vProd);
+                        const qTribNum = parseNum(it.qTrib);
+                        it.vUnTrib = (vProdNum > 0 && qTribNum > 0) ? (vProdNum / qTribNum).toFixed(4) : (it.vUnCom || '');
+                        itensProcessados++;
+                    } else {
+                        it.qTrib = '';
+                        it.vUnTrib = '';
+                        itensManuais.push(it);
+                    }
+                });
+            }
+        }
+
+        itens.forEach(it => {
+            if (typeof window.montarTextoInfAdProd === 'function') {
+                it.infAdProd = window.montarTextoInfAdProd(it);
+            }
+        });
+
+        if (itensTable) {
+            itensTable.setData(itens);
+        }
+
+        if (exibirAlerta) {
+            let msg = `Regras de Unidades Estatísticas de Exportação aplicadas a ${itens.length} itens!\n\n`;
+            msg += `✅ Unidades Tributáveis (uTrib) atualizadas conforme Comex / Receita Federal.\n`;
+            if (itensKGIndices.length > 0) {
+                if (pesoLTotal > 0) {
+                    msg += `⚖️ Itens em KG (${itensKGIndices.length}): Peso Líquido (${formatarNumeroVisualBR(pesoLTotal, 3, 4)} kg) rateado proporcionalmente aos produtos em qTrib e vUnTrib calculados.\n`;
+                } else {
+                    msg += `⚠️ Itens em KG (${itensKGIndices.length}): Peso Líquido da nota está em branco/zerado. Preencha na aba de Transporte para ratear automaticamente ou digite qTrib no grid.\n`;
+                }
+            }
+            if (itensManuais.length > 0) {
+                msg += `\n• Itens para preenchimento manual de quantidade (${itensManuais.length}):\n`;
+                itensManuais.forEach(it => {
+                    msg += ` • Item ${it.nItem || '?'}: ${it.xProd ? it.xProd.slice(0, 32) + '...' : 'Produto'} (uTrib: ${it.uTrib})\n`;
+                });
+                msg += `Ao digitar o valor na coluna 'Qtd. Trib.', o valor unitário tributável (vUnTrib) será calculado automaticamente!`;
+            }
+            alert(msg);
+        }
+
+        return { processados: itensProcessados, manuais: itensManuais.length };
+    }
+
+    async function aplicarUnidadesExportacaoManual() {
+        const itens = (itensTable) ? itensTable.getData() : itensCache;
+        if (!itens || itens.length === 0) {
+            alert("Nenhum item carregado para atualizar unidades.");
+            return;
+        }
+        await aplicarRegrasExportacaoUnidades(itens, true);
+        itensCache = (itensTable) ? itensTable.getData() : itens;
+    }
+
+    function aoMudarPesoLiquidoTransporte() {
+        const itens = (itensTable) ? itensTable.getData() : itensCache;
+        if (!itens || itens.length === 0) return;
+
+        const cfopStr = String(getVal('cfop_padrao') || '').trim();
+        const tpNfStr = String(getVal('tpNF') || '').trim();
+        if (!cfopStr.startsWith('7') || tpNfStr !== '1') return;
+
+        const pesoLTotal = parseNum(getVal('transp_pesoL'));
+        const ehReexportacao = (typeof isOperacaoReexportacao === 'function') ? isOperacaoReexportacao() : false;
+
+        const itensKGIndices = [];
+        itens.forEach((it, idx) => {
+            const isManualTrib = (it.qTrib_manual === true || it.qTrib_manual === 'true' || it.qTrib_manual === 1);
+            if (isManualTrib || (ehReexportacao && parseNum(it.qTrib) > 0)) {
+                // Item manual ou reexportação com dado inserido: não sobrescreve
+                return;
+            }
+            if ((it.uTrib || '').trim().toUpperCase() === 'KG') {
+                itensKGIndices.push(idx);
+            }
+        });
+
+        if (itensKGIndices.length > 0 && pesoLTotal > 0) {
+            const subItensKG = itensKGIndices.map(idx => itens[idx]);
+            const pesosDist = calcularRateioProporcional(subItensKG, pesoLTotal, 'vProd', 4);
+            itensKGIndices.forEach((origIdx, kIdx) => {
+                const it = itens[origIdx];
+                it.qTrib = pesosDist[kIdx];
+                const vProdNum = parseNum(it.vProd);
+                const qTribNum = parseNum(it.qTrib);
+                it.vUnTrib = (vProdNum > 0 && qTribNum > 0) ? (vProdNum / qTribNum).toFixed(4) : '';
+            });
+            if (itensTable) {
+                itensTable.setData(itens);
+            }
+        }
+    }
+
+    async function aoSelecionarOperacao(nomeOp, persistir = true) {
+        setVal('natOp', nomeOp);
+        const op = operacoesCache.find(o => o.nome_operacao.toUpperCase() === (nomeOp || '').toUpperCase());
+        if (op) {
+            document.getElementById('lbl-operacao-ativa').innerText = `(${op.cfop_padrao}) ${op.nome_operacao}`;
+            const descIcms = cstMapICMS[op.csosn_icms] || cstMapDescricao[op.csosn_icms] || op.csosn_icms || '-';
+            const descIpi = cstMapIPI[op.cst_ipi] || cstMapDescricao[op.cst_ipi] || op.cst_ipi || '-';
+            const descPis = cstMapPIS[op.cst_pis] || cstMapDescricao[op.cst_pis] || op.cst_pis || '-';
+            const descCofins = cstMapPIS[op.cst_cofins] || cstMapDescricao[op.cst_cofins] || op.cst_cofins || '-';
+            document.getElementById('lbl-icms-ativo').innerText = op.csosn_icms || '-';
+            document.getElementById('lbl-icms-ativo').title = descIcms;
+            document.getElementById('lbl-ipi-ativo').innerText = op.cst_ipi || '-';
+            document.getElementById('lbl-ipi-ativo').title = descIpi;
+            document.getElementById('lbl-pis-ativo').innerText = (op.cst_pis || '-') + ' / ' + (op.cst_cofins || '-');
+            document.getElementById('lbl-pis-ativo').title = `PIS: ${descPis} | COFINS: ${descCofins}`;
+            setVal('cfop_padrao', op.cfop_padrao);
+
+            // Herdar automaticamente tpNF (Entrada/Saída) e idDest (Destino da Operação)
+            atualizarCamposIdentificacao(op.tp_nf, op.id_dest);
+
+            // Determinar e sincronizar o Regime Tributário da Operação
+            const regimeOp = op.regime_tributario || determinarRegimePorOperacao(op);
+            selecionarRegimeTributario(regimeOp, false);
+
+            // Sincronizar Meio de Pagamento (tPag) da Operação
+            const tPagOp = op.t_pag || '90';
+            aoMudarMeioPagamento(tPagOp);
+
+            // Alerta preventivo se a operação exigir Nota Referenciada de Origem (<NFref>)
+            verificarAvisoRefNFeOperacao(op);
+
+            // Herdar automaticamente nos itens carregados!
+            await aplicarRegrasAosItens(op, false);
+        } else {
+            document.getElementById('lbl-operacao-ativa').innerText = nomeOp || 'Nenhuma selecionada';
+            document.getElementById('lbl-cfop-ativo').innerText = '-';
+            document.getElementById('lbl-icms-ativo').innerText = '-';
+            document.getElementById('lbl-ipi-ativo').innerText = '-';
+            document.getElementById('lbl-pis-ativo').innerText = '-';
+            atualizarCamposIdentificacao(getVal('tpNF'), getVal('idDest'));
+            verificarAvisoRefNFeOperacao(null);
+        }
+
+        // Salva a decisão definitiva do usuário no banco de dados para continuar na próxima vez que abrir
+        if (persistir) {
+            const moduloCfg = (typeof getEditorModoConfig === 'function') ? getEditorModoConfig().moduloConfig : 'rascunho';
+            fetch('/api/config/ultima_operacao', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ modulo: moduloCfg, nome_operacao: nomeOp || '' })
+            }).catch(e => console.warn("Erro ao salvar ultima operacao:", e));
+        }
+    }
+
+    function determinarRegimePorOperacao(op) {
+        if (!op) return 'SUSPENSAO';
+        if (op.regime_tributario) return op.regime_tributario.toUpperCase();
+        const nome = (op.nome_operacao || '').toUpperCase();
+        const cfop = String(op.cfop_padrao || '');
+        if (cfop.startsWith('7') || nome.includes('REEXPORT') || nome.includes('EXPORT')) return 'IMUNIDADE';
+        if (nome.includes('ISEN') || (op.csosn_icms === '400' && (op.c_enq_ipi === '301' || op.cst_ipi === '52'))) return 'ISENCAO';
+        if (nome.includes('RECOLH') || op.csosn_icms === '900' || op.csosn_icms === '00' || op.cst_pis === '01') return 'RECOLHIMENTO';
+        return 'SUSPENSAO';
+    }
+
+    function verificarAvisoRefNFeOperacao(op = null) {
+        if (!op) {
+            const nomeOpAtiva = getVal('select_operacao');
+            op = operacoesCache.find(o => o.nome_operacao.toUpperCase() === (nomeOpAtiva || '').toUpperCase());
+        }
+        const cfopStr = String(op?.cfop_padrao || getVal('cfop_padrao') || '').trim();
+        const nomeOp = String(op?.nome_operacao || getVal('select_operacao') || '').toUpperCase();
+        const cfopsOrigem = ['1914', '2914', '7930'];
+        const requerOrigem = cfopsOrigem.includes(cfopStr) || nomeOp.includes('RETORNO DE FEIRA') || nomeOp.includes('REEXPORTA');
+
+        const avisoEl = document.getElementById('refNFe_aviso_operacao');
+        const boxRefEl = document.getElementById('box-ref-nfe');
+        const refVal = (getVal('refNFe') || '').replace(/\D/g, '');
+
+        if (requerOrigem) {
+            if (avisoEl) {
+                avisoEl.style.display = 'inline-flex';
+                if (refVal.length === 44) {
+                    avisoEl.className = 'badge bg-success text-white fw-bold';
+                    avisoEl.innerHTML = '<i data-lucide="check" style="width: 11px; height: 11px;"></i> NF-e Origem Vinculada';
+                } else {
+                    avisoEl.className = 'badge bg-warning text-dark fw-bold';
+                    avisoEl.innerHTML = '<i data-lucide="alert-triangle" style="width: 11px; height: 11px;"></i> Requer Chave NF-e de Origem';
+                }
+            }
+            if (boxRefEl && refVal.length !== 44) {
+                boxRefEl.classList.add('border-warning');
+            } else if (boxRefEl) {
+                boxRefEl.classList.remove('border-warning');
+            }
+        } else {
+            if (avisoEl) avisoEl.style.display = 'none';
+            if (boxRefEl) boxRefEl.classList.remove('border-warning');
+        }
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function aoMudarMeioPagamento(tPagVal) {
+        tPagVal = String(tPagVal || '90').trim();
+        setVal('tPag', tPagVal);
+        setVal('tot_tPag', tPagVal);
+
+        const vNFVal = getVal('tot_vNF') || getVal('vNF') || '0,00';
+        const vPagEl = document.getElementById('tot_vPag');
+        const lblPagto = document.getElementById('lbl-tpag-ativo');
+        const msgAjuda = document.getElementById('msg-tpag-ajuda');
+
+        const mapNomesPagto = {
+            '90': '90 - Sem Pagamento',
+            '99': '99 - Outros (Câmbio)',
+            '01': '01 - Dinheiro',
+            '15': '15 - Boleto Bancário',
+            '16': '16 - Depósito Bancário',
+            '17': '17 - PIX',
+            '03': '03 - Cartão Crédito',
+            '04': '04 - Cartão Débito'
+        };
+
+        if (lblPagto) {
+            lblPagto.innerText = mapNomesPagto[tPagVal] || `${tPagVal} - Informado`;
+        }
+
+        if (tPagVal === '90') {
+            if (vPagEl) vPagEl.value = '0,00';
+            if (msgAjuda) {
+                msgAjuda.innerHTML = '<i data-lucide="info" style="width: 12px; height: 12px;"></i> Regra YA04-10: Para <strong>tPag=90</strong>, o valor <strong>vPag é obrigatoriamente 0,00</strong> e o grupo de duplicatas &lt;cobr&gt; é omitido.';
+            }
+        } else {
+            if (vPagEl) vPagEl.value = vNFVal;
+            if (msgAjuda) {
+                msgAjuda.innerHTML = `<i data-lucide="check-circle" style="width: 12px; height: 12px;"></i> Operação com Liquidação: Valor do pagamento vinculado ao total da nota (R$ ${vNFVal}).`;
+            }
+        }
+        if (window.lucide) lucide.createIcons();
+    }
+
+    async function selecionarRegimeTributario(regime, aplicarItens = true) {
+        regime = (regime || 'SUSPENSAO').toUpperCase();
+        window._regimeTributarioAtivo = regime;
+
+        const btnMap = {
+            'SUSPENSAO': 'btn-regime-suspensao',
+            'ISENCAO': 'btn-regime-isencao',
+            'RECOLHIMENTO': 'btn-regime-recolhimento',
+            'IMUNIDADE': 'btn-regime-imunidade'
+        };
+
+        document.querySelectorAll('.btn-regime').forEach(btn => btn.classList.remove('active'));
+        const btnAtivo = document.getElementById(btnMap[regime]);
+        if (btnAtivo) btnAtivo.classList.add('active');
+
+        const badgeEl = document.getElementById('badge-regime-ativo');
+        const lblEl = document.getElementById('lbl-regime-ativo');
+        const regimeLabels = {
+            'SUSPENSAO': { text: 'Regime: Suspensão', cls: 'bg-primary-subtle text-primary border-primary-subtle' },
+            'ISENCAO': { text: 'Regime: Isenção', cls: 'bg-warning-subtle text-warning-emphasis border-warning-subtle' },
+            'RECOLHIMENTO': { text: 'Regime: Recolhimento', cls: 'bg-success-subtle text-success border-success-subtle' },
+            'IMUNIDADE': { text: 'Regime: Imunidade', cls: 'bg-info-subtle text-info border-info-subtle' }
+        };
+
+        const regCfg = regimeLabels[regime] || regimeLabels['SUSPENSAO'];
+        if (badgeEl) {
+            badgeEl.innerText = regCfg.text;
+            badgeEl.className = `badge rounded-pill border ms-1 fw-bold ${regCfg.cls}`;
+        }
+        if (lblEl) {
+            lblEl.innerText = regCfg.text.replace('Regime: ', '');
+        }
+
+        if (aplicarItens) {
+            await aplicarRegimeAosItensComConfirmacao(regime);
+        }
+    }
+
+    async function abrirModalAplicarEnquadramentoItens() {
+        if (typeof window.abrirModalAplicarEnquadramentoItens === 'function' && window.abrirModalAplicarEnquadramentoItens !== abrirModalAplicarEnquadramentoItens) {
+            return await window.abrirModalAplicarEnquadramentoItens();
+        }
+        const modalEl = document.getElementById('modal-aplicar-enquadramento-itens');
+        if (modalEl) {
+            const bModal = (window.bootstrap && window.bootstrap.Modal) ? window.bootstrap.Modal : (typeof bootstrap !== 'undefined' ? bootstrap.Modal : null);
+            if (bModal) {
+                const m = (typeof bModal.getOrCreateInstance === 'function') ? bModal.getOrCreateInstance(modalEl) : new bModal(modalEl);
+                m.show();
+            }
+        }
+    }
+    window.abrirModalAplicarEnquadramentoItens = abrirModalAplicarEnquadramentoItens;
+
+    async function aplicarRegimeAosItensComConfirmacao(regime) {
+        if (typeof window.abrirModalAplicarEnquadramentoItens === 'function') {
+            await window.abrirModalAplicarEnquadramentoItens();
+            return;
+        }
+        const itens = (itensCache && Array.isArray(itensCache) && itensCache.length > 0)
+            ? itensCache
+            : ((typeof itensTable !== 'undefined' && itensTable) ? itensTable.getData() : (window.itensCache || []));
+
+        if (!itens || itens.length === 0) {
+            if (window.nftAlert) {
+                await window.nftAlert("Nenhum item carregado na grade para aplicar o enquadramento fiscal.", {
+                    type: "warning",
+                    title: "Grade Vazia"
+                });
+            } else {
+                alert("Nenhum item carregado na grade para aplicar o enquadramento fiscal.");
+            }
+            return;
+        }
+
+        const nomesRegime = {
+            'SUSPENSAO': 'Suspensão de Impostos (Admissão Temporária / Feiras)',
+            'ISENCAO': 'Isenção Fiscal de Impostos',
+            'RECOLHIMENTO': 'Recolhimento Integral (Tributada Regularmente)',
+            'IMUNIDADE': 'Imunidade Tributária (Reexportação / Exportação)'
+        };
+
+        const confirmMsg = `Deseja aplicar o enquadramento fiscal '${nomesRegime[regime] || regime}' a todos os ${itens.length} itens da nota fiscal?\n\n• Os CSTs, códigos de enquadramento (cEnq) e alíquotas de ICMS, IPI, PIS e COFINS serão ajustados automaticamente.\n• Os valores de impostos serão recalculados/zerados conforme a legislação do regime.`;
+
+        let confirmado = false;
+        if (window.nftConfirm) {
+            confirmado = await window.nftConfirm(confirmMsg, {
+                title: 'Alteração Fiscal - Enquadramento de Impostos',
+                type: 'info',
+                confirmText: 'Confirmar Enquadramento',
+                cancelText: 'Cancelar',
+                icon: 'shield-check'
+            });
+        } else {
+            confirmado = confirm(confirmMsg);
+        }
+
+        if (!confirmado) return;
+
+        executarAplicacaoRegimeNosItens(regime, itens);
+
+        if (itensTable) {
+            itensTable.setData(itens);
+        }
+        itensCache = itens;
+        window.itensCache = itens;
+
+        recalcularTotaisDosItens(true);
+
+        if (regime === 'SUSPENSAO' || regime === 'ISENCAO' || regime === 'IMUNIDADE') {
+            aoMudarMeioPagamento('90');
+        }
+
+        if (window.nftAlert) {
+            await window.nftAlert(`Enquadramento '${nomesRegime[regime] || regime}' aplicado com sucesso a todos os ${itens.length} itens!`, {
+                type: "success",
+                title: "Enquadramento Atualizado"
+            });
+        } else {
+            alert(`Enquadramento '${nomesRegime[regime] || regime}' aplicado com sucesso a todos os ${itens.length} itens!`);
+        }
+    }
+
+    function executarAplicacaoRegimeNosItens(regime, itens) {
+        const cfopOp = String(getVal('cfop_padrao') || '').trim();
+        const tpNf = String(getVal('tpNF') || '0').trim();
+        const isEntrada = tpNf === '0';
+
+        itens.forEach(item => {
+            const cfopItem = String(item.CFOP || cfopOp || '').trim();
+            const isFeira = cfopItem.includes('914') || cfopItem === '5914' || cfopItem === '6914' || cfopItem === '1914' || cfopItem === '2914';
+
+            if (regime === 'SUSPENSAO') {
+                item.CSOSN = '400';
+                item.cEnq = isFeira ? '107' : '108';
+                item.CST_IPI = isEntrada ? '05' : '55';
+                item.pIPI = 0.00;
+                item.vIPI = '0.00';
+                item.vBC_IPI = '0.00';
+
+                item.CST_PIS = '08';
+                item.pPIS = 0.00;
+                item.vPIS = '0.00';
+                item.vBC_PIS = '0.00';
+
+                item.CST_COFINS = '08';
+                item.pCOFINS = 0.00;
+                item.vCOFINS = '0.00';
+                item.vBC_COFINS = '0.00';
+
+                item.aliquota_ii = 0.00;
+                item.vII = '0.00';
+                item.vBC_II = '0.00';
+                item.vBC = '0.00';
+                item.vICMS = '0.00';
+                item.pICMS = 0.00;
+            } else if (regime === 'ISENCAO') {
+                item.CSOSN = '400';
+                item.cEnq = '301';
+                item.CST_IPI = isEntrada ? '02' : '52';
+                item.pIPI = 0.00;
+                item.vIPI = '0.00';
+                item.vBC_IPI = '0.00';
+
+                item.CST_PIS = '07';
+                item.pPIS = 0.00;
+                item.vPIS = '0.00';
+                item.vBC_PIS = '0.00';
+
+                item.CST_COFINS = '07';
+                item.pCOFINS = 0.00;
+                item.vCOFINS = '0.00';
+                item.vBC_COFINS = '0.00';
+
+                item.aliquota_ii = 0.00;
+                item.vII = '0.00';
+                item.vBC_II = '0.00';
+                item.vBC = '0.00';
+                item.vICMS = '0.00';
+                item.pICMS = 0.00;
+            } else if (regime === 'RECOLHIMENTO') {
+                item.CSOSN = '900';
+                item.cEnq = '999';
+                item.CST_IPI = '49';
+                item.CST_PIS = '01';
+                item.pPIS = 1.65;
+                item.CST_COFINS = '01';
+                item.pCOFINS = 7.60;
+
+                const vp = parseNum(item.vProd);
+                const vf = parseNum(item.vFrete);
+                const vs = parseNum(item.vSeg);
+                const vo = parseNum(item.vOutro);
+                const baseCompleta = vp + vf + vs + vo;
+
+                item.vBC_PIS = baseCompleta.toFixed(2);
+                item.vPIS = (baseCompleta * 0.0165).toFixed(2);
+
+                item.vBC_COFINS = baseCompleta.toFixed(2);
+                item.vCOFINS = (baseCompleta * 0.0760).toFixed(2);
+
+                item.vBC = baseCompleta.toFixed(2);
+                if (parseNum(item.pICMS) === 0) item.pICMS = 18.00;
+                item.vICMS = (baseCompleta * (parseNum(item.pICMS) / 100)).toFixed(2);
+
+                if (parseNum(item.pIPI) > 0) {
+                    item.vBC_IPI = vp.toFixed(2);
+                    item.vIPI = (vp * (parseNum(item.pIPI) / 100)).toFixed(2);
+                }
+            } else if (regime === 'IMUNIDADE') {
+                item.CSOSN = '300';
+                item.cEnq = '999';
+                item.CST_IPI = '55';
+                item.pIPI = 0.00;
+                item.vIPI = '0.00';
+                item.vBC_IPI = '0.00';
+
+                item.CST_PIS = '08';
+                item.pPIS = 0.00;
+                item.vPIS = '0.00';
+                item.vBC_PIS = '0.00';
+
+                item.CST_COFINS = '08';
+                item.pCOFINS = 0.00;
+                item.vCOFINS = '0.00';
+                item.vBC_COFINS = '0.00';
+
+                item.aliquota_ii = 0.00;
+                item.vII = '0.00';
+                item.vBC_II = '0.00';
+                item.vBC = '0.00';
+                item.vICMS = '0.00';
+                item.pICMS = 0.00;
+            }
+        });
+    }
+
+    async function aplicarOperacaoSelecionadaAosItens() {
+        const nomeOp = (getVal('select_operacao') || '').trim();
+        if (!nomeOp) {
+            if (window.nftAlert) {
+                await window.nftAlert("Selecione um Tipo de Operação na aba 1 (Operação) antes de reaplicar as regras!", { title: "Operação Não Selecionada", type: "warning" });
+            } else {
+                alert("Selecione um Tipo de Operação primeiro!");
+            }
+            return;
+        }
+
+        let opNomeLimpo = nomeOp;
+        if (opNomeLimpo.includes(') ')) {
+            opNomeLimpo = opNomeLimpo.split(') ')[1].trim();
+        }
+
+        const listaOps = (typeof operacoesCache !== 'undefined' && Array.isArray(operacoesCache) && operacoesCache.length > 0)
+            ? operacoesCache
+            : (window.operacoesCache || []);
+
+        const op = listaOps.find(o => 
+            (o.nome_operacao && o.nome_operacao.toUpperCase() === nomeOp.toUpperCase()) ||
+            (o.nome_operacao && o.nome_operacao.toUpperCase() === opNomeLimpo.toUpperCase()) ||
+            (`(${o.cfop_padrao}) ${o.nome_operacao}`.toUpperCase() === nomeOp.toUpperCase())
+        );
+
+        if (!op) {
+            if (window.nftAlert) {
+                await window.nftAlert(`A operação '${nomeOp}' não foi localizada nas configurações cadastradas.`, { title: "Operação Não Encontrada", type: "warning" });
+            } else {
+                alert(`Operação '${nomeOp}' não encontrada.`);
+            }
+            return;
+        }
+
+        let itens = (typeof itensTable !== 'undefined' && itensTable) ? itensTable.getData() : itensCache;
+        if (!itens || itens.length === 0) {
+            if (window.nftAlert) {
+                await window.nftAlert("A nota fiscal não possui itens cadastrados ou importados para aplicar as regras.", { title: "Nenhum Item", type: "warning" });
+            } else {
+                alert("Nenhum item na nota para aplicar as regras.");
+            }
+            return;
+        }
+
+        const totalItens = itens.length;
+        const confirmou = window.nftConfirm
+            ? await window.nftConfirm(
+                `Deseja realmente reaplicar as regras da operação:\n\n• Operação: (${op.cfop_padrao}) ${op.nome_operacao}\n• CFOP: ${op.cfop_padrao} | ICMS: ${op.csosn_icms} | IPI: ${op.cst_ipi} | PIS: ${op.cst_pis}\n\nIsso atualizará os tributos e CFOP de todos os ${totalItens} item(ns) da nota fiscal.`,
+                {
+                    title: 'Reaplicar Regras aos Itens',
+                    type: 'warning',
+                    confirmText: 'Sim, Reaplicar a Todos',
+                    cancelText: 'Cancelar',
+                    icon: 'refresh-cw'
+                }
+            )
+            : confirm(`Deseja reaplicar as regras da operação '${op.nome_operacao}' a todos os ${totalItens} itens?`);
+
+        if (!confirmou) return;
+
+        await aplicarRegrasAosItens(op, true);
+    }
+
+    async function aplicarRegrasAosItens(op, exibirFeedback = false) {
+        let itens = (typeof itensTable !== 'undefined' && itensTable) ? itensTable.getData() : itensCache;
+        if (!itens || itens.length === 0) return;
+
+        const isIpiNaoTributado = ['01', '02', '03', '04', '05', '51', '52', '53', '54', '55'].includes(String(op.cst_ipi || '05').padStart(2, '0'));
+        const isPisNaoTributado = ['04', '05', '06', '07', '08', '09'].includes(String(op.cst_pis || '07').padStart(2, '0'));
+        const isCofinsNaoTributado = ['04', '05', '06', '07', '08', '09'].includes(String(op.cst_cofins || '07').padStart(2, '0'));
+
+        itens.forEach(item => {
+            if (op.cfop_padrao) item.CFOP = op.cfop_padrao;
+            if (op.orig_padrao) item.orig = op.orig_padrao;
+            if (op.csosn_icms) item.CSOSN = op.csosn_icms;
+            if (op.c_enq_ipi) item.cEnq = op.c_enq_ipi;
+            if (op.cst_ipi) item.CST_IPI = op.cst_ipi;
+            if (op.cst_pis) item.CST_PIS = op.cst_pis;
+            if (op.cst_cofins) item.CST_COFINS = op.cst_cofins;
+
+            // As alíquotas (pIPI, aliquota_ii, pPIS, pCOFINS) e valores calculados dos itens
+            // NÃO são mais repassados nem apagados pela operação geral, preservando integralmente
+            // as alíquotas e cálculos prévios ou específicos de cada item.
+        });
+
+        itensCache = itens;
+        window.itensCache = itens;
+
+        // Verificar se é operação de Exportação (CFOP começa com 7 e tpNF é Saída = '1')
+        const cfopStr = String(op.cfop_padrao || getVal('cfop_padrao') || '').trim();
+        const tpNfStr = String(op.tp_nf !== undefined && op.tp_nf !== null ? op.tp_nf : getVal('tpNF') || '').trim();
+        const isExport = cfopStr.startsWith('7') && tpNfStr === '1';
+
+        let resExport = null;
+        if (isExport && typeof aplicarRegrasExportacaoUnidades === 'function') {
+            resExport = await aplicarRegrasExportacaoUnidades(itensCache, false);
+        } else {
+            if (typeof itensTable !== 'undefined' && itensTable) {
+                itensTable.setData(itensCache);
+            }
+        }
+
+        if (typeof recalcularTotaisDosItens === 'function') {
+            recalcularTotaisDosItens(true);
+        }
+
+        if (exibirFeedback) {
+            let msg = `Regras da operação '${op.nome_operacao}' aplicadas com sucesso a todos os ${itensCache.length} itens!`;
+            if (isExport) {
+                msg += `\n\n• Operação de Exportação identificada (CFOP ${cfopStr} / Saída):\n`;
+                msg += `• Unidades Tributáveis (uTrib) e Quantidades Tributáveis (qTrib/vUnTrib) configuradas conforme Comex/Receita Federal.\n`;
+                if (resExport && resExport.manuais > 0) {
+                    msg += `• Há ${resExport.manuais} item(ns) com unidade sem conversão direta (ex: M3) deixados em branco para preenchimento manual no grid.`;
+                }
+            }
+            if (window.nftAlert) {
+                await window.nftAlert(msg, { title: "Regras Aplicadas com Sucesso", type: "success" });
+            } else {
+                alert(msg);
+            }
+        }
+    }
+
+    function aplicarObsDaOperacao() {
+        const nomeOp = getVal('select_operacao');
+        const op = operacoesCache.find(o => o.nome_operacao.toUpperCase() === nomeOp.toUpperCase());
+        if (op && op.inf_cpl_padrao) {
+            setVal('infCpl', op.inf_cpl_padrao);
+            alert("Observação padrão aplicada no rodapé!");
+        } else {
+            alert("Essa operação não possui texto padrão de observações cadastrado.");
+        }
+    }
+
+    // === ABA: FORMULARIO DE TIPO DE NOTA ===
+    function novaOperacao() {
+        const defs = (typeof getEditorModoConfig === 'function' && getEditorModoConfig().impostoDefaults) || {};
+        setVal('op_id', '');
+        setVal('op_nome', '');
+        setVal('op_cfop', '3930');
+        setVal('op_tp_nf', '0');
+        setVal('op_id_dest', '3');
+        setVal('op_regime', 'SUSPENSAO');
+        setVal('op_t_pag', '90');
+        setVal('op_orig', '1');
+        setVal('op_csosn', defs.csosn || '102');
+        setVal('op_c_enq', defs.c_enq || '102');
+        setVal('op_cst_ipi', defs.cst_ipi || '05');
+        setVal('op_p_ipi', '0.00');
+        setVal('op_aliquota_ii', '0.00');
+        setVal('op_cst_pis', defs.cst_pis || '07');
+        setVal('op_p_pis', '0.00');
+        setVal('op_cst_cofins', defs.cst_cofins || '07');
+        setVal('op_p_cofins', '0.00');
+        setVal('op_inf_cpl', '');
+        
+        document.getElementById('lbl-op-nome').innerText = "Nova Operação";
+        document.getElementById('btn-excluir-op').style.display = "none";
+        if (typeof window.atualizarResumoRegimeForm === 'function') {
+            window.atualizarResumoRegimeForm('SUSPENSAO');
+        }
+    }
+
+    function selecionarOperacaoParaEdicao(op) {
+        setVal('op_id', op.id);
+        setVal('op_nome', op.nome_operacao);
+        setVal('op_cfop', op.cfop_padrao);
+        setVal('op_tp_nf', (op.tp_nf !== undefined && op.tp_nf !== null) ? op.tp_nf : '0');
+        setVal('op_id_dest', (op.id_dest !== undefined && op.id_dest !== null) ? op.id_dest : '3');
+        const regOp = op.regime_tributario || determinarRegimePorOperacao(op);
+        setVal('op_regime', regOp);
+        if (typeof window.atualizarResumoRegimeForm === 'function') {
+            window.atualizarResumoRegimeForm(regOp);
+        }
+        setVal('op_t_pag', op.t_pag || '90');
+        setVal('op_orig', op.orig_padrao || '1');
+        setVal('op_csosn', op.csosn_icms);
+        setVal('op_c_enq', op.c_enq_ipi);
+        setVal('op_cst_ipi', op.cst_ipi);
+        setVal('op_p_ipi', op.p_ipi || '0.00');
+        setVal('op_aliquota_ii', op.aliquota_ii || '0.00');
+        setVal('op_cst_pis', op.cst_pis);
+        setVal('op_p_pis', op.p_pis || '0.00');
+        setVal('op_cst_cofins', op.cst_cofins);
+        setVal('op_p_cofins', op.p_cofins || '0.00');
+        setVal('op_inf_cpl', op.inf_cpl_padrao || '');
+
+        document.getElementById('lbl-op-nome').innerText = op.nome_operacao;
+        document.getElementById('btn-excluir-op').style.display = "inline-block";
+    }
+
+    function capturarImpostosDoXmlAtual() {
+        if (!impostoModeloXml) {
+            alert("Faça o upload de um arquivo XML primeiro para capturar os impostos!");
+            return;
+        }
+        const defs = (typeof getEditorModoConfig === 'function' && getEditorModoConfig().impostoDefaults) || {};
+        setVal('op_cfop', impostoModeloXml.cfop_padrao || '3930');
+        if (impostoModeloXml.tp_nf !== undefined && impostoModeloXml.tp_nf !== null) {
+            setVal('op_tp_nf', impostoModeloXml.tp_nf);
+        }
+        if (impostoModeloXml.id_dest !== undefined && impostoModeloXml.id_dest !== null) {
+            setVal('op_id_dest', impostoModeloXml.id_dest);
+        }
+        setVal('op_orig', impostoModeloXml.orig_padrao || '1');
+        setVal('op_csosn', impostoModeloXml.csosn_icms || defs.csosn || '102');
+        setVal('op_c_enq', impostoModeloXml.c_enq_ipi || defs.c_enq || '102');
+        setVal('op_cst_ipi', impostoModeloXml.cst_ipi || '05');
+        setVal('op_p_ipi', impostoModeloXml.p_ipi || '0.00');
+        setVal('op_cst_pis', impostoModeloXml.cst_pis || defs.cst_pis || '07');
+        setVal('op_p_pis', impostoModeloXml.p_pis || '0.00');
+        setVal('op_cst_cofins', impostoModeloXml.cst_cofins || defs.cst_cofins || '07');
+        setVal('op_p_cofins', impostoModeloXml.p_cofins || '0.00');
+        setVal('op_regime', window._regimeTributarioAtivo || 'SUSPENSAO');
+        setVal('op_t_pag', getVal('tPag') || '90');
+        if (!getVal('op_nome')) {
+            setVal('op_nome', getVal('natOp') || 'NOVA OPERACAO IMPORTADA');
+        }
+        alert("Parâmetros de impostos, tipo de nota (entrada/saída) e destino capturados do XML atual! Você pode revisar os dados e clicar em Salvar.");
+    }
+
+    async function salvarOperacao() {
+        const nome = (getVal('op_nome') || '').trim();
+        if (!nome) {
+            if (window.nftAlert) {
+                await window.nftAlert("Informe o Nome da Operação!", { title: "Campo Obrigatório", type: "warning" });
+            } else {
+                alert("Informe o Nome da Operação!");
+            }
+            document.getElementById('op_nome')?.focus();
+            return;
+        }
+
+        function parseNumVal(v) {
+            if (v === null || v === undefined) return 0;
+            const s = String(v).replace(/\s/g, '').replace(',', '.');
+            const n = parseFloat(s);
+            return isNaN(n) ? 0 : n;
+        }
+
+        const payload = {
+            id: getVal('op_id') || '',
+            nome_operacao: nome,
+            cfop_padrao: (getVal('op_cfop') || '').trim(),
+            tp_nf: getVal('op_tp_nf') || '0',
+            id_dest: getVal('op_id_dest') || '3',
+            regime_tributario: getVal('op_regime') || 'SUSPENSAO',
+            t_pag: getVal('op_t_pag') || '90',
+            orig_padrao: getVal('op_orig') || '1',
+            csosn_icms: (getVal('op_csosn') || '').trim(),
+            c_enq_ipi: (getVal('op_c_enq') || '').trim(),
+            cst_ipi: (getVal('op_cst_ipi') || '').trim(),
+            p_ipi: parseNumVal(getVal('op_p_ipi')),
+            aliquota_ii: parseNumVal(getVal('op_aliquota_ii')),
+            cst_pis: (getVal('op_cst_pis') || '').trim(),
+            p_pis: parseNumVal(getVal('op_p_pis')),
+            cst_cofins: (getVal('op_cst_cofins') || '').trim(),
+            p_cofins: parseNumVal(getVal('op_p_cofins')),
+            inf_cpl_padrao: getVal('op_inf_cpl') || ''
+        };
+
+        try {
+            const res = await fetch('/tipos_operacao', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const text = await res.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (jsonErr) {
+                if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+                    throw new Error("Sessão expirada ou página de login retornada pelo servidor. Recarregue a página.");
+                }
+                throw new Error(text.slice(0, 150) || "Resposta inválida do servidor");
+            }
+
+            if (!res.ok || data.status === 'error' || data.error) {
+                const msg = data.error || data.message || `Erro do servidor (status ${res.status})`;
+                if (window.nftAlert) {
+                    await window.nftAlert(msg, { title: "Erro ao Salvar", type: "danger" });
+                } else {
+                    alert(msg);
+                }
+                return;
+            }
+
+            if (data.id) {
+                setVal('op_id', data.id);
+            }
+
+            if (window.nftToast) {
+                window.nftToast(data.message || `Operação '${nome}' salva com sucesso!`, { type: 'success' });
+            } else if (window.nftAlert) {
+                await window.nftAlert(data.message || `Operação '${nome}' salva com sucesso!`, { title: "Operação Salva", type: "success" });
+            } else {
+                alert(data.message || `Operação '${nome}' salva com sucesso!`);
+            }
+
+            carregarTiposOperacao(nome);
+        } catch (err) {
+            console.error("Erro ao salvar operação:", err);
+            if (window.nftAlert) {
+                await window.nftAlert("Falha ao salvar operação: " + err.message, { title: "Aviso", type: "danger" });
+            } else {
+                alert("Falha ao salvar operação: " + err.message);
+            }
+        }
+    }
+
+    async function excluirOperacaoAtual() {
+        const id = getVal('op_id');
+        const nome = getVal('op_nome');
+        if (!id) return;
+        const conf = await window.nftConfirm(`Deseja realmente excluir a operação '${nome}'?\n\nEsta ação removerá permanentemente a operação cadastrada do banco de dados.`, {
+            title: 'Excluir Operação',
+            type: 'danger',
+            confirmText: 'Sim, Excluir',
+            cancelText: 'Cancelar',
+            icon: 'trash-2'
+        });
+        if (!conf) return;
+
+        fetch(`/tipos_operacao/${id}`, { method: 'DELETE' })
+            .then(res => res.json())
+            .then(data => {
+                alert("Operação excluída com sucesso!");
+                novaOperacao();
+                carregarTiposOperacao();
+            });
+    }
+
+    // === IMPORTAÇÃO DE DUIMP POR NÚMERO (API SISCOMEX) ===
+    function abrirModalImportarDuimp() {
+        const input = document.getElementById('inputNumeroDuimp');
+        if (input) {
+            input.value = '';
+            const refAtual = (getVal('referenciaInterna') || '').trim().toUpperCase();
+            if (refAtual && refAtual.includes('BR')) {
+                input.value = refAtual;
+            }
+        }
+        const modalEl = document.getElementById('modalImportarDuimp');
+        if (modalEl) {
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+            setTimeout(() => {
+                if (input) input.focus();
+                if (window.lucide) lucide.createIcons();
+            }, 200);
+        }
+    }
+
+    async function acionarConfirmacaoImportarDuimp() {
+        const input = document.getElementById('inputNumeroDuimp');
+        const num = (input ? input.value : '').trim().toUpperCase().replace(/[^A-Z0-9-]/g, '');
+        if (!num) {
+            if (window.nftAlert) {
+                await window.nftAlert('Por favor, digite o número da DUIMP para continuar.', { title: 'Campo Obrigatório', type: 'warning' });
+            } else {
+                alert('Por favor, digite o número da DUIMP para continuar.');
+            }
+            if (input) input.focus();
+            return;
+        }
+
+        if (num.length < 5) {
+            if (window.nftAlert) {
+                await window.nftAlert('Número de DUIMP muito curto ou inválido. Por favor, verifique os dígitos informados.', { title: 'Número Inválido', type: 'warning' });
+            } else {
+                alert('Número de DUIMP muito curto ou inválido. Por favor, verifique os dígitos informados.');
+            }
+            if (input) input.focus();
+            return;
+        }
+
+        // Esconde temporariamente o primeiro modal para exibir o popup de confirmação
+        const modalEl = document.getElementById('modalImportarDuimp');
+        if (modalEl) {
+            const modalInst = bootstrap.Modal.getInstance(modalEl);
+            if (modalInst) modalInst.hide();
+        }
+
+        // POPUP 2: Confirmação da importação da DUIMP
+        const msgConfirmacao = 
+            `Deseja realmente confirmar a importação da DUIMP <strong>${num}</strong>?\n\n` +
+            `Ao confirmar, o sistema irá automaticamente:\n` +
+            `  1. Consultar e puxar os dados oficiais da declaração via integração;\n` +
+            `  2. Armazenar o arquivo original na pasta dedicada "DUIMP Importada";\n` +
+            `  3. Criar um novo rascunho com Origem "DUIMP Importada";\n` +
+            `  4. Pré-preencher a Referência como "${num}" e carregar todos os dados (Emitente, Destinatário/Exportador, Itens, NCMs, Tributos calculados e Valores).`;
+
+        let confirmado = false;
+        if (window.nftConfirm) {
+            confirmado = await window.nftConfirm(msgConfirmacao, {
+                title: 'Confirmar Importação de DUIMP',
+                type: 'info',
+                icon: 'cloud-download',
+                confirmText: 'Sim, Importar e Criar Rascunho',
+                cancelText: 'Cancelar'
+            });
+        } else {
+            confirmado = confirm(`Confirma a importação da DUIMP ${num} e a criação automática do rascunho?`);
+        }
+
+        if (!confirmado) {
+            return;
+        }
+
+        const badge = document.getElementById('status-badge');
+        if (badge) {
+            badge.className = "badge bg-warning py-2 px-3 w-100 text-dark";
+            badge.innerHTML = `<span class="spinner-border spinner-border-sm me-1" style="width: 12px; height: 12px;"></span> Puxando DUIMP ${num}...`;
+        }
+
+        try {
+            const resp = await fetch('/api/duimp/importar_por_numero', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ numero_duimp: num })
+            });
+            const data = await resp.json();
+
+            if (!resp.ok || data.error) {
+                throw new Error(data.error || 'Falha na resposta do servidor');
+            }
+
+            if (badge) {
+                badge.className = "badge bg-success py-2 px-3 w-100";
+                badge.innerText = `DUIMP ${num} Importada (Rascunho #${data.id})`;
+            }
+
+            if (typeof atualizarContadorRascunhos === 'function') {
+                atualizarContadorRascunhos();
+            }
+
+            // Confirmação de abertura imediata do rascunho recém-criado
+            const msgSucesso = 
+                `DUIMP <strong>${num}</strong> importada com sucesso!\n\n` +
+                `• Arquivo arquivado na pasta: "DUIMP Importada"\n` +
+                `• Novo rascunho <strong>#${data.id}</strong> criado com Origem <strong>"DUIMP Importada"</strong>\n` +
+                `• Referência pré-preenchida: <strong>${data.referencia_interna || num}</strong>\n` +
+                `• Moeda / Câmbio Registrado: <strong>${data.moeda_conversao || 'USD'} (R$ ${data.taxa_conversao || '-'})</strong>\n` +
+                `• Quantidade de Itens: ${data.qtd_itens || 0} item(ns)\n` +
+                `• Valor Total: R$ ${formatarNumeroVisualBR(data.valor_total || 0, 2, 2)}\n\n` +
+                `Deseja abrir esse rascunho agora para visualizar todos os dados e itens já preenchidos?`;
+
+            let abrirAgora = false;
+            if (window.nftConfirm) {
+                abrirAgora = await window.nftConfirm(msgSucesso, {
+                    title: 'Importação Concluída com Sucesso!',
+                    type: 'info',
+                    icon: 'check-circle-2',
+                    confirmText: 'Sim, Abrir Rascunho Agora',
+                    cancelText: 'Ver na Lista de Rascunhos'
+                });
+            } else {
+                abrirAgora = confirm(`DUIMP ${num} importada com sucesso! Deseja abrir o rascunho agora?`);
+            }
+
+            if (abrirAgora) {
+                await carregarRascunho(data.id, 'DUIMP Importada', true);
+            } else {
+                if (typeof abrirModalListaRascunhos === 'function') {
+                    abrirModalListaRascunhos();
+                }
+            }
+
+        } catch (err) {
+            console.error("Erro ao importar DUIMP:", err);
+            if (badge) {
+                badge.className = "badge bg-danger py-2 px-3 w-100";
+                badge.innerText = "Erro ao Importar DUIMP";
+            }
+            if (window.nftAlert) {
+                await window.nftAlert(`Não foi possível importar a DUIMP ${num}:\n\n${err.message}`, { title: 'Erro de Importação', type: 'danger' });
+            } else {
+                alert(`Erro ao importar DUIMP ${num}: ${err.message}`);
+            }
+        }
+    }
+
+    // === UPLOAD XML ===
+    function uploadXML() {
+        const modoCfg = (typeof getEditorModoConfig === 'function') ? getEditorModoConfig() : null;
+        const endpoint = (modoCfg && modoCfg.uploadEndpoint) ? modoCfg.uploadEndpoint : '/upload_xml';
+        const fileInput = document.getElementById('xmlFileInput');
+        if(!fileInput || fileInput.files.length === 0) {
+            alert("Por favor, selecione um arquivo XML primeiro!");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+
+        const badge = document.getElementById('status-badge');
+        badge.className = "badge bg-warning py-2 px-3 w-100";
+        badge.innerText = "Processando XML...";
+
+        fetch(endpoint, {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.error) {
+                alert("Erro ao processar XML: " + data.error);
+                badge.className = "badge bg-danger py-2 px-3 w-100";
+                badge.innerText = "Erro";
+                return;
+            }
+            
+            // 1. Preenchimento Seguro do Cabecalho
+            const c = data.cabecalho || {};
+            if (modoCfg && typeof modoCfg.onBeforeFillHeader === 'function') {
+                modoCfg.onBeforeFillHeader(data, c);
+            }
+            setVal('nNF', c.nNF);
+            setVal('indFinal', (c.indFinal !== undefined && c.indFinal !== null && c.indFinal !== '') ? c.indFinal : '1');
+            setVal('serie', c.serie);
+            setVal('natOp', c.natOp);
+            setVal('cfop_padrao', c.cfop_padrao);
+            atualizarCamposIdentificacao(c.tpNF, c.idDest);
+            
+            // Chave de Acesso e Metadados SEFAZ
+            setVal('chaveAcesso', c.chaveAcesso || '');
+            setVal('cUF', c.cUF || '35');
+            setVal('cNF', c.cNF || '');
+            const dhEmiConvertido = converterParaInputDatetime(c.dhEmi);
+            const dhSaiEntConvertido = converterParaInputDatetime(c.dhSaiEnt || c.dhEmi);
+            if (dhEmiConvertido) {
+                setVal('dhEmi', dhEmiConvertido);
+            }
+            if (dhSaiEntConvertido) {
+                setVal('dhSaiEnt', dhSaiEntConvertido);
+            }
+            setVal('mod', c.mod || '55');
+            setVal('tpEmis', c.tpEmis || '1');
+            setVal('cDV', c.cDV || '');
+            if (c.chaveAcesso && c.chaveAcesso.length === 44) {
+                const formatada = c.chaveAcesso.replace(/(\d{4})/g, '$1 ').trim();
+                setVal('chaveAcessoDisplay', formatada);
+            } else {
+                calcularChaveAcessoDinamica();
+            }
+
+            // Nota Fiscal Referenciada (NFref)
+            if (c.refNFe) {
+                const refLimpa = String(c.refNFe).replace(/\D/g, '').slice(0, 44);
+                setVal('refNFe', refLimpa);
+                atualizarBadgeRefNFe(refLimpa.length);
+            } else {
+                setVal('refNFe', '');
+                atualizarBadgeRefNFe(0);
+            }
+            
+            // Guarda modelo tributario do XML para capturar se quiser
+            impostoModeloXml = data.imposto_modelo;
+
+            // Tenta selecionar operacao correspondente na lista
+            const selOp = document.getElementById('select_operacao');
+            const opEncontrada = operacoesCache.find(o => o.nome_operacao.toUpperCase() === (c.natOp || '').toUpperCase());
+            if (opEncontrada) {
+                selOp.value = opEncontrada.nome_operacao;
+                aoSelecionarOperacao(opEncontrada.nome_operacao);
+            } else {
+                // Se nao achou pelo nome exato, seleciona o primeiro compativel com o CFOP
+                const opPorCfop = operacoesCache.find(o => o.cfop_padrao === c.cfop_padrao);
+                if (opPorCfop) {
+                    selOp.value = opPorCfop.nome_operacao;
+                    aoSelecionarOperacao(opPorCfop.nome_operacao);
+                } else {
+                    selOp.value = "";
+                    aoSelecionarOperacao(c.natOp);
+                }
+            }
+
+            // Emitente
+            setVal('emit_xNome', c.emit_xNome);
+            setVal('emit_CNPJ', c.emit_CNPJ);
+            if (c.emit_IE) setVal('emit_IE', c.emit_IE);
+            if (c.emit_CRT) setVal('emit_CRT', c.emit_CRT);
+            setVal('emit_xLgr', c.emit_xLgr);
+            setVal('emit_nro', c.emit_nro);
+            setVal('emit_xCpl', c.emit_xCpl || '');
+            setVal('emit_xBairro', c.emit_xBairro);
+            setVal('emit_cMun', c.emit_cMun);
+            setVal('emit_xMun', c.emit_xMun);
+            setVal('emit_UF', c.emit_UF);
+            setVal('emit_CEP', c.emit_CEP);
+            if (c.emit_cPais) setVal('emit_cPais', c.emit_cPais);
+            if (c.emit_xPais) setVal('emit_xPais', c.emit_xPais);
+            if (typeof aoMudarPaisEmitente === 'function') aoMudarPaisEmitente();
+            
+            // Destinatario
+            setVal('dest_xNome', c.dest_xNome);
+            let tpDocVal = c.dest_tpDoc;
+            if (!tpDocVal) {
+                const docLimpo = String(c.dest_CNPJ_CPF || '').replace(/\D/g, '');
+                if (c.dest_UF === 'EX' || (c.dest_cPais && c.dest_cPais !== '1058') || c.dest_idEstrangeiro || (!docLimpo && (c.idDest === '3' || c.dest_UF === 'EX'))) {
+                    tpDocVal = 'Estrangeiro';
+                } else if (docLimpo.length <= 11 && docLimpo.length > 0) {
+                    tpDocVal = 'CPF';
+                } else {
+                    tpDocVal = 'CNPJ';
+                }
+            }
+            setVal('dest_tpDoc', tpDocVal);
+            atualizarTipoDocumentoDestinatario();
+            if (tpDocVal !== 'Estrangeiro') {
+                setVal('dest_CNPJ_CPF', c.dest_CNPJ_CPF);
+            }
+            setVal('dest_indIEDest', c.dest_indIEDest || '1');
+            if (window.atualizarEstadoInscricaoEstadual) atualizarEstadoInscricaoEstadual();
+            setVal('dest_IE', c.dest_IE || '');
+            atualizarEstadoInscricaoEstadual();
+            setVal('dest_xLgr', c.dest_xLgr);
+            setVal('dest_nro', c.dest_nro);
+            setVal('dest_xCpl', c.dest_xCpl || '');
+            setVal('dest_xBairro', c.dest_xBairro);
+            setVal('dest_cMun', c.dest_cMun);
+            setVal('dest_xMun', c.dest_xMun);
+            setVal('dest_UF', c.dest_UF);
+            setVal('dest_CEP', c.dest_CEP);
+            if (c.dest_cPais) setVal('dest_cPais', c.dest_cPais);
+            if (c.dest_xPais) setVal('dest_xPais', c.dest_xPais);
+            if (c.verProc) setVal('verProc', c.verProc);
+            if (typeof aoMudarPaisDestinatario === 'function') aoMudarPaisDestinatario();
+
+            // Identificação da Importação
+            setVal('import_nDI', c.import_nDI || '');
+            setVal('import_dDI', c.import_dDI || '');
+            setVal('import_cExportador', c.import_cExportador || c.dest_xNome || '');
+            setVal('import_tpViaTransp', c.import_tpViaTransp || '1');
+            setVal('import_tpIntermedio', c.import_tpIntermedio || '1');
+            setVal('import_UFDesemb', c.import_UFDesemb || '');
+            setVal('import_xLocDesemb', c.import_xLocDesemb || '');
+            setVal('import_dDesemb', c.import_dDesemb || '');
+
+            // 2. Preenchimento Seguro do Rodape
+            const r = data.rodape || {};
+            setVal('infCpl', r.infCpl || '');
+
+            // Transporte e Volumes
+            const tr = r.transporte || {};
+            setVal('transp_modFrete', (tr.modFrete !== undefined && tr.modFrete !== null && tr.modFrete !== '') ? tr.modFrete : '1');
+            setVal('transp_CNPJ_CPF', tr.CNPJ_CPF || '');
+            setVal('transp_xNome', tr.xNome || '');
+            setVal('transp_IE', tr.IE || '');
+            setVal('transp_xEnder', tr.xEnder || '');
+            setVal('transp_xMun', tr.xMun || '');
+            setVal('transp_UF', tr.UF || '');
+            if (tr.CEP) setVal('transp_CEP', tr.CEP);
+            setVal('transp_qVol', tr.qVol || '');
+            setVal('transp_esp', tr.esp || '');
+            setVal('transp_pesoL', formatarNumeroVisualBR(tr.pesoL, 3, 3));
+            setVal('transp_pesoB', formatarNumeroVisualBR(tr.pesoB, 3, 3));
+
+            // Totais da Nota Fiscal (ICMSTot)
+            const tot = r.totais || {};
+            setVal('tot_vProd', formatarNumeroVisualBR(tot.vProd, 2, 2));
+            setVal('tot_vFrete', formatarNumeroVisualBR(tot.vFrete, 2, 2));
+            setVal('tot_vSeg', formatarNumeroVisualBR(tot.vSeg, 2, 2));
+            setVal('tot_vOutro', formatarNumeroVisualBR(tot.vOutro, 2, 2));
+            setVal('tot_vDesc', formatarNumeroVisualBR(tot.vDesc, 2, 2));
+            const vNFTotal = tot.vNF || r.vNF || '';
+            setVal('tot_vNF', formatarNumeroVisualBR(vNFTotal, 2, 2));
+            setVal('vNF', formatarNumeroVisualBR(vNFTotal, 2, 2));
+
+            setVal('tot_vBC', formatarNumeroVisualBR(tot.vBC, 2, 2));
+            setVal('tot_vICMS', formatarNumeroVisualBR(tot.vICMS, 2, 2));
+            setVal('tot_vBCST', formatarNumeroVisualBR(tot.vBCST, 2, 2));
+            setVal('tot_vST', formatarNumeroVisualBR(tot.vST, 2, 2));
+            setVal('tot_vII', formatarNumeroVisualBR(tot.vII, 2, 2));
+            setVal('tot_vIPI', formatarNumeroVisualBR(tot.vIPI, 2, 2));
+            setVal('tot_vPIS', formatarNumeroVisualBR(tot.vPIS, 2, 2));
+            setVal('tot_vCOFINS', formatarNumeroVisualBR(tot.vCOFINS, 2, 2));
+
+            // 3. Preenchimento da Tabela de Itens
+            itensCache = data.itens || [];
+            const cfopAtivoUpload = obterCfopOperacaoAtiva();
+            if (cfopAtivoUpload) {
+                itensCache.forEach(it => { it.CFOP = cfopAtivoUpload; });
+            }
+            itensCache.forEach((it, idx) => {
+                if (!it.nItem) it.nItem = String(idx + 1);
+                const q = parseNum(it.qCom);
+                const vu = parseNum(it.vUnCom);
+                if (q > 0 && vu > 0) it.vProd = (q * vu).toFixed(2);
+                it.vBC_II = (parseNum(it.vProd) + parseNum(it.vFrete) + parseNum(it.vSeg)).toFixed(2);
+                const uTribStr = String(it.uTrib || '').trim().toUpperCase();
+                const cfopStr = String(it.CFOP || '').trim();
+                const pesoLVal = parseNum(it.pesoL || it.kg_liquido || it.peso_liquido);
+                if ((uTribStr === 'KG' || cfopStr.startsWith('7')) && pesoLVal > 0) {
+                    it.pesoL = pesoLVal.toFixed(4);
+                    if (!it.qTrib || parseNum(it.qTrib) <= 0) {
+                        it.qTrib = pesoLVal.toFixed(4);
+                    }
+                    if (parseNum(it.vProd) > 0 && (!it.vUnTrib || parseNum(it.vUnTrib) <= 0)) {
+                        it.vUnTrib = (parseNum(it.vProd) / pesoLVal).toFixed(4);
+                    }
+                }
+                if (typeof window.montarTextoInfAdProd === 'function') {
+                    it.infAdProd = window.montarTextoInfAdProd(it);
+                }
+            });
+            document.getElementById('itens-badge').innerText = itensCache.length;
+            
+            if (itensTable) {
+                itensTable.setData(itensCache);
+            }
+
+            // 4. Preenchimento dos Parâmetros de Rateio e Câmbio PTAX do XML
+            const rateio = data.resumo_rateio || {};
+            setVal('rateio_vAFRMM', formatarNumeroVisualBR(rateio.vAFRMM, 2, 2));
+            setVal('rateio_vSiscomex', formatarNumeroVisualBR(rateio.vDespAdu, 2, 2));
+            setVal('rateio_vFrete', formatarNumeroVisualBR(rateio.vFrete, 2, 2));
+            setVal('rateio_vSeg', formatarNumeroVisualBR(rateio.vSeg, 2, 2));
+            setVal('rateio_vOutro', formatarNumeroVisualBR(rateio.vOutro, 2, 2));
+
+            if (rateio.data_di) {
+                setVal('ptax_data', rateio.data_di);
+            }
+            if (modoCfg && typeof modoCfg.onUploadSuccess === 'function') {
+                modoCfg.onUploadSuccess(data, {
+                    setVal,
+                    getVal,
+                    definirMoedaSelecionada,
+                    consultarCotacaoPtax
+                });
+            }
+
+            atualizarBadgesRateioEItens();
+
+            // Guardar XML original
+            xmlOriginalData = data.xml_original;
+
+            badge.className = "badge bg-success py-2 px-3 w-100";
+            badge.innerText = itensCache.length + " item(ns) lido(s)";
+
+            // Muda automaticamente para a aba de Itens para exibir a tabela ao usuario
+            const tabBtn = document.getElementById('itens-tab');
+            if (tabBtn) {
+                const tabInstance = bootstrap.Tab.getOrCreateInstance(tabBtn);
+                tabInstance.show();
+            }
+            setTimeout(() => {
+                if (itensTable) {
+                    itensTable.redraw(true);
+                }
+            }, 100);
+        })
+        .catch(err => {
+            alert("Erro durante a execução: " + err);
+            badge.className = "badge bg-danger py-2 px-3 w-100";
+            badge.innerText = "Erro";
+        });
+    }
+
+    // === EXPORTAR / IMPORTAR EXCEL ===
+    function exportarExcel() {
+        const itens = (itensTable) ? itensTable.getData() : itensCache;
+        if(itens.length === 0) {
+            alert("Nenhum item disponível para exportar.");
+            return;
+        }
+        
+        fetch('/export_excel', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ itens: itens })
+        })
+        .then(res => res.blob())
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "Itens_NFe_" + (getVal('nNF') || "modelo") + ".xlsx";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        });
+    }
+
+    function importarExcel(inputElement) {
+        if(inputElement.files.length === 0) return;
+        
+        const formData = new FormData();
+        formData.append("file", inputElement.files[0]);
+        
+        fetch('/import_excel', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.error) {
+                alert("Erro ao importar Excel: " + data.error);
+                return;
+            }
+            itensCache = data.itens || [];
+            const cfopAtivoExcel = obterCfopOperacaoAtiva();
+            if (cfopAtivoExcel) {
+                itensCache.forEach(it => { it.CFOP = cfopAtivoExcel; });
+            }
+            itensCache.forEach((it, idx) => {
+                if (!it.nItem) it.nItem = String(idx + 1);
+                const q = parseNum(it.qCom);
+                const vu = parseNum(it.vUnCom);
+                if (q > 0 && vu > 0) it.vProd = (q * vu).toFixed(2);
+                it.vBC_II = (parseNum(it.vProd) + parseNum(it.vFrete) + parseNum(it.vSeg)).toFixed(2);
+                const uTribStr = String(it.uTrib || '').trim().toUpperCase();
+                const cfopStr = String(it.CFOP || '').trim();
+                const pesoLVal = parseNum(it.pesoL || it.kg_liquido || it.peso_liquido);
+                if ((uTribStr === 'KG' || cfopStr.startsWith('7')) && pesoLVal > 0) {
+                    it.pesoL = pesoLVal.toFixed(4);
+                    if (!it.qTrib || parseNum(it.qTrib) <= 0) {
+                        it.qTrib = pesoLVal.toFixed(4);
+                    }
+                    if (parseNum(it.vProd) > 0 && (!it.vUnTrib || parseNum(it.vUnTrib) <= 0)) {
+                        it.vUnTrib = (parseNum(it.vProd) / pesoLVal).toFixed(4);
+                    }
+                }
+                if (typeof window.montarTextoInfAdProd === 'function') {
+                    it.infAdProd = window.montarTextoInfAdProd(it);
+                }
+            });
+            document.getElementById('itens-badge').innerText = itensCache.length;
+            if (itensTable) {
+                itensTable.setData(itensCache);
+                recalcularTotaisDosItens(true);
+                setTimeout(() => { itensTable.redraw(true); }, 100);
+            }
+            alert("Excel importado com sucesso! " + itensCache.length + " itens carregados na tabela.");
+        });
+        
+        inputElement.value = "";
+    }
+
+    // === GERAR NOVO XML ===
+    window.obterXMLFinal = () => generateXML(true);
+    async function generateXML(returnTextOnly = false) {
+        const modoCfg = (typeof getEditorModoConfig === 'function') ? getEditorModoConfig() : null;
+        const itensAtuais = (itensTable ? itensTable.getData() : itensCache) || [];
+        const faltaDados = (modoCfg && modoCfg.requireXmlOrItems)
+            ? (!xmlOriginalData && (!itensAtuais || itensAtuais.length === 0))
+            : (!itensAtuais || itensAtuais.length === 0);
+        if (faltaDados) {
+            const msg = (modoCfg && modoCfg.emptyItemsMsg) || "A nota não possui nenhum item cadastrado.";
+            const titulo = (modoCfg && modoCfg.emptyItemsTitle) || "Nenhum Item";
+            if (typeof nftAlert === 'function') {
+                await nftAlert(msg, { type: 'warning', title: titulo });
+            } else {
+                alert(msg);
+            }
+            return;
+        }
+
+        // Garante que a chave de acesso esteja recalculada com os dados atuais
+        calcularChaveAcessoDinamica();
+
+        const itensLimpos = (itensTable ? itensTable.getData() : itensCache).map(item => {
+            const novo = { ...item };
+            const camposNum = [
+                'qCom', 'vUnCom', 'vProd', 'qTrib', 'vUnTrib', 'vFrete', 'vSeg', 'vDesc', 'vOutro',
+                'vAFRMM', 'vBC_IPI', 'pIPI', 'vIPI', 'vBC_II', 'vDespAdu', 'vII', 'vIOF',
+                'vBC_PIS', 'pPIS', 'vPIS', 'vBC_COFINS', 'pCOFINS', 'vCOFINS'
+            ];
+            camposNum.forEach(k => {
+                if (novo[k] !== undefined && novo[k] !== null && novo[k] !== '') {
+                    let v = String(novo[k]).trim();
+                    if (v.includes(',') && v.includes('.')) {
+                        v = v.replace(/\./g, '').replace(',', '.');
+                    } else if (v.includes(',')) {
+                        v = v.replace(',', '.');
+                    }
+                    novo[k] = v;
+                }
+            });
+            return novo;
+        });
+
+        // Verificação preventiva de itens com qTrib vazio (ex: M3 não preenchido ou pendente)
+        const itensComQTribVazio = itensLimpos.filter(it => !it.qTrib || String(it.qTrib).trim() === '' || parseNum(it.qTrib) <= 0);
+        if (itensComQTribVazio.length > 0) {
+            const listaFaltantes = itensComQTribVazio.slice(0, 5).map(it => `• Item ${it.nItem || '?'}: ${it.xProd ? it.xProd.slice(0, 32) : (it.cProd || 'Produto')} (uTrib: ${it.uTrib || '?'})`).join('\n');
+            const maisStr = itensComQTribVazio.length > 5 ? `\n...e mais ${itensComQTribVazio.length - 5} item(ns).` : '';
+            const conf = await nftConfirm(`Os seguintes ${itensComQTribVazio.length} item(ns) estão com o campo 'Qtd. Trib.' vazio ou zerado:\n${listaFaltantes}${maisStr}\n\nPara a SEFAZ (especialmente em exportações), este campo é de preenchimento obrigatório.\n\nDeseja gerar o XML mesmo assim?`, {
+                title: 'Quantidade Tributável em Branco',
+                type: 'warning',
+                confirmText: 'Gerar Mesmo Assim',
+                cancelText: 'Voltar e Revisar'
+            });
+            if (!conf) {
+                return;
+            }
+        }
+
+        if (typeof recalcularTotaisDosItens === 'function') {
+            recalcularTotaisDosItens(true);
+        }
+
+        const payload = {
+            xml_original: xmlOriginalData,
+            cabecalho: {
+                nNF: getVal('nNF'),
+                indFinal: getVal('indFinal') || '1',
+                serie: getVal('serie'),
+                refNFe: (getVal('refNFe') || '').replace(/\D/g, '').slice(0, 44),
+                natOp: getVal('natOp') || getVal('select_operacao'),
+                cfop_padrao: getVal('cfop_padrao'),
+                tpNF: getVal('tpNF'),
+                idDest: getVal('idDest'),
+                chaveAcesso: getVal('chaveAcesso'),
+                cNF: getVal('cNF'),
+                cUF: getVal('cUF'),
+                dhEmi: getVal('dhEmi'),
+                dhSaiEnt: getVal('dhSaiEnt') || getVal('dhEmi'),
+                mod: getVal('mod'),
+                tpEmis: getVal('tpEmis'),
+                cDV: getVal('cDV'),
+                
+                emit_xNome: getVal('emit_xNome'),
+                emit_CNPJ: getVal('emit_CNPJ'),
+                emit_xLgr: getVal('emit_xLgr'),
+                emit_nro: getVal('emit_nro'),
+                emit_xCpl: getVal('emit_xCpl'),
+                emit_xBairro: getVal('emit_xBairro'),
+                emit_cMun: getVal('emit_cMun'),
+                emit_xMun: getVal('emit_xMun'),
+                emit_UF: getVal('emit_UF'),
+                emit_CEP: getVal('emit_CEP'),
+                emit_IE: getVal('emit_IE') || (window.currentCabecalho && window.currentCabecalho.emit_IE) || '138843326117',
+                emit_CRT: getVal('emit_CRT') || (window.currentCabecalho && window.currentCabecalho.emit_CRT) || '1',
+                emit_cPais: getVal('emit_cPais') || (window.currentCabecalho && window.currentCabecalho.emit_cPais) || '1058',
+                emit_xPais: getVal('emit_xPais') || (window.currentCabecalho && window.currentCabecalho.emit_xPais) || 'Brasil',
+                
+                dest_xNome: getVal('dest_xNome'),
+                dest_tpDoc: getVal('dest_tpDoc') || 'CNPJ',
+                dest_CNPJ_CPF: getVal('dest_CNPJ_CPF'),
+                dest_idEstrangeiro: getVal('dest_idEstrangeiro') || getVal('dest_CNPJ_CPF') || (window.currentCabecalho && window.currentCabecalho.dest_idEstrangeiro) || '',
+                dest_indIEDest: getVal('dest_indIEDest') || '9',
+                dest_IE: getVal('dest_IE') || '',
+                dest_xLgr: getVal('dest_xLgr'),
+                dest_nro: getVal('dest_nro'),
+                dest_xCpl: getVal('dest_xCpl'),
+                dest_xBairro: getVal('dest_xBairro'),
+                dest_cMun: getVal('dest_cMun'),
+                dest_xMun: getVal('dest_xMun'),
+                dest_UF: getVal('dest_UF'),
+                dest_CEP: getVal('dest_CEP'),
+                dest_cPais: getVal('dest_cPais') || (window.currentCabecalho && window.currentCabecalho.dest_cPais) || '1058',
+                dest_xPais: getVal('dest_xPais') || (window.currentCabecalho && window.currentCabecalho.dest_xPais) || 'Brasil',
+                verProc: getVal('verProc') || '4.01_sebrae_b057',
+                exporta_UFSaidaPais: getVal('exporta_UFSaidaPais'),
+                exporta_xLocExporta: getVal('exporta_xLocExporta'),
+                exporta_xLocDespacho: getVal('exporta_xLocDespacho'),
+                tPag: getVal('tPag') || getVal('tot_tPag') || '90',
+                regime_tributario: window._regimeTributarioAtivo || 'SUSPENSAO'
+            },
+            referencia_interna: (typeof obterReferenciaInterna === 'function' ? obterReferenciaInterna() : (getVal('referencia_interna') || getVal('referenciaInterna') || '')).trim(),
+            itens: itensLimpos,
+            rodape: {
+                infCpl: getVal('infCpl'),
+                pagamento: {
+                    tPag: getVal('tPag') || getVal('tot_tPag') || '90',
+                    vPag: (getVal('tPag') === '90' || getVal('tot_tPag') === '90') ? '0.00' : mutatorLimparNumero(getVal('tot_vPag') || getVal('tot_vNF') || getVal('vNF'))
+                },
+                transporte: {
+                    modFrete: getVal('transp_modFrete'),
+                    CNPJ_CPF: getVal('transp_CNPJ_CPF'),
+                    xNome: getVal('transp_xNome'),
+                    IE: getVal('transp_IE'),
+                    xEnder: getVal('transp_xEnder'),
+                    xMun: getVal('transp_xMun'),
+                    UF: getVal('transp_UF'),
+                    CEP: getVal('transp_CEP'),
+                    qVol: getVal('transp_qVol'),
+                    esp: getVal('transp_esp'),
+                    pesoL: mutatorLimparNumero(getVal('transp_pesoL')),
+                    pesoB: mutatorLimparNumero(getVal('transp_pesoB'))
+                },
+                exportacao: {
+                    UFSaidaPais: getVal('exporta_UFSaidaPais'),
+                    xLocExporta: getVal('exporta_xLocExporta'),
+                    xLocDespacho: getVal('exporta_xLocDespacho')
+                },
+                totais: {
+                    vProd: mutatorLimparNumero(getVal('tot_vProd')),
+                    vFrete: mutatorLimparNumero(getVal('tot_vFrete')),
+                    vSeg: mutatorLimparNumero(getVal('tot_vSeg')),
+                    vOutro: mutatorLimparNumero(getVal('tot_vOutro')),
+                    vDesc: mutatorLimparNumero(getVal('tot_vDesc')),
+                    vNF: mutatorLimparNumero(getVal('tot_vNF') || getVal('vNF')),
+                    vBC: mutatorLimparNumero(getVal('tot_vBC')),
+                    vICMS: mutatorLimparNumero(getVal('tot_vICMS')),
+                    vBCST: mutatorLimparNumero(getVal('tot_vBCST')),
+                    vST: mutatorLimparNumero(getVal('tot_vST')),
+                    vII: mutatorLimparNumero(getVal('tot_vII')),
+                    vIPI: mutatorLimparNumero(getVal('tot_vIPI')),
+                    vPIS: mutatorLimparNumero(getVal('tot_vPIS')),
+                    vCOFINS: mutatorLimparNumero(getVal('tot_vCOFINS'))
+                }
+            },
+            somente_nfe: returnTextOnly,
+            finalidade: returnTextOnly ? 'emissao' : 'geracao'
+        };
+
+        return fetch('/generate_xml', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(async res => {
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || `Erro HTTP ${res.status}`);
+            }
+            return returnTextOnly ? res.text() : res.blob();
+        })
+        .then(data => {
+            if (returnTextOnly) return data;
+            const blob = data;
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const refDoc = (typeof obterReferenciaInterna === 'function' ? obterReferenciaInterna() : (getVal('referencia_interna') || getVal('referenciaInterna') || '')).trim();
+            const opRaw = (getVal('select_operacao') || getVal('natOp') || '').trim();
+            // Remove qualquer conteúdo entre parênteses (ex: "(5102) " -> "")
+            const opLimpa = opRaw.replace(/\(.*?\)/g, '').trim();
+
+            let nomeFinalBase = "";
+            if (refDoc && opLimpa) {
+                nomeFinalBase = `${refDoc} - ${opLimpa}`;
+            } else if (refDoc) {
+                nomeFinalBase = refDoc;
+            } else if (opLimpa) {
+                nomeFinalBase = `NFe_${getVal('nNF') || 'gerada'} - ${opLimpa}`;
+            } else {
+                nomeFinalBase = `NFe_${getVal('nNF') || 'gerada'}`;
+            }
+
+            let nomeSanitizado = nomeFinalBase.replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, '_');
+            while (nomeSanitizado.includes('__')) {
+                nomeSanitizado = nomeSanitizado.replace('__', '_');
+            }
+            a.download = nomeSanitizado.endsWith('.xml') ? nomeSanitizado : `${nomeSanitizado}.xml`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            if (typeof nftToast === 'function') {
+                nftToast('XML gerado com sucesso!', 'success');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Erro ao gerar XML: " + err.message);
+        });
+    }
+
+    // =========================================================================
+    // SISTEMA DE RASCUNHOS SALVOS (ARQUIVOS ISOLADOS + BANCO DE DADOS UNIFICADO)
+    // =========================================================================
+    const _modoAtual = (typeof getEditorModoConfig === 'function') ? getEditorModoConfig() : null;
+    window.NOME_MODULO_ORIGEM = _modoAtual ? _modoAtual.nomeModulo : "XML Rascunho";
+    window.idRascunhoAtual = null;
+    window.nomeArquivoOriginal = (_modoAtual && _modoAtual.key === 'nova_nf') ? "Nova_Nota.xml" : "";
+
+    // Armazena nome do arquivo quando o usuário seleciona um XML
+    const xmlInputEl = document.getElementById('xmlFileInput');
+    if (xmlInputEl) {
+        xmlInputEl.addEventListener('change', function(e) {
+            if (e.target.files && e.target.files[0]) {
+                window.nomeArquivoOriginal = e.target.files[0].name;
+            }
+        });
+    }
+
+    // Monitora campo de Referência Interna principal para manter sincronizado
+    function obterReferenciaInterna() {
+        return (getVal('referencia_interna') || getVal('referenciaInterna') || '').trim();
+    }
+
+    function definirReferenciaInterna(val) {
+        if (window._refRascunhoCarregado && val && val.trim().toUpperCase() !== window._refRascunhoCarregado.toUpperCase()) {
+            // Se o usuário alterou a referência, desvincula do ID anterior para não sobrescrever rascunho alheio
+            window.idRascunhoAtual = null;
+            window._chaveAcessoBloqueada = false;
+        }
+        const v = val || '';
+        setVal('referencia_interna', v);
+        setVal('referenciaInterna', v);
+        const topbarEl = document.getElementById('topbar-titulo-modulo');
+        if (topbarEl && v) {
+            topbarEl.innerText = v;
+        }
+        const modalRefEl = document.getElementById('rascunho_ref_input');
+        if (modalRefEl && modalRefEl.value !== v) {
+            modalRefEl.value = v;
+        }
+    }
+
+    function atualizarReferenciaRascunho(val) {
+        definirReferenciaInterna(val);
+    }
+
+    // Vincula inputs de referencia interna
+    document.addEventListener('DOMContentLoaded', function() {
+        ['referencia_interna', 'referenciaInterna'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', function() {
+                    definirReferenciaInterna(this.value);
+                });
+            }
+        });
+        const modalRefEl = document.getElementById('rascunho_ref_input');
+        if (modalRefEl) {
+            modalRefEl.addEventListener('input', function() {
+                setVal('referencia_interna', this.value);
+                setVal('referenciaInterna', this.value);
+            });
+        }
+    });
+
+    function abrirModalSalvarRascunho() {
+        const refAtual = obterReferenciaInterna();
+        const refInputModal = document.getElementById('rascunho_ref_input');
+        if (refInputModal) {
+            refInputModal.value = refAtual;
+        }
+
+        // 1. Obtém e formata o Tipo de Operação ativo
+        let opAtivaTexto = '';
+        const selOpVal = getVal('select_operacao');
+        const natOpVal = getVal('natOp');
+        const opNomeBusca = selOpVal || natOpVal;
+
+        if (opNomeBusca && operacoesCache && operacoesCache.length > 0) {
+            const opObj = operacoesCache.find(o => 
+                o.nome_operacao.toUpperCase() === opNomeBusca.toUpperCase() ||
+                `(${o.cfop_padrao}) ${o.nome_operacao}`.toUpperCase() === opNomeBusca.toUpperCase()
+            );
+            if (opObj) {
+                opAtivaTexto = `(${opObj.cfop_padrao}) ${opObj.nome_operacao}`;
+            }
+        }
+        if (!opAtivaTexto && opNomeBusca) {
+            opAtivaTexto = opNomeBusca;
+        }
+        if (!opAtivaTexto) {
+            const lblOpEl = document.getElementById('lbl-operacao-ativa');
+            if (lblOpEl && lblOpEl.innerText && !lblOpEl.innerText.includes('Nenhuma') && !lblOpEl.innerText.includes('-')) {
+                opAtivaTexto = lblOpEl.innerText.trim();
+            }
+        }
+        if (!opAtivaTexto) {
+            opAtivaTexto = 'Nenhuma selecionada';
+        }
+
+        // 2. Obtém a Qtd de Itens
+        const itensAtuais = (itensTable ? itensTable.getData() : (itensCache || []));
+        const qtdItens = (itensAtuais && Array.isArray(itensAtuais)) ? itensAtuais.length : 0;
+
+        // 3. Obtém ou calcula o Valor Total Estimado
+        let vTotalNum = parseNum(getVal('tot_vNF') || getVal('vNF'));
+        if (vTotalNum <= 0 && itensAtuais && itensAtuais.length > 0) {
+            itensAtuais.forEach(it => {
+                const vp = parseNum(it.vProd || 0);
+                const vf = parseNum(it.vFrete || 0);
+                const vo = parseNum(it.vOutro || 0);
+                const vi = parseNum(it.vIPI || 0);
+                const vii = parseNum(it.vII || 0);
+                vTotalNum += (vp + vf + vo + vi + vii);
+            });
+        }
+
+        // Preenche resumo dos dados no modal
+        const lblOp = document.getElementById('rascunho_modal_op_preview');
+        const lblItens = document.getElementById('rascunho_modal_itens_preview');
+        const lblVal = document.getElementById('rascunho_modal_valor_preview');
+
+        if (lblOp) lblOp.innerText = opAtivaTexto;
+        if (lblItens) lblItens.innerText = `${qtdItens}`;
+        if (lblVal) lblVal.innerText = `R$ ${formatarNumeroVisualBR(vTotalNum, 2, 2)}`;
+
+        // Guarda valores em memória para inclusão no payload ao salvar
+        window._rascunhoQtdItensCalc = qtdItens;
+        window._rascunhoValorTotalCalc = vTotalNum;
+        window._rascunhoTipoOperacaoCalc = (opAtivaTexto !== 'Nenhuma selecionada') ? opAtivaTexto : (getVal('natOp') || getVal('select_operacao') || '');
+
+        // Carrega categorias disponíveis dinamicamente no select
+        fetch('/api/rascunhos/categorias')
+            .then(res => res.json())
+            .then(cats => {
+                const sel = document.getElementById('rascunho_cat_select');
+                if (sel) {
+                    const defCat = (_modoAtual && _modoAtual.defaultCategoria) ? _modoAtual.defaultCategoria : 'Geral';
+                    const valorAtual = sel.value || defCat;
+                    sel.innerHTML = '';
+                    (cats || [defCat, 'Geral', 'Importação', 'Exportação', 'Remessa', 'Devolução', 'Venda'].filter((v, i, a) => a.indexOf(v) === i)).forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c;
+                        opt.textContent = c;
+                        if (c === valorAtual) opt.selected = true;
+                        sel.appendChild(opt);
+                    });
+                    const optNova = document.createElement('option');
+                    optNova.value = '__nova__';
+                    optNova.textContent = '+ Nova Categoria...';
+                    sel.appendChild(optNova);
+                }
+            })
+            .catch(() => {});
+
+        const modalEl = document.getElementById('modalSalvarRascunho');
+        if (modalEl) {
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+            setTimeout(() => {
+                if (window.lucide) lucide.createIcons();
+                if (refInputModal) refInputModal.focus();
+            }, 150);
+        }
+    }
+
+    function verificarCategoriaOutra(sel) {
+        const inputNova = document.getElementById('rascunho_cat_custom');
+        if (!inputNova) return;
+        if (sel && sel.value === '__nova__') {
+            inputNova.classList.remove('d-none');
+            inputNova.focus();
+        } else {
+            inputNova.classList.add('d-none');
+            inputNova.value = '';
+        }
+    }
+
+    async function confirmarSalvarRascunho(silent = false) {
+        const refInput = document.getElementById('rascunho_ref_input');
+        const refVal = (refInput ? refInput.value : '').trim();
+
+        const defCatSave = (_modoAtual && _modoAtual.defaultCategoria) ? _modoAtual.defaultCategoria : 'Geral';
+        const catSelect = document.getElementById('rascunho_cat_select');
+        let catVal = catSelect ? catSelect.value : defCatSave;
+        if (catVal === '__nova__') {
+            const catCustom = document.getElementById('rascunho_cat_custom');
+            catVal = (catCustom ? catCustom.value : '').trim() || defCatSave;
+        }
+
+        // Sincroniza de volta com os campos de referência principal
+        definirReferenciaInterna(refVal);
+
+        // Coleta todos os campos do formulário
+        const idsCabecalho = [
+            'nNF', 'indFinal', 'serie', 'refNFe', 'natOp', 'cfop_padrao', 'tpNF', 'idDest', 'chaveAcesso', 'cNF', 'cUF', 'dhEmi', 'dhSaiEnt', 'mod', 'tpEmis', 'cDV',
+            'emit_xNome', 'emit_CNPJ', 'emit_IE', 'emit_CRT', 'emit_xLgr', 'emit_nro', 'emit_xCpl', 'emit_xBairro', 'emit_cMun', 'emit_xMun', 'emit_UF', 'emit_CEP', 'emit_cPais', 'emit_xPais',
+            'dest_xNome', 'dest_tpDoc', 'dest_CNPJ_CPF', 'dest_indIEDest', 'dest_IE', 'dest_xLgr', 'dest_nro', 'dest_xCpl', 'dest_xBairro', 'dest_cMun', 'dest_xMun', 'dest_UF', 'dest_CEP', 'dest_cPais', 'dest_xPais',
+            'import_nDI', 'import_dDI', 'import_cExportador', 'import_tpViaTransp', 'import_tpIntermedio', 'import_UFDesemb', 'import_xLocDesemb', 'import_dDesemb',
+            'modFrete', 'transp_CNPJ_CPF', 'transp_xNome', 'transp_IE', 'transp_xEnder', 'transp_xMun', 'transp_UF', 'transp_qVol', 'transp_esp', 'transp_pesoL', 'transp_pesoB',
+            'tot_vProd', 'tot_vFrete', 'tot_vSeg', 'tot_vOutro', 'tot_vDesc', 'tot_vNF', 'vNF', 'tot_vBC', 'tot_vICMS', 'tot_vBCST', 'tot_vST', 'tot_vII', 'tot_vIPI', 'tot_vPIS', 'tot_vCOFINS',
+            'rateio_vAFRMM', 'rateio_vSiscomex', 'rateio_vFrete', 'rateio_vSeg', 'rateio_vOutro', 'ptax_data', 'ptax_moeda', 'ptax_moeda_custom', 'ptax_cotacao_venda', 'ptax_taxa_utilizada', 'criterio_rateio',
+            'exporta_UFSaidaPais', 'exporta_xLocExporta', 'exporta_xLocDespacho',
+            'infCpl', 'select_operacao', 'referencia_interna', 'referenciaInterna',
+            'tPag', 'tot_tPag', 'tot_vPag', 'regime_tributario'
+        ];
+
+        const cabecalhoDados = {};
+        idsCabecalho.forEach(id => {
+            cabecalhoDados[id] = getVal(id);
+        });
+        cabecalhoDados['transp_modFrete'] = getVal('transp_modFrete') || '1';
+        cabecalhoDados['modFrete'] = getVal('transp_modFrete') || '1';
+
+        const itensDados = (itensTable ? itensTable.getData() : (itensCache || []));
+        const qtdFinal = (window._rascunhoQtdItensCalc !== undefined) ? window._rascunhoQtdItensCalc : itensDados.length;
+        const vNFTotalNum = (window._rascunhoValorTotalCalc !== undefined && window._rascunhoValorTotalCalc > 0)
+            ? window._rascunhoValorTotalCalc
+            : parseNum(getVal('tot_vNF') || getVal('vNF'));
+        const opFinal = window._rascunhoTipoOperacaoCalc || getVal('natOp') || getVal('select_operacao') || '';
+        // Captura Histórico SEFAZ
+        const sefazHistory = [];
+        const rows = document.querySelectorAll('#tbody-historico-sefaz tr');
+        rows.forEach(tr => {
+            const cells = tr.querySelectorAll('td');
+            if (cells.length >= 8) {
+                const rawChave = cells[4].innerText.replace(/\D/g, '').trim();
+                const rawNnf = cells[1].innerText.trim();
+                const rawMotivo = cells[6].innerText.trim();
+                const motivoTitle = cells[6].getAttribute('title') || rawMotivo;
+                const rawProt = cells[7].innerText.trim();
+                const rawStatus = cells[5].innerText.trim();
+                const rawAmb = cells[2].innerText.trim();
+                if (rawChave || rawStatus || rawMotivo) {
+                    sefazHistory.push({
+                        data: cells[0].innerText.trim(),
+                        nnf: rawNnf,
+                        ambiente: rawAmb,
+                        arquivos: '',
+                        chave: rawChave,
+                        status: rawStatus,
+                        motivo: rawMotivo,
+                        motivoTitle: motivoTitle,
+                        protocolo: rawProt
+                    });
+                }
+            } else if (cells.length === 7) {
+                const rawChave = cells[3].innerText.replace(/\D/g, '').trim();
+                const rawNnf = rawChave.length >= 34 ? String(parseInt(rawChave.substring(25, 34), 10)) : '';
+                const rawMotivo = cells[5].innerText.trim();
+                const motivoTitle = cells[5].getAttribute('title') || rawMotivo;
+                const rawProt = cells[6].innerText.trim();
+                const rawStatus = cells[4].innerText.trim();
+                const rawAmb = cells[1].innerText.trim();
+                if (rawChave || rawStatus || rawMotivo) {
+                    sefazHistory.push({
+                        data: cells[0].innerText.trim(),
+                        nnf: rawNnf,
+                        ambiente: rawAmb,
+                        arquivos: '',
+                        chave: rawChave,
+                        status: rawStatus,
+                        motivo: rawMotivo,
+                        motivoTitle: motivoTitle,
+                        protocolo: rawProt
+                    });
+                }
+            }
+        });
+
+        const payloadRascunho = {
+            id: window.idRascunhoAtual,
+            referencia_interna: refVal,
+            categoria: catVal,
+            origem: window.NOME_MODULO_ORIGEM,
+            tipo_operacao: opFinal,
+            operacao_id: getVal('cfop_padrao') || '',
+            nome_arquivo_original: window.nomeArquivoOriginal || (xmlInputEl && xmlInputEl.files[0] ? xmlInputEl.files[0].name : ((_modoAtual && _modoAtual.defaultArquivoNome) || "Rascunho.xml")),
+            chave_acesso: getVal('chaveAcesso') || '',
+            qtd_itens: qtdFinal,
+            valor_total: vNFTotalNum,
+            dados_completos: {
+                cabecalho: cabecalhoDados,
+                itens: itensDados,
+                sefaz_history: sefazHistory,
+                xml_original: xmlOriginalData || '',
+                nome_arquivo_original: window.nomeArquivoOriginal || '',
+                referencia_interna: refVal,
+                categoria: catVal,
+                origem: window.NOME_MODULO_ORIGEM,
+                tipo_operacao: opFinal
+            }
+        };
+
+        try {
+            const resp = await fetch('/api/rascunhos/salvar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payloadRascunho)
+            });
+            const result = await resp.json();
+
+            if (!resp.ok) {
+                if (!silent) alert("Erro ao salvar rascunho: " + (result.erro || "Falha na comunicação."));
+                return;
+            }
+
+            window.idRascunhoAtual = result.id;
+
+            if (!silent) {
+                // Fecha modal
+                const modalEl = document.getElementById('modalSalvarRascunho');
+                if (modalEl) {
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                }
+
+                atualizarContadorRascunhos();
+
+                alert(`✅ Rascunho salvo com sucesso!\n\nID: #${result.id}\nReferência: ${refVal || "(Não informada)"}\nCategoria: ${catVal}\nOrigem: ${window.NOME_MODULO_ORIGEM}\nArquivo isolado gerado e gravado no servidor.`);
+            }
+        } catch (err) {
+            console.error("Erro ao salvar rascunho:", err);
+            if (!silent) alert("Erro inesperado ao salvar rascunho: " + err);
+        }
+    }
+
+    async function abrirModalListaRascunhos() {
+        window.location.href = '/rascunhos_salvos';
+    }
+
+    let rascunhosCacheLista = [];
+
+    async function carregarListaRascunhos() {
+        const tbody = document.getElementById('tbody-lista-rascunhos');
+        if (!tbody) return;
+
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm me-2"></span>Carregando rascunhos salvos...</td></tr>`;
+
+        const cat = getVal('filtro_cat_rascunho') || '';
+        const origem = getVal('filtro_origem_rascunho') || '';
+        const busca = (getVal('filtro_busca_rascunho') || '').trim();
+
+        const params = new URLSearchParams();
+        if (cat) params.append('categoria', cat);
+        if (origem) params.append('origem', origem);
+        if (busca) params.append('busca', busca);
+
+        try {
+            const resp = await fetch('/api/rascunhos?' + params.toString());
+            const data = await resp.json();
+            rascunhosCacheLista = data.rascunhos || [];
+
+            renderizarTabelaRascunhos(rascunhosCacheLista);
+
+            const badgeTotalModal = document.getElementById('badge-total-rascunhos-modal');
+            if (badgeTotalModal) badgeTotalModal.innerText = rascunhosCacheLista.length;
+
+            const infoRodape = document.getElementById('info-rodape-rascunhos');
+            if (infoRodape) infoRodape.innerText = `Total de ${rascunhosCacheLista.length} rascunho(s) encontrado(s).`;
+        } catch (err) {
+            console.error("Erro ao carregar rascunhos:", err);
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">Erro ao carregar lista de rascunhos: ${err}</td></tr>`;
+        }
+    }
+
+    function renderizarTabelaRascunhos(lista) {
+        const tbody = document.getElementById('tbody-lista-rascunhos');
+        if (!tbody) return;
+
+        if (!lista || lista.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-5">
+                <i data-lucide="inbox" style="width: 32px; height: 32px; display: block; margin: 0 auto 8px auto; opacity: 0.5;"></i>
+                Nenhum rascunho encontrado para os filtros selecionados.
+            </td></tr>`;
+            if (window.lucide) lucide.createIcons();
+            return;
+        }
+
+        let html = '';
+        lista.forEach(r => {
+            const isOrigemDuimpImp = (r.origem || '') === 'DUIMP Importada';
+            const isOrigemDI = (r.origem || '').includes('DI');
+            const isOrigemNova = (r.origem || '') === 'Nova NF' || (r.origem || '').includes('Nova');
+            const badgeOrigemClass = isOrigemDuimpImp ? 'badge-origem-duimp-imp' : (isOrigemNova ? 'badge-origem-nova' : (isOrigemDI ? 'badge-origem-di' : 'badge-origem-rasc'));
+            const iconeOrigem = isOrigemDuimpImp ? 'cloud-download' : (isOrigemNova ? 'file-plus-2' : (isOrigemDI ? 'globe' : 'file-code'));
+            const dataFmt = r.data_atualizacao_formatada || (r.data_atualizacao ? r.data_atualizacao.slice(0, 16).replace('T', ' ') : (r.data_criacao_formatada || '-'));
+            const valTotalFmt = formatarNumeroVisualBR(r.valor_total || 0, 2, 2);
+
+            html += `
+            <tr id="tr-rascunho-${r.id}">
+                <td>
+                    <div class="d-flex align-items-center gap-1">
+                        <i data-lucide="tag" style="width: 13px; height: 13px; color: var(--text-muted); flex-shrink: 0;"></i>
+                        <strong class="text-truncate" style="max-width: 220px;" title="${r.referencia_interna || 'Sem referência'}">
+                            ${r.referencia_interna || '<span class="text-muted fst-italic">Sem referência</span>'}
+                        </strong>
+                    </div>
+                    <small class="text-muted font-monospace d-block text-truncate" style="font-size: 10.5px; max-width: 220px;">#${r.id} ${r.nome_arquivo_original ? '• ' + r.nome_arquivo_original : ''}</small>
+                </td>
+                <td>
+                    <div class="d-flex flex-column align-items-start gap-1">
+                        <span class="texto-categoria-rascunho text-truncate" style="max-width: 150px;" title="Categoria: ${r.categoria || 'Geral'}">
+                            ${r.categoria || 'Geral'}
+                        </span>
+                        <span class="badge badge-origem-base ${badgeOrigemClass}" title="Origem: ${r.origem || window.NOME_MODULO_ORIGEM}">
+                            <i data-lucide="${iconeOrigem}" style="width: 11px; height: 11px;"></i>
+                            <span>${r.origem || window.NOME_MODULO_ORIGEM}</span>
+                        </span>
+                    </div>
+                </td>
+                <td>
+                    <span class="text-truncate d-inline-block text-secondary" style="max-width: 220px; font-size: 11.5px; vertical-align: middle;" title="${r.tipo_operacao || '-'}">
+                        ${r.tipo_operacao || '<span class="text-muted">-</span>'}
+                    </span>
+                </td>
+                <td class="text-center small text-muted font-monospace">
+                    ${r.qtd_itens !== undefined && r.qtd_itens !== null ? r.qtd_itens : 0}
+                </td>
+                <td class="text-end fw-bold text-success font-monospace" style="font-size: 12px; white-space: nowrap;">
+                    R$ ${valTotalFmt}
+                </td>
+                <td class="small text-muted font-monospace" style="white-space: nowrap; font-size: 11.5px;">
+                    <span class="d-inline-flex align-items-center gap-1">
+                        <i data-lucide="clock" style="width: 12px; height: 12px;"></i>
+                        <span>${dataFmt}</span>
+                    </span>
+                </td>
+                <td class="text-center">
+                    <div class="d-flex justify-content-center align-items-center gap-1">
+                        <button type="button" class="btn-nft btn-nft-action-round" onclick="carregarRascunho(${r.id}, '${r.origem}')" title="Abrir e carregar este rascunho">
+                            <i data-lucide="folder-open" style="width: 13px; height: 13px;"></i>
+                        </button>
+                        <button type="button" class="btn-nft btn-nft-action-round" onclick="duplicarRascunho(${r.id}, '${(r.referencia_interna || '').replace(/'/g, "\\'")}', this)" title="Duplicar Rascunho">
+                            <i data-lucide="copy" style="width: 13px; height: 13px;"></i>
+                        </button>
+                        <button type="button" class="btn-nft btn-nft-danger btn-nft-action-round" onclick="excluirRascunho(${r.id}, '${(r.referencia_interna || '').replace(/'/g, "\\'")}')" title="Excluir este rascunho">
+                            <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>`;
+        });
+
+        tbody.innerHTML = html;
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function filtrarTabelaRascunhos() {
+        const termo = (document.getElementById('filtro_busca_rascunho')?.value || '').toLowerCase().trim();
+        if (!termo) {
+            renderizarTabelaRascunhos(rascunhosCacheLista);
+            return;
+        }
+        const filtrados = rascunhosCacheLista.filter(r => {
+            return (
+                (r.referencia_interna || '').toLowerCase().includes(termo) ||
+                (r.nome_arquivo_original || '').toLowerCase().includes(termo) ||
+                (r.categoria || '').toLowerCase().includes(termo) ||
+                (r.tipo_operacao || '').toLowerCase().includes(termo) ||
+                (r.chave_acesso || '').toLowerCase().includes(termo)
+            );
+        });
+        renderizarTabelaRascunhos(filtrados);
+    }
+
+    async function carregarRascunho(id, origemRascunho, silencioso = false) {
+        // Verifica se pertence ao outro módulo
+        const modoCfg = (typeof getEditorModoConfig === 'function') ? getEditorModoConfig() : null;
+        const compativel = modoCfg && typeof modoCfg.isRascunhoCompativel === 'function'
+            ? modoCfg.isRascunhoCompativel(origemRascunho)
+            : (!origemRascunho || origemRascunho === window.NOME_MODULO_ORIGEM);
+        if (origemRascunho && !compativel) {
+            const confirmaMudanca = await nftConfirm(
+                `Este rascunho (#${id}) foi salvo originalmente no módulo:\n"${origemRascunho}".\n\n` +
+                `Você está atualmente no módulo "${window.NOME_MODULO_ORIGEM}".\n\n` +
+                `Deseja abrir a página correspondente e continuar a edição por lá?`, {
+                    title: 'Mudar de Módulo',
+                    type: 'info',
+                    confirmText: 'Abrir Módulo',
+                    cancelText: 'Permanecer Aqui'
+                }
+            );
+            if (confirmaMudanca) {
+                if (origemRascunho.includes('DI') || origemRascunho.includes('DUIMP')) {
+                    window.location.href = `/di_duimp?carregar_rascunho=${id}`;
+                } else if (origemRascunho === 'Nova NF') {
+                    window.location.href = `/nova_nf?carregar_rascunho=${id}`;
+                } else {
+                    window.location.href = `/rascunho?carregar_rascunho=${id}`;
+                }
+            }
+            return;
+        }
+
+        try {
+            const resp = await fetch(`/api/rascunhos/${id}`);
+            if (!resp.ok) {
+                alert("Não foi possível carregar o rascunho. Arquivo ou registro não encontrado.");
+                return;
+            }
+            const rascunho = await resp.json();
+            const dados = rascunho.dados_completos || {};
+
+            // 1. Restaura campos do cabeçalho
+            if (dados.cabecalho) {
+                Object.keys(dados.cabecalho).forEach(k => {
+                    setVal(k, dados.cabecalho[k]);
+                });
+                if (dados.cabecalho.transp_modFrete !== undefined) {
+                    setVal('transp_modFrete', dados.cabecalho.transp_modFrete);
+                } else if (dados.cabecalho.modFrete !== undefined) {
+                    setVal('transp_modFrete', dados.cabecalho.modFrete);
+                }
+                if (dados.cabecalho.ptax_moeda && typeof definirMoedaSelecionada === 'function') {
+                    definirMoedaSelecionada(dados.cabecalho.ptax_moeda);
+                }
+                if (!getVal('ptax_taxa_utilizada') && getVal('ptax_cotacao_venda')) {
+                    setVal('ptax_taxa_utilizada', getVal('ptax_cotacao_venda'));
+                }
+            }
+            if (dados.rodape && dados.rodape.transporte && dados.rodape.transporte.modFrete !== undefined) {
+                setVal('transp_modFrete', dados.rodape.transporte.modFrete);
+            }
+
+            // 2. Restaura Referência Interna
+            definirReferenciaInterna(rascunho.referencia_interna || '');
+
+            // 3. Restaura Tipo de Operação
+            const tipoOpSalvo = rascunho.tipo_operacao || (dados.cabecalho ? (dados.cabecalho.select_operacao || dados.cabecalho.natOp) : '');
+            if (tipoOpSalvo) {
+                let opNome = tipoOpSalvo;
+                if (opNome.includes(') ')) {
+                    opNome = opNome.split(') ')[1].trim();
+                }
+                const opEncontrada = operacoesCache.find(o => 
+                    o.nome_operacao.toUpperCase() === opNome.toUpperCase() ||
+                    `(${o.cfop_padrao}) ${o.nome_operacao}`.toUpperCase() === tipoOpSalvo.toUpperCase()
+                );
+                if (opEncontrada) {
+                    setVal('select_operacao', opEncontrada.nome_operacao);
+                    aoSelecionarOperacao(opEncontrada.nome_operacao, true);
+                } else {
+                    setVal('select_operacao', opNome);
+                    aoSelecionarOperacao(opNome, true);
+                }
+            }
+
+            // 3.1 Restaura Regime Tributário e Meio de Pagamento específicos salvos no rascunho
+            if (dados.cabecalho && dados.cabecalho.tPag) {
+                setVal('tPag', dados.cabecalho.tPag);
+                if (typeof aoMudarMeioPagamento === 'function') {
+                    aoMudarMeioPagamento(dados.cabecalho.tPag);
+                }
+            }
+            if (dados.cabecalho && dados.cabecalho.regime_tributario) {
+                if (typeof selecionarRegimeTributario === 'function') {
+                    selecionarRegimeTributario(dados.cabecalho.regime_tributario, false);
+                }
+            }
+
+            // 3. Restaura Tabela de Itens
+            if (dados.itens && Array.isArray(dados.itens)) {
+                itensCache = dados.itens;
+                const diGeral = (document.getElementById('import_nDI')?.value || (dados.cabecalho ? dados.cabecalho.import_nDI : '') || '').trim();
+                itensCache.forEach((it, idx) => {
+                    if (!it.nItem) it.nItem = String(idx + 1);
+                    if (!it.nSeqAdic) it.nSeqAdic = it.nItem;
+                    if (diGeral && (!it.nDI || it.nDI.trim() === '')) {
+                        it.nDI = diGeral;
+                    }
+                    if (typeof window.montarTextoInfAdProd === 'function') {
+                        it.infAdProd = window.montarTextoInfAdProd(it);
+                    }
+                });
+                if (itensTable) {
+                    itensTable.setData(itensCache);
+                }
+                const badgeItens = document.getElementById('itens-badge');
+                if (badgeItens) badgeItens.innerText = itensCache.length;
+                recalcularTotaisDosItens(true);
+            }
+
+            // 4. Restaura XML original se houver
+            if (dados.xml_original) {
+                xmlOriginalData = dados.xml_original;
+            }
+            if (rascunho.nome_arquivo_original) {
+                window.nomeArquivoOriginal = rascunho.nome_arquivo_original;
+            }
+
+            // 5. Restaura status de identificação e chave de acesso
+            window.idRascunhoAtual = rascunho.id;
+            window._refRascunhoCarregado = (rascunho.referencia_interna || '').trim();
+            window.origemRascunhoAtual = rascunho.origem || window.NOME_MODULO_ORIGEM;
+            atualizarCamposIdentificacao(getVal('tpNF'), getVal('idDest'));
+            atualizarEstadoInscricaoEstadual();
+            atualizarTipoDocumentoDestinatario();
+            
+            // Restaura chave de acesso original se válida (44 dígitos), evitando recálculo indevido
+            const chaveSalva = (rascunho.chave_acesso || (dados.cabecalho ? (dados.cabecalho.chaveAcesso || dados.cabecalho.chaveAcessoDisplay) : '') || '').replace(/\D/g, '').trim();
+            if (chaveSalva.length === 44) {
+                setVal('chaveAcesso', chaveSalva);
+                setVal('chaveAcessoDisplay', chaveSalva.replace(/(\d{4})/g, '$1 ').trim());
+            } else {
+                calcularChaveAcessoDinamica();
+            }
+            atualizarBadgeRefNFe((getVal('refNFe') || '').length);
+            if (typeof verificarAvisoRefNFeOperacao === 'function') {
+                verificarAvisoRefNFeOperacao();
+            }
+            atualizarBadgesRateioEItens();
+            if (typeof verificarExibicaoSecaoExportacao === 'function') {
+                verificarExibicaoSecaoExportacao();
+            }
+
+            // 6. Restaura Histórico SEFAZ do rascunho
+            if (dados.sefaz_history && dados.sefaz_history.length > 0) {
+                const tbody = document.getElementById('tbody-historico-sefaz');
+                if (tbody) {
+                    tbody.innerHTML = '';
+                    dados.sefaz_history.forEach(item => {
+                        const tr = document.createElement('tr');
+                        const norm = typeof window.normalizarItemHistoricoSefaz === 'function'
+                            ? window.normalizarItemHistoricoSefaz(item)
+                            : null;
+                        if (norm) {
+                            tr.innerHTML = `
+                                <td class="align-middle text-nowrap">${norm.data}</td>
+                                <td class="align-middle text-center"><span class="badge bg-light text-dark border font-monospace px-2 py-1 fw-bold" style="font-size: 11px;">${norm.nnf}</span></td>
+                                <td class="align-middle text-center">${norm.ambienteHtml}</td>
+                                <td class="text-center align-middle">${norm.arquivosHtml}</td>
+                                <td class="text-center align-middle">${norm.chaveHtml}</td>
+                                <td class="align-middle text-center">${norm.cstatHtml}</td>
+                                <td class="text-start align-middle" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${norm.motivoTitle}">
+                                    ${norm.motivo}
+                                </td>
+                                <td class="align-middle text-center" style="font-size: 11px;">${norm.protocolo}</td>
+                            `;
+                        } else {
+                            const rawCh = String(item.chave || '').replace(/<[^>]*>?/gm, '').trim();
+                            const nnfVal = item.nnf || (rawCh.length >= 34 ? String(parseInt(rawCh.substring(25, 34), 10)) : '-');
+                            tr.innerHTML = `
+                                <td class="align-middle text-nowrap">${item.data || ''}</td>
+                                <td class="align-middle text-center"><span class="badge bg-light text-dark border font-monospace px-2 py-1 fw-bold" style="font-size: 11px;">${nnfVal}</span></td>
+                                <td class="align-middle text-center">${item.ambiente || ''}</td>
+                                <td class="text-center align-middle">${item.arquivos || '-'}</td>
+                                <td class="text-center align-middle">${typeof window.renderChaveComBotaoCopiar === 'function' ? window.renderChaveComBotaoCopiar(rawCh) : rawCh}</td>
+                                <td class="align-middle text-center">${item.status || ''}</td>
+                                <td class="text-start align-middle" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.motivoTitle || ''}">
+                                    ${item.motivo || ''}
+                                </td>
+                                <td class="align-middle text-center" style="font-size: 11px;">${item.protocolo || ''}</td>
+                            `;
+                        }
+                        tbody.appendChild(tr);
+                    });
+                    if (typeof window.sanitizarTabelaHistoricoSefaz === 'function') {
+                        window.sanitizarTabelaHistoricoSefaz();
+                    } else if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                        lucide.createIcons();
+                    }
+                }
+            }
+
+            // 7. Atualiza badge da área de upload e indicador de origem
+            const badgeUpload = document.getElementById('status-badge');
+            if (badgeUpload) {
+                badgeUpload.className = "badge bg-success-subtle text-success fw-bold py-1 px-2";
+                badgeUpload.innerText = `Rascunho #${rascunho.id} ativo (${itensCache.length} itens)`;
+            }
+            const infoOrigemEl = document.getElementById('rascunho-origem-indicator');
+            if (infoOrigemEl) {
+                const origTxt = rascunho.origem || window.NOME_MODULO_ORIGEM;
+                const badgeOrigemClass = (origTxt === 'DUIMP Importada')
+                    ? 'badge-origem-duimp-imp'
+                    : (origTxt.includes('DI') ? 'badge-origem-di' : (origTxt.includes('Nova') ? 'badge-origem-nova' : 'badge-origem-rasc'));
+                infoOrigemEl.innerHTML = `Módulo Ativo: <span class="badge ${badgeOrigemClass} fw-bold">${origTxt}</span>`;
+            }
+
+            // Fecha modal se estiver aberto
+            const modalEl = document.getElementById('modalListaRascunhos');
+            if (modalEl) {
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
+            }
+
+            if (!silencioso) {
+                if (window.nftAlert) {
+                    await window.nftAlert(`Rascunho #${rascunho.id} carregado com sucesso!\n\nReferência: ${rascunho.referencia_interna || '(Sem referência)'}\nCategoria: ${rascunho.categoria}\nOrigem: ${rascunho.origem || window.NOME_MODULO_ORIGEM}\nItens: ${rascunho.qtd_itens}`, { title: 'Rascunho Carregado', type: 'success' });
+                } else {
+                    alert(`✅ Rascunho #${rascunho.id} carregado com sucesso!\n\nReferência: ${rascunho.referencia_interna || '(Sem referência)'}\nCategoria: ${rascunho.categoria}\nOrigem: ${rascunho.origem || window.NOME_MODULO_ORIGEM}\nItens: ${rascunho.qtd_itens}`);
+                }
+            }
+        } catch (err) {
+            console.error("Erro ao carregar rascunho:", err);
+            alert("Erro ao carregar rascunho: " + err);
+        }
+    }
+
+    async function excluirRascunho(id, ref) {
+        const conf = await nftConfirm(`Deseja realmente excluir o rascunho #${id}${ref ? ' (' + ref + ')' : ''}?\n\nEsta ação não poderá ser desfeita e o rascunho será removido permanentemente.`, {
+            title: 'Confirmar Exclusão',
+            type: 'danger',
+            confirmText: 'Sim, Excluir',
+            cancelText: 'Cancelar',
+            icon: 'trash-2'
+        });
+        if (!conf) return;
+
+        try {
+            const resp = await fetch(`/api/rascunhos/${id}`, { method: 'DELETE' });
+            if (!resp.ok) {
+                alert("Erro ao excluir rascunho.");
+                return;
+            }
+            if (window.idRascunhoAtual === id) {
+                window.idRascunhoAtual = null;
+            }
+            carregarListaRascunhos();
+            atualizarContadorRascunhos();
+        } catch (err) {
+            console.error("Erro ao excluir rascunho:", err);
+            alert("Erro inesperado ao excluir rascunho: " + err);
+        }
+    }
+
+    async function duplicarRascunho(id, ref, btnEl) {
+        const conf = await nftConfirm(`Deseja realmente duplicar o rascunho #${id}${ref ? ' (' + ref + ')' : ''}?\n\nUma cópia independente será criada mantendo os mesmos dados e itens.`, {
+            title: 'Confirmar Duplicação',
+            type: 'info',
+            confirmText: 'Sim, Duplicar',
+            cancelText: 'Cancelar',
+            icon: 'copy'
+        });
+        if (!conf) return;
+
+        // Feedback visual imediato no botão clicado
+        const oldIconHtml = btnEl ? btnEl.innerHTML : '';
+        if (btnEl) {
+            btnEl.disabled = true;
+            btnEl.innerHTML = '<span class="spinner-border spinner-border-sm" style="width: 12px; height: 12px; border-width: 1.5px;"></span>';
+        }
+
+        try {
+            const resp = await fetch(`/api/rascunhos/${id}/duplicar`, { method: 'POST' });
+            const data = await resp.json();
+            if (!resp.ok || !data.success) {
+                alert(data.error || "Erro ao duplicar rascunho.");
+                return;
+            }
+            if (typeof nftToast === 'function') {
+                nftToast(data.message || 'Rascunho duplicado com sucesso!', 'success');
+            } else {
+                alert(data.message || 'Rascunho duplicado com sucesso!');
+            }
+
+            // Atualização instantânea da interface sem recarregar do zero
+            if (data.rascunho) {
+                rascunhosCacheLista.unshift(data.rascunho);
+                renderizarTabelaRascunhos(rascunhosCacheLista);
+
+                const novaLinha = document.getElementById(`tr-rascunho-${data.rascunho.id}`);
+                if (novaLinha) {
+                    novaLinha.classList.add('table-success');
+                    setTimeout(() => novaLinha.classList.remove('table-success'), 2000);
+                }
+
+                const total = rascunhosCacheLista.length;
+                document.querySelectorAll('.badge-counter-rascunhos').forEach(el => el.innerText = total);
+                const badgeTop = document.getElementById('badge-total-rascunhos');
+                if (badgeTop) badgeTop.innerText = total;
+                const badgeSidebar = document.getElementById('sidebar-rascunhos-badge');
+                if (badgeSidebar) badgeSidebar.innerText = total;
+                const badgeModal = document.getElementById('badge-total-rascunhos-modal');
+                if (badgeModal) badgeModal.innerText = total;
+                const infoRodape = document.getElementById('info-rodape-rascunhos');
+                if (infoRodape) infoRodape.innerText = `Total de ${total} rascunho(s) encontrado(s).`;
+            } else {
+                carregarListaRascunhos();
+                atualizarContadorRascunhos();
+            }
+        } catch (err) {
+            console.error("Erro ao duplicar rascunho:", err);
+            alert("Erro inesperado ao duplicar rascunho: " + err);
+        } finally {
+            if (btnEl) {
+                btnEl.disabled = false;
+                btnEl.innerHTML = oldIconHtml;
+                if (window.lucide) lucide.createIcons();
+            }
+        }
+    }
+
+    async function atualizarContadorRascunhos() {
+        try {
+            const resp = await fetch('/api/rascunhos');
+            const data = await resp.json();
+            const total = (data.rascunhos || []).length;
+            document.querySelectorAll('.badge-counter-rascunhos').forEach(el => {
+                el.innerText = total;
+            });
+            const badgeTop = document.getElementById('badge-total-rascunhos');
+            if (badgeTop) badgeTop.innerText = total;
+            const badgeSidebar = document.getElementById('sidebar-rascunhos-badge');
+            if (badgeSidebar) badgeSidebar.innerText = total;
+        } catch(e) {}
+    }
+
+    // =========================================================================
+    // LOCALIDADES: PAÍSES (BACEN), MUNICÍPIOS (IBGE) E BUSCA INTELIGENTE DE CEP
+    // =========================================================================
+    let paisesBacenCache = [];
+
+    function carregarDatalistPaises() {
+        fetch('/api/localidades/paises')
+            .then(r => r.json())
+            .then(data => {
+                paisesBacenCache = data || [];
+                const datalist = document.getElementById('datalist-paises');
+                if (datalist) {
+                    datalist.innerHTML = paisesBacenCache.map(p => 
+                        `<option value="${p.nome}" data-codigo="${p.codigo}">${p.codigo} - ${p.nome}</option>`
+                    ).join('');
+                }
+            })
+            .catch(err => console.warn("Erro ao carregar lista de países:", err));
+    }
+
+    function aoDigitarPaisAutocomplete(tipo) {
+        const input = document.getElementById(`${tipo}_xPais`);
+        const dropdown = document.getElementById(`dropdown_menu_${tipo}_xPais`);
+        if (!input || !dropdown) return;
+        
+        const termo = (input.value || '').trim().toUpperCase();
+        let filtrados = [];
+        if (!termo) {
+            filtrados = paisesBacenCache.slice(0, 40);
+        } else {
+            filtrados = paisesBacenCache.filter(p => 
+                p.nome.toUpperCase().includes(termo) || String(p.codigo).includes(termo)
+            ).slice(0, 40);
+        }
+
+        if (filtrados.length === 0) {
+            dropdown.innerHTML = '<div class="dropdown-item small text-muted text-center py-2">Nenhum país encontrado</div>';
+            dropdown.style.display = 'block';
+            return;
+        }
+
+        dropdown.innerHTML = filtrados.map(p => {
+            const nomeEsc = (p.nome || '').replace(/'/g, "\\'");
+            return `<button type="button" class="dropdown-item small py-1 d-flex justify-content-between align-items-center" onmousedown="selecionarPais('${tipo}', '${p.codigo}', '${nomeEsc}')">
+                <span class="fw-semibold text-truncate me-2">${p.nome}</span>
+                <span class="badge bg-secondary-subtle text-secondary font-monospace">${p.codigo}</span>
+            </button>`;
+        }).join('');
+        dropdown.style.display = 'block';
+    }
+
+    function selecionarPais(tipo, codigo, nome) {
+        setVal(`${tipo}_xPais`, nome);
+        setVal(`${tipo}_cPais`, codigo);
+        const dropdown = document.getElementById(`dropdown_menu_${tipo}_xPais`);
+        if (dropdown) dropdown.style.display = 'none';
+
+        if (tipo === 'dest') {
+            ajustarRegrasPaisDestinatario(codigo);
+        } else if (tipo === 'emit') {
+            ajustarRegrasPaisEmitente(codigo);
+        }
+    }
+
+    function aoPerderFocoPais(tipo) {
+        setTimeout(() => {
+            const dropdown = document.getElementById(`dropdown_menu_${tipo}_xPais`);
+            if (dropdown) dropdown.style.display = 'none';
+            if (tipo === 'dest') {
+                aoMudarPaisDestinatario();
+            } else if (tipo === 'emit') {
+                aoMudarPaisEmitente();
+            }
+        }, 250);
+    }
+
+    function aoDigitarPaisDestinatario() {
+        aoDigitarPaisAutocomplete('dest');
+    }
+
+    function aoMudarPaisDestinatario() {
+        const val = (getVal('dest_xPais') || '').trim().toUpperCase();
+        let codigo = getVal('dest_cPais');
+        
+        if (paisesBacenCache.length > 0) {
+            const encontrado = paisesBacenCache.find(p => p.nome.toUpperCase() === val || p.codigo === val);
+            if (encontrado) {
+                codigo = encontrado.codigo;
+                setVal('dest_cPais', codigo);
+                setVal('dest_xPais', encontrado.nome);
+            }
+        }
+        ajustarRegrasPaisDestinatario(codigo);
+    }
+
+    function aoDigitarPaisEmitente() {
+        aoDigitarPaisAutocomplete('emit');
+    }
+
+    function aoMudarPaisEmitente() {
+        const val = (getVal('emit_xPais') || '').trim().toUpperCase();
+        let codigo = getVal('emit_cPais');
+        if (paisesBacenCache.length > 0) {
+            const encontrado = paisesBacenCache.find(p => p.nome.toUpperCase() === val || p.codigo === val);
+            if (encontrado) {
+                codigo = encontrado.codigo;
+                setVal('emit_cPais', codigo);
+                setVal('emit_xPais', encontrado.nome);
+            }
+        }
+        ajustarRegrasPaisEmitente(codigo);
+    }
+
+    function ajustarRegrasPaisDestinatario(codigo) {
+        const lbl = document.getElementById('lbl-status-pais-dest');
+        const isBrasil = (!codigo || codigo === '1058');
+
+        if (isBrasil) {
+            setVal('dest_cPais', '1058');
+            if (lbl) {
+                lbl.className = 'badge bg-success font-monospace';
+                lbl.innerText = 'Nacional (Brasil)';
+            }
+            if (getVal('dest_CEP') === '99999-999' || getVal('dest_CEP') === '99999999') {
+                setVal('dest_CEP', '');
+            }
+            if (getVal('dest_UF') === 'EX') setVal('dest_UF', '');
+            if (getVal('dest_xMun') === 'EXTERIOR') setVal('dest_xMun', '');
+            if (getVal('dest_cMun') === '9999999') setVal('dest_cMun', '');
+            if (getVal('idDest') === '3') setVal('idDest', '1');
+            if (getVal('dest_indIEDest') === '9' && !getVal('dest_IE')) {
+                setVal('dest_indIEDest', '1');
+                if (window.atualizarEstadoInscricaoEstadual) atualizarEstadoInscricaoEstadual();
+            }
+        } else {
+            if (lbl) {
+                lbl.className = 'badge bg-warning text-dark font-monospace';
+                lbl.innerText = `Exterior (${codigo})`;
+            }
+            setVal('dest_CEP', '99999-999');
+            setVal('dest_UF', 'EX');
+            setVal('dest_cMun', '9999999');
+            setVal('dest_xMun', 'EXTERIOR');
+            setVal('dest_indIEDest', '9');
+            if (window.atualizarEstadoInscricaoEstadual) atualizarEstadoInscricaoEstadual();
+            setVal('dest_IE', '');
+            const elIE = document.getElementById('dest_IE');
+            if (elIE) elIE.disabled = true;
+            setVal('idDest', '3');
+            const elTpDoc = document.getElementById('dest_tpDoc');
+            if (elTpDoc && elTpDoc.value !== 'Estrangeiro') {
+                elTpDoc.value = 'Estrangeiro';
+                if (typeof atualizarTipoDocumentoDestinatario === 'function') {
+                    atualizarTipoDocumentoDestinatario();
+                }
+            }
+        }
+    }
+
+    function ajustarRegrasPaisEmitente(codigo) {
+        const isBrasil = (!codigo || codigo === '1058');
+
+        if (isBrasil) {
+            setVal('emit_cPais', '1058');
+            if (getVal('emit_CEP') === '99999-999' || getVal('emit_CEP') === '99999999') {
+                setVal('emit_CEP', '');
+            }
+            if (getVal('emit_UF') === 'EX') setVal('emit_UF', '');
+            if (getVal('emit_xMun') === 'EXTERIOR') setVal('emit_xMun', '');
+            if (getVal('emit_cMun') === '9999999') setVal('emit_cMun', '');
+        } else {
+            setVal('emit_CEP', '99999-999');
+            setVal('emit_UF', 'EX');
+            setVal('emit_cMun', '9999999');
+            setVal('emit_xMun', 'EXTERIOR');
+        }
+    }
+
+    function buscarCepAuto(cepValor, destino) {
+        if (!cepValor) return;
+        const limpo = String(cepValor).replace(/\D/g, '');
+
+        if (destino === 'dest' && (limpo === '99999999' || cepValor.toUpperCase().includes('EX') || (getVal('dest_cPais') && getVal('dest_cPais') !== '1058'))) {
+            setVal('dest_CEP', '99999-999');
+            setVal('dest_UF', 'EX');
+            setVal('dest_cMun', '9999999');
+            setVal('dest_xMun', 'EXTERIOR');
+            return;
+        }
+
+        if (destino === 'emit' && (limpo === '99999999' || cepValor.toUpperCase().includes('EX') || (getVal('emit_cPais') && getVal('emit_cPais') !== '1058'))) {
+            setVal('emit_CEP', '99999-999');
+            setVal('emit_UF', 'EX');
+            setVal('emit_cMun', '9999999');
+            setVal('emit_xMun', 'EXTERIOR');
+            return;
+        }
+
+        if (limpo.length !== 8) {
+            return;
+        }
+
+        fetch(`/api/localidades/cep/${limpo}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.error) {
+                    console.warn("CEP não localizado:", data.error);
+                    return;
+                }
+                if (destino === 'emit') {
+                    setVal('emit_CEP', data.cep || limpo);
+                    if (data.logradouro) setVal('emit_xLgr', data.logradouro);
+                    if (data.bairro) setVal('emit_xBairro', data.bairro);
+                    if (data.localidade) setVal('emit_xMun', data.localidade);
+                    if (data.ibge) setVal('emit_cMun', data.ibge);
+                    if (data.uf) setVal('emit_UF', data.uf);
+                    calcularChaveAcessoDinamica();
+                } else if (destino === 'dest') {
+                    setVal('dest_CEP', data.cep || limpo);
+                    if (data.logradouro) setVal('dest_xLgr', data.logradouro);
+                    if (data.bairro) setVal('dest_xBairro', data.bairro);
+                    if (data.localidade) setVal('dest_xMun', data.localidade);
+                    if (data.ibge) setVal('dest_cMun', data.ibge);
+                    if (data.uf) setVal('dest_UF', data.uf);
+                    setVal('dest_cPais', '1058');
+                    setVal('dest_xPais', 'Brasil');
+                    ajustarRegrasPaisDestinatario('1058');
+                } else if (destino === 'transp') {
+                    setVal('transp_CEP', data.cep || limpo);
+                    if (data.localidade) setVal('transp_xMun', data.localidade);
+                    if (data.uf) setVal('transp_UF', data.uf);
+                    if (!getVal('transp_xEnder') && data.logradouro) {
+                        setVal('transp_xEnder', `${data.logradouro}${data.bairro ? ' - ' + data.bairro : ''}`);
+                    }
+                }
+            })
+            .catch(err => console.warn("Erro ao buscar CEP:", err));
+    }
+
+    // Inicialização ao carregar página: ícones lucide, contador de rascunhos e verificação de URL
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+        atualizarContadorRascunhos();
+        carregarDatalistPaises();
+
+        // Verifica se foi passado parâmetro para carregar rascunho via URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const rascunhoParam = urlParams.get('carregar_rascunho');
+        if (rascunhoParam) {
+            setTimeout(() => {
+                carregarRascunho(rascunhoParam, window.NOME_MODULO_ORIGEM);
+            }, 300);
+        }
+        if (urlParams.get('abrir_rascunhos')) {
+            setTimeout(() => {
+                abrirModalListaRascunhos();
+            }, 300);
+        }
+    });
+
+// === MÁSCARAS DE ENTRADA ===
+        document.addEventListener('input', function (e) {
+            if (e.target.classList.contains('mask-cnpj-cpf')) {
+                let v = e.target.value.replace(/\D/g, '');
+                if (v.length <= 11) {
+                    v = v.replace(/(\d{3})(\d)/, '$1.$2');
+                    v = v.replace(/(\d{3})(\d)/, '$1.$2');
+                    v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                } else {
+                    v = v.replace(/^(\d{2})(\d)/, '$1.$2');
+                    v = v.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+                    v = v.replace(/\.(\d{3})(\d)/, '.$1/$2');
+                    v = v.replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+                    if (v.length > 18) v = v.substring(0, 18);
+                }
+                e.target.value = v;
+            }
+            if (e.target.classList.contains('mask-telefone')) {
+                let v = e.target.value.replace(/\D/g, '');
+                if (v.length > 11) v = v.substring(0, 11);
+                if (v.length > 10) {
+                    v = v.replace(/^(\d{2})(\d{5})(\d{4}).*/, '($1) $2-$3');
+                } else if (v.length > 5) {
+                    v = v.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, '($1) $2-$3');
+                } else if (v.length > 2) {
+                    v = v.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
+                }
+                e.target.value = v;
+            }
+        });
+
+// === CADASTROS & AUTOCOMPLETE ===
+        // CARREGAR EMPRESAS PARA OS SELECTS DA ABA IDENTIFICAÇÃO
+        let cadastrosDisponiveis = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch('/api/empresas')
+                .then(r => r.json())
+                .then(data => {
+                    cadastrosDisponiveis = data;
+                    preencherOpcoesSelect('select_emitente', 'Emitente');
+                    preencherOpcoesSelect('select_destinatario', 'Cliente');
+                    preencherOpcoesSelect('select_transportadora', 'Transportadora');
+
+                    // Auto-selecionar emitente ativo se emit_CNPJ estiver vazio
+                    try {
+                        const emitCnpjAtual = (getVal('emit_CNPJ') || '').replace(/\D/g, '');
+                        if (!emitCnpjAtual && cadastrosDisponiveis && cadastrosDisponiveis.length > 0) {
+                            const savedId = localStorage.getItem('nft_active_emitente_id');
+                            let activeEmp = cadastrosDisponiveis.find(e => String(e.id) === String(savedId));
+                            if (!activeEmp) {
+                                activeEmp = cadastrosDisponiveis.find(e => {
+                                    const t = (e.tipo || '').toLowerCase();
+                                    return t === 'emitente' || t === 'ambos' || t === 'filial' || t.includes('emit');
+                                });
+                            }
+                            if (!activeEmp) {
+                                activeEmp = cadastrosDisponiveis[0];
+                            }
+                            if (activeEmp) {
+                                selecionarEmpresa('emit', activeEmp.id);
+                            }
+                        }
+                    } catch(eAutoEmit) {
+                        console.warn('Aviso ao auto-selecionar emitente:', eAutoEmit);
+                    }
+                    if (typeof window.calcularChaveAcessoDinamica === 'function') {
+                        window.calcularChaveAcessoDinamica();
+                    }
+                })
+                .catch(err => console.error('Erro ao carregar empresas:', err));
+        });
+
+        function preencherOpcoesSelect(selectId, tipoAlvo) {
+    window.preencherOpcoesSelect = preencherOpcoesSelect;
+            const sel = document.getElementById(selectId);
+            if (!sel) return;
+            
+            // Limpar exceto o primeiro
+            while(sel.options.length > 1) {
+                sel.remove(1);
+            }
+
+            cadastrosDisponiveis.forEach(emp => {
+                // Filtra pelo tipo, mas pode permitir flexibilidade
+                if(emp.tipo === tipoAlvo || emp.tipo === 'Armazem' || emp.tipo === 'Local de Desembaraço' || tipoAlvo === 'Cliente') {
+                    const opt = document.createElement('option');
+                    opt.value = emp.id;
+                    const apelido = emp.apelido ? ` (${emp.apelido})` : '';
+                    opt.text = `${emp.nome}${apelido} - ${emp.cnpj_cpf}`;
+                    sel.appendChild(opt);
+                }
+            });
+        }
+
+        function aoDigitarEmpresaAutocomplete(tipo) {
+            const inputId = tipo === 'emit' ? 'input_busca_emitente' : 'input_busca_destinatario';
+            const dropdownId = tipo === 'emit' ? 'dropdown_menu_busca_emitente' : 'dropdown_menu_busca_destinatario';
+            const input = document.getElementById(inputId);
+            const dropdown = document.getElementById(dropdownId);
+            if (!input || !dropdown) return;
+
+            const termo = (input.value || '').trim().toUpperCase();
+            const termoDigitos = (input.value || '').replace(/\D/g, '');
+
+            let candidatos = cadastrosDisponiveis.filter(emp => {
+                if (tipo === 'emit') {
+                    return emp.tipo === 'Emitente' || emp.tipo === 'Armazem' || emp.tipo === 'Local de Desembaraço';
+                } else if (tipo === 'dest') {
+                    return emp.tipo === 'Cliente' || emp.tipo === 'Exportador' || emp.tipo === 'Armazem' || emp.tipo === 'Local de Desembaraço' || !emp.tipo;
+                }
+                return true;
+            });
+
+            let filtrados = [];
+            if (!termo) {
+                filtrados = candidatos.slice(0, 40);
+            } else {
+                filtrados = candidatos.filter(emp => {
+                    const nome = (emp.nome || '').toUpperCase();
+                    const apelido = (emp.apelido || '').toUpperCase();
+                    const cnpjCpf = (emp.cnpj_cpf || '').replace(/\D/g, '');
+                    const cnpjCpfFormatado = (emp.cnpj_cpf || '').toUpperCase();
+                    return nome.includes(termo) ||
+                           apelido.includes(termo) ||
+                           cnpjCpfFormatado.includes(termo) ||
+                           (termoDigitos && cnpjCpf.includes(termoDigitos));
+                }).slice(0, 40);
+            }
+
+            if (filtrados.length === 0) {
+                dropdown.innerHTML = '<div class="dropdown-item small text-muted text-center py-2">Nenhum cadastro encontrado</div>';
+                dropdown.style.display = 'block';
+                return;
+            }
+
+            dropdown.innerHTML = filtrados.map(emp => {
+                const apelidoStr = emp.apelido ? ` (${emp.apelido})` : '';
+                const docStr = emp.cnpj_cpf || 'Sem doc';
+                const tipoBadge = emp.tipo ? `<span class="badge bg-secondary-subtle text-secondary me-1" style="font-size: 10px;">${emp.tipo}</span>` : '';
+                return `<button type="button" class="dropdown-item small py-1 text-start" onmousedown="selecionarEmpresa('${tipo}', ${emp.id})">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold text-truncate me-2" style="max-width: 70%;">${emp.nome}${apelidoStr}</span>
+                        <div class="text-end text-nowrap">
+                            ${tipoBadge}
+                            <span class="badge bg-light text-dark font-monospace border" style="font-size: 11px;">${docStr}</span>
+                        </div>
+                    </div>
+                </button>`;
+            }).join('');
+            dropdown.style.display = 'block';
+        }
+
+        function selecionarEmpresa(tipo, id) {
+            window.selecionarEmpresa = selecionarEmpresa;
+            const dropdownId = tipo === 'emit' ? 'dropdown_menu_busca_emitente' : 'dropdown_menu_busca_destinatario';
+            const inputId = tipo === 'emit' ? 'input_busca_emitente' : 'input_busca_destinatario';
+            const selectId = tipo === 'emit' ? 'select_emitente' : 'select_destinatario';
+
+            const dropdown = document.getElementById(dropdownId);
+            if (dropdown) dropdown.style.display = 'none';
+
+            const emp = cadastrosDisponiveis.find(e => e.id == id);
+            if (emp) {
+                const apelidoStr = emp.apelido ? ` (${emp.apelido})` : '';
+                const input = document.getElementById(inputId);
+                if (input) input.value = `${emp.nome}${apelidoStr} - ${emp.cnpj_cpf || ''}`;
+            }
+
+            const sel = document.getElementById(selectId);
+            if (sel) {
+                sel.value = String(id);
+                preencherDadosDeCadastro(sel, tipo);
+            }
+        }
+        window.selecionarEmpresa = selecionarEmpresa;
+        window.preencherDadosDeCadastro = preencherDadosDeCadastro;
+
+        function aoPerderFocoEmpresa(tipo) {
+            setTimeout(() => {
+                const dropdownId = tipo === 'emit' ? 'dropdown_menu_busca_emitente' : 'dropdown_menu_busca_destinatario';
+                const dropdown = document.getElementById(dropdownId);
+                if (dropdown) dropdown.style.display = 'none';
+            }, 250);
+        }
+
+        function preencherDadosDeCadastro(selectElem, prefix) {
+    window.preencherDadosDeCadastro = preencherDadosDeCadastro;
+            const id = typeof selectElem === 'object' && selectElem !== null ? selectElem.value : selectElem;
+            if(!id) return; // Não faz nada se voltar pro "Selecione..."
+
+            const emp = cadastrosDisponiveis.find(e => e.id == id);
+            if(!emp) return;
+
+            if(prefix === 'emit') {
+                document.getElementById('emit_xNome').value = emp.nome || '';
+                document.getElementById('emit_CNPJ').value = emp.cnpj_cpf || '';
+                document.getElementById('emit_IE').value = emp.ie || '';
+                document.getElementById('emit_xLgr').value = emp.logradouro || '';
+                document.getElementById('emit_nro').value = emp.numero || '';
+                if(document.getElementById('emit_xCpl')) document.getElementById('emit_xCpl').value = emp.complemento || '';
+                document.getElementById('emit_xBairro').value = emp.bairro || '';
+                document.getElementById('emit_cMun').value = emp.cmun || '';
+                document.getElementById('emit_xMun').value = emp.municipio || '';
+                document.getElementById('emit_UF').value = emp.uf || '';
+                document.getElementById('emit_CEP').value = emp.cep || '';
+                document.getElementById('emit_xPais').value = emp.xpais || 'Brasil';
+                document.getElementById('emit_cPais').value = emp.cpais || '1058';
+                if(emp.crt && document.getElementById('emit_CRT')) {
+                    document.getElementById('emit_CRT').value = String(emp.crt);
+                }
+                if(window.calcularChaveAcessoDinamica) calcularChaveAcessoDinamica();
+            }
+            else if(prefix === 'dest') {
+                document.getElementById('dest_xNome').value = emp.nome || '';
+                const docLimpo = String(emp.cnpj_cpf || '').replace(/\D/g, '');
+                const tpDocEl = document.getElementById('dest_tpDoc');
+                if (tpDocEl) {
+                    if (emp.uf === 'EX' || (emp.cpais && emp.cpais !== '1058') || (!docLimpo && emp.tipo === 'Exportador')) {
+                        tpDocEl.value = 'Estrangeiro';
+                    } else if (docLimpo.length <= 11 && docLimpo.length > 0) {
+                        tpDocEl.value = 'CPF';
+                    } else {
+                        tpDocEl.value = 'CNPJ';
+                    }
+                    atualizarTipoDocumentoDestinatario();
+                }
+                if (!tpDocEl || tpDocEl.value !== 'Estrangeiro') {
+                    document.getElementById('dest_CNPJ_CPF').value = emp.cnpj_cpf || '';
+                }
+                document.getElementById('dest_IE').value = emp.ie || '';
+                document.getElementById('dest_xLgr').value = emp.logradouro || '';
+                document.getElementById('dest_nro').value = emp.numero || '';
+                if(document.getElementById('dest_xCpl')) document.getElementById('dest_xCpl').value = emp.complemento || '';
+                document.getElementById('dest_xBairro').value = emp.bairro || '';
+                document.getElementById('dest_cMun').value = emp.cmun || '';
+                document.getElementById('dest_xMun').value = emp.municipio || '';
+                document.getElementById('dest_UF').value = emp.uf || '';
+                document.getElementById('dest_CEP').value = emp.cep || '';
+                document.getElementById('dest_xPais').value = emp.xpais || 'Brasil';
+                document.getElementById('dest_cPais').value = emp.cpais || '1058';
+                
+                const indIE = document.getElementById('dest_indIEDest');
+                let indIeVal = '1';
+                if (emp.ind_ie) {
+                    indIeVal = String(emp.ind_ie);
+                } else if (emp.uf === 'EX' || (emp.cpais && emp.cpais !== '1058') || (!docLimpo && emp.tipo === 'Exportador')) {
+                    indIeVal = '9';
+                } else {
+                    indIeVal = '1';
+                }
+                if (indIE) {
+                    indIE.value = indIeVal;
+                }
+                if (window.atualizarEstadoInscricaoEstadual) {
+                    atualizarEstadoInscricaoEstadual();
+                }
+                const elIe = document.getElementById('dest_IE');
+                if (elIe) {
+                    elIe.value = emp.ie || '';
+                    if (indIeVal === '1') {
+                        elIe.disabled = false;
+                        elIe.classList.remove('bg-light');
+                        elIe.placeholder = 'Inscrição Estadual';
+                    }
+                }
+
+                const expEl = document.getElementById('import_cExportador');
+                if (expEl && (!expEl.value || expEl.dataset.autoSynced === 'true')) {
+                    expEl.value = emp.nome || '';
+                    expEl.dataset.autoSynced = 'true';
+                }
+            }
+            else if(prefix === 'transp') {
+                document.getElementById('transp_xNome').value = emp.nome || '';
+                document.getElementById('transp_CNPJ_CPF').value = emp.cnpj_cpf || '';
+                document.getElementById('transp_IE').value = emp.ie || '';
+                const numEnd = emp.numero ? `, ${emp.numero}` : '';
+                const cplEnd = emp.complemento ? ` - ${emp.complemento}` : '';
+                document.getElementById('transp_xEnder').value = emp.logradouro ? `${emp.logradouro}${numEnd}${cplEnd}` : '';
+                document.getElementById('transp_xMun').value = emp.municipio || '';
+                document.getElementById('transp_UF').value = emp.uf || '';
+            }
+            if (window.validarCamposRegexVisual) setTimeout(window.validarCamposRegexVisual, 10);
+        }

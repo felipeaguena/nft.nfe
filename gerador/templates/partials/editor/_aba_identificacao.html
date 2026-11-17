@@ -1,0 +1,269 @@
+<div class="tab-pane fade" id="identificacao" role="tabpanel"><form id="form-identificacao"><div class="row mt-3">
+
+<div class="col-12 mt-2 mb-3">
+    <div class="card border border-success shadow-sm">
+        <div class="card-header py-2 d-flex justify-content-between align-items-center text-secondary">
+            <span class="fw-bold text-success d-flex align-items-center gap-1">
+                <i data-lucide="shield-check"></i> Certificado Digital (A1)
+            </span>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn-nft py-0 px-2 d-flex align-items-center gap-1" onclick="abrirModalGerenciarCertificados()" title="Gerenciar Certificados Digitais">
+<i data-lucide="key-round" style="width: 13px; height: 13px;"></i> Gerenciar Certificados
+</button>
+                <button type="button" class="btn-nft py-0 px-2 d-flex align-items-center gap-1" onclick="verificarStatusCertificado()" title="Verificar status e validade do certificado ativo">
+                    <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> Verificar
+                </button>
+            </div>
+        </div>
+        <div class="card-body py-2">
+            <div class="row g-2" id="cert-info-container">
+                <div class="col-12 text-muted small">
+                    Clique em "Verificar" para carregar as informações do certificado.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="col-md-6 mt-3">
+<div class="card h-100 border mb-3">
+<div class="card-header py-2 d-flex align-items-center gap-2 fw-bold text-secondary"><i data-lucide="building-2" style="width: 15px; height: 15px;"></i> Dados do Emitente</div>
+<div class="card-body py-2">
+<div class="row g-2"><div class="col-12 mb-3 position-relative">
+<label class="form-label small mb-1 fw-bold" for="input_busca_emitente">Preencher Dados do Emitente a partir do Cadastro de Empresas</label>
+<input autocomplete="off" class="form-control form-control-sm" id="input_busca_emitente" onblur="aoPerderFocoEmpresa('emit')" onfocus="aoDigitarEmpresaAutocomplete('emit')" oninput="aoDigitarEmpresaAutocomplete('emit')" placeholder="Digite nome, apelido ou CNPJ/CPF para buscar e selecionar..." type="text"/>
+<div class="dropdown-menu shadow w-100 overflow-auto p-1" id="dropdown_menu_busca_emitente" style="max-height: 250px; display: none; position: absolute; z-index: 1060; top: 100%; left: 0;"></div>
+<select id="select_emitente" style="display: none;"><option value="">Selecione...</option></select>
+</div>
+<!-- PAÍS DO EMITENTE -->
+<div class="col-md-7 position-relative">
+<label class="form-label small mb-1 fw-bold" for="emit_xPais">País do Emitente (Nome)</label>
+<input autocomplete="off" class="form-control form-control-sm fw-bold" id="emit_xPais" onblur="aoPerderFocoPais('emit')" onfocus="aoDigitarPaisAutocomplete('emit')" oninput="aoDigitarPaisAutocomplete('emit')" placeholder="Digite para filtrar e selecionar o País..." type="text" value="Brasil"/>
+<div class="dropdown-menu shadow w-100 overflow-auto p-1" id="dropdown_menu_emit_xPais" style="max-height: 250px; display: none; position: absolute; z-index: 1060; top: 100%; left: 0;"></div>
+</div>
+<div class="col-md-5">
+<label class="form-label small mb-1 fw-bold">Cód. BACEN (&lt;cPais&gt;)</label>
+<input class="form-control form-control-sm font-monospace fw-bold bg-light" id="emit_cPais" readonly="" type="text" value="1058"/>
+</div>
+<div class="col-md-8">
+<label class="form-label small mb-1">Razão Social (xNome)</label>
+<input class="form-control form-control-sm" id="emit_xNome" type="text"/>
+</div>
+<div class="col-md-4">
+<label class="form-label small mb-1">CNPJ</label>
+<input class="form-control form-control-sm mask-cnpj-cpf" id="emit_CNPJ" oninput="calcularChaveAcessoDinamica()" placeholder="00.000.000/0000-00" type="text"/>
+</div>
+<div class="col-md-5">
+<label class="form-label small mb-1">Inscrição Estadual (IE)</label>
+<input class="form-control form-control-sm" id="emit_IE" type="text"/>
+</div>
+<div class="col-md-7">
+<label class="form-label small mb-1 fw-bold">Regime Tributário (CRT)</label>
+<select class="form-select form-select-sm fw-semibold" id="emit_CRT">
+<option value="1" selected>1 - Simples Nacional</option>
+<option value="2">2 - Simples Nacional - excesso de sublimite de receita bruta</option>
+<option value="3">3 - Regime Normal</option>
+<option value="4">4 - Simples Nacional - Microempreendedor Individual - MEI</option>
+</select>
+</div>
+<div class="col-md-5">
+<label class="form-label small mb-1">Logradouro (xLgr)</label>
+<input class="form-control form-control-sm" id="emit_xLgr" type="text"/>
+</div>
+<div class="col-md-2">
+<label class="form-label small mb-1">Número (nro)</label>
+<input class="form-control form-control-sm" id="emit_nro" type="text"/>
+</div>
+<div class="col-md-5">
+<label class="form-label small mb-1">Complemento (xCpl)</label>
+<input class="form-control form-control-sm" id="emit_xCpl" placeholder="Sala, Bloco, Edifício..." type="text"/>
+</div>
+<div class="col-md-5">
+<label class="form-label small mb-1" for="emit_xBairro">Bairro</label>
+<input class="form-control form-control-sm" id="emit_xBairro" type="text"/>
+</div>
+<div class="col-md-5">
+<label class="form-label small mb-1" for="emit_xMun">Município (xMun)</label>
+<input class="form-control form-control-sm" id="emit_xMun" type="text"/>
+</div>
+<div class="col-md-2">
+<label class="form-label small mb-1" for="emit_UF">UF</label>
+<input class="form-control form-control-sm text-uppercase text-center font-monospace" id="emit_UF" maxlength="2" oninput="calcularChaveAcessoDinamica()" type="text"/>
+</div>
+<div class="col-md-6">
+<label class="form-label small mb-1 fw-bold" for="emit_CEP">CEP (Busca Automática)</label>
+<div class="input-group input-group-sm">
+<input class="form-control form-control-sm font-monospace" id="emit_CEP" onblur="buscarCepAuto(this.value, 'emit')" placeholder="00000-000" type="text"/>
+<button class="btn-nft" onclick="buscarCepAuto(document.getElementById('emit_CEP').value, 'emit')" title="Consultar CEP e preencher endereço" type="button"><i data-lucide="search" style="width: 13px; height: 13px;"></i></button>
+</div>
+</div>
+<div class="col-md-6">
+<label class="form-label small mb-1" for="emit_cMun">Cód. Mun. IBGE</label>
+<input class="form-control form-control-sm font-monospace" id="emit_cMun" oninput="calcularChaveAcessoDinamica()" placeholder="Ex: 3550308" type="text"/>
+</div>
+</div>
+</div>
+</div>
+</div><div class="col-md-6 mt-3">
+<div class="card h-100 border mb-3">
+<div class="card-header py-2 d-flex align-items-center justify-content-between text-secondary">
+<div class="d-flex align-items-center gap-2 fw-bold">
+<i data-lucide="user" style="width: 15px; height: 15px;"></i>
+<span>Dados do Destinatário</span>
+</div>
+<div class="d-flex align-items-center gap-2">
+<span class="badge font-monospace bg-info-subtle text-info fw-bold" id="lbl-status-pais-dest">Nacional (Brasil)</span>
+</div>
+</div>
+<div class="card-body py-2">
+<div class="row g-2"><div class="col-12 mb-3 position-relative">
+<label class="form-label small mb-1 fw-bold" for="input_busca_destinatario">Preencher Dados do Destinatário a partir do Cadastro</label>
+<div class="input-group input-group-sm">
+<input autocomplete="off" class="form-control form-control-sm" id="input_busca_destinatario" onblur="aoPerderFocoEmpresa('dest')" onfocus="aoDigitarEmpresaAutocomplete('dest')" oninput="aoDigitarEmpresaAutocomplete('dest')" placeholder="Digite nome, apelido ou CNPJ/CPF para buscar e selecionar..." type="text"/>
+<button class="btn-nft py-0 px-2 d-inline-flex align-items-center gap-1" onclick="abrirModalNovaEmpresaRapido('dest')" title="Cadastrar nova empresa e aplicar imediatamente à nota" type="button">
+<i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+<span>Nova</span>
+</button>
+</div>
+<div class="dropdown-menu shadow w-100 overflow-auto p-1" id="dropdown_menu_busca_destinatario" style="max-height: 250px; display: none; position: absolute; z-index: 1060; top: 100%; left: 0;"></div>
+<select id="select_destinatario" style="display: none;"><option value="">Selecione...</option></select>
+</div>
+<!-- PAÍS DO DESTINATÁRIO -->
+<div class="col-md-7 position-relative">
+<label class="form-label small mb-1 fw-bold" for="dest_xPais">País do Destinatário (Nome)</label>
+<input autocomplete="off" class="form-control form-control-sm fw-bold" id="dest_xPais" onblur="aoPerderFocoPais('dest')" onfocus="aoDigitarPaisAutocomplete('dest')" oninput="aoDigitarPaisAutocomplete('dest')" placeholder="Digite para filtrar e selecionar o País..." type="text" value="Brasil"/>
+<div class="dropdown-menu shadow w-100 overflow-auto p-1" id="dropdown_menu_dest_xPais" style="max-height: 250px; display: none; position: absolute; z-index: 1060; top: 100%; left: 0;"></div>
+</div>
+<div class="col-md-5">
+<label class="form-label small mb-1 fw-bold">Cód. BACEN (&lt;cPais&gt;)</label>
+<input class="form-control form-control-sm font-monospace fw-bold bg-light" id="dest_cPais" readonly="" type="text" value="1058"/>
+</div>
+<div class="col-md-5">
+<label class="form-label small mb-1">Nome / Razão Social (xNome)</label>
+<input class="form-control form-control-sm" id="dest_xNome" type="text"/>
+</div>
+<div class="col-md-3">
+<label class="form-label small mb-1 fw-bold">Tipo de Documento</label>
+<select class="form-select form-select-sm" id="dest_tpDoc" onchange="atualizarTipoDocumentoDestinatario()">
+<option value="CNPJ" selected>CNPJ</option>
+<option value="CPF">CPF</option>
+<option value="Estrangeiro">Estrangeiro</option>
+</select>
+</div>
+<div class="col-md-4">
+<label class="form-label small mb-1" id="lbl_dest_CNPJ_CPF">CNPJ / CPF / IdEstrangeiro</label>
+<input class="form-control form-control-sm mask-cnpj-cpf" id="dest_CNPJ_CPF" placeholder="00.000.000/0000-00" type="text"/>
+</div>
+<div class="col-md-6">
+<label class="form-label small mb-1">Tipo de Contribuinte (ICMS)</label>
+<select class="form-select form-select-sm" id="dest_indIEDest" onchange="atualizarEstadoInscricaoEstadual()">
+<option selected="" value="1">Contribuinte</option>
+<option value="2">Isento de Contribuição</option>
+<option value="9">Não Contribuinte</option>
+</select>
+</div>
+<div class="col-md-6">
+<label class="form-label small mb-1">Inscrição Estadual (IE)</label>
+<input class="form-control form-control-sm" id="dest_IE" placeholder="Inscrição Estadual" type="text"/>
+</div>
+<div class="col-md-5">
+<label class="form-label small mb-1">Logradouro (xLgr)</label>
+<input class="form-control form-control-sm" id="dest_xLgr" type="text"/>
+</div>
+<div class="col-md-2">
+<label class="form-label small mb-1">Número (nro)</label>
+<input class="form-control form-control-sm" id="dest_nro" type="text"/>
+</div>
+<div class="col-md-5">
+<label class="form-label small mb-1">Complemento (xCpl)</label>
+<input class="form-control form-control-sm" id="dest_xCpl" placeholder="Sala, Bloco, Galpão..." type="text"/>
+</div>
+<div class="col-md-5">
+<label class="form-label small mb-1" for="dest_xBairro">Bairro</label>
+<input class="form-control form-control-sm" id="dest_xBairro" type="text"/>
+</div>
+<div class="col-md-5">
+<label class="form-label small mb-1" for="dest_xMun">Município (xMun)</label>
+<input class="form-control form-control-sm" id="dest_xMun" type="text"/>
+</div>
+<div class="col-md-2">
+<label class="form-label small mb-1" for="dest_UF">UF</label>
+<input class="form-control form-control-sm text-uppercase text-center font-monospace" id="dest_UF" maxlength="2" type="text"/>
+</div>
+<div class="col-md-6">
+<label class="form-label small mb-1 fw-bold" for="dest_CEP">CEP (Busca Automática)</label>
+<div class="input-group input-group-sm">
+<input class="form-control form-control-sm font-monospace" id="dest_CEP" onblur="buscarCepAuto(this.value, 'dest')" placeholder="00000-000 ou 99999-999" type="text"/>
+<button class="btn-nft" onclick="buscarCepAuto(document.getElementById('dest_CEP').value, 'dest')" title="Consultar CEP e preencher endereço" type="button"><i data-lucide="search" style="width: 13px; height: 13px;"></i></button>
+</div>
+</div>
+<div class="col-md-6">
+<label class="form-label small mb-1" for="dest_cMun">Cód. Mun. IBGE</label>
+<input class="form-control form-control-sm font-monospace" id="dest_cMun" placeholder="Ex: 9999999 ou IBGE" type="text"/>
+</div>
+</div>
+</div>
+</div>
+</div></div><div class="row mt-3"><div class="col-12"><div class="card border mb-3">
+<div class="card-header py-2 d-flex justify-content-between align-items-center text-secondary">
+<span class="fw-bold d-inline-flex align-items-center gap-2"><i data-lucide="truck" style="width: 16px; height: 16px;"></i> Dados do Transporte e Volumes</span>
+<small class="text-muted">Grupo &lt;transp&gt; SEFAZ</small>
+</div>
+<div class="card-body py-3">
+<div class="row g-2"><div class="col-12 mb-3 border-bottom pb-2"><label class="form-label small fw-bold mb-1">Preencher Dados da Transportadora a partir do Cadastro</label><div class="input-group input-group-sm">
+<select class="form-select form-select-sm" id="select_transportadora" onchange="preencherDadosDeCadastro(this, 'transp')"><option value="">Selecione para preencher automaticamente...</option></select>
+<button class="btn-nft py-0 px-2 d-inline-flex align-items-center gap-1" onclick="abrirModalNovaEmpresaRapido('transp')" title="Cadastrar nova transportadora e aplicar imediatamente à nota" type="button">
+<i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+<span>Nova</span>
+</button>
+</div></div>
+<!-- Modalidade do Frete -->
+<div class="col-md-3">
+<label class="form-label small mb-1 fw-bold" for="transp_modFrete">Modalidade do Frete</label>
+<select class="form-select form-select-sm" id="transp_modFrete">
+<option value="0">0 - CIF (Por conta do Remetente)</option>
+<option value="1" selected>1 - FOB (Por conta do Destinatário)</option>
+<option value="2">2 - Terceiros</option>
+<option value="3">3 - Próprio Remetente</option>
+<option value="4">4 - Próprio Destinatário</option>
+<option value="9">9 - Sem Ocorrência de Transporte</option>
+</select>
+</div>
+<div class="col-md-3">
+<label class="form-label small mb-1 fw-bold" for="transp_CNPJ_CPF">CNPJ / CPF Transportadora</label>
+<input class="form-control form-control-sm mask-cnpj-cpf" id="transp_CNPJ_CPF" placeholder="00.000.000/0000-00" type="text"/>
+</div>
+<div class="col-md-4">
+<label class="form-label small mb-1 fw-bold" for="transp_xNome">Razão Social / Nome (xNome)</label>
+<input class="form-control form-control-sm" id="transp_xNome" placeholder="Nome da transportadora" type="text"/>
+</div>
+<div class="col-md-2">
+<label class="form-label small mb-1 fw-bold" for="transp_IE">Inscrição Estadual (IE)</label>
+<input class="form-control form-control-sm" id="transp_IE" type="text"/>
+</div>
+<div class="col-md-3">
+<label class="form-label small mb-1 fw-bold" for="transp_CEP">CEP Transportadora</label>
+<div class="input-group input-group-sm">
+<input class="form-control form-control-sm font-monospace" id="transp_CEP" onblur="buscarCepAuto(this.value, 'transp')" placeholder="00000-000" type="text"/>
+<button class="btn-nft" onclick="buscarCepAuto(document.getElementById('transp_CEP').value, 'transp')" title="Buscar CEP da transportadora" type="button"><i data-lucide="search" style="width: 13px; height: 13px;"></i></button>
+</div>
+</div>
+<div class="col-md-5">
+<label class="form-label small mb-1" for="transp_xEnder">Endereço Completo (xEnder)</label>
+<input class="form-control form-control-sm" id="transp_xEnder" type="text"/>
+</div>
+<div class="col-md-3">
+<label class="form-label small mb-1 fw-bold" for="transp_xMun">Município (xMun)</label>
+<input class="form-control form-control-sm" id="transp_xMun" type="text"/>
+</div>
+<div class="col-md-1">
+<label class="form-label small mb-1 fw-bold" for="transp_UF">UF</label>
+<input class="form-control form-control-sm text-uppercase text-center font-monospace" id="transp_UF" maxlength="2" type="text"/>
+</div>
+</div>
+<hr class="my-3 text-muted"/>
+<!-- Dados dos Volumes e Pesos -->
+<div class="row g-2 align-items-end">
+</div>
+</div>
+</div></div></div></form></div>

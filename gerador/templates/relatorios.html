@@ -1,0 +1,2568 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <!-- Favicon -->
+    <link href="/static/img/brand/nftlogo.webp" rel="icon" type="image/webp"/>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Relatório de Notas Fiscais - NFT Logistics</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <!-- NFT Logistics Theme (Light & Dark) -->
+    <link href="/static/css/nft-theme.css?v=4.1" rel="stylesheet"/>
+    <link href="/static/css/nft-sidebar.css?v=4.3" rel="stylesheet"/>
+    <script src="/static/js/theme.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="/static/js/lucide.min.js"></script>
+    <script src="/static/js/nft-dialogs.js"></script>
+    <script defer src="/static/js/nft-sefaz.js?v=3.0"></script>
+    <script defer src="/static/js/nft-sidebar.js?v=2.7"></script>
+    <script defer src="/static/js/nft-shortcuts.js?v=1.0"></script>
+
+    <!-- SheetJS para Exportação Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <style>
+        .metric-card {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px 20px;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .metric-value {
+            font-size: 1.45rem;
+            font-weight: 700;
+            color: var(--heading);
+            line-height: 1.2;
+        }
+        .metric-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .metric-icon-wrap {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .filter-panel {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 18px 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .filter-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--heading);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .table-report-wrap {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .table-report {
+            margin-bottom: 0;
+            font-size: 0.76rem;
+            width: 100%;
+        }
+
+        .table-report th {
+            background-color: var(--bg-alt);
+            color: var(--heading);
+            font-weight: 700;
+            font-size: 0.70rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            padding: 7px 6px;
+            border-bottom: 2px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .table-report td {
+            padding: 5px 6px;
+            font-size: 0.74rem;
+            vertical-align: middle;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .chave-display {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.68rem;
+            letter-spacing: 0px;
+            color: var(--text);
+            background-color: var(--bg-alt);
+            padding: 2px 5px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            max-width: 160px;
+        }
+
+        .chave-text-ellipsis {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 132px;
+            display: inline-block;
+        }
+
+        .chave-copy-btn {
+            background: none;
+            border: none;
+            padding: 0;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: color 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+        }
+        .chave-copy-btn:hover {
+            color: var(--primary);
+        }
+
+        .btn-page-round {
+            width: 28px;
+            height: 28px;
+            padding: 0 !important;
+            border-radius: 9999px !important;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .btn-page-round i,
+        .btn-page-round svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .btn-file-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            font-size: 0.72rem;
+            font-weight: 600;
+            border-radius: 9999px;
+            text-decoration: none;
+            transition: all 0.15s ease;
+            border: 1px solid transparent;
+            flex-shrink: 0;
+        }
+        .btn-file-action i,
+        .btn-file-action svg {
+            width: 13px;
+            height: 13px;
+        }
+
+        .btn-file-sefaz {
+            background-color: rgba(14, 165, 233, 0.12);
+            color: #0284c7;
+            border-color: rgba(14, 165, 233, 0.3);
+        }
+        .btn-file-sefaz:hover {
+            background-color: #0284c7;
+            color: #ffffff;
+        }
+
+        .btn-file-pdf {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, 0.25);
+        }
+        .btn-file-pdf:hover {
+            background-color: #ef4444;
+            color: #ffffff;
+        }
+
+        .btn-file-xml {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            border-color: rgba(16, 185, 129, 0.25);
+        }
+        .btn-file-xml:hover {
+            background-color: #10b981;
+            color: #ffffff;
+        }
+
+        .btn-file-zip {
+            background-color: rgba(99, 102, 241, 0.1);
+            color: #6366f1;
+            border-color: rgba(99, 102, 241, 0.25);
+        }
+        .btn-file-zip:hover {
+            background-color: #6366f1;
+            color: #ffffff;
+        }
+
+        .ref-tag {
+            font-weight: 700;
+            font-size: 0.74rem;
+            color: var(--primary);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            max-width: 140px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .ref-tag:hover {
+            text-decoration: underline;
+        }
+
+        .edit-ref-icon {
+            opacity: 0.4;
+            transition: opacity 0.15s ease;
+        }
+        .ref-tag:hover .edit-ref-icon {
+            opacity: 1;
+        }
+
+        .badge-op {
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        /* Tags de Status da Coluna Recibo/Protocolo */
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            line-height: 1.2;
+            padding: 3px 7px;
+            border-radius: 4px;
+            border: 1px solid transparent;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        /* Destaque em Vermelho Forte para Cancelada, Rejeitada e Denegada */
+        .status-pill-danger {
+            background-color: #fee2e2 !important;
+            color: #dc2626 !important;
+            border-color: #fca5a5 !important;
+        }
+        [data-theme="dark"] .status-pill-danger,
+        [data-bs-theme="dark"] .status-pill-danger,
+        .dark .status-pill-danger {
+            background-color: rgba(239, 68, 68, 0.2) !important;
+            color: #f87171 !important;
+            border-color: rgba(239, 68, 68, 0.45) !important;
+        }
+
+        /* Status Autorizada */
+        .status-pill-success {
+            background-color: #dcfce7 !important;
+            color: #16a34a !important;
+            border-color: #86efac !important;
+        }
+        [data-theme="dark"] .status-pill-success,
+        [data-bs-theme="dark"] .status-pill-success,
+        .dark .status-pill-success {
+            background-color: rgba(34, 197, 94, 0.18) !important;
+            color: #4ade80 !important;
+            border-color: rgba(34, 197, 94, 0.4) !important;
+        }
+
+        /* Outros Status Informativos */
+        .status-pill-info {
+            background-color: #e0f2fe !important;
+            color: #0284c7 !important;
+            border-color: #7dd3fc !important;
+        }
+        [data-theme="dark"] .status-pill-info,
+        [data-bs-theme="dark"] .status-pill-info,
+        .dark .status-pill-info {
+            background-color: rgba(14, 165, 233, 0.18) !important;
+            color: #38bdf8 !important;
+            border-color: rgba(14, 165, 233, 0.4) !important;
+        }
+
+        /* Tags de Ambiente (Sem conflito de badge): Homologação em Cinza e Produção em Azul */
+        .ambiente-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            font-size: 0.70rem;
+            font-weight: 700;
+            line-height: 1.2;
+            padding: 2px 7px;
+            border-radius: 4px;
+            border: 1px solid transparent;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        /* Produção: Azul */
+        .ambiente-pill-prod {
+            background-color: #dbeafe !important;
+            color: #1d4ed8 !important;
+            border-color: #93c5fd !important;
+        }
+        [data-theme="dark"] .ambiente-pill-prod,
+        [data-bs-theme="dark"] .ambiente-pill-prod,
+        .dark .ambiente-pill-prod {
+            background-color: rgba(37, 99, 235, 0.22) !important;
+            color: #60a5fa !important;
+            border-color: rgba(96, 165, 250, 0.45) !important;
+        }
+
+        /* Homologação: Cinza */
+        .ambiente-pill-homolog {
+            background-color: #f1f5f9 !important;
+            color: #475569 !important;
+            border-color: #cbd5e1 !important;
+        }
+        [data-theme="dark"] .ambiente-pill-homolog,
+        [data-bs-theme="dark"] .ambiente-pill-homolog,
+        .dark .ambiente-pill-homolog {
+            background-color: rgba(148, 163, 184, 0.18) !important;
+            color: #94a3b8 !important;
+            border-color: rgba(148, 163, 184, 0.35) !important;
+        }
+
+        .btn-header-round {
+            width: 34px;
+            height: 34px;
+            border-radius: 50% !important;
+            padding: 0 !important;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+        .btn-header-round i,
+        .btn-header-round svg {
+            width: 16px;
+            height: 16px;
+        }
+        .btn-header-round:hover {
+            transform: translateY(-1px);
+        }
+        .btn-header-backup {
+            background-color: #16a34a !important;
+            border-color: #16a34a !important;
+            color: #ffffff !important;
+        }
+        .btn-header-backup:hover,
+        .btn-header-backup:focus,
+        .btn-header-backup:active {
+            background-color: #15803d !important;
+            border-color: #15803d !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 10px rgba(22, 163, 74, 0.35) !important;
+        }
+
+        @media print {
+            .nft-sidebar, .filter-panel, .header-actions, .pagination-wrap, .chave-copy-btn, .btn-file-action {
+                display: none !important;
+            }
+            .nft-main-wrapper {
+                margin-left: 0 !important;
+                padding: 0 !important;
+            }
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
+            .table-report-wrap {
+                box-shadow: none !important;
+                border: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="has-sidebar">
+
+{% set sidebar_active = 'relatorios' %}
+{% include 'partials/sidebar.html' %}
+
+<!-- ÁREA PRINCIPAL DE CONTEÚDO (DESLOCADA PELA SIDEBAR) -->
+<div class="nft-main-wrapper">
+  {% set topbar_modulo = 'Relatório de Notas Fiscais' %}
+  {% set topbar_tag = 'Consultas' %}
+  {% include 'partials/topbar.html' %}
+    <div class="container-fluid px-4 py-3">
+
+        <!-- Cabeçalho da Página -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom gap-2">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn-nft d-lg-none" onclick="document.body.classList.toggle('sidebar-mobile-open')" title="Abrir Menu" type="button">
+                    <i data-lucide="menu" style="width: 16px; height: 16px;"></i>
+                </button>
+                <div>
+                    <h4 class="mb-0 fw-bold d-flex align-items-center gap-2 text-heading">
+                        <i class="text-primary" data-lucide="file-spreadsheet"></i>
+                        <span>Relatório de Notas Fiscais Geradas</span>
+                    </h4>
+                    <small class="text-muted">Acompanhe todas as notas fiscais emitidas, dados de faturamento, protocolos e baixe os arquivos XML e DANFE</small>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2 mt-2 mt-md-0 header-actions">
+                <button class="btn btn-sm btn-outline-secondary btn-header-round shadow-sm" onclick="carregarNotas(true)" title="Atualizar e sincronizar notas" data-bs-toggle="tooltip" data-bs-placement="bottom" type="button" aria-label="Atualizar">
+                    <i data-lucide="refresh-cw"></i>
+                </button>
+                <button class="btn btn-sm btn-header-backup btn-header-round shadow-sm" onclick="abrirModalBackup()" title="Backup de Notas Fiscais" data-bs-toggle="tooltip" data-bs-placement="bottom" type="button" aria-label="Backup">
+                    <i data-lucide="archive"></i>
+                </button>
+                <button class="btn btn-sm btn-primary btn-header-round shadow-sm" onclick="abrirModalImportarXml()" title="Importar XML" data-bs-toggle="tooltip" data-bs-placement="bottom" type="button" aria-label="Importar XML">
+                    <i data-lucide="upload"></i>
+                </button>
+                <button class="btn btn-sm btn-success btn-header-round shadow-sm" onclick="exportarExcel()" title="Exportar Excel" data-bs-toggle="tooltip" data-bs-placement="bottom" type="button" aria-label="Exportar Excel">
+                    <i data-lucide="download"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-primary btn-header-round shadow-sm" onclick="exportarCSV()" title="CSV" data-bs-toggle="tooltip" data-bs-placement="bottom" type="button" aria-label="CSV">
+                    <i data-lucide="file-text"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-info text-info-emphasis btn-header-round shadow-sm" onclick="abrirModalConsultaSefazModal()" title="Consulta SEFAZ" data-bs-toggle="tooltip" data-bs-placement="bottom" type="button" aria-label="Consulta SEFAZ">
+                    <i data-lucide="search"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Resumo Unificado (Total de Notas & Status) -->
+        <div class="metric-card py-2 px-3 mb-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-2">
+                <div class="metric-icon-wrap" style="width: 34px; height: 34px; background-color: rgba(59, 130, 246, 0.10); color: #3b82f6;">
+                    <i data-lucide="files" style="width: 17px; height: 17px;"></i>
+                </div>
+                <div class="d-flex align-items-baseline gap-2 flex-wrap">
+                    <span class="metric-label mb-0">Total de Notas:</span>
+                    <span class="fw-bold fs-6 text-heading" id="card-total-notas">0</span>
+                    <span class="small text-muted" id="card-sub-notas" style="font-size: 0.75rem;">0 carregadas</span>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap" style="font-size: 0.75rem;">
+                <span class="text-muted fw-semibold me-1">Status:</span>
+                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" id="card-badge-autorizadas">0 Autorizadas</span>
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" id="card-badge-canceladas">0 Canceladas</span>
+                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1" id="card-badge-rejeitadas">0 Rejeitadas</span>
+            </div>
+        </div>
+
+        <!-- FILTROS AVANÇADOS -->
+        <div class="filter-panel py-2 px-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="filter-title" style="font-size: 0.85rem;">
+                    <i class="text-primary" data-lucide="sliders-horizontal" style="width: 15px; height: 15px;"></i>
+                    <span>Filtros Avançados</span>
+                    <span class="badge bg-primary-subtle text-primary ms-1" id="lbl-filtros-ativos" style="font-size: 0.68rem;">1 filtro(s) ativo(s)</span>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.72rem; height: 24px;" onclick="limparFiltros()" type="button">
+                        <i data-lucide="x" style="width: 12px; height: 12px;"></i> Limpar
+                    </button>
+                    <button class="btn btn-sm btn-primary py-0 px-2" style="font-size: 0.72rem; height: 24px;" onclick="aplicarFiltros()" type="button">
+                        <i data-lucide="filter" style="width: 12px; height: 12px;"></i> Filtrar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Linha única compacta com todos os filtros -->
+            <div class="d-flex flex-wrap flex-xl-nowrap align-items-end gap-2">
+                <div style="flex: 2 1 190px; min-width: 170px;">
+                    <label class="form-label text-muted fw-bold mb-1" for="filtro-search" style="font-size: 0.68rem;">Busca Geral</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text px-2"><i data-lucide="search" style="width: 12px; height: 12px;"></i></span>
+                        <input class="form-control" id="filtro-search" oninput="debounceAplicarFiltros()" placeholder="Ref., Chave, Protocolo..." style="font-size: 0.74rem;" type="text"/>
+                        <button class="btn btn-outline-secondary px-2" onclick="document.getElementById('filtro-search').value=''; aplicarFiltros();" title="Limpar busca" type="button">
+                            <i data-lucide="x" style="width: 11px; height: 11px;"></i>
+                        </button>
+                    </div>
+                </div>
+                <div style="flex: 0.9 1 95px; min-width: 90px;">
+                    <label class="form-label text-muted fw-bold mb-1" for="filtro-numero-nfe" style="font-size: 0.68rem;">Nº NF-e</label>
+                    <input class="form-control form-control-sm font-monospace" id="filtro-numero-nfe" oninput="debounceAplicarFiltros()" placeholder="Ex: 846" style="font-size: 0.74rem;" type="text"/>
+                </div>
+                <div style="flex: 1 1 122px; min-width: 118px;">
+                    <label class="form-label text-muted fw-bold mb-1" for="filtro-data-ini" style="font-size: 0.68rem;">Data Inicial</label>
+                    <input class="form-control form-control-sm" id="filtro-data-ini" onchange="aplicarFiltros()" style="font-size: 0.74rem;" type="date"/>
+                </div>
+                <div style="flex: 1 1 122px; min-width: 118px;">
+                    <label class="form-label text-muted fw-bold mb-1" for="filtro-data-fim" style="font-size: 0.68rem;">Data Final</label>
+                    <input class="form-control form-control-sm" id="filtro-data-fim" onchange="aplicarFiltros()" style="font-size: 0.74rem;" type="date"/>
+                </div>
+                <div style="flex: 1 1 120px; min-width: 115px;">
+                    <label class="form-label text-muted fw-bold mb-1" for="filtro-status" style="font-size: 0.68rem;">Status</label>
+                    <select class="form-select form-select-sm" id="filtro-status" onchange="aplicarFiltros()" style="font-size: 0.74rem;">
+                        <option value="">Todos</option>
+                        <option value="Autorizada">Autorizada</option>
+                        <option value="Cancelada">Cancelada</option>
+                        <option value="Rejeitada">Rejeitada</option>
+                        <option value="Gerada">Gerada</option>
+                    </select>
+                </div>
+                <div style="flex: 0.9 1 100px; min-width: 95px;">
+                    <label class="form-label text-muted fw-bold mb-1" for="filtro-movimento" style="font-size: 0.68rem;">Movimento</label>
+                    <select class="form-select form-select-sm" id="filtro-movimento" onchange="aplicarFiltros()" style="font-size: 0.74rem;">
+                        <option value="">Todos</option>
+                        <option value="1">Saída (1)</option>
+                        <option value="0">Entrada (0)</option>
+                    </select>
+                </div>
+                <div style="flex: 1 1 120px; min-width: 115px;">
+                    <label class="form-label text-muted fw-bold mb-1" for="filtro-ambiente" style="font-size: 0.68rem;">Ambiente</label>
+                    <select class="form-select form-select-sm" id="filtro-ambiente" onchange="aplicarFiltros()" style="font-size: 0.74rem;">
+                        <option value="">Todos</option>
+                        <option value="1" selected>Produção (1)</option>
+                        <option value="2">Homologação (2)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABELA DE NOTAS FISCAIS GERADAS -->
+        <div class="table-report-wrap">
+            <div class="p-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2" style="background-color: var(--surface);">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="fw-bold text-heading">Listagem de Notas Fiscais</span>
+                    <span class="badge bg-secondary-subtle text-secondary" id="badge-contador-linhas">0 notas</span>
+                    <span class="badge bg-info-subtle text-info d-none" id="badge-progresso-carga" style="font-size: 0.72rem;"></span>
+                    
+                    <!-- Dropdown de Ordenação Rápida -->
+                    <div class="d-inline-flex align-items-center gap-1 ms-md-2">
+                        <span class="small text-muted d-none d-sm-inline" style="font-size: 0.75rem;">Ordenar por:</span>
+                        <select class="form-select form-select-sm py-0 ps-2 pe-4" id="select-ordenacao" onchange="alterarOrdenacao(this.value)" style="width: auto; font-size: 0.75rem; height: 26px;">
+                            <option value="data_desc" selected>Data/Hora (Mais recente)</option>
+                            <option value="data_asc">Data/Hora (Mais antiga)</option>
+                            <option value="numero_desc">Nº NF-e (Maior para menor)</option>
+                            <option value="numero_asc">Nº NF-e (Menor para maior)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-3 pagination-wrap">
+                    <div class="d-flex align-items-center gap-1 small text-muted">
+                        <span>Exibir:</span>
+                        <select class="form-select form-select-sm py-0 ps-2 pe-4" id="select-page-size" onchange="mudarPageSize(this.value)" style="width: auto;">
+                            <option value="10">10</option>
+                            <option value="25" selected>25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="all">Todas</option>
+                        </select>
+                    </div>
+                    <div class="d-flex align-items-center gap-1" id="paginacao-controles">
+                        <!-- Botões de paginação inseridos dinamicamente -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive" style="max-height: 650px; overflow-y: auto;">
+                <table class="table table-hover table-report align-middle" id="tabela-notas">
+                    <thead class="sticky-top">
+                        <tr>
+                            <th style="min-width: 115px;">Referencia Interna</th>
+                            <th style="min-width: 105px; cursor: pointer; user-select: none;" onclick="alternarOrdenacaoColuna('data')" title="Clique para alternar ordenação por Data/Hora" id="th-col-data">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <span>Data/Hora</span>
+                                    <i data-lucide="arrow-down" class="sort-icon text-primary ms-1" style="width: 13px; height: 13px;"></i>
+                                </div>
+                            </th>
+                            <th style="min-width: 80px; cursor: pointer; user-select: none;" class="text-center" onclick="alternarOrdenacaoColuna('numero')" title="Clique para alternar ordenação por Nº NF-e" id="th-col-numero">
+                                <div class="d-flex align-items-center justify-content-center gap-1">
+                                    <span>Nº NF-e</span>
+                                    <i data-lucide="arrow-up-down" class="sort-icon text-muted" style="width: 13px; height: 13px;"></i>
+                                </div>
+                            </th>
+                            <th style="min-width: 135px;">Tipo de Operação</th>
+                            <th style="min-width: 80px;" class="text-center">Ambiente</th>
+                            <th style="min-width: 155px;">Chave de Acesso</th>
+                            <th style="min-width: 85px;" class="text-end text-nowrap">Valor Total</th>
+                            <th style="min-width: 100px;" class="text-center">Arquivos</th>
+                            <th style="min-width: 115px;">Recibo/Protocolo</th>
+                            <th style="min-width: 65px;" class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-notas">
+                        <tr>
+                            <td class="text-center py-5 text-muted" colspan="10">
+                                <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                                Carregando notas fiscais geradas...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="p-2 px-3 border-top d-flex justify-content-between align-items-center small text-muted" style="background-color: var(--bg-alt);">
+                <div id="lbl-rodape-paginacao">Mostrando 0 de 0 notas fiscais</div>
+                <div>NFT Logistics &copy; Sistema Emissor de NF-e</div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- MODAL: EDITAR REFERÊNCIA INTERNA -->
+<div class="modal fade" id="modalEditarReferencia" tabindex="-1" aria-labelledby="modalEditarReferenciaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom py-3">
+                <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="modalEditarReferenciaLabel">
+                    <i class="text-primary" data-lucide="edit-3"></i>
+                    <span>Editar Referência Interna</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body py-3">
+                <p class="small text-muted mb-3">
+                    Ajuste o código da referência interna vinculado a esta nota fiscal emitida. Essa informação ficará gravada para futuras consultas e relatórios.
+                </p>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted mb-1">Chave de Acesso:</label>
+                    <input type="text" class="form-control form-control-sm font-monospace bg-light" id="modal-ref-chave" readonly/>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted mb-1" for="modal-ref-input">Referência Interna:</label>
+                    <input type="text" class="form-control" id="modal-ref-input" placeholder="Ex: NFT2600218-I REMESSA ou DI 2608502015" autofocus/>
+                </div>
+            </div>
+            <div class="modal-footer border-top py-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-sm btn-primary d-flex align-items-center gap-1" onclick="salvarReferenciaInterna()">
+                    <i data-lucide="check" style="width: 14px; height: 14px;"></i>
+                    <span>Salvar Alteração</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: RESUMO DA NOTA FISCAL E EXCLUSÃO DO RELATÓRIO -->
+<div class="modal fade" id="modalResumoNota" tabindex="-1" aria-labelledby="modalResumoNotaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-light border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary px-2 py-1"><i data-lucide="file-text" style="width: 14px; height: 14px;"></i> NF-e</span>
+                    <h5 class="modal-title fw-bold mb-0 text-heading" id="modalResumoNotaLabel">
+                        Resumo da Nota Fiscal
+                    </h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body p-4" id="modal-resumo-body">
+                <!-- Conteúdo preenchido dinamicamente por abrirModalResumoNota(chave) -->
+            </div>
+            <div class="modal-footer bg-light py-2 d-flex justify-content-between align-items-center">
+                <button type="button" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1 shadow-sm" id="btn-excluir-nota-modal" onclick="confirmarExclusaoNota()">
+                    <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                    <span>Excluir Nota Fiscal do Relatório</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: CONSULTA DE NOTA FISCAL NA SEFAZ -->
+<div class="modal fade" id="modalConsultaSefaz" tabindex="-1" aria-labelledby="modalConsultaSefazLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-light border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary px-2 py-1"><i data-lucide="shield-check" style="width: 14px; height: 14px;"></i> SEFAZ</span>
+                    <h5 class="modal-title fw-bold mb-0 text-heading" id="modalConsultaSefazLabel">
+                        Consulta de NF-e na SEFAZ
+                    </h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                <div class="alert alert-info py-2 px-3 small d-flex align-items-center gap-2 mb-3">
+                    <i data-lucide="info" class="flex-shrink-0" style="width: 18px; height: 18px;"></i>
+                    <div>
+                        Digite a <strong>Chave de Acesso</strong> de 44 dígitos para consultar diretamente o webservice da SEFAZ, ou utilize o gerador de chave rápida preenchendo os campos fiscais.
+                    </div>
+                </div>
+
+                <!-- Formulário de Consulta -->
+                <div class="card border p-3 mb-3 bg-light shadow-sm">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="fw-bold mb-0 d-flex align-items-center gap-2 text-primary" style="font-size: 0.9rem;">
+                            <i data-lucide="key" style="width: 17px; height: 17px;"></i>
+                            <span>1. Consulta por Chave de Acesso (Principal)</span>
+                        </h6>
+                        <a href="https://www.nfe.fazenda.gov.br/portal/consultaRecaptcha.aspx?tipoConsulta=resumo&tipoConteudo=7PhJ%20gAVw2g=" target="_blank" class="small text-decoration-none d-inline-flex align-items-center gap-1 text-primary">
+                            <i data-lucide="external-link" style="width: 13px; height: 13px;"></i>
+                            <span>Portal Nacional NF-e</span>
+                        </a>
+                    </div>
+                    
+                    <div class="row g-2 mb-2">
+                        <div class="col-12">
+                            <label class="form-label small fw-bold text-muted mb-1" for="sefaz-chave-input">
+                                Chave de Acesso da NF-e:
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text font-monospace bg-white text-muted"><i data-lucide="hash" style="width: 15px; height: 15px;"></i></span>
+                                <input type="text" class="form-control font-monospace" id="sefaz-chave-input" placeholder="Cole ou digite a Chave de Acesso (ex: 35261047998441000198550010000009801005080383)" oninput="formatarChaveInput(this)" onkeypress="if(event.key==='Enter') executarConsultaSefazModal();">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="limparCamposConsultaSefaz()" title="Limpar chave">
+                                    <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+                                </button>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-1">
+                                <small class="text-muted" style="font-size: 11px;">Insira a chave com ou sem espaços/pontuação.</small>
+                                <small class="text-muted font-monospace" id="sefaz-chave-contador" style="font-size: 11px;">0 dígitos</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 align-items-end pt-1">
+                        <div class="col-md-5 col-sm-6">
+                            <label class="form-label small fw-bold text-muted mb-1" for="sefaz-ambiente-select">
+                                Ambiente SEFAZ:
+                            </label>
+                            <select class="form-select form-select-sm" id="sefaz-ambiente-select">
+                                <option value="1" selected>1 - Produção (Oficial)</option>
+                                <option value="2">2 - Homologação (Testes)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <label class="form-label small fw-bold text-muted mb-1" for="sefaz-uf-select">
+                                UF SEFAZ:
+                            </label>
+                            <select class="form-select form-select-sm" id="sefaz-uf-select">
+                                <option value="SP" selected>SP (São Paulo)</option>
+                                <option value="RJ">RJ</option>
+                                <option value="MG">MG</option>
+                                <option value="PR">PR</option>
+                                <option value="SC">SC</option>
+                                <option value="RS">RS</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 col-sm-12 d-flex justify-content-md-end gap-2">
+                            <button type="button" class="btn btn-sm btn-primary fw-bold w-100 d-inline-flex align-items-center justify-content-center gap-1 shadow-sm py-2" id="btn-executar-consulta-sefaz" onclick="executarConsultaSefazModal()">
+                                <i data-lucide="search" style="width: 15px; height: 15px;"></i>
+                                <span>Consultar na SEFAZ</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Acordeão: Auxiliar de Composição da Chave (Caso o usuário só tenha os dados da nota) -->
+                <div class="accordion mb-3" id="accordionMontarChave">
+                    <div class="accordion-item border rounded">
+                        <h2 class="accordion-header" id="headingMontar">
+                            <button class="accordion-button collapsed py-2 px-3 small fw-semibold text-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMontar" aria-expanded="false" aria-controls="collapseMontar">
+                                <i data-lucide="calculator" class="me-2" style="width: 15px; height: 15px;"></i>
+                                Não tem a chave completa? Preencher dados individuais da NF-e
+                            </button>
+                        </h2>
+                        <div id="collapseMontar" class="accordion-collapse collapse" aria-labelledby="headingMontar" data-bs-parent="#accordionMontarChave">
+                            <div class="accordion-body p-3 bg-light-subtle">
+                                <p class="small text-muted mb-2">
+                                    Os 44 dígitos da NF-e são formados por: <strong>UF (2) + AAMM (4) + CNPJ Emitente (14) + Modelo (2) + Série (3) + Número NF (9) + Tipo Emissão (1) + Código Numérico (8) + Dígito (1)</strong>.
+                                </p>
+                                <div class="row g-2 mb-2">
+                                    <div class="col-md-3 col-6">
+                                        <label class="form-label small fw-bold text-muted mb-1">CNPJ Emitente:</label>
+                                        <input type="text" class="form-control form-control-sm font-monospace" id="calc-cnpj" placeholder="47.998.441/0001-98" value="47998441000198">
+                                    </div>
+                                    <div class="col-md-3 col-6">
+                                        <label class="form-label small fw-bold text-muted mb-1">Ano/Mês Emissão:</label>
+                                        <input type="text" class="form-control form-control-sm font-monospace" id="calc-aamm" placeholder="AAMM (Ex: 2610)" maxlength="4" value="2610">
+                                    </div>
+                                    <div class="col-md-2 col-4">
+                                        <label class="form-label small fw-bold text-muted mb-1">Modelo:</label>
+                                        <input type="text" class="form-control form-control-sm font-monospace" id="calc-modelo" value="55" readonly>
+                                    </div>
+                                    <div class="col-md-2 col-4">
+                                        <label class="form-label small fw-bold text-muted mb-1">Série:</label>
+                                        <input type="text" class="form-control form-control-sm font-monospace" id="calc-serie" value="001" maxlength="3">
+                                    </div>
+                                    <div class="col-md-2 col-4">
+                                        <label class="form-label small fw-bold text-muted mb-1">Número NF-e:</label>
+                                        <input type="text" class="form-control form-control-sm font-monospace" id="calc-numero" placeholder="Ex: 980" maxlength="9">
+                                    </div>
+                                </div>
+                                <div class="small text-muted fst-italic">
+                                    Dica: Ao selecionar qualquer nota na listagem abaixo, a chave de 44 dígitos é preenchida automaticamente.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Container do Resultado da Consulta -->
+                <div id="sefaz-resultado-consulta" style="display: none;">
+                    <!-- Preenchido dinamicamente com o status, protocolos, eventos e links -->
+                </div>
+            </div>
+
+            <div class="modal-footer bg-light py-2">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: BACKUP CONSOLIDADO DE NOTAS FISCAIS -->
+<div class="modal fade" id="modalBackup" tabindex="-1" aria-labelledby="modalBackupLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-bottom py-3" style="background-color: var(--surface);">
+                <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="modalBackupLabel">
+                    <i class="text-primary" data-lucide="archive"></i>
+                    <span>Backup de Notas Fiscais</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body py-3">
+                <p class="small text-muted mb-3">
+                    Exporte e consolide os arquivos (PDFs e/ou XMLs) das notas fiscais geradas ou importadas em um único arquivo compactado (.ZIP).
+                </p>
+
+                <!-- 1. Critério de Filtro -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted mb-2">1. Critério de Seleção:</label>
+                    <div class="d-flex flex-column gap-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="backupTipoFiltro" id="backupFiltroTodas" value="todas" checked onchange="atualizarCamposBackup()">
+                            <label class="form-check-label fw-semibold" for="backupFiltroTodas">
+                                Todas as notas fiscais cadastradas
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="backupTipoFiltro" id="backupFiltroPeriodo" value="periodo" onchange="atualizarCamposBackup()">
+                            <label class="form-check-label fw-semibold" for="backupFiltroPeriodo">
+                                Por período de data de emissão
+                            </label>
+                        </div>
+                        <div id="backup-campos-periodo" class="row g-2 mt-1 ps-4" style="display: none;">
+                            <div class="col-6">
+                                <label class="form-label small text-muted mb-1">Data Início:</label>
+                                <input type="date" class="form-control form-control-sm" id="backup-data-ini">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted mb-1">Data Fim:</label>
+                                <input type="date" class="form-control form-control-sm" id="backup-data-fim">
+                            </div>
+                        </div>
+
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="backupTipoFiltro" id="backupFiltroNumero" value="numero" onchange="atualizarCamposBackup()">
+                            <label class="form-check-label fw-semibold" for="backupFiltroNumero">
+                                Por intervalo de número da nota (Nº NF-e)
+                            </label>
+                        </div>
+                        <div id="backup-campos-numero" class="row g-2 mt-1 ps-4" style="display: none;">
+                            <div class="col-6">
+                                <label class="form-label small text-muted mb-1">Nº NF-e Inicial:</label>
+                                <input type="number" class="form-control form-control-sm" id="backup-num-ini" placeholder="Ex: 800" min="1">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted mb-1">Nº NF-e Final:</label>
+                                <input type="number" class="form-control form-control-sm" id="backup-num-fim" placeholder="Ex: 950" min="1">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Formato do Pacote -->
+                <div class="mb-3 pt-2 border-top">
+                    <label class="form-label small fw-bold text-muted mb-2">2. Formato dos Arquivos no ZIP:</label>
+                    <div class="d-flex flex-column gap-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="backupFormato" id="backupFormatoConsolidado" value="consolidado" checked>
+                            <label class="form-check-label" for="backupFormatoConsolidado">
+                                <span class="fw-bold">ZIP Consolidado</span> <span class="text-muted small">(Inclui ambos: DANFE em PDF e XML de cada nota)</span>
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="backupFormato" id="backupFormatoPdf" value="pdf">
+                            <label class="form-check-label" for="backupFormatoPdf">
+                                <span class="fw-bold">Todos os PDFs</span> <span class="text-muted small">(Apenas DANFEs em formato PDF)</span>
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="backupFormato" id="backupFormatoXml" value="xml">
+                            <label class="form-check-label" for="backupFormatoXml">
+                                <span class="fw-bold">Todos os XMLs</span> <span class="text-muted small">(Apenas os arquivos XML oficiais)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="backup-status-msg" class="alert alert-info py-2 px-3 small d-none mb-0"></div>
+            </div>
+            <div class="modal-footer border-top py-2" style="background-color: var(--surface);">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-sm btn-primary d-flex align-items-center gap-1" id="btn-executar-backup" onclick="executarDownloadBackup()">
+                    <i data-lucide="download" style="width: 14px; height: 14px;"></i>
+                    <span>Gerar e Baixar Backup (.ZIP)</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: IMPORTAR XMLs DE OUTROS SISTEMAS -->
+<div class="modal fade" id="modalImportarXml" tabindex="-1" aria-labelledby="modalImportarXmlLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-bottom py-3" style="background-color: var(--surface);">
+                <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="modalImportarXmlLabel">
+                    <i class="text-primary" data-lucide="upload"></i>
+                    <span>Importar Notas Fiscais (XML SEFAZ)</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body py-3">
+                <p class="small text-muted mb-3">
+                    Importe arquivos XML emitidos em outros sistemas que seguem o padrão SEFAZ (ou um pacote <code>.zip</code> com múltiplos XMLs).
+                    O sistema irá ler os dados da nota, gerar o <strong>DANFE em PDF</strong> no nosso padrão e disponibilizar para download na coluna "Arquivos".
+                </p>
+
+                <!-- Área de Seleção / Drag & Drop -->
+                <div class="border border-2 border-dashed rounded-3 p-4 text-center mb-3 bg-light" id="drop-zone-xml" style="cursor: pointer;" onclick="document.getElementById('input-arquivos-xml').click()">
+                    <i data-lucide="file-up" class="text-primary mb-2" style="width: 36px; height: 36px;"></i>
+                    <div class="fw-bold text-dark">Clique para selecionar ou arraste os arquivos XML aqui</div>
+                    <div class="small text-muted mt-1">Formatos aceitos: <code>.xml</code> ou <code>.zip</code> contendo XMLs (pode selecionar vários)</div>
+                    <input type="file" id="input-arquivos-xml" accept=".xml,.zip" multiple style="display: none;" onchange="atualizarListaArquivosSelecionados(this.files)">
+                </div>
+
+                <!-- Arquivos selecionados -->
+                <div id="container-arquivos-selecionados" class="mb-3 d-none">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="small fw-bold text-muted" id="lbl-total-arquivos-selecionados">0 arquivo(s) selecionado(s)</span>
+                        <button type="button" class="btn btn-link btn-sm text-danger p-0 small" onclick="limparArquivosSelecionados()">Limpar seleção</button>
+                    </div>
+                    <div class="border rounded p-2 bg-white" style="max-height: 140px; overflow-y: auto;" id="lista-nomes-arquivos"></div>
+                </div>
+
+                <!-- Referência Interna Opcional -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted mb-1" for="import-ref-custom">Referência Interna (Opcional):</label>
+                    <input type="text" class="form-control form-control-sm" id="import-ref-custom" placeholder="Deixe em branco para extrair automaticamente do XML (ex: NFT... / DI / REF-nNF)">
+                    <small class="text-muted" style="font-size: 0.72rem;">Se preenchido, será aplicada esta referência para as notas importadas que não possuírem referência própria.</small>
+                </div>
+
+                <!-- Barra de progresso -->
+                <div id="import-progress-area" class="d-none mb-3">
+                    <div class="progress mb-2" style="height: 10px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" id="import-progress-bar" style="width: 100%;"></div>
+                    </div>
+                    <div class="small text-muted text-center" id="import-progress-text">Processando XMLs, gerando DANFEs em PDF e gravando no sistema...</div>
+                </div>
+
+                <!-- Resumo dos resultados -->
+                <div id="import-result-area" class="d-none"></div>
+            </div>
+            <div class="modal-footer border-top py-2" style="background-color: var(--surface);">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-sm btn-primary d-flex align-items-center gap-1" id="btn-iniciar-importacao" onclick="iniciarImportacaoXml()">
+                    <i data-lucide="check" style="width: 14px; height: 14px;"></i>
+                    <span>Iniciar Importação</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap 5 Bundle JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // Estado global da aplicação
+    let todasNotas = [];
+    let notasFiltradas = [];
+    let operacoesLista = [];
+    let paginaAtual = 1;
+    let itensPorPagina = 25;
+    let debounceTimer = null;
+    let modalRefBootstrap = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+        // Inicializa Tooltips do Bootstrap
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+
+        const modalRefEl = document.getElementById('modalEditarReferencia');
+        if (modalRefEl) modalRefBootstrap = new bootstrap.Modal(modalRefEl);
+        const modalBackupEl = document.getElementById('modalBackup');
+        if (modalBackupEl) modalBackupBootstrap = new bootstrap.Modal(modalBackupEl);
+        const modalImportEl = document.getElementById('modalImportarXml');
+        if (modalImportEl) modalImportarXmlBootstrap = new bootstrap.Modal(modalImportEl);
+        configurarDropZoneXml();
+
+        // Suporte a filtro via URL (?numero_nfe=... ou ?search=...) vindo da Busca Rápida Global
+        const urlParams = new URLSearchParams(window.location.search);
+        const numeroNfeParam = urlParams.get('numero_nfe');
+        const searchParam = urlParams.get('search');
+        if (numeroNfeParam || searchParam) {
+            const elNum = document.getElementById('filtro-numero-nfe');
+            const elSearch = document.getElementById('filtro-search');
+            const elAmb = document.getElementById('filtro-ambiente');
+            if (numeroNfeParam && elNum) elNum.value = numeroNfeParam;
+            if (searchParam && elSearch) elSearch.value = searchParam;
+            if (elAmb && !urlParams.has('ambiente')) elAmb.value = '';
+        }
+
+        carregarNotas();
+    });
+
+    let _carregamentoId = 0;
+    let totalNotasServidor = 0;
+    let resumoServidor = {
+        total_notas: 0,
+        total_autorizadas: 0,
+        total_canceladas: 0,
+        total_rejeitadas: 0
+    };
+
+    function obterParametrosFiltrosQuery() {
+        const params = new URLSearchParams();
+        const search = (document.getElementById('filtro-search')?.value || '').trim();
+        const numeroNfe = (document.getElementById('filtro-numero-nfe')?.value || '').trim();
+        const dataIni = document.getElementById('filtro-data-ini')?.value || '';
+        const dataFim = document.getElementById('filtro-data-fim')?.value || '';
+        const status = document.getElementById('filtro-status')?.value || '';
+        const movimento = document.getElementById('filtro-movimento')?.value || '';
+        const ambiente = document.getElementById('filtro-ambiente')?.value || '';
+
+        let ativosCount = 0;
+        if (search) { params.set('search', search); ativosCount++; }
+        if (numeroNfe) { params.set('numero_nfe', numeroNfe); ativosCount++; }
+        if (dataIni) { params.set('data_inicio', dataIni); ativosCount++; }
+        if (dataFim) { params.set('data_fim', dataFim); ativosCount++; }
+        if (dataIni && dataFim) ativosCount--; // Conta período como 1 filtro
+        if (status) { params.set('status', status); ativosCount++; }
+        if (movimento) { params.set('tipo_movimento', movimento); ativosCount++; }
+        if (ambiente) { params.set('ambiente', ambiente); ativosCount++; }
+
+        const lblFiltros = document.getElementById('lbl-filtros-ativos');
+        if (lblFiltros) {
+            lblFiltros.textContent = ativosCount > 0 ? `${ativosCount} filtro(s) ativo(s)` : 'Todos os registros';
+        }
+
+        if (typeof ordenacaoAtual === 'object' && ordenacaoAtual) {
+            params.set('sort', `${ordenacaoAtual.campo}_${ordenacaoAtual.direcao}`);
+        }
+        return params;
+    }
+
+    // Carrega apenas a página atual diretamente do SQL (Opção A - economia máxima no Turso/Servidor)
+    async function carregarNotas(forcarSync = false) {
+        const cargaAtual = ++_carregamentoId;
+        const tbody = document.getElementById('tbody-notas');
+        const badgeProgresso = document.getElementById('badge-progresso-carga');
+        if (badgeProgresso) badgeProgresso.classList.add('d-none');
+
+        tbody.innerHTML = `
+            <tr>
+                <td class="text-center py-5 text-muted" colspan="10">
+                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                    ${forcarSync ? 'Sincronizando e buscando notas fiscais...' : 'Carregando notas fiscais...'}
+                </td>
+            </tr>
+        `;
+
+        try {
+            const params = obterParametrosFiltrosQuery();
+            const porPag = (itensPorPagina === 'all') ? 0 : parseInt(itensPorPagina, 10);
+            const offset = porPag > 0 ? (paginaAtual - 1) * porPag : 0;
+
+            params.set('limit', String(porPag));
+            params.set('offset', String(offset));
+            params.set('sync', forcarSync ? '1' : '0');
+
+            const res = await fetch(`/api/relatorios/notas?${params.toString()}`);
+            const data = await res.json();
+
+            if (cargaAtual !== _carregamentoId) return;
+            if (!data.success) {
+                throw new Error(data.error || 'Erro ao carregar dados do relatório');
+            }
+
+            todasNotas = data.notas || [];
+            notasFiltradas = todasNotas;
+            totalNotasServidor = Number(data.total || 0);
+            resumoServidor = data.resumo || {
+                total_notas: totalNotasServidor,
+                total_autorizadas: 0,
+                total_canceladas: 0,
+                total_rejeitadas: 0
+            };
+
+            atualizarResumoCards();
+            renderizarTabela();
+
+        } catch (err) {
+            console.error('Erro ao carregar notas:', err);
+            tbody.innerHTML = `
+                <tr>
+                    <td class="text-center py-5 text-danger" colspan="10">
+                        <i data-lucide="alert-triangle" class="mb-2" style="width: 28px; height: 28px;"></i><br/>
+                        <strong>Falha ao carregar relatório:</strong> ${err.message}<br/>
+                        <button class="btn btn-sm btn-outline-primary mt-2" onclick="carregarNotas(false)">Tentar Novamente</button>
+                    </td>
+                </tr>
+            `;
+            if (typeof lucide !== 'undefined') lucide.createIcons({ root: tbody });
+        }
+    }
+
+    // Debounce para digitação na busca rápida
+    function debounceAplicarFiltros() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            aplicarFiltros();
+        }, 300);
+    }
+
+    // Aplica filtros diretamente no servidor (SQL)
+    function aplicarFiltros() {
+        paginaAtual = 1;
+        carregarNotas(false);
+    }
+
+    // Limpa todos os filtros de pesquisa
+    function limparFiltros() {
+        const elSearch = document.getElementById('filtro-search');
+        const elNum = document.getElementById('filtro-numero-nfe');
+        const elIni = document.getElementById('filtro-data-ini');
+        const elFim = document.getElementById('filtro-data-fim');
+        const elStatus = document.getElementById('filtro-status');
+        const elMov = document.getElementById('filtro-movimento');
+        const elAmb = document.getElementById('filtro-ambiente');
+
+        if (elSearch) elSearch.value = '';
+        if (elNum) elNum.value = '';
+        if (elIni) elIni.value = '';
+        if (elFim) elFim.value = '';
+        if (elStatus) elStatus.value = '';
+        if (elMov) elMov.value = '';
+        if (elAmb) elAmb.value = '';
+        aplicarFiltros();
+    }
+
+    // Atualiza o cartão unificado de indicadores com os totais retornados pelo SQL
+    function atualizarResumoCards() {
+        const totalNotas = Number(resumoServidor.total_notas ?? totalNotasServidor ?? notasFiltradas.length);
+        const autorizadas = Number(resumoServidor.total_autorizadas ?? 0);
+        const canceladas = Number(resumoServidor.total_canceladas ?? 0);
+        const rejeitadas = Number(resumoServidor.total_rejeitadas ?? 0);
+
+        const elTotal = document.getElementById('card-total-notas');
+        const elSub = document.getElementById('card-sub-notas');
+        const elAut = document.getElementById('card-badge-autorizadas');
+        const elCanc = document.getElementById('card-badge-canceladas');
+        const elRej = document.getElementById('card-badge-rejeitadas');
+        const elCont = document.getElementById('badge-contador-linhas');
+
+        if (elTotal) elTotal.textContent = totalNotas;
+        if (elSub) elSub.textContent = `(${notasFiltradas.length} exibidas nesta página)`;
+        if (elAut) elAut.textContent = `${autorizadas} Autorizadas`;
+        if (elCanc) elCanc.textContent = `${canceladas} Canceladas`;
+        if (elRej) elRej.textContent = `${rejeitadas} Rejeitadas`;
+        if (elCont) elCont.textContent = `${totalNotas} nota(s)`;
+    }
+
+    // Renderiza linhas da tabela já paginadas pelo servidor
+    function renderizarTabela() {
+        const tbody = document.getElementById('tbody-notas');
+        if (notasFiltradas.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td class="text-center py-5 text-muted" colspan="10">
+                        <i data-lucide="inbox" class="mb-2" style="width: 32px; height: 32px;"></i><br/>
+                        Nenhuma nota fiscal encontrada com os filtros informados.
+                    </td>
+                </tr>
+            `;
+            document.getElementById('lbl-rodape-paginacao').textContent = 'Mostrando 0 de 0 notas fiscais';
+            renderizarPaginacao(0);
+            if (typeof lucide !== 'undefined') lucide.createIcons({ root: tbody });
+            return;
+        }
+
+        const porPag = (itensPorPagina === 'all') ? notasFiltradas.length : parseInt(itensPorPagina, 10);
+        const inicio = (itensPorPagina === 'all') ? 0 : (paginaAtual - 1) * porPag;
+        const fim = inicio + notasFiltradas.length;
+
+        const notasExibidas = notasFiltradas;
+        let html = '';
+
+        notasExibidas.forEach(n => {
+            const chave = n.chave_nfe || '';
+            const chaveFmt = n.chave_formatada || chave;
+            const ref = n.referencia_interna || '-';
+            const dt = n.data_hora_formatada || n.data_hora || '-';
+            const numNfe = n.numero_nfe || '-';
+            const natOp = n.tipo_operacao || '-';
+            const vNF = n.valor_total_fmt || formatarMoeda(n.valor_total);
+            const vProd = n.total_produtos_fmt || formatarMoeda(n.total_produtos);
+            const status = n.status || 'Gerada';
+            const protocolo = n.protocolo || n.recibo || '-';
+
+            // Tag de Movimento (Entrada ou Saída)
+            const isEntrada = String(n.tipo_movimento) === '0';
+            const badgeMov = isEntrada 
+                ? `<span class="badge bg-warning-subtle text-warning border border-warning-subtle badge-op">Entrada</span>` 
+                : `<span class="badge bg-primary-subtle text-primary border border-primary-subtle badge-op">Saída</span>`;
+
+            // Tag de Status (Sem a classe 'badge' do Bootstrap para evitar conflitos de estilo)
+            let badgeStatus = '';
+            const statusUpper = (status || '').toUpperCase();
+            if (status === 'Autorizada') {
+                badgeStatus = `<span class="status-pill status-pill-success"><i data-lucide="check-circle" style="width:12px; height:12px;"></i> Autorizada</span>`;
+            } else if (statusUpper.includes('CANCELADA')) {
+                badgeStatus = `<span class="status-pill status-pill-danger"><i data-lucide="x-circle" style="width:12px; height:12px;"></i> Cancelada</span>`;
+            } else if (statusUpper.includes('REJEITADA') || statusUpper.includes('REJEIÇÃO')) {
+                badgeStatus = `<span class="status-pill status-pill-danger"><i data-lucide="alert-octagon" style="width:12px; height:12px;"></i> Rejeitada</span>`;
+            } else if (statusUpper.includes('DENEGADA')) {
+                badgeStatus = `<span class="status-pill status-pill-danger"><i data-lucide="shield-alert" style="width:12px; height:12px;"></i> Denegada</span>`;
+            } else {
+                badgeStatus = `<span class="status-pill status-pill-info">${escapeHtml(status)}</span>`;
+            }
+
+            // Botões de download de arquivos
+            const downloadPdfUrl = `/api/sefaz/download/pdf/${chave}`;
+            const downloadXmlUrl = `/api/sefaz/download/xml/${chave}`;
+            const downloadZipUrl = `/api/sefaz/download/zip/${chave}`;
+
+            // 5. Ambiente (1=Produção em Azul, 2=Homologação em Cinza - Sem classe badge conflitante)
+            const isProd = String(n.ambiente) === '1';
+            const badgeAmb = isProd
+                ? `<span class="ambiente-pill ambiente-pill-prod" title="Ambiente de Produção (SEFAZ)"><i data-lucide="shield-check" style="width: 11px; height: 11px;"></i> Produção</span>`
+                : `<span class="ambiente-pill ambiente-pill-homolog" title="Ambiente de Homologação / Testes"><i data-lucide="test-tube-2" style="width: 11px; height: 11px;"></i> Homologação</span>`;
+
+            html += `
+                <tr>
+                    <!-- 1. Referência Interna -->
+                    <td>
+                        <span class="ref-tag" onclick="abrirModalEditarRef('${chave}', '${escapeHtml(ref)}')" title="Clique para editar a referência: ${escapeHtml(ref)}">
+                            <span>${escapeHtml(ref)}</span>
+                            <i data-lucide="edit-3" class="edit-ref-icon" style="width: 11px; height: 11px;"></i>
+                        </span>
+                    </td>
+
+                    <!-- 2. Data/Hora -->
+                    <td class="text-nowrap" style="font-size: 0.73rem;">${dt}</td>
+
+                    <!-- 3. Número de NF-e -->
+                    <td class="text-center">
+                        <span class="badge bg-light text-dark border fw-bold px-1 py-1" style="font-size: 0.72rem;">${escapeHtml(numNfe)}</span>
+                    </td>
+
+                    <!-- 4. Tipo de Operação -->
+                    <td>
+                        <div class="d-flex align-items-center gap-1 mb-1">${badgeMov}</div>
+                        <div class="fw-semibold text-truncate" style="max-width: 155px; font-size: 0.73rem;" title="${escapeHtml(natOp)}">${escapeHtml(natOp)}</div>
+                    </td>
+
+                    <!-- 5. Ambiente -->
+                    <td class="text-center text-nowrap">
+                        ${badgeAmb}
+                    </td>
+
+                    <!-- 6. Chave de Acesso -->
+                    <td>
+                        <div class="chave-display" title="Chave de Acesso: ${chaveFmt}">
+                            <span class="chave-text-ellipsis">${chaveFmt}</span>
+                            <button class="chave-copy-btn" onclick="copiarChave('${chave}', this)" title="Copiar chave completa" type="button">
+                                <i data-lucide="copy" style="width: 12px; height: 12px;"></i>
+                            </button>
+                        </div>
+                    </td>
+
+                    <!-- 7. Valor Total -->
+                    <td class="text-end fw-bold text-success text-nowrap" style="font-size: 0.75rem;">${vNF}</td>
+
+                    <!-- 8. Arquivos (Ícones circulares sem nomes) -->
+                    <td class="text-center text-nowrap">
+                        <div class="d-inline-flex gap-1 align-items-center justify-content-center">
+                            <button class="btn-file-action btn-file-sefaz" onclick="abrirModalConsultaSefazModal('${chave}')" title="Consultar esta NF-e na SEFAZ" type="button">
+                                <i data-lucide="search"></i>
+                            </button>
+                            <a class="btn-file-action btn-file-pdf" href="${downloadPdfUrl}" target="_blank" title="Baixar DANFE em PDF" download>
+                                <i data-lucide="file-text"></i>
+                            </a>
+                            <a class="btn-file-action btn-file-xml" href="${downloadXmlUrl}" target="_blank" title="Baixar XML da NF-e" download>
+                                <i data-lucide="file-code"></i>
+                            </a>
+                            <a class="btn-file-action btn-file-zip" href="${downloadZipUrl}" title="Baixar Pacote ZIP (PDF + XML)" download>
+                                <i data-lucide="archive"></i>
+                            </a>
+                        </div>
+                    </td>
+
+                    <!-- 9. Recibo/Protocolo -->
+                    <td>
+                        <div class="mb-1">${badgeStatus}</div>
+                        <div class="font-monospace small text-muted text-truncate" style="max-width: 135px; font-size: 0.70rem;" title="${escapeHtml(protocolo)}">
+                            ${protocolo !== '-' ? `Prot: ${escapeHtml(protocolo)}` : '-'}
+                        </div>
+                    </td>
+
+                    <!-- 10. Ações: Resumo & Exclusão -->
+                    <td class="text-center text-nowrap">
+                        <button class="btn btn-sm btn-outline-primary py-0 px-2 d-inline-flex align-items-center gap-1 shadow-sm" style="font-size: 0.72rem; height: 24px;" onclick="abrirModalResumoNota('${chave}')" title="Visualizar Resumo da Nota Fiscal e Opções">
+                            <i data-lucide="eye" style="width: 12px; height: 12px;"></i>
+                            <span>Resumo</span>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        tbody.innerHTML = html;
+        document.getElementById('lbl-rodape-paginacao').textContent = `Mostrando ${inicio + 1} a ${fim} de ${totalNotasServidor} notas fiscais`;
+        renderizarPaginacao(totalNotasServidor);
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons({ root: tbody });
+        }
+    }
+
+    // Renderiza os botões numéricos e navegação de paginação
+    function renderizarPaginacao(totalItens) {
+        const wrap = document.getElementById('paginacao-controles');
+        if (itensPorPagina === 'all' || totalItens <= parseInt(itensPorPagina)) {
+            wrap.innerHTML = '';
+            return;
+        }
+
+        const porPag = parseInt(itensPorPagina);
+        const totalPaginas = Math.ceil(totalItens / porPag);
+
+        let html = `
+            <button class="btn btn-sm btn-outline-secondary btn-page-round" onclick="mudarPagina(1)" ${paginaAtual === 1 ? 'disabled' : ''} title="Primeira Página" type="button" aria-label="Primeira Página">
+                <i data-lucide="chevrons-left"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary btn-page-round" onclick="mudarPagina(${paginaAtual - 1})" ${paginaAtual === 1 ? 'disabled' : ''} title="Página Anterior" type="button" aria-label="Página Anterior">
+                <i data-lucide="chevron-left"></i>
+            </button>
+            <span class="small px-2 fw-bold text-muted font-monospace">${paginaAtual} / ${totalPaginas}</span>
+            <button class="btn btn-sm btn-outline-secondary btn-page-round" onclick="mudarPagina(${paginaAtual + 1})" ${paginaAtual === totalPaginas ? 'disabled' : ''} title="Próxima Página" type="button" aria-label="Próxima Página">
+                <i data-lucide="chevron-right"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary btn-page-round" onclick="mudarPagina(${totalPaginas})" ${paginaAtual === totalPaginas ? 'disabled' : ''} title="Última Página" type="button" aria-label="Última Página">
+                <i data-lucide="chevrons-right"></i>
+            </button>
+        `;
+        wrap.innerHTML = html;
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons({ root: wrap });
+        }
+    }
+
+    function mudarPagina(novaPag) {
+        const porPag = parseInt(itensPorPagina);
+        const totalPaginas = Math.ceil(totalNotasServidor / porPag);
+        if (novaPag >= 1 && novaPag <= totalPaginas) {
+            paginaAtual = novaPag;
+            carregarNotas(false);
+        }
+    }
+
+    function mudarPageSize(novoTam) {
+        itensPorPagina = novoTam;
+        paginaAtual = 1;
+        carregarNotas(false);
+    }
+
+    // Copiar chave de acesso
+    function copiarChave(chave, btnEl) {
+        if (!chave) return;
+        navigator.clipboard.writeText(chave).then(() => {
+            const icon = btnEl.querySelector('i');
+            if (icon) {
+                btnEl.innerHTML = `<i data-lucide="check" style="width: 13px; height: 13px; color: #10b981;"></i>`;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+                setTimeout(() => {
+                    btnEl.innerHTML = `<i data-lucide="copy" style="width: 13px; height: 13px;"></i>`;
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                }, 1800);
+            }
+        }).catch(err => {
+            console.error('Falha ao copiar:', err);
+        });
+    }
+
+    // Modal de edição de referência
+    function abrirModalEditarRef(chave, refAtual) {
+        document.getElementById('modal-ref-chave').value = chave;
+        document.getElementById('modal-ref-input').value = refAtual === '-' ? '' : refAtual;
+        modalRefBootstrap.show();
+    }
+
+    async function salvarReferenciaInterna() {
+        const chave = document.getElementById('modal-ref-chave').value;
+        const novaRef = document.getElementById('modal-ref-input').value.trim();
+
+        try {
+            const res = await fetch('/api/relatorios/notas/atualizar_referencia', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chave: chave, referencia_interna: novaRef })
+            });
+            const data = await res.json();
+            if (data.success) {
+                modalRefBootstrap.hide();
+                // Atualiza localmente
+                todasNotas.forEach(n => {
+                    if (n.chave_nfe.replace(/\s+/g, '') === chave.replace(/\s+/g, '')) {
+                        n.referencia_interna = novaRef || '-';
+                    }
+                });
+                aplicarFiltros();
+            } else {
+                alert('Erro ao salvar referência: ' + (data.error || 'Erro desconhecido'));
+            }
+        } catch (err) {
+            alert('Falha na comunicação com o servidor: ' + err.message);
+        }
+    }
+
+    // Exportação Excel via SheetJS
+    function exportarExcel() {
+        if (notasFiltradas.length === 0) {
+            alert('Nenhuma nota disponível para exportação.');
+            return;
+        }
+
+        const dadosExport = notasFiltradas.map(n => ({
+            'Referência Interna': n.referencia_interna || '-',
+            'Data/Hora': n.data_hora_formatada || n.data_hora || '-',
+            'Número NF-e': n.numero_nfe || '-',
+            'Tipo de Operação': n.tipo_operacao || '-',
+            'Ambiente': String(n.ambiente) === '1' ? 'Produção' : 'Homologação',
+            'Chave de Acesso': n.chave_nfe || '-',
+            'Valor Total': parseFloat(n.valor_total || 0),
+            'Status': n.status || '-',
+            'Recibo/Protocolo': n.protocolo || n.recibo || '-'
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(dadosExport);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Relatório NF-e");
+
+        const dataHoje = new Date().toISOString().substring(0, 10);
+        XLSX.writeFile(wb, `NFT_Relatorio_Notas_${dataHoje}.xlsx`);
+    }
+
+    // Exportação CSV
+    function exportarCSV() {
+        if (notasFiltradas.length === 0) {
+            alert('Nenhuma nota disponível para exportação.');
+            return;
+        }
+
+        const colunas = [
+            'Referencia Interna',
+            'Data/Hora',
+            'Numero NF-e',
+            'Tipo de Operacao',
+            'Ambiente',
+            'Chave de Acesso',
+            'Valor Total',
+            'Status',
+            'Protocolo'
+        ];
+
+        let csvContent = '\uFEFF' + colunas.join(';') + '\n';
+
+        notasFiltradas.forEach(n => {
+            const linha = [
+                `"${(n.referencia_interna || '').replace(/"/g, '""')}"`,
+                `"${(n.data_hora_formatada || n.data_hora || '').replace(/"/g, '""')}"`,
+                `"${(n.numero_nfe || '').replace(/"/g, '""')}"`,
+                `"${(n.tipo_operacao || '').replace(/"/g, '""')}"`,
+                `"${String(n.ambiente) === '1' ? 'Produção' : 'Homologação'}"`,
+                `"${(n.chave_nfe || '').replace(/"/g, '""')}"`,
+                `"${(parseFloat(n.valor_total || 0)).toFixed(2).replace('.', ',')}"`,
+                `"${(n.status || '').replace(/"/g, '""')}"`,
+                `"${(n.protocolo || n.recibo || '').replace(/"/g, '""')}"`
+            ];
+            csvContent += linha.join(';') + '\n';
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        const dataHoje = new Date().toISOString().substring(0, 10);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `NFT_Relatorio_Notas_${dataHoje}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Helpers de formatação e sanitização
+    function formatarMoeda(val) {
+        const num = parseFloat(val) || 0;
+        return `R$ ${num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return String(text).replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // ==========================================
+    // LÓGICA DO MODAL DE CONSULTA SEFAZ
+    // ==========================================
+    let modalConsultaSefazBootstrap = null;
+
+    function abrirModalConsultaSefazModal(chaveSugerida = '') {
+        const el = document.getElementById('modalConsultaSefaz');
+        if (!modalConsultaSefazBootstrap && el) {
+            modalConsultaSefazBootstrap = new bootstrap.Modal(el);
+            // Toda vez que o modal for fechado, limpa os resultados anteriores para pesquisar do zero na próxima abertura
+            el.addEventListener('hidden.bs.modal', () => {
+                limparCamposConsultaSefaz();
+            });
+        }
+
+        // Garante que o resultado esteja limpo ao abrir
+        limparResultadoConsultaSefazApenas();
+
+        const inputChave = document.getElementById('sefaz-chave-input');
+        if (chaveSugerida) {
+            inputChave.value = chaveSugerida;
+            formatarChaveInput(inputChave);
+        } else if (!inputChave.value && notasFiltradas.length > 0) {
+            // Sugere a primeira nota da lista se não houver preenchimento
+            const primeiraComChave = notasFiltradas.find(n => n.chave_nfe && n.chave_nfe.replace(/\D/g, '').length === 44);
+            if (primeiraComChave) {
+                inputChave.value = primeiraComChave.chave_nfe;
+                formatarChaveInput(inputChave);
+            }
+        }
+
+        if (modalConsultaSefazBootstrap) {
+            modalConsultaSefazBootstrap.show();
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        }
+    }
+
+    function limparResultadoConsultaSefazApenas() {
+        const resEl = document.getElementById('sefaz-resultado-consulta');
+        if (resEl) {
+            resEl.style.display = 'none';
+            resEl.innerHTML = '';
+        }
+    }
+
+    function formatarChaveInput(input) {
+        // Apenas conta os dígitos informados sem forçar regex ou truncar a digitação
+        const digitos = (input.value || '').replace(/\D/g, '');
+        const contador = document.getElementById('sefaz-chave-contador');
+        if (contador) {
+            contador.textContent = `${digitos.length} / 44 dígitos`;
+            contador.className = digitos.length === 44 ? 'text-success fw-bold font-monospace' : (digitos.length > 44 ? 'text-warning fw-bold font-monospace' : 'text-muted font-monospace');
+        }
+    }
+
+    function limparCamposConsultaSefaz() {
+        const input = document.getElementById('sefaz-chave-input');
+        if (input) {
+            input.value = '';
+            formatarChaveInput(input);
+        }
+        const resEl = document.getElementById('sefaz-resultado-consulta');
+        if (resEl) {
+            resEl.style.display = 'none';
+            resEl.innerHTML = '';
+        }
+    }
+
+    async function executarConsultaSefazModal() {
+        const inputChave = document.getElementById('sefaz-chave-input');
+        const chaveLimpa = (inputChave?.value || '').replace(/\D/g, '').trim();
+        const tpAmb = parseInt(document.getElementById('sefaz-ambiente-select')?.value || '1');
+        const uf = document.getElementById('sefaz-uf-select')?.value || 'SP';
+        const resEl = document.getElementById('sefaz-resultado-consulta');
+        const btnConsultar = document.getElementById('btn-executar-consulta-sefaz');
+
+        if (!chaveLimpa || chaveLimpa.length !== 44) {
+            alert('Por favor, informe uma Chave de Acesso válida contendo 44 dígitos.');
+            inputChave.focus();
+            return;
+        }
+
+        if (btnConsultar) {
+            btnConsultar.disabled = true;
+            btnConsultar.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status"></span> Consultando SEFAZ...`;
+        }
+
+        resEl.style.display = 'block';
+        resEl.innerHTML = `
+            <div class="card border p-4 text-center my-3 bg-light">
+                <div class="spinner-border text-primary mx-auto mb-2" role="status"></div>
+                <div class="fw-bold text-dark">Consultando situação da NF-e no webservice da SEFAZ (${uf})...</div>
+                <small class="text-muted">Aguardando resposta oficial do servidor de autorização</small>
+            </div>
+        `;
+
+        try {
+            const resp = await fetch('/api/sefaz/consultar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chave: chaveLimpa,
+                    tpAmb: tpAmb,
+                    uf: uf
+                })
+            });
+
+            const data = await resp.json();
+
+            if (!data.status || data.status === 'error') {
+                throw new Error(data.message || data.error || 'Erro ao consultar SEFAZ');
+            }
+
+            renderizarResultadoSefaz(data);
+
+            // Atualiza status localmente se a nota estiver no relatório
+            todasNotas.forEach(n => {
+                if (n.chave_nfe && n.chave_nfe.replace(/\D/g, '') === chaveLimpa) {
+                    if (data.is_cancelada) {
+                        n.status = 'Cancelada';
+                    } else if (data.cstat === '100') {
+                        n.status = 'Autorizada';
+                    }
+                    if (data.protocolo_autorizacao && !n.protocolo) {
+                        n.protocolo = data.protocolo_autorizacao;
+                    }
+                }
+            });
+            atualizarResumoCards();
+            renderizarTabela();
+
+        } catch (err) {
+            console.error('Erro na consulta SEFAZ:', err);
+            resEl.innerHTML = `
+                <div class="alert alert-danger p-3 my-2 shadow-sm">
+                    <div class="d-flex align-items-center gap-2 mb-1 fw-bold">
+                        <i data-lucide="alert-octagon" style="width: 18px; height: 18px;"></i>
+                        <span>Falha na Comunicação com a SEFAZ</span>
+                    </div>
+                    <div class="small">${escapeHtml(err.message)}</div>
+                </div>
+            `;
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        } finally {
+            if (btnConsultar) {
+                btnConsultar.disabled = false;
+                btnConsultar.innerHTML = `<i data-lucide="search" style="width: 14px; height: 14px;"></i> <span>Consultar na SEFAZ</span>`;
+                if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            }
+        }
+    }
+
+    function renderizarResultadoSefaz(data) {
+        const resEl = document.getElementById('sefaz-resultado-consulta');
+        if (!resEl) return;
+
+        const situacaoTexto = String(data.situacao || '').toUpperCase();
+        const isCancelada = Boolean(data.is_cancelada || situacaoTexto.includes('CANCELADA') || data.cstat === '101');
+        const chaveFmt = (data.chave || '').match(/.{1,4}/g)?.join(' ') || data.chave;
+        
+        // Define classe do badge: CANCELADA é sempre vermelho vivo (bg-danger)
+        let badgeClasse = data.badge_classe || 'primary';
+        if (isCancelada) {
+            badgeClasse = 'danger';
+        }
+        
+        // Monta tabela de eventos vinculados (Cancelamento, CC-e, etc.)
+        let eventosHtml = '';
+        if (data.eventos && data.eventos.length > 0) {
+            let trs = data.eventos.map(ev => `
+                <tr>
+                    <td class="text-nowrap"><span class="badge bg-secondary-subtle text-dark border">${escapeHtml(ev.tpEvento || '-')}</span></td>
+                    <td class="fw-semibold">${escapeHtml(ev.descEvento || 'Evento Fiscal')}</td>
+                    <td class="text-center">${ev.nSeqEvento || '1'}</td>
+                    <td class="text-nowrap small text-muted font-monospace">${escapeHtml(ev.dhRegEvento || '-')}</td>
+                    <td class="font-monospace text-primary fw-bold small">${escapeHtml(ev.nProt || '-')}</td>
+                    <td class="small text-muted">${escapeHtml(ev.xMotivo || '-')}</td>
+                </tr>
+            `).join('');
+
+            eventosHtml = `
+                <div class="mt-3">
+                    <h6 class="fw-bold text-dark d-flex align-items-center gap-2 mb-2" style="font-size: 0.85rem;">
+                        <i data-lucide="layers" style="width: 15px; height: 15px;"></i>
+                        <span>Eventos Vinculados à NF-e no Fisco (${data.eventos.length})</span>
+                    </h6>
+                    <div class="table-responsive border rounded bg-white shadow-sm">
+                        <table class="table table-sm table-hover mb-0" style="font-size: 0.75rem;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Tipo</th>
+                                    <th>Descrição</th>
+                                    <th class="text-center">Seq</th>
+                                    <th>Data/Hora Registro</th>
+                                    <th>Protocolo do Evento</th>
+                                    <th>Status Retorno</th>
+                                </tr>
+                            </thead>
+                            <tbody>${trs}</tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        resEl.innerHTML = `
+            <div class="card border p-3 bg-white shadow-sm mt-3">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 pb-2 border-bottom mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-${badgeClasse} text-white fs-6 px-3 py-2 fw-bold text-uppercase shadow-sm" style="${isCancelada ? 'background-color: #dc2626 !important; color: #ffffff !important; border-color: #dc2626 !important;' : 'color: #ffffff !important;'}">
+                            ${isCancelada ? 'CANCELADA' : (data.situacao || 'PROCESSADA')}
+                        </span>
+                        <span class="badge bg-light text-secondary border font-monospace">cStat: ${data.cstat || '-'}</span>
+                        <span class="badge ${data.tpAmb === 1 ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-warning-subtle text-warning border border-warning-subtle'}">
+                            ${data.ambiente_nome || (data.tpAmb === 1 ? 'Produção' : 'Homologação')}
+                        </span>
+                    </div>
+                    <small class="text-muted font-monospace">${data.dh_recbto || ''}</small>
+                </div>
+
+                <div class="bg-light p-3 rounded border mb-3">
+                    <div class="mb-2">
+                        <span class="text-muted small text-uppercase fw-bold d-block">Chave de Acesso Consultada:</span>
+                        <span class="font-monospace fw-bold text-dark text-break" style="font-size: 0.85rem;">${chaveFmt}</span>
+                    </div>
+                    <div class="mb-2">
+                        <span class="text-muted small text-uppercase fw-bold d-block">Retorno Oficial da SEFAZ:</span>
+                        <span class="fw-semibold text-secondary" style="font-size: 0.85rem;">${escapeHtml(data.xmotivo || 'Sem mensagem')}</span>
+                    </div>
+                    <hr class="my-2">
+                    <div class="row g-2 pt-1">
+                        <div class="col-sm-6">
+                            <span class="text-muted small text-uppercase fw-bold d-block">Protocolo de Autorização:</span>
+                            <span class="font-monospace fw-bold text-success">${escapeHtml(data.protocolo_autorizacao || '-')}</span>
+                            ${data.data_autorizacao ? `<small class="text-muted d-block font-monospace">${data.data_autorizacao}</small>` : ''}
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="text-muted small text-uppercase fw-bold d-block">Protocolo do Evento de Cancelamento:</span>
+                            <span class="font-monospace fw-bold text-danger">${escapeHtml(data.protocolo_cancelamento || (isCancelada ? 'Homologado na SEFAZ' : 'Não consta cancelamento'))}</span>
+                            ${data.data_cancelamento ? `<small class="text-muted d-block font-monospace">${data.data_cancelamento}</small>` : ''}
+                        </div>
+                    </div>
+                </div>
+
+                ${eventosHtml}
+
+                <div class="d-flex flex-wrap justify-content-center gap-2 pt-3 mt-2 border-top">
+                    <a href="/api/sefaz/download/pdf/${data.chave}" target="_blank" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1 shadow-sm">
+                        <i data-lucide="file-text" style="width: 14px; height: 14px;"></i> <span>Baixar DANFE (PDF)</span>
+                    </a>
+                    <a href="/api/sefaz/download/xml/${data.chave}" target="_blank" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 shadow-sm">
+                        <i data-lucide="file-code" style="width: 14px; height: 14px;"></i> <span>Baixar XML</span>
+                    </a>
+                    <a href="/api/sefaz/download/zip/${data.chave}" target="_blank" class="btn btn-sm btn-outline-warning d-inline-flex align-items-center gap-1 shadow-sm">
+                        <i data-lucide="archive" style="width: 14px; height: 14px;"></i> <span>Pacote ZIP</span>
+                    </a>
+                </div>
+            </div>
+        `;
+
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+            lucide.createIcons();
+        }
+    }
+
+    // ==========================================
+    // LÓGICA DO MODAL DE RESUMO E EXCLUSÃO DA NF-E
+    // ==========================================
+    let modalResumoNotaBootstrap = null;
+    let notaAtualParaExclusao = null;
+
+    function abrirModalResumoNota(chave) {
+        if (!modalResumoNotaBootstrap) {
+            const el = document.getElementById('modalResumoNota');
+            if (el) modalResumoNotaBootstrap = new bootstrap.Modal(el);
+        }
+
+        const nota = todasNotas.find(n => n.chave_nfe && n.chave_nfe.replace(/\D/g, '') === String(chave).replace(/\D/g, ''));
+        if (!nota) {
+            alert('Dados da nota fiscal não encontrados.');
+            return;
+        }
+
+        notaAtualParaExclusao = nota;
+        renderizarResumoNota(nota);
+
+        if (modalResumoNotaBootstrap) {
+            modalResumoNotaBootstrap.show();
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        }
+    }
+
+    function renderizarResumoNota(n) {
+        const bodyEl = document.getElementById('modal-resumo-body');
+        if (!bodyEl) return;
+
+        const chave = n.chave_nfe || '';
+        const chaveFmt = n.chave_formatada || chave;
+        const ref = n.referencia_interna || '-';
+        const dt = n.data_hora_formatada || n.data_hora || '-';
+        const numNfe = n.numero_nfe || '-';
+        const natOp = n.tipo_operacao || '-';
+        const vNF = n.valor_total_fmt || formatarMoeda(n.valor_total);
+        const vProd = n.total_produtos_fmt || formatarMoeda(n.total_produtos);
+        const status = n.status || 'Gerada';
+        const statusUpper = status.toUpperCase();
+        const protocolo = n.protocolo || n.recibo || '-';
+        const isProd = String(n.ambiente) === '1';
+
+        // Badge de Status (Sem a classe 'badge' do Bootstrap)
+        let badgeStatusHtml = '';
+        if (status === 'Autorizada') {
+            badgeStatusHtml = `<span class="status-pill status-pill-success px-2 py-1"><i data-lucide="check-circle" style="width:13px; height:13px;"></i> Autorizada</span>`;
+        } else if (statusUpper.includes('CANCELADA')) {
+            badgeStatusHtml = `<span class="status-pill status-pill-danger px-2 py-1 fw-bold"><i data-lucide="x-circle" style="width:13px; height:13px;"></i> Cancelada</span>`;
+        } else if (statusUpper.includes('REJEITADA') || statusUpper.includes('REJEIÇÃO')) {
+            badgeStatusHtml = `<span class="status-pill status-pill-danger px-2 py-1 fw-bold"><i data-lucide="alert-octagon" style="width:13px; height:13px;"></i> Rejeitada</span>`;
+        } else if (statusUpper.includes('DENEGADA')) {
+            badgeStatusHtml = `<span class="status-pill status-pill-danger px-2 py-1 fw-bold"><i data-lucide="shield-alert" style="width:13px; height:13px;"></i> Denegada</span>`;
+        } else {
+            badgeStatusHtml = `<span class="status-pill status-pill-info px-2 py-1">${escapeHtml(status)}</span>`;
+        }
+
+        // Tag de Ambiente (Produção em Azul, Homologação em Cinza)
+        const badgeAmbHtml = isProd
+            ? `<span class="ambiente-pill ambiente-pill-prod px-2 py-1"><i data-lucide="shield-check" style="width: 12px; height: 12px;"></i> Produção</span>`
+            : `<span class="ambiente-pill ambiente-pill-homolog px-2 py-1"><i data-lucide="test-tube-2" style="width: 12px; height: 12px;"></i> Homologação</span>`;
+
+        bodyEl.innerHTML = `
+            <div class="row g-3">
+                <!-- Cabeçalho do Resumo -->
+                <div class="col-12">
+                    <div class="p-3 bg-light rounded border d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <span class="small text-muted fw-bold text-uppercase d-block">Referência Interna:</span>
+                            <span class="fs-6 fw-bold text-primary">${escapeHtml(ref)}</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            ${badgeStatusHtml}
+                            ${badgeAmbHtml}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detalhes da Nota -->
+                <div class="col-md-6">
+                    <div class="p-3 border rounded h-100 bg-white">
+                        <h6 class="fw-bold mb-2 text-secondary d-flex align-items-center gap-2" style="font-size: 0.85rem;">
+                            <i data-lucide="file-text" style="width: 14px; height: 14px;"></i>
+                            <span>Dados de Emissão</span>
+                        </h6>
+                        <ul class="list-unstyled small mb-0 lh-lg">
+                            <li><span class="text-muted fw-semibold">Número da NF-e:</span> <strong class="font-monospace">${escapeHtml(numNfe)}</strong></li>
+                            <li><span class="text-muted fw-semibold">Data/Hora:</span> ${escapeHtml(dt)}</li>
+                            <li><span class="text-muted fw-semibold">Natureza da Operação:</span> ${escapeHtml(natOp)}</li>
+                            <li><span class="text-muted fw-semibold">Tipo Movimento:</span> ${String(n.tipo_movimento) === '0' ? '0 - Entrada' : '1 - Saída'}</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="p-3 border rounded h-100 bg-white">
+                        <h6 class="fw-bold mb-2 text-secondary d-flex align-items-center gap-2" style="font-size: 0.85rem;">
+                            <i data-lucide="dollar-sign" style="width: 14px; height: 14px;"></i>
+                            <span>Valores & Protocolo</span>
+                        </h6>
+                        <ul class="list-unstyled small mb-0 lh-lg">
+                            <li><span class="text-muted fw-semibold">Valor Total (vNF):</span> <strong class="text-success">${escapeHtml(vNF)}</strong></li>
+                            <li><span class="text-muted fw-semibold">Total Produtos (vProd):</span> ${escapeHtml(vProd)}</li>
+                            <li><span class="text-muted fw-semibold">Protocolo / Recibo:</span> <span class="font-monospace">${escapeHtml(protocolo)}</span></li>
+                            <li><span class="text-muted fw-semibold">cStat SEFAZ:</span> <span class="badge bg-light text-dark border font-monospace">${escapeHtml(n.cstat || '-')}</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Chave de Acesso -->
+                <div class="col-12">
+                    <div class="p-3 border rounded bg-light">
+                        <span class="text-muted small fw-bold text-uppercase d-block mb-1">Chave de Acesso Oficial (44 Dígitos):</span>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="font-monospace fw-bold text-break text-dark" style="font-size: 0.85rem;">${chaveFmt}</span>
+                            <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="copiarChave('${chave}', this)" title="Copiar chave" type="button">
+                                <i data-lucide="copy" style="width: 12px; height: 12px;"></i>
+                            </button>
+                        </div>
+                        ${n.xmotivo ? `<div class="mt-2 small text-muted"><strong>Mensagem do Fisco:</strong> ${escapeHtml(n.xmotivo)}</div>` : ''}
+                    </div>
+                </div>
+
+                <!-- Ações Rápidas de Download -->
+                <div class="col-12">
+                    <div class="d-flex flex-wrap gap-2 justify-content-center pt-2">
+                        <a href="/api/sefaz/download/pdf/${chave}" target="_blank" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1 shadow-sm">
+                            <i data-lucide="file-text" style="width: 13px; height: 13px;"></i> Baixar DANFE (PDF)
+                        </a>
+                        <a href="/api/sefaz/download/xml/${chave}" target="_blank" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 shadow-sm">
+                            <i data-lucide="file-code" style="width: 13px; height: 13px;"></i> Baixar XML
+                        </a>
+                        <a href="/api/sefaz/download/zip/${chave}" target="_blank" class="btn btn-sm btn-outline-warning d-inline-flex align-items-center gap-1 shadow-sm">
+                            <i data-lucide="archive" style="width: 13px; height: 13px;"></i> Pacote ZIP
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Ações SEFAZ (Direcionadas automaticamente para Produção ou Homologação) -->
+                <div class="col-12">
+                    <div class="p-3 border rounded bg-light text-center">
+                        <div class="small text-muted fw-bold text-uppercase mb-2" style="font-size: 0.72rem;">
+                            Ações SEFAZ — Ambiente detectado: <span class="${isProd ? 'text-primary' : 'text-secondary'}">${isProd ? 'Produção (1)' : 'Homologação (2)'}</span>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 justify-content-center">
+                            <button type="button" class="btn btn-sm btn-outline-info d-inline-flex align-items-center gap-1 shadow-sm fw-semibold" onclick="executarAcaoSefazResumo('consultar', '${chave}')">
+                                <i data-lucide="search" style="width: 13px; height: 13px;"></i> Consultar SEFAZ
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-warning d-inline-flex align-items-center gap-1 shadow-sm fw-semibold" onclick="executarAcaoSefazResumo('cce', '${chave}')">
+                                <i data-lucide="file-edit" style="width: 13px; height: 13px;"></i> Carta de Correção
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1 shadow-sm fw-semibold" onclick="executarAcaoSefazResumo('cancelar', '${chave}')">
+                                <i data-lucide="x-circle" style="width: 13px; height: 13px;"></i> Cancelar NF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+            lucide.createIcons();
+        }
+    }
+
+    function executarAcaoSefazResumo(acao, chave) {
+        const chaveLimpa = String(chave || '').replace(/\D/g, '').trim();
+        const nota = todasNotas.find(n => n.chave_nfe && n.chave_nfe.replace(/\D/g, '') === chaveLimpa);
+        if (!nota) {
+            if (typeof nftAlert === 'function') {
+                nftAlert('Dados da nota fiscal não encontrados.', { type: 'warning', title: 'Atenção' });
+            } else {
+                alert('Dados da nota fiscal não encontrados.');
+            }
+            return;
+        }
+
+        // Verifica se foi gerada em Produção (1) ou Homologação (2)
+        const tpAmb = (String(nota.ambiente) === '1') ? 1 : 2;
+        const notaContexto = {
+            chave: nota.chave_nfe,
+            protocolo: nota.protocolo || '',
+            recibo: nota.recibo || '',
+            numero_nfe: nota.numero_nfe || '',
+            referencia_interna: nota.referencia_interna || '',
+            tipo_operacao: nota.tipo_operacao || '',
+            valor_total_fmt: nota.valor_total_fmt || formatarMoeda(nota.valor_total),
+            status: nota.status || 'Gerada',
+            ambiente: tpAmb
+        };
+
+        if (modalResumoNotaBootstrap) {
+            modalResumoNotaBootstrap.hide();
+        }
+
+        if (acao === 'consultar' && typeof window.consultarSituacaoNfeSefaz === 'function') {
+            window.consultarSituacaoNfeSefaz(tpAmb, notaContexto);
+        } else if (acao === 'cce' && typeof window.solicitarCartaCorrecao === 'function') {
+            window.solicitarCartaCorrecao(tpAmb, notaContexto);
+        } else if (acao === 'cancelar' && typeof window.solicitarCancelarNfe === 'function') {
+            window.solicitarCancelarNfe(tpAmb, notaContexto);
+        }
+    }
+
+    window.onSefazActionComplete = function(acao, retorno, chave, ambiente) {
+        const chaveLimpa = String(chave || '').replace(/\D/g, '').trim();
+        if (!chaveLimpa) return;
+
+        let atualizou = false;
+        todasNotas.forEach(n => {
+            if (n.chave_nfe && n.chave_nfe.replace(/\D/g, '') === chaveLimpa) {
+                if (acao === 'consultar' && retorno) {
+                    if (retorno.is_cancelada || String(retorno.cstat) === '101') {
+                        n.status = 'Cancelada';
+                        atualizou = true;
+                    } else if (String(retorno.cstat) === '100') {
+                        n.status = 'Autorizada';
+                        atualizou = true;
+                    }
+                    if (retorno.protocolo_cancelamento || retorno.protocolo_autorizacao) {
+                        n.protocolo = retorno.protocolo_cancelamento || retorno.protocolo_autorizacao;
+                        atualizou = true;
+                    }
+                } else if (acao === 'cancelar' && retorno && retorno.status === 'success') {
+                    const cs = String(retorno.cstat || '');
+                    if (cs === '135' || cs === '136' || cs === '101' || retorno.autorizado === true) {
+                        n.status = 'Cancelada';
+                        if (retorno.protocolo) n.protocolo = retorno.protocolo;
+                        atualizou = true;
+                    }
+                }
+            }
+        });
+
+        if (atualizou) {
+            atualizarResumoCards();
+            renderizarTabela();
+        }
+    };
+
+    async function confirmarExclusaoNota() {
+        if (!notaAtualParaExclusao || !notaAtualParaExclusao.chave_nfe) {
+            if (typeof nftAlert === 'function') {
+                await nftAlert('Nenhuma nota fiscal selecionada.', { type: 'warning', title: 'Atenção' });
+            } else {
+                alert('Nenhuma nota fiscal selecionada.');
+            }
+            return;
+        }
+
+        const ref = notaAtualParaExclusao.referencia_interna && notaAtualParaExclusao.referencia_interna !== '-' 
+            ? notaAtualParaExclusao.referencia_interna 
+            : (notaAtualParaExclusao.numero_nfe ? `NF ${notaAtualParaExclusao.numero_nfe}` : notaAtualParaExclusao.chave_nfe);
+
+        let confirmou = false;
+        if (typeof nftConfirm === 'function') {
+            confirmou = await nftConfirm(
+                `Tem certeza que deseja excluir a nota fiscal "${ref}" do relatório?\n\nEla será removida da listagem e dos cálculos estatísticos do painel.`,
+                {
+                    title: 'Confirmar Exclusão',
+                    type: 'danger',
+                    confirmText: 'Sim, Excluir',
+                    cancelText: 'Cancelar',
+                    icon: 'trash-2'
+                }
+            );
+        } else {
+            confirmou = confirm(`Tem certeza que deseja excluir a nota fiscal "${ref}" do relatório?\n\nEla será removida da listagem e dos cálculos do painel.`);
+        }
+
+        if (!confirmou) return;
+
+        const chave = notaAtualParaExclusao.chave_nfe;
+        const btnExcluir = document.getElementById('btn-excluir-nota-modal');
+        if (btnExcluir) {
+            btnExcluir.disabled = true;
+            btnExcluir.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status"></span> Excluindo...`;
+        }
+
+        try {
+            const resp = await fetch('/api/relatorios/notas/excluir', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chave: chave })
+            });
+
+            const data = await resp.json();
+            if (!data.success) {
+                throw new Error(data.error || 'Falha ao excluir nota fiscal do relatório.');
+            }
+
+            // Remove da lista local em memória
+            todasNotas = todasNotas.filter(n => n.chave_nfe && n.chave_nfe.replace(/\D/g, '') !== chave.replace(/\D/g, ''));
+            
+            if (modalResumoNotaBootstrap) {
+                modalResumoNotaBootstrap.hide();
+            }
+
+            // Reaplica filtros e atualiza contadores e tabela
+            aplicarFiltros();
+
+            if (typeof nftAlert === 'function') {
+                await nftAlert('Nota fiscal excluída do relatório com sucesso!', { 
+                    type: 'success', 
+                    title: 'Exclusão Concluída',
+                    icon: 'check-circle'
+                });
+            } else {
+                alert('Nota fiscal excluída do relatório com sucesso!');
+            }
+
+        } catch (err) {
+            console.error('Erro ao excluir nota:', err);
+            if (typeof nftAlert === 'function') {
+                await nftAlert('Erro ao excluir nota fiscal: ' + err.message, { 
+                    type: 'danger', 
+                    title: 'Falha na Exclusão',
+                    icon: 'alert-triangle'
+                });
+            } else {
+                alert('Erro ao excluir nota fiscal: ' + err.message);
+            }
+        } finally {
+            if (btnExcluir) {
+                btnExcluir.disabled = false;
+                btnExcluir.innerHTML = `<i data-lucide="trash-2" style="width: 14px; height: 14px;"></i> <span>Excluir Nota Fiscal do Relatório</span>`;
+                if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            }
+        }
+    }
+
+    // ==============================================================================
+    // === MÓDULO DE ORDENAÇÃO DINÂMICA (Nº NF-e & DATA/HORA) ===
+    // ==============================================================================
+    let ordenacaoAtual = {
+        campo: 'data',    // 'data' ou 'numero'
+        direcao: 'desc'   // 'asc' ou 'desc'
+    };
+
+    function aplicarOrdenacao() {
+        notasFiltradas.sort((a, b) => {
+            if (ordenacaoAtual.campo === 'numero') {
+                const numA = parseInt(String(a.numero_nfe || '').replace(/\D/g, '')) || 0;
+                const numB = parseInt(String(b.numero_nfe || '').replace(/\D/g, '')) || 0;
+                return ordenacaoAtual.direcao === 'asc' ? numA - numB : numB - numA;
+            } else {
+                // Campo data_hora
+                const dtA = String(a.data_hora || '');
+                const dtB = String(b.data_hora || '');
+                return ordenacaoAtual.direcao === 'asc' ? dtA.localeCompare(dtB) : dtB.localeCompare(dtA);
+            }
+        });
+
+        atualizarIndicadoresOrdenacaoUI();
+    }
+
+    function alternarOrdenacaoColuna(campo) {
+        if (ordenacaoAtual.campo === campo) {
+            ordenacaoAtual.direcao = ordenacaoAtual.direcao === 'asc' ? 'desc' : 'asc';
+        } else {
+            ordenacaoAtual.campo = campo;
+            ordenacaoAtual.direcao = 'desc';
+        }
+
+        const selOrd = document.getElementById('select-ordenacao');
+        if (selOrd) {
+            selOrd.value = `${ordenacaoAtual.campo}_${ordenacaoAtual.direcao}`;
+        }
+
+        paginaAtual = 1;
+        carregarNotas(false);
+    }
+
+    function alterarOrdenacao(valor) {
+        if (!valor) return;
+        const partes = valor.split('_');
+        ordenacaoAtual.campo = partes[0] || 'data';
+        ordenacaoAtual.direcao = partes[1] || 'desc';
+        paginaAtual = 1;
+        carregarNotas(false);
+    }
+
+    function atualizarIndicadoresOrdenacaoUI() {
+        const thData = document.getElementById('th-col-data');
+        const thNumero = document.getElementById('th-col-numero');
+
+        if (thData) {
+            const iconData = thData.querySelector('.sort-icon');
+            if (iconData) {
+                if (ordenacaoAtual.campo === 'data') {
+                    iconData.setAttribute('data-lucide', ordenacaoAtual.direcao === 'asc' ? 'arrow-up' : 'arrow-down');
+                    iconData.className = 'sort-icon text-primary ms-1';
+                } else {
+                    iconData.setAttribute('data-lucide', 'arrow-up-down');
+                    iconData.className = 'sort-icon text-muted ms-1';
+                }
+            }
+        }
+
+        if (thNumero) {
+            const iconNumero = thNumero.querySelector('.sort-icon');
+            if (iconNumero) {
+                if (ordenacaoAtual.campo === 'numero') {
+                    iconNumero.setAttribute('data-lucide', ordenacaoAtual.direcao === 'asc' ? 'arrow-up' : 'arrow-down');
+                    iconNumero.className = 'sort-icon text-primary';
+                } else {
+                    iconNumero.setAttribute('data-lucide', 'arrow-up-down');
+                    iconNumero.className = 'sort-icon text-muted';
+                }
+            }
+        }
+
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+            lucide.createIcons();
+        }
+    }
+
+    // ==============================================================================
+    // === MÓDULO DE BACKUP CONSOLIDADO (PDFs, XMLs, ZIP CONSOLIDADO) ===
+    // ==============================================================================
+    let modalBackupBootstrap = null;
+
+    function abrirModalBackup() {
+        if (!modalBackupBootstrap) {
+            const el = document.getElementById('modalBackup');
+            if (el) modalBackupBootstrap = new bootstrap.Modal(el);
+        }
+        const statusMsg = document.getElementById('backup-status-msg');
+        if (statusMsg) {
+            statusMsg.classList.add('d-none');
+            statusMsg.textContent = '';
+        }
+        const btnExec = document.getElementById('btn-executar-backup');
+        if (btnExec) {
+            btnExec.disabled = false;
+            btnExec.innerHTML = `<i data-lucide="download" style="width: 14px; height: 14px;"></i> <span>Gerar e Baixar Backup (.ZIP)</span>`;
+        }
+        atualizarCamposBackup();
+        if (modalBackupBootstrap) modalBackupBootstrap.show();
+        if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+    }
+
+    function atualizarCamposBackup() {
+        const tipo = document.querySelector('input[name="backupTipoFiltro"]:checked')?.value || 'todas';
+        const divPeriodo = document.getElementById('backup-campos-periodo');
+        const divNumero = document.getElementById('backup-campos-numero');
+
+        if (divPeriodo) divPeriodo.style.display = (tipo === 'periodo') ? 'flex' : 'none';
+        if (divNumero) divNumero.style.display = (tipo === 'numero') ? 'flex' : 'none';
+    }
+
+    async function executarDownloadBackup() {
+        const tipoFiltro = document.querySelector('input[name="backupTipoFiltro"]:checked')?.value || 'todas';
+        const formato = document.querySelector('input[name="backupFormato"]:checked')?.value || 'consolidado';
+        const dataIni = document.getElementById('backup-data-ini')?.value || '';
+        const dataFim = document.getElementById('backup-data-fim')?.value || '';
+        const numIni = document.getElementById('backup-num-ini')?.value || '';
+        const numFim = document.getElementById('backup-num-fim')?.value || '';
+        const statusMsg = document.getElementById('backup-status-msg');
+        const btnExec = document.getElementById('btn-executar-backup');
+
+        if (tipoFiltro === 'periodo' && !dataIni && !dataFim) {
+            alert('Por favor, informe a Data Início ou Data Fim para o período de backup.');
+            return;
+        }
+        if (tipoFiltro === 'numero' && !numIni && !numFim) {
+            alert('Por favor, informe ao menos um número de NF-e (inicial ou final).');
+            return;
+        }
+
+        btnExec.disabled = true;
+        btnExec.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status"></span> Consolidando notas e gerando ZIP...`;
+
+        if (statusMsg) {
+            statusMsg.className = 'alert alert-info py-2 px-3 small mb-0';
+            statusMsg.textContent = 'Aguarde: localizando notas fiscais, verificando PDFs e XMLs e gerando arquivo ZIP consolidado...';
+            statusMsg.classList.remove('d-none');
+        }
+
+        try {
+            const payload = {
+                tipo_filtro: tipoFiltro,
+                formato: formato,
+                data_inicio: dataIni,
+                data_fim: dataFim,
+                numero_inicio: numIni,
+                numero_fim: numFim
+            };
+
+            const res = await fetch('/api/relatorios/backup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                const errJson = await res.json().catch(() => ({}));
+                throw new Error(errJson.error || `Erro ao gerar backup (Status ${res.status})`);
+            }
+
+            const disposition = res.headers.get('Content-Disposition');
+            let filename = 'Backup_Notas_Fiscais.zip';
+            if (disposition && disposition.indexOf('filename=') !== -1) {
+                const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
+                if (matches != null && matches[1]) {
+                    filename = matches[1].replace(/['"]/g, '');
+                }
+            }
+
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+
+            if (statusMsg) {
+                statusMsg.className = 'alert alert-success py-2 px-3 small mb-0';
+                statusMsg.textContent = `Backup consolidado (${filename}) gerado e baixado com sucesso!`;
+            }
+
+            setTimeout(() => {
+                if (modalBackupBootstrap) modalBackupBootstrap.hide();
+            }, 1800);
+
+        } catch (err) {
+            console.error('Erro no backup:', err);
+            if (statusMsg) {
+                statusMsg.className = 'alert alert-danger py-2 px-3 small mb-0';
+                statusMsg.textContent = `Falha ao gerar backup: ${err.message}`;
+            }
+        } finally {
+            btnExec.disabled = false;
+            btnExec.innerHTML = `<i data-lucide="download" style="width: 14px; height: 14px;"></i> <span>Gerar e Baixar Backup (.ZIP)</span>`;
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        }
+    }
+
+    // ==============================================================================
+    // === MÓDULO DE IMPORTAÇÃO DE XMLs (PADRÃO SEFAZ & GERAÇÃO DE DANFE PDF) ===
+    // ==============================================================================
+    let modalImportarXmlBootstrap = null;
+    let arquivosXmlSelecionados = [];
+
+    function abrirModalImportarXml() {
+        if (!modalImportarXmlBootstrap) {
+            const el = document.getElementById('modalImportarXml');
+            if (el) modalImportarXmlBootstrap = new bootstrap.Modal(el);
+        }
+        limparArquivosSelecionados();
+        const resultArea = document.getElementById('import-result-area');
+        if (resultArea) {
+            resultArea.innerHTML = '';
+            resultArea.classList.add('d-none');
+        }
+        const progressArea = document.getElementById('import-progress-area');
+        if (progressArea) progressArea.classList.add('d-none');
+
+        const btn = document.getElementById('btn-iniciar-importacao');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `<i data-lucide="check" style="width: 14px; height: 14px;"></i> <span>Iniciar Importação</span>`;
+        }
+
+        if (modalImportarXmlBootstrap) modalImportarXmlBootstrap.show();
+        if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+    }
+
+    function atualizarListaArquivosSelecionados(files) {
+        if (!files || files.length === 0) return;
+        arquivosXmlSelecionados = Array.from(files);
+
+        const container = document.getElementById('container-arquivos-selecionados');
+        const lbl = document.getElementById('lbl-total-arquivos-selecionados');
+        const lista = document.getElementById('lista-nomes-arquivos');
+
+        lbl.textContent = `${arquivosXmlSelecionados.length} arquivo(s) selecionado(s)`;
+        lista.innerHTML = arquivosXmlSelecionados.map((f, i) => `
+            <div class="d-flex justify-content-between align-items-center py-1 border-bottom small">
+                <span class="text-truncate font-monospace" style="max-width: 80%; font-size: 0.75rem;" title="${escapeHtml(f.name)}">
+                    <i data-lucide="file-code" class="text-primary me-1" style="width: 12px; height: 12px;"></i>
+                    ${escapeHtml(f.name)}
+                </span>
+                <span class="text-muted" style="font-size: 0.70rem;">(${(f.size / 1024).toFixed(1)} KB)</span>
+            </div>
+        `).join('');
+
+        container.classList.remove('d-none');
+        if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+    }
+
+    function limparArquivosSelecionados() {
+        arquivosXmlSelecionados = [];
+        const input = document.getElementById('input-arquivos-xml');
+        if (input) input.value = '';
+        const container = document.getElementById('container-arquivos-selecionados');
+        if (container) container.classList.add('d-none');
+        const lista = document.getElementById('lista-nomes-arquivos');
+        if (lista) lista.innerHTML = '';
+    }
+
+    function configurarDropZoneXml() {
+        const dropZone = document.getElementById('drop-zone-xml');
+        if (!dropZone) return;
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.add('border-primary', 'bg-primary-subtle');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.remove('border-primary', 'bg-primary-subtle');
+            }, false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            atualizarListaArquivosSelecionados(files);
+        }, false);
+    }
+
+    async function iniciarImportacaoXml() {
+        if (arquivosXmlSelecionados.length === 0) {
+            alert('Por favor, selecione ao menos um arquivo XML ou ZIP para importar.');
+            return;
+        }
+
+        const btn = document.getElementById('btn-iniciar-importacao');
+        const progressArea = document.getElementById('import-progress-area');
+        const resultArea = document.getElementById('import-result-area');
+        const refCustom = (document.getElementById('import-ref-custom')?.value || '').trim();
+
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status"></span> Importando...`;
+        progressArea.classList.remove('d-none');
+        resultArea.classList.add('d-none');
+        resultArea.innerHTML = '';
+
+        try {
+            const formData = new FormData();
+            arquivosXmlSelecionados.forEach(f => {
+                formData.append('files', f);
+            });
+            if (refCustom) {
+                formData.append('referencia_interna', refCustom);
+            }
+
+            const res = await fetch('/api/relatorios/notas/importar_xml', {
+                method: 'POST',
+                body: formData
+            });
+
+            progressArea.classList.add('d-none');
+
+            const contentType = res.headers.get('content-type') || '';
+            let data = null;
+            if (contentType.includes('application/json')) {
+                data = await res.json();
+            } else {
+                const rawText = await res.text();
+                const cleanMsg = rawText.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                throw new Error(`Servidor retornou resposta inesperada (${res.status}): ${cleanMsg.substring(0, 120)}`);
+            }
+
+            if (!res.ok || !data.success) {
+                throw new Error(data.error || 'Falha ao importar notas fiscais.');
+            }
+
+            let htmlResumo = `
+                <div class="alert alert-${data.total_importados > 0 ? 'success' : 'warning'} py-2 px-3 small mb-2">
+                    <strong>Resultado da Importação:</strong> ${data.total_importados} nota(s) fiscal(is) importada(s) com sucesso.
+                    ${data.total_erros > 0 ? `<br/><span class="text-danger">${data.total_erros} arquivo(s) com erro.</span>` : ''}
+                </div>
+            `;
+
+            if (data.importados && data.importados.length > 0) {
+                htmlResumo += `
+                    <div class="border rounded p-2 bg-light mb-2" style="max-height: 180px; overflow-y: auto;">
+                        <div class="small fw-bold text-success mb-1">Notas integradas e DANFEs em PDF gerados:</div>
+                        ${data.importados.map(n => `
+                            <div class="d-flex justify-content-between align-items-center py-1 border-bottom small">
+                                <div>
+                                    <span class="badge bg-success-subtle text-success me-1">NF-e ${escapeHtml(n.numero_nfe || '')}</span>
+                                    <strong>${escapeHtml(n.referencia_interna || '')}</strong>
+                                    <span class="text-muted ms-1 font-monospace" style="font-size: 0.70rem;">(${n.chave ? n.chave.substring(0, 22) + '...' : ''})</span>
+                                </div>
+                                <span class="badge bg-light text-success border border-success-subtle" style="font-size: 0.68rem;">
+                                    ${n.tem_pdf ? 'DANFE PDF Gerado' : 'XML Importado'}
+                                </span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            if (data.erros && data.erros.length > 0) {
+                htmlResumo += `
+                    <div class="border rounded p-2 bg-light text-danger" style="max-height: 120px; overflow-y: auto;">
+                        <div class="small fw-bold mb-1">Avisos / Erros:</div>
+                        ${data.erros.map(e => `
+                            <div class="py-1 border-bottom small">
+                                <strong>${escapeHtml(e.arquivo || 'Arquivo')}:</strong> ${escapeHtml(e.error || 'Erro desconhecido')}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            resultArea.innerHTML = htmlResumo;
+            resultArea.classList.remove('d-none');
+
+            if (data.total_importados > 0) {
+                carregarNotas(true);
+            }
+
+        } catch (err) {
+            console.error('Erro na importação de XML:', err);
+            progressArea.classList.add('d-none');
+            resultArea.innerHTML = `
+                <div class="alert alert-danger py-2 px-3 small mb-0">
+                    <strong>Erro na importação:</strong> ${escapeHtml(err.message)}
+                </div>
+            `;
+            resultArea.classList.remove('d-none');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `<i data-lucide="check" style="width: 14px; height: 14px;"></i> <span>Concluir</span>`;
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        }
+    }
+</script>
+
+</body>
+</html>
