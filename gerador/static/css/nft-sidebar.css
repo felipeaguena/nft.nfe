@@ -94,20 +94,6 @@ body.sidebar-collapsed .nft-sidebar:hover {
   max-height: 100%;
 }
 
-.sidebar-brand-info {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  line-height: 1.15;
-}
-
-.sidebar-brand-title {
-  font-weight: 800;
-  font-size: 0.84rem;
-  color: var(--heading);
-  letter-spacing: -0.02em;
-}
-
 .sidebar-brand-badge {
   font-family: var(--font-mono);
   font-size: 0.60rem;
@@ -325,44 +311,7 @@ body.sidebar-collapsed .nft-sidebar:hover {
   color: var(--primary-hover) !important;
 }
 
-.sidebar-footer-btn-warning {
-  background: var(--warning) !important;
-  color: #11141a !important;
-  border-color: var(--warning) !important;
-  font-weight: 700;
-}
-
-.sidebar-footer-btn-warning:hover {
-  background: #d97706 !important;
-  color: #ffffff !important;
-  border-color: #b45309 !important;
-}
-
-.sidebar-footer-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  width: 100%;
-}
-
-.sidebar-footer-btn-power {
-  flex: 1;
-  color: #ef4444 !important;
-  font-weight: 700;
-}
-
-.sidebar-footer-btn-power .sidebar-icon {
-  color: #ef4444 !important;
-}
-
-.sidebar-footer-btn-power:hover {
-  background: rgba(239, 68, 68, 0.12) !important;
-  border-color: rgba(239, 68, 68, 0.35) !important;
-  color: #ef4444 !important;
-}
-
-.sidebar-footer-btn.theme-toggle-btn,
-.sidebar-footer-btn.user-toggle-btn {
+.sidebar-footer-btn.theme-toggle-btn {
   width: 32px;
   min-width: 32px;
   height: 32px;
@@ -372,21 +321,9 @@ body.sidebar-collapsed .nft-sidebar:hover {
 }
 
 .sidebar-footer-btn.theme-toggle-btn i,
-.sidebar-footer-btn.theme-toggle-btn svg,
-.sidebar-footer-btn.user-toggle-btn i,
-.sidebar-footer-btn.user-toggle-btn svg {
+.sidebar-footer-btn.theme-toggle-btn svg {
   width: 14px;
   height: 14px;
-}
-
-.sidebar-footer-btn.user-toggle-btn {
-  color: var(--primary) !important;
-}
-
-.sidebar-footer-btn.user-toggle-btn:hover {
-  background: var(--primary-subtle);
-  border-color: var(--primary);
-  color: var(--primary-hover) !important;
 }
 
 .sidebar-footer-info {
@@ -403,30 +340,9 @@ body.sidebar-collapsed .nft-sidebar:hover {
 body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-label,
 body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-section-title,
 body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-badge,
-body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-brand-info,
-body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-footer-text,
 body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-footer-info,
 body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-toggle-btn {
   display: none !important;
-}
-
-/* No modo recolhido, cada botão do rodapé fica em sua própria linha (empilhados verticalmente) */
-body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-footer-actions {
-  flex-direction: column !important;
-  gap: 0.4rem !important;
-  align-items: center !important;
-  width: 100% !important;
-}
-
-body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-footer-actions .sidebar-footer-btn {
-  width: 32px !important;
-  min-width: 32px !important;
-  height: 32px !important;
-  min-height: 32px !important;
-  padding: 0 !important;
-  margin: 0 auto !important;
-  justify-content: center !important;
-  flex: none !important;
 }
 
 body.sidebar-collapsed .nft-sidebar:not(:hover) .nft-sidebar-header {
@@ -461,7 +377,7 @@ body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-footer-btn .sidebar-ico
     width: var(--sidebar-w) !important;
     transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
     box-shadow: none;
-    z-index: 1050;
+    z-index: 1055;
   }
 
   /* Impede que regras de collapsed interfiram no mobile */
@@ -472,8 +388,6 @@ body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-footer-btn .sidebar-ico
   body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-label,
   body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-section-title,
   body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-badge,
-  body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-brand-info,
-  body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-footer-text,
   body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-footer-info {
     display: flex !important;
   }
@@ -511,7 +425,7 @@ body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-footer-btn .sidebar-ico
     display: block;
     position: fixed;
     top: 0;
-    left: 0;
+    left: var(--sidebar-w);
     right: 0;
     bottom: 0;
     background: rgba(15, 23, 42, 0.6);
@@ -756,7 +670,7 @@ body.sidebar-collapsed .nft-sidebar:hover {
   margin-top: 6px;
 }
 
-.sidebar-section-title, .nft-sidebar-title {
+.sidebar-section-title {
   font-size: 10.5px;
   font-weight: 700;
   text-transform: uppercase;
@@ -934,8 +848,6 @@ body.sidebar-collapsed .nft-sidebar:not(:hover) .nft-sidebar-search-wrap,
 body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-section-title,
 body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-label,
 body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-badge,
-body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-brand-info,
-body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-footer-text,
 body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-footer-info {
   display: none !important;
 }
@@ -944,8 +856,6 @@ body.sidebar-collapsed .nft-sidebar:hover .nft-sidebar-search-wrap,
 body.sidebar-collapsed .nft-sidebar:hover .sidebar-section-title,
 body.sidebar-collapsed .nft-sidebar:hover .sidebar-label,
 body.sidebar-collapsed .nft-sidebar:hover .sidebar-badge,
-body.sidebar-collapsed .nft-sidebar:hover .sidebar-brand-info,
-body.sidebar-collapsed .nft-sidebar:hover .sidebar-footer-text,
 body.sidebar-collapsed .nft-sidebar:hover .sidebar-footer-info {
   display: flex !important;
 }
@@ -966,12 +876,6 @@ body.sidebar-collapsed .nft-sidebar:hover .sidebar-footer-info {
 .dark .nft-sidebar-header {
   background-color: #0F1420 !important;
   border-bottom: 1px solid #242D40 !important;
-}
-
-[data-theme="dark"] .sidebar-brand-title,
-[data-bs-theme="dark"] .sidebar-brand-title,
-.dark .sidebar-brand-title {
-  color: #FFFFFF !important;
 }
 
 [data-theme="dark"] .sidebar-brand-badge,
@@ -1034,7 +938,6 @@ body.sidebar-collapsed .nft-sidebar:hover .sidebar-footer-info {
 }
 
 [data-theme="dark"] .sidebar-section-title,
-[data-theme="dark"] .nft-sidebar-title,
 [data-bs-theme="dark"] .sidebar-section-title,
 .dark .sidebar-section-title {
   color: #64748B !important;

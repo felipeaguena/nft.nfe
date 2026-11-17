@@ -31,9 +31,7 @@
         <!-- Cabeçalho da Página -->
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom gap-2">
             <div class="d-flex align-items-center gap-3">
-                <button class="btn-nft d-lg-none" onclick="document.body.classList.toggle('sidebar-mobile-open')" title="Abrir Menu" type="button">
-                    <i data-lucide="menu" style="width: 16px; height: 16px;"></i>
-                </button>
+
                 <div>
                     <h4 class="mb-0 fw-bold d-flex align-items-center gap-2">
                         <i class="text-primary" data-lucide="calendar-days"></i>
@@ -551,12 +549,12 @@
                     </td>
                     <td class="text-end text-nowrap">
                         <div class="d-flex justify-content-end gap-1">
-                            <button class="btn-nft py-0 px-2 d-inline-flex align-items-center gap-1"
+                            <button class="btn-nft btn-nft-warning py-0 px-2 d-inline-flex align-items-center gap-1"
                                     onclick="abrirModalEditarFeira(${f.id})" style="height: 26px; font-size: 11.5px;" title="Editar informações da feira">
                                 <i data-lucide="edit-3" style="width: 12px; height: 12px;"></i>
                                 <span>Editar</span>
                             </button>
-                            <button class="btn-nft py-0 px-2 d-inline-flex align-items-center"
+                            <button class="btn-nft btn-nft-danger py-0 px-2 d-inline-flex align-items-center"
                                     onclick="excluirFeira(${f.id}, '${nomeEscaped}')" style="height: 26px;" title="Excluir feira">
                                 <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
                             </button>

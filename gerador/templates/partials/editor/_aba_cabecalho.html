@@ -8,32 +8,26 @@
 <div class="col-md-4">
   <div class="nft-notch-field">
     <label class="nft-notch-label">Número NF-e (nNF)</label>
-    <div class="nft-notch-input-wrapper">
-      <span class="nft-notch-icon"><i data-lucide="hash" style="width: 15px; height: 15px; stroke-width: 1.75px;"></i></span>
-      <input class="nft-notch-input" id="nNF" oninput="calcularChaveAcessoDinamica()" type="text" style="height: 44px;"/>
-    </div>
+    <span class="nft-notch-icon"><i data-lucide="hash" style="width: 15px; height: 15px; stroke-width: 1.75px;"></i></span>
+    <input class="nft-notch-input" id="nNF" oninput="calcularChaveAcessoDinamica()" type="text"/>
   </div>
 </div>
 
 <div class="col-md-4">
   <div class="nft-notch-field">
     <label class="nft-notch-label">Série</label>
-    <div class="nft-notch-input-wrapper">
-      <span class="nft-notch-icon"><i data-lucide="layers" style="width: 15px; height: 15px; stroke-width: 1.75px;"></i></span>
-      <input class="nft-notch-input" id="serie" oninput="calcularChaveAcessoDinamica()" type="text" style="height: 44px;"/>
-    </div>
+    <span class="nft-notch-icon"><i data-lucide="layers" style="width: 15px; height: 15px; stroke-width: 1.75px;"></i></span>
+    <input class="nft-notch-input" id="serie" oninput="calcularChaveAcessoDinamica()" type="text"/>
   </div>
 </div>
 
 <div class="col-md-4">
   <div class="nft-notch-field">
     <label class="nft-notch-label">Consumidor Final</label>
-    <div class="nft-notch-input-wrapper">
-      <select class="nft-notch-select no-icon" id="indFinal" style="height: 44px;">
-        <option value="0">0 - Não</option>
-        <option selected="" value="1">1 - Sim</option>
-      </select>
-    </div>
+    <select class="nft-notch-select no-icon" id="indFinal">
+      <option value="0">0 - Não</option>
+      <option selected="" value="1">1 - Sim</option>
+    </select>
   </div>
 </div>
 
@@ -44,16 +38,14 @@
       <label class="nft-notch-label" style="position: static !important; background-color: var(--surface, #FFFFFF); padding: 0 4px; pointer-events: none;">
         Tipo de Operação (Regras Padrão)
       </label>
-      <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-primary fw-bold" onclick="abrirModalTipoNota()" title="Gerenciar Tipos de Nota e Regras de Impostos" style="font-size: 11px; pointer-events: auto; background-color: var(--surface, #FFFFFF); padding: 0 4px;">
+      <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-primary fw-bold d-none d-md-inline-block" onclick="abrirModalTipoNota()" title="Gerenciar Tipos de Nota e Regras de Impostos" style="font-size: 11px; pointer-events: auto; background-color: var(--surface, #FFFFFF); padding: 0 4px;">
         <i data-lucide="settings" style="width: 12px; height: 12px; vertical-align: -1px;"></i> Gerenciar
       </button>
     </div>
-    <div class="nft-notch-input-wrapper">
-      <span class="nft-notch-icon"><i data-lucide="sliders-horizontal" style="width: 15px; height: 15px; stroke-width: 1.75px;"></i></span>
-      <select class="nft-notch-select fw-bold" id="select_operacao" onchange="aoSelecionarOperacao(this.value)" style="height: 44px;">
-        <option value="">-- Carregando operações cadastradas... --</option>
-      </select>
-    </div>
+    <span class="nft-notch-icon"><i data-lucide="sliders-horizontal" style="width: 15px; height: 15px; stroke-width: 1.75px;"></i></span>
+    <select class="nft-notch-select fw-bold" id="select_operacao" onchange="aoSelecionarOperacao(this.value)">
+      <option value="">-- Carregando operações cadastradas... --</option>
+    </select>
   </div>
   <input id="natOp" type="hidden"/>
   <input id="cfop_padrao" type="hidden"/>
@@ -65,9 +57,9 @@
       <label class="nft-notch-label" style="position: static !important; background-color: var(--surface, #FFFFFF); padding: 0 4px; pointer-events: none;">
         Chave de Acesso NF-e (44 Dígitos)
       </label>
-      <small class="text-muted font-monospace" style="font-size: 10px; background-color: var(--surface, #FFFFFF); padding: 0 4px;">MOC SEFAZ Dinâmica</small>
+      <small class="text-muted font-monospace d-none d-md-inline" style="font-size: 10px; background-color: var(--surface, #FFFFFF); padding: 0 4px;">MOC SEFAZ Dinâmica</small>
     </div>
-    <div class="input-group" style="height: 44px; border-radius: 12px; border: 1px solid var(--border, #E2E8F0); background-color: var(--surface, #FFFFFF); overflow: hidden; display: flex;">
+    <div class="input-group">
       <input class="form-control font-monospace fw-bold text-primary" id="chaveAcessoDisplay" placeholder="Aguardando dados da nota..." readonly="" style="border: none !important; box-shadow: none !important; height: 100% !important; background-color: var(--surface-secondary, #F8FAFC); letter-spacing: 0.04em; font-size: 0.88rem; padding-left: 14px;" type="text"/>
       <button class="nft-btn-secondary px-3 d-flex align-items-center gap-1" id="btnCopiarChave" onclick="copiarChaveAcesso()" title="Copiar chave de acesso completa" type="button" style="border: none !important; border-left: 1px solid var(--border, #E2E8F0) !important; border-radius: 0 !important; height: 100% !important; font-size: 12px;">
         <i data-lucide="copy" style="width: 14px; height: 14px;"></i>
@@ -89,7 +81,7 @@
 
 <!-- DATAS E HORAS DA NOTA (dhEmi e dhSaiEnt) -->
 <div class="col-md-6">
-    <div class="d-flex justify-content-between align-items-center mb-1">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-1 mb-1">
         <label class="form-label small fw-bold mb-0 d-flex align-items-center gap-1" for="dhEmi">
             <i data-lucide="calendar"></i>
             <span>Data e Hora de Emissão (&lt;dhEmi&gt;)</span>
@@ -103,7 +95,7 @@
 </div>
 
 <div class="col-md-6">
-    <div class="d-flex justify-content-between align-items-center mb-1">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-1 mb-1">
         <label class="form-label small fw-bold mb-0 d-flex align-items-center gap-1" for="dhSaiEnt">
             <i data-lucide="truck"></i>
             <span>Data e Hora Saída/Entrada (&lt;dhSaiEnt&gt;)</span>
@@ -133,13 +125,13 @@
 <label class="form-label small fw-bold mb-0 d-flex align-items-center gap-1" for="refNFe">
 <i data-lucide="file-check" style="width: 14px; height: 14px;"></i>
 <span>Nota Fiscal Referenciada (Chave de Acesso)</span>
-<span class="text-muted fw-normal" style="font-size: 11px;">(Tag SEFAZ: &lt;NFref&gt;&lt;refNFe&gt;)</span>
+<span class="text-muted fw-normal d-none d-md-inline" style="font-size: 11px;">(Tag SEFAZ: &lt;NFref&gt;&lt;refNFe&gt;)</span>
 </label>
 <span class="badge bg-warning text-dark fw-bold" id="refNFe_aviso_operacao" style="display: none; font-size: 11px;">
 <i data-lucide="alert-triangle" style="width: 11px; height: 11px;"></i> Requer NF-e Origem
 </span>
 </div>
-<div class="d-flex align-items-center gap-2">
+<div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2">
 <span class="badge font-monospace bg-info-subtle text-info fw-bold" id="refNFe_badge" style="font-size: 11px;">0 / 44 dígitos</span>
 <button class="btn-nft py-0 px-2 d-inline-flex align-items-center gap-1" onclick="sincronizarRefNFeComInfCpl(true)" style="height: 24px; font-size: 11.5px;" title="Adicionar ou atualizar a nota referenciada nas Informações Complementares" type="button">
 <i data-lucide="plus-circle" style="width: 12px; height: 12px;"></i>
@@ -163,6 +155,7 @@ Aceita exclusivamente números. Ao completar 44 dígitos, a chave é incluída n
 <!-- Caixa de Operação Ativa e Regras Herdadas -->
 <div class="col-12">
 <div class="card border p-2 px-3 mb-0 d-flex flex-row justify-content-between align-items-center flex-wrap gap-2" id="card-resumo-heranca">
+<div class="w-100 fw-bold text-uppercase text-muted" style="font-size: 0.7rem; letter-spacing: 0.03em;">Resumo para Repasse aos Itens</div>
 <div class="d-flex align-items-center flex-wrap gap-3">
 <div><span class="text-muted">Operação:</span> <strong id="lbl-operacao-ativa">Nenhuma selecionada</strong></div>
 <span id="lbl-regime-ativo" style="display:none;"></span>
@@ -186,11 +179,11 @@ Aceita exclusivamente números. Ao completar 44 dígitos, a chave é incluída n
 <div class="col-12 mt-3" id="card-parametros-rateio-ptax">
 <div class="card border shadow-sm">
 <div class="card-header py-2 d-flex justify-content-between align-items-center flex-wrap gap-2 text-secondary">
-<div class="d-flex align-items-center gap-2">
+<div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2">
 <span class="badge px-2 py-1 d-flex align-items-center gap-1 bg-info-subtle text-info fw-bold"><i data-lucide="sliders"></i> Parâmetros Principais</span>
 <span class="fw-bold">Câmbio Oficial PTAX &amp; Rateios Globais da NF-e</span>
 </div>
-<div class="d-flex align-items-center gap-2">
+<div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2">
 <span class="badge bg-info-subtle text-info fw-bold" id="badge-itens-para-rateio">0 itens carregados</span>
 </div>
 </div>
@@ -206,7 +199,7 @@ Aceita exclusivamente números. Ao completar 44 dígitos, a chave é incluída n
 <i data-lucide="coins" style="width: 16px; height: 16px;"></i>
 <span>Moeda Estrangeira &amp; Câmbio PTAX</span>
 </h6>
-<span class="badge bg-info-subtle text-info fw-bold" id="badge-boletim-status">API Bacen Olinda</span>
+<span class="badge bg-info-subtle text-info fw-bold d-none d-md-inline-block" id="badge-boletim-status">API Bacen Olinda</span>
 </div>
 <small class="text-muted d-block mb-3">
 Defina a moeda e a taxa PTAX utilizada na operação para fixar a base nos itens ou consulte o boletim mais recente do Banco Central.
@@ -343,7 +336,7 @@ Gravar taxa de câmbio nas Informações Complementares (<code>infCpl</code>)
 <i data-lucide="scale" style="width: 16px; height: 16px;"></i>
 <span>Rateios Globais &amp; Despesas Aduaneiras</span>
 </h6>
-<span class="badge bg-primary-subtle text-primary fw-bold">Rateio Automático</span>
+<span class="badge bg-primary-subtle text-primary fw-bold d-none d-md-inline-block">Rateio Automático</span>
 </div>
 <small class="text-muted d-block mb-3">
 Lançamento de despesas globais (Marinha Mercante, Taxa Siscomex, Frete e Seguro) para rateio proporcional entre os itens.
@@ -356,7 +349,7 @@ Lançamento de despesas globais (Marinha Mercante, Taxa Siscomex, Frete e Seguro
 <i data-lucide="file-spreadsheet" style="width: 13px; height: 13px;"></i>
 <span>Despesas Aduaneiras Principais da DI / DUIMP</span>
 </span>
-<span class="badge bg-info-subtle text-info fw-semibold" style="font-size: 10px;">Aduana / Siscomex</span>
+<span class="badge bg-info-subtle text-info fw-semibold d-none d-md-inline-block" style="font-size: 10px;">Aduana / Siscomex</span>
 </div>
 <div class="row g-2">
 <!-- VALOR MARINHA MERCANTE (AFRMM) -->
@@ -416,7 +409,7 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
 <i data-lucide="truck" style="width: 13px; height: 13px;"></i>
 <span>Outros Rateios da Operação (Valores Globais da NF-e)</span>
 </span>
-<span class="badge bg-secondary-subtle text-secondary fw-semibold" style="font-size: 10px;">Aberto / Visível</span>
+<span class="badge bg-secondary-subtle text-secondary fw-semibold d-none d-md-inline-block" style="font-size: 10px;">Aberto / Visível</span>
 </div>
 <div class="row g-2">
 <div class="col-sm-4">
@@ -497,13 +490,13 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
 <!-- DADOS DE EXPORTAÇÃO (SEFAZ: <exporta>) -->
 <div class="col-12 mt-3" id="secao_exportacao" style="display: none;">
     <div class="card shadow-sm border mb-3">
-        <div class="card-header py-2 d-flex justify-content-between align-items-center text-secondary">
+        <div class="card-header py-2 d-flex justify-content-between align-items-center flex-wrap gap-2 text-secondary">
             <span class="fw-bold d-flex align-items-center gap-1 text-secondary">
                 <i data-lucide="plane-takeoff"></i>
                 <span>Exportação</span>
                 <span class="text-muted fw-normal" style="font-size: 11px;">(Tag SEFAZ: &lt;exporta&gt;)</span>
             </span>
-            <div class="d-flex align-items-center gap-2">
+            <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2">
                 <span class="badge font-monospace bg-info-subtle text-info fw-bold" id="badge_exporta_status" style="font-size: 11px;">Opcional (CFOP 7xxx / Exterior)</span>
                 <button class="btn-nft py-0 px-2 d-inline-flex align-items-center gap-1" onclick="limparCamposExportacao()" style="height: 24px; font-size: 11px;" title="Limpar campos de exportação" type="button">
                     <i data-lucide="eraser" style="width: 12px; height: 12px;"></i>
@@ -562,7 +555,7 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
 <!-- IDENTIFICAÇÃO DA IMPORTAÇÃO -->
 <div class="col-12 mt-3">
     <div class="card shadow-sm border mb-3">
-        <div class="card-header py-2 d-flex justify-content-between align-items-center text-secondary">
+        <div class="card-header py-2 d-flex justify-content-between align-items-center flex-wrap gap-2 text-secondary">
             <span class="fw-bold d-flex align-items-center gap-1 text-secondary">
                 <i data-lucide="globe"></i>
                 <span>Identificação da Importação</span>
@@ -638,7 +631,7 @@ Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code
 
 <div class="col-12 mt-3">
 <div class="card border mb-3 shadow-sm">
-<div class="card-header py-2 d-flex justify-content-between align-items-center text-secondary">
+<div class="card-header py-2 d-flex justify-content-between align-items-center flex-wrap gap-2 text-secondary">
 <span class="fw-bold d-inline-flex align-items-center gap-2"><i data-lucide="file-text" style="width: 16px; height: 16px;"></i> Informações Complementares / Observações da Nota (infCpl)</span>
 <button class="btn-nft py-0 px-2" onclick="aplicarObsDaOperacao()" type="button">
 <i data-lucide="file-edit" style="width: 13px; height: 13px;"></i> Puxar Observação Padrão do Tipo de Nota

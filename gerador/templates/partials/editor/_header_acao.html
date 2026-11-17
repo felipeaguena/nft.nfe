@@ -21,26 +21,24 @@
 </div>
 
 <!-- Upload & Rascunhos Card -->
-<div class="card mb-3 shadow-sm border p-3" style="border-radius: 16px;">
-  <div class="row g-3 align-items-center">
+<div class="card mb-3 shadow-sm border p-3 d-flex flex-column gap-2" style="border-radius: 16px;">
+  <div class="row g-2 align-items-center">
     {% if editor_modo == 'nova_nf' %}
       <!-- 1. Referência Interna (Nova NF) -->
       <div class="col-xl-6 col-lg-6 col-md-6 col-12">
-        <div class="nft-notch-field" style="margin-top: 4px; margin-bottom: 0;">
+        <div class="nft-notch-field mb-0">
           <label class="nft-notch-label">Referência Interna do Documento</label>
-          <div class="nft-notch-input-wrapper">
-            <span class="nft-notch-icon"><i data-lucide="tag" style="width: 15px; height: 15px; stroke-width: 1.75px;"></i></span>
-            <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly')" class="nft-notch-input font-monospace" id="referenciaInterna" name="referencia_interna_doc" oninput="atualizarReferenciaRascunho(this.value)" placeholder="Ex: NOTA-2026/001, PEDIDO-1050, PO-998" type="text" style="height: 44px;"/>
-          </div>
+          <span class="nft-notch-icon"><i data-lucide="tag" style="width: 15px; height: 15px; stroke-width: 1.75px;"></i></span>
+          <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly')" class="nft-notch-input font-monospace" id="referenciaInterna" name="referencia_interna_doc" oninput="atualizarReferenciaRascunho(this.value)" placeholder="Ex: NOTA-2026/001, PEDIDO-1050, PO-998" type="text"/>
         </div>
       </div>
       <!-- 2. Botões de Ação -->
       <div class="col-xl-6 col-lg-6 col-md-6 col-12 d-flex align-items-center gap-2">
-        <button class="nft-btn-secondary fw-bold d-flex align-items-center justify-content-center gap-2 flex-grow-1" onclick="abrirModalSalvarRascunho()" title="Salvar Rascunho para continuar editando depois" style="height: 44px; border-radius: 12px; margin-top: 4px;">
+        <button class="nft-btn-secondary w-50 fw-bold d-flex align-items-center justify-content-center gap-2 flex-grow-1 text-nowrap" onclick="abrirModalSalvarRascunho()" title="Salvar Rascunho para continuar editando depois">
           <i data-lucide="save" style="width: 16px; height: 16px;"></i>
           <span>Salvar Rascunho</span>
         </button>
-        <button class="nft-btn-secondary fw-bold d-flex align-items-center justify-content-center gap-2 flex-grow-1" onclick="limparSessaoTemporariaComConfirmacao()" title="Limpar dados temporários desta página e iniciar uma nota em branco" type="button" style="height: 44px; border-radius: 12px; margin-top: 4px;">
+        <button class="nft-btn-secondary w-50 fw-bold d-flex align-items-center justify-content-center gap-2 flex-grow-1 text-nowrap" onclick="limparSessaoTemporariaComConfirmacao()" title="Limpar dados temporários desta página e iniciar uma nota em branco" type="button">
           <i data-lucide="rotate-ccw" style="width: 16px; height: 16px;"></i>
           <span>Nova Nota</span>
         </button>
@@ -48,82 +46,71 @@
     {% elif editor_modo == 'di_duimp' %}
       <!-- 1. Referência Interna (DI / DUIMP) -->
       <div class="col-xl-2 col-lg-2 col-md-6 col-12">
-        <div class="nft-notch-field" style="margin-top: 4px; margin-bottom: 0;">
+        <div class="nft-notch-field mb-0">
           <label class="nft-notch-label">Referência Interna</label>
-          <div class="nft-notch-input-wrapper">
-            <span class="nft-notch-icon"><i data-lucide="tag" style="width: 15px; height: 15px; stroke-width: 1.75px;"></i></span>
-            <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly')" class="nft-notch-input font-monospace" id="referenciaInterna" name="referencia_interna_doc" oninput="atualizarReferenciaRascunho(this.value)" placeholder="Ex: REF-2026/001" type="text" style="height: 44px;"/>
-          </div>
+          <span class="nft-notch-icon"><i data-lucide="tag" style="width: 15px; height: 15px; stroke-width: 1.75px;"></i></span>
+          <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly')" class="nft-notch-input font-monospace" id="referenciaInterna" name="referencia_interna_doc" oninput="atualizarReferenciaRascunho(this.value)" placeholder="Ex: REF-2026/001" type="text"/>
         </div>
       </div>
       <!-- 2. Arquivo XML DI / DUIMP -->
       <div class="col-xl-3 col-lg-3 col-md-6 col-12">
-        <div class="nft-notch-field" style="margin-top: 4px; margin-bottom: 0;">
+        <div class="nft-notch-field mb-0">
           <label class="nft-notch-label">Arquivo DI / DUIMP (XML)</label>
-          <div class="nft-notch-input-wrapper">
-            <input accept=".xml" class="form-control" id="xmlFileInput" type="file" style="height: 44px; min-height: 44px; border-radius: 12px; border: 1px solid var(--border); font-size: 12.5px; padding: 7px 12px;"/>
-          </div>
+          <input accept=".xml" class="form-control" id="xmlFileInput" type="file"/>
         </div>
       </div>
-      <!-- 3. Processar XML -->
-      <div class="col-xl-2 col-lg-2 col-md-4 col-12">
-        <button class="nft-btn-primary w-100 fw-bold d-flex align-items-center justify-content-center gap-2 text-nowrap" onclick="uploadXML()" type="button" title="Processar arquivo XML de DI ou DUIMP do computador" style="height: 44px; border-radius: 12px; margin-top: 4px;">
+      <!-- 3. Processar XML & 4. Puxar DUIMP Online -->
+      <div class="col-xl-3 col-lg-3 col-md-4 col-12 d-flex align-items-center gap-2">
+        <button class="nft-btn-primary w-50 fw-bold d-flex align-items-center justify-content-center gap-2 flex-grow-1 text-nowrap" onclick="uploadXML()" type="button" title="Processar arquivo XML de DI ou DUIMP do computador">
           <i data-lucide="upload" style="width: 16px; height: 16px;"></i>
           <span>Processar XML</span>
         </button>
-      </div>
-      <!-- 4. Puxar DUIMP Online -->
-      <div class="col-xl-2 col-lg-2 col-md-4 col-12">
-        <button class="nft-btn-primary w-100 fw-bold d-flex align-items-center justify-content-center gap-2 text-nowrap" onclick="abrirModalImportarDuimp()" type="button" title="Puxar dados oficiais da DUIMP por número (Portal Único Siscomex)" style="height: 44px; border-radius: 12px; margin-top: 4px; background-color: #059669; border-color: #059669;">
+        <button class="nft-btn-primary w-50 fw-bold d-flex align-items-center justify-content-center gap-2 flex-grow-1 text-nowrap" onclick="abrirModalImportarDuimp()" type="button" title="Puxar dados oficiais da DUIMP por número (Portal Único Siscomex)" style="background-color: #059669; border-color: #059669;">
           <i data-lucide="cloud-download" style="width: 16px; height: 16px;"></i>
           <span>Puxar DUIMP</span>
         </button>
       </div>
       <!-- 5. Salvar / Nova Nota -->
       <div class="col-xl-3 col-lg-3 col-md-4 col-12 d-flex align-items-center gap-2">
-        <button class="nft-btn-secondary fw-bold d-flex align-items-center justify-content-center gap-2 flex-grow-1 text-nowrap" onclick="abrirModalSalvarRascunho()" title="Salvar Rascunho para continuar editando depois" style="height: 44px; border-radius: 12px; margin-top: 4px;">
+        <button class="nft-btn-secondary w-50 fw-bold d-flex align-items-center justify-content-center gap-2 flex-grow-1 text-nowrap" onclick="abrirModalSalvarRascunho()" title="Salvar Rascunho para continuar editando depois">
           <i data-lucide="save" style="width: 16px; height: 16px;"></i>
           <span>Salvar</span>
         </button>
-        <button class="nft-btn-secondary fw-bold d-flex align-items-center justify-content-center gap-2 flex-grow-1 text-nowrap" onclick="limparSessaoTemporariaComConfirmacao()" title="Limpar dados temporários desta página e iniciar uma nota em branco" type="button" style="height: 44px; border-radius: 12px; margin-top: 4px;">
+        <button class="nft-btn-secondary w-50 fw-bold d-flex align-items-center justify-content-center gap-2 flex-grow-1 text-nowrap" onclick="limparSessaoTemporariaComConfirmacao()" title="Limpar dados temporários desta página e iniciar uma nota em branco" type="button">
           <i data-lucide="rotate-ccw" style="width: 16px; height: 16px;"></i>
           <span>Nova Nota</span>
         </button>
       </div>
     {% else %}
       <!-- 1. Referência Interna (XML Rascunho) -->
-      <div class="col-xl-3 col-lg-3 col-md-3">
-        <div class="nft-notch-field" style="margin-top: 4px; margin-bottom: 0;">
+      <div class="col-xl-3 col-lg-3 col-md-6 col-12">
+        <div class="nft-notch-field mb-0">
           <label class="nft-notch-label">Referência Interna</label>
-          <div class="nft-notch-input-wrapper">
-            <span class="nft-notch-icon"><i data-lucide="tag" style="width: 15px; height: 15px; stroke-width: 1.75px;"></i></span>
-            <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly')" class="nft-notch-input font-monospace" id="referenciaInterna" name="referencia_interna_doc" oninput="atualizarReferenciaRascunho(this.value)" placeholder="Ex: NFT2600292-I" type="text" style="height: 44px;"/>
-          </div>
+          <span class="nft-notch-icon"><i data-lucide="tag" style="width: 15px; height: 15px; stroke-width: 1.75px;"></i></span>
+          <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly')" class="nft-notch-input font-monospace" id="referenciaInterna" name="referencia_interna_doc" oninput="atualizarReferenciaRascunho(this.value)" placeholder="Ex: NFT2600292-I" type="text"/>
         </div>
       </div>
       <!-- 2. Arquivo XML de Modelo -->
-      <div class="col-xl-4 col-lg-4 col-md-4">
-        <div class="nft-notch-field" style="margin-top: 4px; margin-bottom: 0;">
+      <div class="col-xl-4 col-lg-4 col-md-6 col-12">
+        <div class="nft-notch-field mb-0">
           <label class="nft-notch-label">Arquivo XML de Modelo (Espelho)</label>
-          <div class="nft-notch-input-wrapper">
-            <input accept=".xml" class="form-control" id="xmlFileInput" type="file" style="height: 44px; min-height: 44px; border-radius: 12px; border: 1px solid var(--border); font-size: 12.5px; padding: 7px 12px;"/>
-          </div>
+          <input accept=".xml" class="form-control" id="xmlFileInput" type="file"/>
         </div>
       </div>
       <!-- 3. Processar XML -->
-      <div class="col-xl-2 col-lg-2 col-md-2">
-        <button class="nft-btn-primary w-100 fw-bold d-flex align-items-center justify-content-center gap-2" onclick="uploadXML()" style="height: 44px; border-radius: 12px; margin-top: 4px;">
+      <div class="col-xl-2 col-lg-2 col-md-4 col-12">
+        <button class="nft-btn-primary w-100 fw-bold d-flex align-items-center justify-content-center gap-2 text-nowrap" onclick="uploadXML()" type="button">
           <i data-lucide="upload" style="width: 16px; height: 16px;"></i>
           <span>Processar XML</span>
         </button>
       </div>
       <!-- 4. Salvar / Nova Nota -->
-      <div class="col-xl-3 col-lg-3 col-md-3 d-flex align-items-center gap-2">
-        <button class="nft-btn-secondary fw-bold d-flex align-items-center justify-content-center gap-2 flex-grow-1" onclick="abrirModalSalvarRascunho()" title="Salvar Rascunho para continuar editando depois" style="height: 44px; border-radius: 12px; margin-top: 4px;">
+      <div class="col-xl-3 col-lg-3 col-md-8 col-12 d-flex align-items-center gap-2">
+        <button class="nft-btn-secondary w-50 fw-bold d-flex align-items-center justify-content-center gap-2 flex-grow-1 text-nowrap" onclick="abrirModalSalvarRascunho()" title="Salvar Rascunho para continuar editando depois">
           <i data-lucide="save" style="width: 16px; height: 16px;"></i>
           <span>Salvar</span>
         </button>
-        <button class="nft-btn-secondary fw-bold d-flex align-items-center justify-content-center gap-2 flex-grow-1" onclick="limparSessaoTemporariaComConfirmacao()" title="Limpar dados temporários desta página e iniciar uma nota em branco" type="button" style="height: 44px; border-radius: 12px; margin-top: 4px;">
+        <button class="nft-btn-secondary w-50 fw-bold d-flex align-items-center justify-content-center gap-2 flex-grow-1 text-nowrap" onclick="limparSessaoTemporariaComConfirmacao()" title="Limpar dados temporários desta página e iniciar uma nota em branco" type="button">
           <i data-lucide="rotate-ccw" style="width: 16px; height: 16px;"></i>
           <span>Nova Nota</span>
         </button>
@@ -132,14 +119,17 @@
   </div>
 
   <!-- Linha Inferior com Indicadores de Status e Origem -->
-  <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
-    <div class="d-flex align-items-center gap-2 small">
+  <div class="row g-2 pt-2">
+    <div class="col-6 d-flex flex-column align-items-start gap-1 small">
       <span class="text-muted">Status do Documento:</span>
-      <span class="badge py-1 px-2 bg-info-subtle text-info fw-bold" id="status-badge">{{ editor_cfg.status_inicial }}</span>
-      <span class="badge d-none bg-info-subtle text-info fw-bold" id="rascunho-info-tag"></span>
+      <div class="d-flex align-items-center gap-1">
+        <span class="badge bg-info-subtle text-info fw-bold" id="status-badge">{{ editor_cfg.status_inicial }}</span>
+        <span class="badge d-none bg-info-subtle text-info fw-bold" id="rascunho-info-tag"></span>
+      </div>
     </div>
-    <div class="text-muted small font-monospace" id="rascunho-origem-indicator">
-      Módulo Ativo: <span class="badge {{ editor_cfg.badge_class }} bg-info-subtle text-info fw-bold">{{ editor_cfg.nome_modulo }}</span>
+    <div class="col-6 d-flex flex-column align-items-start gap-1 text-muted small font-monospace" id="rascunho-origem-indicator">
+      <span>Módulo Ativo:</span>
+      <span class="badge {{ editor_cfg.badge_class }} bg-info-subtle text-info fw-bold">{{ editor_cfg.nome_modulo }}</span>
     </div>
   </div>
 </div>

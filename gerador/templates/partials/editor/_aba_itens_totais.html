@@ -35,15 +35,15 @@
 <i data-lucide="scale"></i>
 <span>Rateio &amp; PTAX</span>
 </button>
-<button class="btn-nft me-1 d-flex align-items-center gap-1" onclick="recarregarTabelaItens()">
+<button class="btn-nft me-1 d-flex align-items-center gap-1" onclick="recarregarTabelaItens()" title="Redesenhar Grade" type="button">
 <i data-lucide="refresh-cw"></i>
 <span>Redesenhar Grade</span>
 </button>
-<button class="btn-nft me-1 fw-bold d-flex align-items-center gap-1" onclick="exportarExcel()">
+<button class="btn-nft me-1 fw-bold d-flex align-items-center gap-1" onclick="exportarExcel()" title="Exportar Excel (.xlsx)" type="button">
 <i data-lucide="file-spreadsheet"></i>
 <span>Exportar Excel (.xlsx)</span>
 </button>
-<button class="btn-nft fw-bold d-flex align-items-center gap-1" onclick="document.getElementById('importExcelInput').click()">
+<button class="btn-nft fw-bold d-flex align-items-center gap-1" onclick="document.getElementById('importExcelInput').click()" title="Importar Excel (.xlsx)" type="button">
 <i data-lucide="upload"></i>
 <span>Importar Excel (.xlsx)</span>
 </button>
@@ -51,7 +51,7 @@
 </div>
 </div>
 <!-- Barra de Status Rápido de Câmbio PTAX & Despesas de Rateio Ativas -->
-<div class="card border mb-2 p-2 px-3 bg-light d-flex flex-row justify-content-between align-items-center flex-wrap gap-2 shadow-sm mt-3" style="font-size: 12.5px;">
+<div class="card border mb-2 p-2 px-3 bg-light d-flex flex-row justify-content-between align-items-center flex-wrap gap-2 shadow-sm mt-3" id="barra-status-ptax-rateio" style="font-size: 12.5px;">
 <div class="d-flex align-items-center flex-wrap gap-3">
 <div><span class="text-muted">Moeda:</span> <span class="badge bg-info-subtle text-info fw-bold" id="lbl-bar-ptax-moeda">USD</span></div>
 <div><span class="text-muted">Cotação PTAX:</span> <strong class="text-primary font-monospace" id="lbl-bar-ptax-taxa">R$ -</strong></div>
