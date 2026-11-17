@@ -2530,12 +2530,13 @@ label.has-regex-tag,
     display: none !important;
   }
 
-  /* Usuários Autorizados: cards empilhados no mobile (<= 767px) */
+  /* Usuários Autorizados: mesmo padrão de Empresas & Cadastros no mobile (<= 767px) */
   .card-usuarios-lista {
+    max-height: none !important;
+    overflow: visible !important;
     border: none !important;
     box-shadow: none !important;
     background: transparent !important;
-    overflow: visible !important;
   }
 
   .card-usuarios-lista table,
@@ -2550,8 +2551,11 @@ label.has-regex-tag,
     display: none;
   }
 
+  .card-usuarios-lista table,
   #tabelaUsuariosCorpo {
-    padding: 0.35rem !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    --bs-table-bg: transparent !important;
   }
 
   #tabelaUsuariosCorpo tr,
