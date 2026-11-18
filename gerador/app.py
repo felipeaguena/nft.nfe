@@ -6009,7 +6009,12 @@ def shutdown_server():
 
 @app.route('/api/certificado/status', methods=['GET'])
 def api_certificado_status():
+    if os.environ.get('VERCEL') == '1':
+        sefaz_client.carregar_certificado_salvo()
     info = sefaz_client.get_certificate_info()
+    if info.get('status') != 'success':
+        sefaz_client.carregar_certificado_salvo()
+        info = sefaz_client.get_certificate_info()
     return jsonify(info)
 
 @app.route('/api/certificado/importar', methods=['POST'])

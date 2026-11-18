@@ -872,8 +872,31 @@ window.carregarStatusCertificadoSidebar = async function () {
                 validadeEl.textContent = validadeFim;
             }
             if (badgeEl) {
-                badgeEl.textContent = 'Ativo';
-                badgeEl.className = 'badge bg-success-subtle text-success small';
+                let badgeText = 'Ativo';
+                let badgeClass = 'badge bg-success-subtle text-success small';
+                let badgeStyle = 'font-size: 0.6rem; padding: 2px 5px;';
+
+                if (validadeFim && validadeFim.includes('/')) {
+                    const partes = validadeFim.split('/');
+                    if (partes.length === 3) {
+                        const dia = parseInt(partes[0], 10);
+                        const mes = parseInt(partes[1], 10) - 1;
+                        const ano = parseInt(partes[2], 10);
+                        const dataVal = new Date(ano, mes, dia, 23, 59, 59);
+                        const diffDias = Math.ceil((dataVal.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                        if (diffDias < 0) {
+                            badgeText = 'Vencido';
+                            badgeClass = 'badge bg-danger-subtle text-danger small';
+                        } else if (diffDias <= 30) {
+                            badgeText = 'Vence em breve';
+                            badgeClass = 'badge small';
+                            badgeStyle = 'font-size: 0.6rem; padding: 2px 5px; background-color: #FFEDD5; color: #C2410C;';
+                        }
+                    }
+                }
+                badgeEl.textContent = badgeText;
+                badgeEl.className = badgeClass;
+                badgeEl.setAttribute('style', badgeStyle);
             }
 
             const aba2Container = document.getElementById('cert-info-container');
