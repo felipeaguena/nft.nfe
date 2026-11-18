@@ -6066,11 +6066,14 @@ def api_certificado_importar():
             f.write(pfx_bytes)
 
         # Sincroniza certificado válido com o Cloudflare R2 para persistência em nuvem
+        r2_ok = False
         try:
             import r2_storage
-            r2_storage.upload_file_r2(caminho_final, f"certificado/{nome_sanitizado}", "application/x-pkcs12")
-        except Exception:
-            pass
+            r2_ok = r2_storage.upload_file_r2(caminho_final, f"certificado/{nome_sanitizado}", "application/x-pkcs12")
+            if not r2_ok:
+                print(f"Aviso: falha ao enviar certificado '{nome_sanitizado}' para o Cloudflare R2.")
+        except Exception as e_r2:
+            print(f"Aviso ao sincronizar certificado com R2: {e_r2}")
         
         # Atualiza o sefaz_client ativo em memória
         sefaz_client.set_active_certificate(caminho_final, senha_bytes)
@@ -6096,8 +6099,24 @@ def api_certificado_importar():
 def api_certificado_listar():
     try:
         cert_dir = '/tmp/certificado' if os.environ.get('VERCEL') == '1' else os.path.join(os.path.dirname(__file__), 'certificado')
-        if not os.path.exists(cert_dir):
-            return jsonify({'status': 'success', 'certificados': [], 'ativo': None})
+        os.makedirs(cert_dir, exist_ok=True)
+
+        # Em ambiente serverless (Vercel), sincroniza certificados salvos no R2 para /tmp/certificado
+        if os.environ.get('VERCEL') == '1':
+            try:
+                import r2_storage
+                r2_client = r2_storage.get_r2_client()
+                if r2_client:
+                    resp_r2 = r2_client.list_objects_v2(Bucket=r2_storage.R2_BUCKET_NAME, Prefix='certificado/')
+                    for obj in resp_r2.get('Contents', []):
+                        key = obj.get('Key', '')
+                        nome_arq = os.path.basename(key)
+                        if nome_arq and nome_arq.lower().endswith(('.pfx', '.p12')):
+                            dest_path = os.path.join(cert_dir, nome_arq)
+                            if not os.path.exists(dest_path):
+                                r2_storage.download_file_r2(key, dest_path)
+            except Exception as e_r2:
+                print(f"Aviso ao listar certificados do R2: {e_r2}")
 
         ativo_arquivo = None
         ativo_senha = None

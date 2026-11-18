@@ -905,7 +905,11 @@ window.carregarStatusCertificadoSidebar = async function () {
                 }
             }
         } else {
-            if (empresaEl) empresaEl.textContent = 'Nenhum Certificado';
+            if (empresaEl) {
+                empresaEl.textContent = 'Nenhum Certificado';
+                empresaEl.title = 'Nenhum Certificado';
+            }
+            if (validadeEl) validadeEl.textContent = '-';
             if (badgeEl) {
                 badgeEl.textContent = 'Pendente';
                 badgeEl.className = 'badge bg-warning-subtle text-warning small';
@@ -913,6 +917,18 @@ window.carregarStatusCertificadoSidebar = async function () {
         }
     } catch (e) {
         console.warn('Aviso ao carregar status do certificado:', e);
+        const empresaEl = document.getElementById('sidebar-cert-empresa');
+        const validadeEl = document.getElementById('sidebar-cert-validade');
+        const badgeEl = document.getElementById('sidebar-cert-badge');
+        if (empresaEl) {
+            empresaEl.textContent = 'Nenhum Certificado';
+            empresaEl.title = 'Nenhum Certificado';
+        }
+        if (validadeEl) validadeEl.textContent = '-';
+        if (badgeEl) {
+            badgeEl.textContent = 'Pendente';
+            badgeEl.className = 'badge bg-warning-subtle text-warning small';
+        }
     }
 };
 
@@ -1187,9 +1203,15 @@ window.submeterInstalacaoNovoCertificado = async function () {
             method: 'POST',
             body: formData
         });
-        const res = await resp.json();
+        const rawText = await resp.text();
+        let res = {};
+        try {
+            res = rawText ? JSON.parse(rawText) : {};
+        } catch (_) {
+            throw new Error(`Erro ao instalar certificado (HTTP ${resp.status}).`);
+        }
         if (!resp.ok || res.status === 'error') {
-            throw new Error(res.message || 'Erro ao instalar certificado.');
+            throw new Error(res.message || res.error || res.detail || `Erro ao instalar certificado (HTTP ${resp.status}).`);
         }
 
         fileInput.value = '';
