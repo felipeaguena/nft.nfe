@@ -32,7 +32,7 @@ def get_r2_client():
             return None
         try:
             # Remove sufixos indesejados da URL base do endpoint caso venha com o nome do bucket
-            clean_endpoint = R2_ENDPOINT_URL
+            clean_endpoint = R2_ENDPOINT_URL.rstrip('/')
             if clean_endpoint.endswith(f'/{R2_BUCKET_NAME}') or clean_endpoint.endswith('/nft-storage') or clean_endpoint.endswith('/nft-token'):
                 clean_endpoint = clean_endpoint.rsplit('/', 1)[0]
 

@@ -939,12 +939,12 @@ window.aplicarDadosCertificadoSidebar = function (data) {
     return false;
 };
 
-window.carregarStatusCertificadoSidebar = async function () {
+window.carregarStatusCertificadoSidebar = async function (tentativa = 0) {
     try {
         const resp = await fetch('/api/certificado/status', { cache: 'no-store' });
         let data = null;
         if (resp.ok) {
-            data = await resp.json();
+            try { data = await resp.json(); } catch (_) { data = null; }
         }
 
         if (data && data.status === 'success') {
@@ -971,9 +971,18 @@ window.carregarStatusCertificadoSidebar = async function () {
             }
         }
 
+        if ((!resp.ok || !respList.ok) && tentativa < 1) {
+            setTimeout(() => window.carregarStatusCertificadoSidebar(tentativa + 1), 1500);
+            return;
+        }
+
         window.aplicarDadosCertificadoSidebar(null);
     } catch (e) {
         console.warn('Aviso ao carregar status do certificado:', e);
+        if (tentativa < 1) {
+            setTimeout(() => window.carregarStatusCertificadoSidebar(tentativa + 1), 1500);
+            return;
+        }
         window.aplicarDadosCertificadoSidebar(null);
     }
 };
@@ -1095,39 +1104,74 @@ window.abrirModalGerenciarCertificados = async function () {
 };
 
 window.carregarListaCertificadosModal = async function () {
+    const tbody = document.getElementById('tabela-certificados-corpo');
+    const escHtml = (s) => String(s || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
     try {
         const resp = await fetch('/api/certificado/listar', { cache: 'no-store' });
-        const data = await resp.json();
-        const tbody = document.getElementById('tabela-certificados-corpo');
-        if (!tbody) return;
+        const rawText = await resp.text();
+        let data = null;
+        try {
+            data = rawText ? JSON.parse(rawText) : null;
+        } catch (_) {
+            data = null;
+        }
 
-        if (!data || !data.certificados || data.certificados.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">Nenhum certificado digital cadastrado na pasta de certificados. Use o formulário abaixo para instalar.</td></tr>`;
+        if (!resp.ok || !data || data.status === 'error') {
+            const msg = (data && (data.message || data.error)) || `Erro ao carregar lista de certificados (HTTP ${resp.status}).`;
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-danger small">${escHtml(msg)}</td></tr>`;
+            }
             return;
         }
 
-        if (data.ativo) {
-            const activeEmpresa = document.getElementById('cert-modal-active-empresa');
-            const activeDetalhes = document.getElementById('cert-modal-active-detalhes');
-            const activeArquivo = document.getElementById('cert-modal-active-arquivo');
-            if (activeEmpresa) activeEmpresa.textContent = data.ativo.empresa || data.ativo.arquivo;
-            if (activeDetalhes) activeDetalhes.textContent = `CNPJ: ${data.ativo.cnpj || 'N/A'} | Validade até: ${data.ativo.fim || 'N/A'}`;
-            if (activeArquivo) activeArquivo.textContent = `Arquivo: ${data.ativo.arquivo}`;
-            window.aplicarDadosCertificadoSidebar(data.ativo);
+        const activeEmpresa = document.getElementById('cert-modal-active-empresa');
+        const activeDetalhes = document.getElementById('cert-modal-active-detalhes');
+        const activeArquivo = document.getElementById('cert-modal-active-arquivo');
+        const activeBadge = document.getElementById('cert-modal-active-badge');
+        const ativoCert = data.ativo || (Array.isArray(data.certificados) ? data.certificados.find(c => c.ativo) : null);
+
+        if (ativoCert) {
+            if (activeEmpresa) activeEmpresa.textContent = ativoCert.empresa || ativoCert.arquivo;
+            if (activeDetalhes) activeDetalhes.textContent = `CNPJ: ${ativoCert.cnpj || 'N/A'} | Validade até: ${ativoCert.fim || 'N/A'}`;
+            if (activeArquivo) activeArquivo.textContent = `Arquivo: ${ativoCert.arquivo}`;
+            if (activeBadge) {
+                activeBadge.textContent = 'Em Uso';
+                activeBadge.className = 'badge bg-success-subtle text-success fw-bold';
+            }
+            window.aplicarDadosCertificadoSidebar(ativoCert);
+        } else {
+            if (activeEmpresa) activeEmpresa.textContent = 'Nenhum certificado ativo';
+            if (activeDetalhes) activeDetalhes.textContent = 'CNPJ: -- | Válido até: --';
+            if (activeArquivo) activeArquivo.textContent = 'Arquivo: --';
+            if (activeBadge) {
+                activeBadge.textContent = 'Pendente';
+                activeBadge.className = 'badge bg-warning-subtle text-warning fw-bold';
+            }
+        }
+
+        if (!tbody) return;
+
+        if (!data.certificados || data.certificados.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">Nenhum certificado digital cadastrado na pasta de certificados. Use o formulário abaixo para instalar.</td></tr>`;
+            return;
         }
 
         let html = '';
         data.certificados.forEach(c => {
             const isAtivo = c.ativo;
             const rowClass = isAtivo ? 'table-success-subtle fw-semibold' : '';
-            const statusBadge = isAtivo 
+            const arqEsc = escHtml(c.arquivo);
+            const empEsc = escHtml(c.empresa);
+            const cnpjEsc = escHtml(c.cnpj);
+            const validadeStr = c.fim ? escHtml(c.fim.split(' ')[0]) : '<span class="text-muted">--</span>';
+            const statusBadge = isAtivo
                 ? '<span class="badge bg-success text-white py-1 px-2" style="font-size: 11px;"><i data-lucide="check" style="width: 12px; height: 12px; vertical-align: -1px;"></i> Em Uso (Ativo)</span>'
-                : `<button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 fw-semibold" onclick="selecionarCertificadoParaUso('${c.arquivo}')" style="font-size: 11px; border-radius: 6px;">
+                : `<button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 fw-semibold" onclick="selecionarCertificadoParaUso('${arqEsc}')" style="font-size: 11px; border-radius: 6px;">
                      <i data-lucide="check-circle-2" style="width: 12px; height: 12px; vertical-align: -1px;"></i> Selecionar para Uso
                    </button>`;
 
             const deleteBtn = isAtivo ? '' : `
-                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1 ms-1" onclick="excluirCertificado('${c.arquivo}')" title="Excluir certificado" style="font-size: 11px; border-radius: 6px;">
+                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1 ms-1" onclick="excluirCertificado('${arqEsc}')" title="Excluir certificado" style="font-size: 11px; border-radius: 6px;">
                   <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
                 </button>
             `;
@@ -1135,13 +1179,13 @@ window.carregarListaCertificadosModal = async function () {
             html += `
                 <tr class="${rowClass}">
                   <td class="ps-3">
-                    <div class="fw-bold text-dark text-truncate" style="max-width: 220px;" title="${c.empresa}">
-                      <i data-lucide="shield" style="width: 13px; height: 13px; vertical-align: -1px; color: ${isAtivo ? '#16A34A' : '#64748B'};"></i> ${c.empresa}
+                    <div class="fw-bold text-dark text-truncate" style="max-width: 220px;" title="${empEsc}">
+                      <i data-lucide="shield" style="width: 13px; height: 13px; vertical-align: -1px; color: ${isAtivo ? '#16A34A' : '#64748B'};"></i> ${empEsc}
                     </div>
                   </td>
-                  <td class="font-monospace small">${c.cnpj || '<span class="text-muted">Protegido</span>'}</td>
-                  <td class="small">${c.fim ? c.fim.split(' ')[0] : '<span class="text-muted">--</span>'}</td>
-                  <td class="font-monospace small text-muted text-truncate" style="max-width: 180px;" title="${c.arquivo}">${c.arquivo}</td>
+                  <td class="font-monospace small">${cnpjEsc || '<span class="text-muted">Protegido</span>'}</td>
+                  <td class="small">${validadeStr}</td>
+                  <td class="font-monospace small text-muted text-truncate" style="max-width: 180px;" title="${arqEsc}">${arqEsc}</td>
                   <td class="text-end pe-3">
                     ${statusBadge}
                     ${deleteBtn}
@@ -1155,6 +1199,9 @@ window.carregarListaCertificadosModal = async function () {
         }
     } catch (e) {
         console.error('Erro ao listar certificados no modal:', e);
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-danger small">Erro ao carregar certificados: ${escHtml(e.message || 'Falha de conexão')}</td></tr>`;
+        }
     }
 };
 
@@ -1875,7 +1922,7 @@ window.abrirModalEditarProprioPerfil = async function () {
     bootstrap.Modal.getOrCreateInstance(modalEl).show();
 };
 
-document.addEventListener('DOMContentLoaded', function () {
+function inicializarDadosGlobaisSidebar() {
     window.carregarStatusCertificadoSidebar();
     window.carregarEmitentesTopbar();
     window.carregarUsuarioAutenticadoTopbar();
@@ -1895,7 +1942,13 @@ document.addEventListener('DOMContentLoaded', function () {
     } catch (e) {
         console.warn('Erro ao inicializar tooltips:', e);
     }
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', inicializarDadosGlobaisSidebar);
+} else {
+    inicializarDadosGlobaisSidebar();
+}
 
 // === 6. FUNCIONALIDADES DA TOPBAR DIREITA (STATUS SEFAZ & CENTRAL DE AJUDA) ===
 window.abrirModalStatusSefaz = async function () {

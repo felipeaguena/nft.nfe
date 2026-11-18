@@ -6007,46 +6007,87 @@ def shutdown_server():
     threading.Thread(target=kill_proc).start()
     return jsonify({'status': 'success', 'message': 'Servidor encerrando...'})
 
+def _get_cert_dir():
+    cert_dir = '/tmp/certificado' if os.environ.get('VERCEL') == '1' else os.path.join(os.path.dirname(__file__), 'certificado')
+    os.makedirs(cert_dir, exist_ok=True)
+    return cert_dir
+
+def _ler_config_certificados_db():
+    ativo_arquivo = None
+    ativo_senha = None
+    senhas_salvas = {}
+    try:
+        conn = get_db_connection()
+        rows = conn.execute("SELECT chave, valor FROM sistema_config WHERE chave LIKE 'cert_pwd_%' OR chave LIKE 'certificado_ativo_%'").fetchall()
+        conn.close()
+        for r in rows:
+            k, v = r['chave'], r['valor']
+            if k == 'certificado_ativo_arquivo' and v:
+                ativo_arquivo = v.strip()
+            elif k == 'certificado_ativo_senha' and v:
+                ativo_senha = v.strip()
+            elif k.startswith('cert_pwd_') and v:
+                senhas_salvas[k[len('cert_pwd_'):]] = v.strip()
+    except Exception as e_db:
+        print(f"Aviso ao ler configuração de certificados do banco: {e_db}")
+    return ativo_arquivo, ativo_senha, senhas_salvas
+
+def _sincronizar_certificados_r2(cert_dir, target_filename=None):
+    try:
+        import r2_storage
+        if target_filename:
+            base = os.path.basename(target_filename)
+            dest_path = os.path.join(cert_dir, base)
+            if not os.path.isfile(dest_path) or os.path.getsize(dest_path) == 0:
+                if not r2_storage.download_file_r2(f"certificado/{base}", dest_path):
+                    r2_storage.download_file_r2(base, dest_path)
+            return
+
+        r2_client = r2_storage.get_r2_client()
+        if not r2_client:
+            return
+        resp_r2 = r2_client.list_objects_v2(Bucket=r2_storage.R2_BUCKET_NAME, Prefix='certificado/')
+        for obj in resp_r2.get('Contents', []):
+            key = obj.get('Key', '')
+            nome_arq = os.path.basename(key)
+            if nome_arq and nome_arq.lower().endswith(('.pfx', '.p12')):
+                dest_path = os.path.join(cert_dir, nome_arq)
+                if not os.path.isfile(dest_path) or os.path.getsize(dest_path) == 0:
+                    r2_storage.download_file_r2(key, dest_path)
+    except Exception as e_r2:
+        print(f"Aviso ao sincronizar certificados com R2: {e_r2}")
+
+def _extrair_nome_empresa_cert(assunto):
+    nome_empresa = assunto or ''
+    if 'CN=' in nome_empresa:
+        cn_part = nome_empresa.split('CN=')[1].split(',')[0].strip()
+        nome_empresa = cn_part.split(':')[0].strip() if ':' in cn_part else cn_part
+    return nome_empresa
+
 @app.route('/api/certificado/status', methods=['GET'])
 def api_certificado_status():
     sefaz_client.carregar_certificado_salvo(force=True)
     info = sefaz_client.get_certificate_info()
 
-    # Fallback: garante sincronia com o R2 e sistema_config caso o ativo ainda não esteja em /tmp/certificado
+    # Fallback: garante sincronia com o R2 e sistema_config caso o ativo ainda não esteja em disco local/tmp
     if info.get('status') != 'success':
         try:
-            cert_dir = '/tmp/certificado' if os.environ.get('VERCEL') == '1' else os.path.join(os.path.dirname(__file__), 'certificado')
-            os.makedirs(cert_dir, exist_ok=True)
-            ativo_arquivo = None
-            ativo_senha = None
-            senhas_salvas = {}
-            conn = get_db_connection()
-            rows = conn.execute("SELECT chave, valor FROM sistema_config WHERE chave LIKE 'cert_pwd_%' OR chave LIKE 'certificado_ativo_%'").fetchall()
-            conn.close()
-            for r in rows:
-                k, v = r['chave'], r['valor']
-                if k == 'certificado_ativo_arquivo' and v:
-                    ativo_arquivo = v.strip()
-                elif k == 'certificado_ativo_senha' and v:
-                    ativo_senha = v.strip()
-                elif k.startswith('cert_pwd_') and v:
-                    senhas_salvas[k[len('cert_pwd_'):]] = v.strip()
-
-            if os.environ.get('VERCEL') == '1' and ativo_arquivo:
-                dest_path = os.path.join(cert_dir, os.path.basename(ativo_arquivo))
-                if not os.path.isfile(dest_path):
-                    import r2_storage
-                    if not r2_storage.download_file_r2(f"certificado/{os.path.basename(ativo_arquivo)}", dest_path):
-                        r2_storage.download_file_r2(os.path.basename(ativo_arquivo), dest_path)
+            cert_dir = _get_cert_dir()
+            ativo_arquivo, ativo_senha, senhas_salvas = _ler_config_certificados_db()
 
             if ativo_arquivo:
-                cand_path = os.path.join(cert_dir, os.path.basename(ativo_arquivo))
-                if os.path.isfile(cand_path):
-                    senha_cand = senhas_salvas.get(ativo_arquivo) or ativo_senha or os.environ.get('CERT_PFX_PASSWORD', '').strip()
+                _sincronizar_certificados_r2(cert_dir, target_filename=ativo_arquivo)
+                base_arq = os.path.basename(ativo_arquivo)
+                cand_path = os.path.join(cert_dir, base_arq)
+                if os.path.isfile(cand_path) and os.path.getsize(cand_path) > 0:
+                    senha_cand = senhas_salvas.get(base_arq) or senhas_salvas.get(ativo_arquivo) or ativo_senha or os.environ.get('CERT_PFX_PASSWORD', '').strip()
                     sefaz_client.set_active_certificate(cand_path, senha_cand.encode('utf-8'))
                     info = sefaz_client.get_certificate_info()
         except Exception as e_st:
             print(f"Aviso ao sincronizar status do certificado: {e_st}")
+
+    if info.get('status') == 'success' and not info.get('empresa'):
+        info['empresa'] = _extrair_nome_empresa_cert(info.get('assunto', ''))
 
     resp = make_response(jsonify(info))
     resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
@@ -6138,49 +6179,19 @@ def api_certificado_importar():
 @app.route('/api/certificado/listar', methods=['GET'])
 def api_certificado_listar():
     try:
-        cert_dir = '/tmp/certificado' if os.environ.get('VERCEL') == '1' else os.path.join(os.path.dirname(__file__), 'certificado')
-        os.makedirs(cert_dir, exist_ok=True)
+        cert_dir = _get_cert_dir()
+        ativo_arquivo, ativo_senha, senhas_salvas = _ler_config_certificados_db()
 
-        # Em ambiente serverless (Vercel), sincroniza certificados salvos no R2 para /tmp/certificado
+        # Sincroniza certificados salvos no R2 para a pasta de trabalho (especialmente importante na Vercel)
         if os.environ.get('VERCEL') == '1':
-            try:
-                import r2_storage
-                r2_client = r2_storage.get_r2_client()
-                if r2_client:
-                    resp_r2 = r2_client.list_objects_v2(Bucket=r2_storage.R2_BUCKET_NAME, Prefix='certificado/')
-                    for obj in resp_r2.get('Contents', []):
-                        key = obj.get('Key', '')
-                        nome_arq = os.path.basename(key)
-                        if nome_arq and nome_arq.lower().endswith(('.pfx', '.p12')):
-                            dest_path = os.path.join(cert_dir, nome_arq)
-                            if not os.path.exists(dest_path):
-                                r2_storage.download_file_r2(key, dest_path)
-            except Exception as e_r2:
-                print(f"Aviso ao listar certificados do R2: {e_r2}")
+            _sincronizar_certificados_r2(cert_dir)
+            if ativo_arquivo:
+                _sincronizar_certificados_r2(cert_dir, target_filename=ativo_arquivo)
 
-        ativo_arquivo = None
-        ativo_senha = None
-        senhas_salvas = {}
-        try:
-            conn = get_db_connection()
-            rows = conn.execute("SELECT chave, valor FROM sistema_config WHERE chave LIKE 'cert_pwd_%' OR chave LIKE 'certificado_ativo_%'").fetchall()
-            conn.close()
-            for r in rows:
-                k, v = r['chave'], r['valor']
-                if k == 'certificado_ativo_arquivo':
-                    ativo_arquivo = v.strip() if v else None
-                elif k == 'certificado_ativo_senha':
-                    ativo_senha = v.strip() if v else None
-                elif k.startswith('cert_pwd_'):
-                    arq_k = k[len('cert_pwd_'):]
-                    senhas_salvas[arq_k] = v.strip() if v else ''
-        except Exception:
-            pass
-
-        if not ativo_arquivo and sefaz_client.CERT_PATH:
+        if not ativo_arquivo and sefaz_client.CERT_PATH and os.path.isfile(sefaz_client.CERT_PATH):
             ativo_arquivo = os.path.basename(sefaz_client.CERT_PATH)
 
-        arquivos = [f for f in os.listdir(cert_dir) if f.lower().endswith(('.pfx', '.p12'))]
+        arquivos = [f for f in os.listdir(cert_dir) if f.lower().endswith(('.pfx', '.p12')) and os.path.isfile(os.path.join(cert_dir, f))]
         lista = []
         ativo_info = None
 
@@ -6203,15 +6214,7 @@ def api_certificado_listar():
                 with open(caminho, 'rb') as f_c:
                     pfx_data = f_c.read()
                 info = sefaz_client.validar_e_extrair_info_pfx(pfx_data, senha_cand.encode('utf-8'))
-                assunto = info.get('assunto', '')
-                nome_empresa = assunto
-                if 'CN=' in assunto:
-                    cn_part = assunto.split('CN=')[1].split(',')[0].strip()
-                    if ':' in cn_part:
-                        nome_empresa = cn_part.split(':')[0].strip()
-                    else:
-                        nome_empresa = cn_part
-                item['empresa'] = nome_empresa
+                item['empresa'] = _extrair_nome_empresa_cert(info.get('assunto', ''))
                 item['cnpj'] = info.get('cnpj', '')
                 item['inicio'] = info.get('inicio', '')
                 item['fim'] = info.get('fim', '')
@@ -6225,7 +6228,9 @@ def api_certificado_listar():
                 ativo_info = item
             lista.append(item)
 
-        return jsonify({'status': 'success', 'certificados': lista, 'ativo': ativo_info})
+        resp = make_response(jsonify({'status': 'success', 'certificados': lista, 'ativo': ativo_info}))
+        resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        return resp
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
