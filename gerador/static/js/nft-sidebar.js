@@ -1073,7 +1073,7 @@ window.garantirModalGerenciarCertificados = function () {
           <h6 class="fw-bold mb-2 text-dark d-flex align-items-center gap-2">
             <i data-lucide="plus-circle" style="width: 16px; height: 16px; color: #16A34A;"></i> Instalar Novo Certificado Digital (.pfx / .p12)
           </h6>
-          <div class="row g-2 align-items-end">
+          <div class="row g-2 align-items-center">
             <div class="col-md-6">
               <label class="form-label small fw-bold mb-1">Arquivo do Certificado (.pfx ou .p12) *</label>
               <input type="file" class="form-control form-control-sm" id="inputModalNovoCertArquivo" accept=".pfx,.p12" style="height: 38px;">
@@ -1185,11 +1185,11 @@ window.carregarListaCertificadosModal = async function () {
             const statusBadge = isAtivo
                 ? '<span class="badge rounded-pill bg-success text-white fw-bold d-inline-flex align-items-center gap-1" style="font-size: 0.75rem; line-height: 1.2; padding: 0.32rem 0.58rem;"><i data-lucide="check" style="width: 12px; height: 12px;"></i> Em Uso (Ativo)</span>'
                 : `<button type="button" class="btn btn-sm btn-outline-primary rounded-pill fw-bold d-inline-flex align-items-center gap-1" onclick="selecionarCertificadoParaUso('${arqEsc}')" style="font-size: 0.75rem; line-height: 1.2; padding: 0.32rem 0.58rem;">
-                     <i data-lucide="check-circle-2" style="width: 12px; height: 12px;"></i> Selecionar para Uso
+                     <i data-lucide="check-circle-2" style="width: 12px; height: 12px;"></i> Usar
                    </button>`;
 
             const deleteBtn = isAtivo ? '' : `
-                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill fw-bold d-inline-flex align-items-center justify-content-center" onclick="excluirCertificado('${arqEsc}')" title="Excluir certificado" style="font-size: 0.75rem; line-height: 1.2; padding: 0.32rem 0.58rem;">
+                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill fw-bold d-inline-flex align-items-center justify-content-center" onclick="excluirCertificado('${arqEsc}')" title="Excluir certificado" style="font-size: 0.75rem; line-height: 1.2; padding: 8px;">
                   <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
                 </button>
             `;
