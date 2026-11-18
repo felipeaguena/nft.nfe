@@ -846,112 +846,135 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // === 4. GERENCIADOR DE CERTIFICADOS DIGITAIS A1 (MODAL, SIDEBAR E SINCRONIZAÇÃO COM ABA 2) ===
 
-window.carregarStatusCertificadoSidebar = async function () {
-    try {
-        const resp = await fetch('/api/certificado/status');
-        const data = await resp.json();
-        
-        const empresaEl = document.getElementById('sidebar-cert-empresa');
-        const validadeEl = document.getElementById('sidebar-cert-validade');
-        const badgeEl = document.getElementById('sidebar-cert-badge');
+window.aplicarDadosCertificadoSidebar = function (data) {
+    const empresaEl = document.getElementById('sidebar-cert-empresa');
+    const validadeEl = document.getElementById('sidebar-cert-validade');
+    const badgeEl = document.getElementById('sidebar-cert-badge');
 
-        if (data && data.status === 'success') {
-            let nomeEmpresa = data.assunto || 'Empresa Certificada';
-            if (nomeEmpresa.includes('CN=')) {
-                let cn = nomeEmpresa.split('CN=')[1].split(',')[0].trim();
-                nomeEmpresa = cn.includes(':') ? cn.split(':')[0].trim() : cn;
-            }
+    if (data && (data.status === 'success' || data.fim || data.empresa || data.assunto)) {
+        let nomeEmpresa = data.empresa || data.assunto || 'Empresa Certificada';
+        if (nomeEmpresa.includes('CN=')) {
+            let cn = nomeEmpresa.split('CN=')[1].split(',')[0].trim();
+            nomeEmpresa = cn.includes(':') ? cn.split(':')[0].trim() : cn;
+        }
 
-            let validadeFim = data.fim ? data.fim.split(' ')[0] : 'Indefinida';
+        let validadeFim = data.fim ? data.fim.split(' ')[0] : '-';
 
-            if (empresaEl) {
-                empresaEl.textContent = nomeEmpresa;
-                empresaEl.title = `${nomeEmpresa} (CNPJ: ${data.cnpj || 'Identificado'})`;
-            }
-            if (validadeEl) {
-                validadeEl.textContent = validadeFim;
-            }
-            if (badgeEl) {
-                let badgeText = 'Ativo';
-                let badgeClass = 'badge bg-success-subtle text-success small';
-                let badgeStyle = 'font-size: 0.6rem; padding: 2px 5px;';
+        if (empresaEl) {
+            empresaEl.textContent = nomeEmpresa;
+            empresaEl.title = `${nomeEmpresa} (CNPJ: ${data.cnpj || 'Identificado'})`;
+        }
+        if (validadeEl) {
+            validadeEl.textContent = validadeFim;
+        }
+        if (badgeEl) {
+            let badgeText = 'Ativo';
+            let badgeClass = 'badge bg-success-subtle text-success small';
+            let badgeStyle = 'font-size: 0.6rem; padding: 2px 5px;';
 
-                if (validadeFim && validadeFim.includes('/')) {
-                    const partes = validadeFim.split('/');
-                    if (partes.length === 3) {
-                        const dia = parseInt(partes[0], 10);
-                        const mes = parseInt(partes[1], 10) - 1;
-                        const ano = parseInt(partes[2], 10);
-                        const dataVal = new Date(ano, mes, dia, 23, 59, 59);
-                        const diffDias = Math.ceil((dataVal.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-                        if (diffDias < 0) {
-                            badgeText = 'Vencido';
-                            badgeClass = 'badge bg-danger-subtle text-danger small';
-                        } else if (diffDias <= 30) {
-                            badgeText = 'Vence em breve';
-                            badgeClass = 'badge small';
-                            badgeStyle = 'font-size: 0.6rem; padding: 2px 5px; background-color: #FFEDD5; color: #C2410C;';
-                        }
+            if (validadeFim && validadeFim.includes('/')) {
+                const partes = validadeFim.split('/');
+                if (partes.length === 3) {
+                    const dia = parseInt(partes[0], 10);
+                    const mes = parseInt(parts[1], 10) - 1;
+                    const ano = parseInt(partes[2], 10);
+                    const dataVal = new Date(ano, mes, dia, 23, 59, 59);
+                    const diffDias = Math.ceil((dataVal.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                    if (diffDias < 0) {
+                        badgeText = 'Vencido';
+                        badgeClass = 'badge bg-danger-subtle text-danger small';
+                    } else if (diffDias <= 30) {
+                        badgeText = 'Vence em breve';
+                        badgeClass = 'badge small';
+                        badgeStyle = 'font-size: 0.6rem; padding: 2px 5px; background-color: #FFEDD5; color: #C2410C;';
                     }
                 }
-                badgeEl.textContent = badgeText;
-                badgeEl.className = badgeClass;
-                badgeEl.setAttribute('style', badgeStyle);
             }
+            badgeEl.textContent = badgeText;
+            badgeEl.className = badgeClass;
+            badgeEl.setAttribute('style', badgeStyle);
+        }
 
-            const aba2Container = document.getElementById('cert-info-container');
-            if (aba2Container) {
-                const emissorCurto = (data.emissor || '').includes('CN=') ? data.emissor.split('CN=')[1].split(',')[0].trim() : (data.emissor || 'Autoridade Certificadora');
-                aba2Container.innerHTML = `
-                    <div class="col-md-5">
-                        <div class="small text-muted mb-1 fw-semibold">Empresa / Titular Ativo para Emissão</div>
-                        <div class="fw-bold fs-6 text-dark text-truncate" id="aba2-cert-empresa" title="${nomeEmpresa}">
-                            <i data-lucide="building-2" style="width: 15px; height: 15px; vertical-align: -2px; color: var(--primary);"></i> ${nomeEmpresa}
-                        </div>
-                        <div class="small text-muted font-monospace mt-1">
-                            <i data-lucide="file-key" style="width: 12px; height: 12px;"></i> Arquivo: ${data.arquivo || 'Certificado A1'}
-                        </div>
+        const aba2Container = document.getElementById('cert-info-container');
+        if (aba2Container) {
+            const emissorCurto = (data.emissor || '').includes('CN=') ? data.emissor.split('CN=')[1].split(',')[0].trim() : (data.emissor || 'Autoridade Certificadora');
+            aba2Container.innerHTML = `
+                <div class="col-md-5">
+                    <div class="small text-muted mb-1 fw-semibold">Empresa / Titular Ativo para Emissão</div>
+                    <div class="fw-bold fs-6 text-dark text-truncate" id="aba2-cert-empresa" title="${nomeEmpresa}">
+                        <i data-lucide="building-2" style="width: 15px; height: 15px; vertical-align: -2px; color: var(--primary);"></i> ${nomeEmpresa}
                     </div>
-                    <div class="col-md-3">
-                        <div class="small text-muted mb-1 fw-semibold">CNPJ Titular</div>
-                        <div class="fw-bold font-monospace text-primary fs-6">${data.cnpj || '47.998.441/0001-98'}</div>
-                        <div class="small text-muted mt-1">Status: <span class="badge bg-success-subtle text-success fw-bold">Certificado Ativo</span></div>
+                    <div class="small text-muted font-monospace mt-1">
+                        <i data-lucide="file-key" style="width: 12px; height: 12px;"></i> Arquivo: ${data.arquivo || 'Certificado A1'}
                     </div>
-                    <div class="col-md-4">
-                        <div class="small text-muted mb-1 fw-semibold">Validade do Certificado</div>
-                        <div class="fw-bold text-success">${data.fim}</div>
-                        <div class="small text-muted mt-1">Emissor: <span class="font-monospace" style="font-size: 11px;">${emissorCurto}</span></div>
-                    </div>
-                `;
-                if (window.lucide && typeof window.lucide.createIcons === 'function') {
-                    window.lucide.createIcons();
-                }
-            }
-        } else {
-            if (empresaEl) {
-                empresaEl.textContent = 'Nenhum Certificado';
-                empresaEl.title = 'Nenhum Certificado';
-            }
-            if (validadeEl) validadeEl.textContent = '-';
-            if (badgeEl) {
-                badgeEl.textContent = 'Pendente';
-                badgeEl.className = 'badge bg-warning-subtle text-warning small';
+                </div>
+                <div class="col-md-3">
+                    <div class="small text-muted mb-1 fw-semibold">CNPJ Titular</div>
+                    <div class="fw-bold font-monospace text-primary fs-6">${data.cnpj || '-'}</div>
+                    <div class="small text-muted mt-1">Status: <span class="badge bg-success-subtle text-success fw-bold">Certificado Ativo</span></div>
+                </div>
+                <div class="col-md-4">
+                    <div class="small text-muted mb-1 fw-semibold">Validade do Certificado</div>
+                    <div class="fw-bold text-success">${data.fim || '-'}</div>
+                    <div class="small text-muted mt-1">Emissor: <span class="font-monospace" style="font-size: 11px;">${emissorCurto}</span></div>
+                </div>
+            `;
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                window.lucide.createIcons();
             }
         }
+        return true;
+    }
+
+    if (empresaEl) {
+        empresaEl.textContent = 'Nenhum Certificado';
+        empresaEl.title = 'Nenhum Certificado';
+    }
+    if (validadeEl) validadeEl.textContent = '-';
+    if (badgeEl) {
+        badgeEl.textContent = 'Pendente';
+        badgeEl.className = 'badge bg-warning-subtle text-warning small';
+        badgeEl.setAttribute('style', 'font-size: 0.6rem; padding: 2px 5px;');
+    }
+    return false;
+};
+
+window.carregarStatusCertificadoSidebar = async function () {
+    try {
+        const resp = await fetch('/api/certificado/status', { cache: 'no-store' });
+        let data = null;
+        if (resp.ok) {
+            data = await resp.json();
+        }
+
+        if (data && data.status === 'success') {
+            window.aplicarDadosCertificadoSidebar(data);
+            return;
+        }
+
+        // Fallback: sincroniza diretamente com /api/certificado/listar (mesma fonte do Gerenciador)
+        const respList = await fetch('/api/certificado/listar', { cache: 'no-store' });
+        if (respList.ok) {
+            const listData = await respList.json();
+            const ativo = (listData && listData.ativo) || (listData && Array.isArray(listData.certificados) ? listData.certificados.find(c => c.ativo) : null);
+            if (ativo && (ativo.fim || ativo.empresa)) {
+                window.aplicarDadosCertificadoSidebar({
+                    status: 'success',
+                    empresa: ativo.empresa,
+                    assunto: ativo.empresa,
+                    cnpj: ativo.cnpj,
+                    fim: ativo.fim,
+                    emissor: ativo.emissor,
+                    arquivo: ativo.arquivo
+                });
+                return;
+            }
+        }
+
+        window.aplicarDadosCertificadoSidebar(null);
     } catch (e) {
         console.warn('Aviso ao carregar status do certificado:', e);
-        const empresaEl = document.getElementById('sidebar-cert-empresa');
-        const validadeEl = document.getElementById('sidebar-cert-validade');
-        const badgeEl = document.getElementById('sidebar-cert-badge');
-        if (empresaEl) {
-            empresaEl.textContent = 'Nenhum Certificado';
-            empresaEl.title = 'Nenhum Certificado';
-        }
-        if (validadeEl) validadeEl.textContent = '-';
-        if (badgeEl) {
-            badgeEl.textContent = 'Pendente';
-            badgeEl.className = 'badge bg-warning-subtle text-warning small';
-        }
+        window.aplicarDadosCertificadoSidebar(null);
     }
 };
 
@@ -1073,7 +1096,7 @@ window.abrirModalGerenciarCertificados = async function () {
 
 window.carregarListaCertificadosModal = async function () {
     try {
-        const resp = await fetch('/api/certificado/listar');
+        const resp = await fetch('/api/certificado/listar', { cache: 'no-store' });
         const data = await resp.json();
         const tbody = document.getElementById('tabela-certificados-corpo');
         if (!tbody) return;
@@ -1090,6 +1113,7 @@ window.carregarListaCertificadosModal = async function () {
             if (activeEmpresa) activeEmpresa.textContent = data.ativo.empresa || data.ativo.arquivo;
             if (activeDetalhes) activeDetalhes.textContent = `CNPJ: ${data.ativo.cnpj || 'N/A'} | Validade até: ${data.ativo.fim || 'N/A'}`;
             if (activeArquivo) activeArquivo.textContent = `Arquivo: ${data.ativo.arquivo}`;
+            window.aplicarDadosCertificadoSidebar(data.ativo);
         }
 
         let html = '';
@@ -1143,6 +1167,9 @@ window.selecionarCertificadoParaUso = async function (arquivo) {
         });
         const res = await resp.json();
         if (res.status === 'success') {
+            if (res.data) {
+                window.aplicarDadosCertificadoSidebar(res.data);
+            }
             await window.carregarStatusCertificadoSidebar();
             await window.carregarListaCertificadosModal();
             if (window.nftAlert) {

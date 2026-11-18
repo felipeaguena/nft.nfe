@@ -6009,13 +6009,48 @@ def shutdown_server():
 
 @app.route('/api/certificado/status', methods=['GET'])
 def api_certificado_status():
-    if os.environ.get('VERCEL') == '1':
-        sefaz_client.carregar_certificado_salvo()
+    sefaz_client.carregar_certificado_salvo(force=True)
     info = sefaz_client.get_certificate_info()
+
+    # Fallback: garante sincronia com o R2 e sistema_config caso o ativo ainda não esteja em /tmp/certificado
     if info.get('status') != 'success':
-        sefaz_client.carregar_certificado_salvo()
-        info = sefaz_client.get_certificate_info()
-    return jsonify(info)
+        try:
+            cert_dir = '/tmp/certificado' if os.environ.get('VERCEL') == '1' else os.path.join(os.path.dirname(__file__), 'certificado')
+            os.makedirs(cert_dir, exist_ok=True)
+            ativo_arquivo = None
+            ativo_senha = None
+            senhas_salvas = {}
+            conn = get_db_connection()
+            rows = conn.execute("SELECT chave, valor FROM sistema_config WHERE chave LIKE 'cert_pwd_%' OR chave LIKE 'certificado_ativo_%'").fetchall()
+            conn.close()
+            for r in rows:
+                k, v = r['chave'], r['valor']
+                if k == 'certificado_ativo_arquivo' and v:
+                    ativo_arquivo = v.strip()
+                elif k == 'certificado_ativo_senha' and v:
+                    ativo_senha = v.strip()
+                elif k.startswith('cert_pwd_') and v:
+                    senhas_salvas[k[len('cert_pwd_'):]] = v.strip()
+
+            if os.environ.get('VERCEL') == '1' and ativo_arquivo:
+                dest_path = os.path.join(cert_dir, os.path.basename(ativo_arquivo))
+                if not os.path.isfile(dest_path):
+                    import r2_storage
+                    if not r2_storage.download_file_r2(f"certificado/{os.path.basename(ativo_arquivo)}", dest_path):
+                        r2_storage.download_file_r2(os.path.basename(ativo_arquivo), dest_path)
+
+            if ativo_arquivo:
+                cand_path = os.path.join(cert_dir, os.path.basename(ativo_arquivo))
+                if os.path.isfile(cand_path):
+                    senha_cand = senhas_salvas.get(ativo_arquivo) or ativo_senha or os.environ.get('CERT_PFX_PASSWORD', '').strip()
+                    sefaz_client.set_active_certificate(cand_path, senha_cand.encode('utf-8'))
+                    info = sefaz_client.get_certificate_info()
+        except Exception as e_st:
+            print(f"Aviso ao sincronizar status do certificado: {e_st}")
+
+    resp = make_response(jsonify(info))
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    return resp
 
 @app.route('/api/certificado/importar', methods=['POST'])
 @limiter.limit("5 per minute")
@@ -6204,8 +6239,17 @@ def api_certificado_selecionar():
             return jsonify({'status': 'error', 'message': 'Nome do arquivo não informado.'}), 400
 
         cert_dir = '/tmp/certificado' if os.environ.get('VERCEL') == '1' else os.path.join(os.path.dirname(__file__), 'certificado')
-        caminho = os.path.join(cert_dir, os.path.basename(arquivo))
-        if not os.path.exists(caminho):
+        os.makedirs(cert_dir, exist_ok=True)
+        nome_arq_base = os.path.basename(arquivo)
+        caminho = os.path.join(cert_dir, nome_arq_base)
+        if not os.path.isfile(caminho) and os.environ.get('VERCEL') == '1':
+            try:
+                import r2_storage
+                if not r2_storage.download_file_r2(f"certificado/{nome_arq_base}", caminho):
+                    r2_storage.download_file_r2(nome_arq_base, caminho)
+            except Exception as e_r2_sel:
+                print(f"Aviso ao baixar certificado selecionado do R2: {e_r2_sel}")
+        if not os.path.isfile(caminho):
             return jsonify({'status': 'error', 'message': 'Arquivo do certificado não encontrado no servidor.'}), 404
 
         if not senha:

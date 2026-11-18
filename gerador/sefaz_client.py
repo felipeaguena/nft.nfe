@@ -82,10 +82,10 @@ def validar_e_extrair_info_pfx(pfx_data, senha_bytes):
         'fim': certificate.not_valid_after_utc.strftime('%d/%m/%Y %H:%M:%S')
     }
 
-def carregar_certificado_salvo():
+def carregar_certificado_salvo(force=False):
     global CERT_PATH, CERT_PASS
-    # 1. Se CERT_PATH atual já existe e é válido, não precisa recarregar
-    if os.path.exists(CERT_PATH) and os.path.getsize(CERT_PATH) > 0:
+    # 1. Se não forçar recarga e CERT_PATH atual já existe como arquivo válido, não precisa recarregar
+    if not force and os.path.isfile(CERT_PATH) and os.path.getsize(CERT_PATH) > 0:
         return
 
     nome_arq = None
@@ -98,12 +98,16 @@ def carregar_certificado_salvo():
         c = conn.cursor()
         row_arq = c.execute("SELECT valor FROM sistema_config WHERE chave = 'certificado_ativo_arquivo'").fetchone()
         row_pwd = c.execute("SELECT valor FROM sistema_config WHERE chave = 'certificado_ativo_senha'").fetchone()
-        conn.close()
         if row_arq and row_arq['valor']:
             nome_arq = row_arq['valor'].strip()
         if row_pwd and row_pwd['valor']:
             senha_str = row_pwd['valor'].strip()
-    except Exception as e_cfg:
+        if nome_arq and not senha_str:
+            row_pwd_arq = c.execute("SELECT valor FROM sistema_config WHERE chave = ?", (f'cert_pwd_{nome_arq}',)).fetchone()
+            if row_pwd_arq and row_pwd_arq['valor']:
+                senha_str = row_pwd_arq['valor'].strip()
+        conn.close()
+    except Exception:
         pass
 
     if not nome_arq:
@@ -111,26 +115,26 @@ def carregar_certificado_salvo():
     if not senha_str:
         senha_str = os.environ.get('CERT_PFX_PASSWORD', '').strip()
 
-    caminho_cand = os.path.join(CERT_DIR, nome_arq)
+    if nome_arq:
+        caminho_cand = os.path.join(CERT_DIR, os.path.basename(nome_arq))
 
-    # 3. Se não existe em disco, tenta baixar direto do Cloudflare R2
-    if not os.path.exists(caminho_cand) or os.path.getsize(caminho_cand) == 0:
-        try:
-            import r2_storage
-            # Tenta com chave 'certificado/<nome>' ou '<nome>'
-            ok_r2 = r2_storage.download_file_r2(f"certificado/{nome_arq}", caminho_cand)
-            if not ok_r2:
-                r2_storage.download_file_r2(nome_arq, caminho_cand)
-        except Exception as _e_r2_cert:
-            print(f"Aviso ao baixar certificado do R2: {_e_r2_cert}")
+        # 3. Se não existe em disco, tenta baixar direto do Cloudflare R2
+        if not os.path.isfile(caminho_cand) or os.path.getsize(caminho_cand) == 0:
+            try:
+                import r2_storage
+                ok_r2 = r2_storage.download_file_r2(f"certificado/{os.path.basename(nome_arq)}", caminho_cand)
+                if not ok_r2:
+                    r2_storage.download_file_r2(os.path.basename(nome_arq), caminho_cand)
+            except Exception as _e_r2_cert:
+                print(f"Aviso ao baixar certificado do R2: {_e_r2_cert}")
 
-    if os.path.exists(caminho_cand) and os.path.getsize(caminho_cand) > 0:
-        CERT_PATH = caminho_cand
-        CERT_PASS = senha_str.encode('utf-8')
-        return
+        if os.path.isfile(caminho_cand) and os.path.getsize(caminho_cand) > 0:
+            CERT_PATH = caminho_cand
+            CERT_PASS = (senha_str or '').encode('utf-8')
+            return
 
     # 4. Fallback: verifica qualquer arquivo .pfx/.p12 disponível na pasta CERT_DIR
-    if os.path.exists(CERT_DIR):
+    if os.path.isdir(CERT_DIR):
         pfxs = [f for f in os.listdir(CERT_DIR) if f.lower().endswith(('.pfx', '.p12'))]
         if pfxs:
             cand_pj = [f for f in pfxs if any(k in f.lower() for k in ('cnpj', 'nft', 'empresa', 'nfe'))]
@@ -151,7 +155,7 @@ def carregar_certificado_salvo():
 
 def ensure_certificate_loaded():
     global CERT_PATH, CERT_PASS
-    if not os.path.exists(CERT_PATH) or os.path.getsize(CERT_PATH) == 0:
+    if not os.path.isfile(CERT_PATH) or os.path.getsize(CERT_PATH) == 0:
         carregar_certificado_salvo()
 
 # Executa carga inicial
@@ -159,7 +163,7 @@ carregar_certificado_salvo()
 
 def get_certificate_info():
     ensure_certificate_loaded()
-    if not os.path.exists(CERT_PATH):
+    if not os.path.isfile(CERT_PATH):
         return {'status': 'error', 'message': 'Nenhum certificado PFX/P12 encontrado na pasta de certificados.'}
     
     try:
@@ -171,7 +175,7 @@ def get_certificate_info():
         info['arquivo'] = os.path.basename(CERT_PATH)
         return info
     except Exception as e:
-        return {'status': 'error', 'message': str(e), 'arquivo': os.path.basename(CERT_PATH) if os.path.exists(CERT_PATH) else ''}
+        return {'status': 'error', 'message': str(e), 'arquivo': os.path.basename(CERT_PATH) if os.path.isfile(CERT_PATH) else ''}
 
 try:
     import xmlsec
