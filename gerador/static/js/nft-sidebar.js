@@ -1027,7 +1027,7 @@ window.garantirModalGerenciarCertificados = function () {
         <div class="p-3 mb-4 rounded-3 border bg-light" id="cert-modal-active-card">
           <div class="d-flex align-items-center justify-content-between mb-2">
             <span class="small fw-bold text-uppercase text-muted" style="letter-spacing: 0.05em; font-size: 11px;">Certificado Ativo no Momento</span>
-            <span class="badge bg-success-subtle text-success fw-bold" id="cert-modal-active-badge">Em Uso</span>
+            <span class="badge rounded-pill bg-success-subtle text-success fw-bold" id="cert-modal-active-badge" style="font-size: 0.75rem; line-height: 1.2; padding: 0.32rem 0.58rem;">Em Uso</span>
           </div>
           <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
             <div>
@@ -1044,7 +1044,7 @@ window.garantirModalGerenciarCertificados = function () {
             <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
               <i data-lucide="layers" style="width: 16px; height: 16px; color: var(--primary);"></i> Certificados Armazenados
             </h6>
-            <button class="btn btn-sm btn-outline-secondary py-1 px-2 d-flex align-items-center gap-1" onclick="carregarListaCertificadosModal()" type="button" style="font-size: 11px; border-radius: 6px;">
+            <button class="btn btn-sm btn-outline-secondary rounded-pill d-inline-flex align-items-center gap-1 fw-bold" onclick="carregarListaCertificadosModal()" type="button" style="font-size: 0.75rem; line-height: 1.2; padding: 0.32rem 0.58rem;">
               <i data-lucide="refresh-cw" style="width: 12px; height: 12px;"></i> Atualizar Lista
             </button>
           </div>
@@ -1088,7 +1088,7 @@ window.garantirModalGerenciarCertificados = function () {
               </div>
             </div>
             <div class="col-md-2">
-              <button type="button" class="btn btn-primary btn-sm w-100 fw-bold d-flex align-items-center justify-content-center gap-1 shadow-sm" id="btnInstalarNovoCert" onclick="submeterInstalacaoNovoCertificado()" style="height: 38px; border-radius: 8px;">
+              <button type="button" class="btn btn-primary btn-sm w-100 rounded-pill fw-bold d-inline-flex align-items-center justify-content-center gap-1 shadow-sm" id="btnInstalarNovoCert" onclick="submeterInstalacaoNovoCertificado()" style="font-size: 0.75rem; line-height: 1.2; padding: 0.32rem 0.58rem; height: 38px;">
                 <i data-lucide="upload" style="width: 14px; height: 14px;"></i> Instalar
               </button>
             </div>
@@ -1096,7 +1096,7 @@ window.garantirModalGerenciarCertificados = function () {
         </div>
       </div>
       <div class="modal-footer border-top py-2 px-4 bg-body-tertiary">
-        <button type="button" class="btn btn-sm btn-secondary fw-semibold" data-bs-dismiss="modal" style="border-radius: 8px;">Fechar</button>
+        <button type="button" class="btn btn-sm btn-secondary rounded-pill fw-bold" data-bs-dismiss="modal" style="font-size: 0.75rem; line-height: 1.2; padding: 0.32rem 0.58rem;">Fechar</button>
       </div>
     </div>
   </div>
@@ -1152,7 +1152,8 @@ window.carregarListaCertificadosModal = async function () {
             if (activeArquivo) activeArquivo.textContent = `Arquivo: ${ativoCert.arquivo}`;
             if (activeBadge) {
                 activeBadge.textContent = 'Em Uso';
-                activeBadge.className = 'badge bg-success-subtle text-success fw-bold';
+                activeBadge.className = 'badge rounded-pill bg-success-subtle text-success fw-bold';
+                activeBadge.setAttribute('style', 'font-size: 0.75rem; line-height: 1.2; padding: 0.32rem 0.58rem;');
             }
             window.aplicarDadosCertificadoSidebar(ativoCert);
         } else {
@@ -1161,7 +1162,8 @@ window.carregarListaCertificadosModal = async function () {
             if (activeArquivo) activeArquivo.textContent = 'Arquivo: --';
             if (activeBadge) {
                 activeBadge.textContent = 'Pendente';
-                activeBadge.className = 'badge bg-warning-subtle text-warning fw-bold';
+                activeBadge.className = 'badge rounded-pill bg-warning-subtle text-warning fw-bold';
+                activeBadge.setAttribute('style', 'font-size: 0.75rem; line-height: 1.2; padding: 0.32rem 0.58rem;');
             }
         }
 
@@ -1181,13 +1183,13 @@ window.carregarListaCertificadosModal = async function () {
             const cnpjEsc = escHtml(c.cnpj);
             const validadeStr = c.fim ? escHtml(c.fim.split(' ')[0]) : '<span class="text-muted">--</span>';
             const statusBadge = isAtivo
-                ? '<span class="badge bg-success text-white py-1 px-2" style="font-size: 11px;"><i data-lucide="check" style="width: 12px; height: 12px; vertical-align: -1px;"></i> Em Uso (Ativo)</span>'
-                : `<button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 fw-semibold" onclick="selecionarCertificadoParaUso('${arqEsc}')" style="font-size: 11px; border-radius: 6px;">
-                     <i data-lucide="check-circle-2" style="width: 12px; height: 12px; vertical-align: -1px;"></i> Selecionar para Uso
+                ? '<span class="badge rounded-pill bg-success text-white fw-bold d-inline-flex align-items-center gap-1" style="font-size: 0.75rem; line-height: 1.2; padding: 0.32rem 0.58rem;"><i data-lucide="check" style="width: 12px; height: 12px;"></i> Em Uso (Ativo)</span>'
+                : `<button type="button" class="btn btn-sm btn-outline-primary rounded-pill fw-bold d-inline-flex align-items-center gap-1" onclick="selecionarCertificadoParaUso('${arqEsc}')" style="font-size: 0.75rem; line-height: 1.2; padding: 0.32rem 0.58rem;">
+                     <i data-lucide="check-circle-2" style="width: 12px; height: 12px;"></i> Selecionar para Uso
                    </button>`;
 
             const deleteBtn = isAtivo ? '' : `
-                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1 ms-1" onclick="excluirCertificado('${arqEsc}')" title="Excluir certificado" style="font-size: 11px; border-radius: 6px;">
+                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill fw-bold d-inline-flex align-items-center justify-content-center" onclick="excluirCertificado('${arqEsc}')" title="Excluir certificado" style="font-size: 0.75rem; line-height: 1.2; padding: 0.32rem 0.58rem;">
                   <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
                 </button>
             `;
@@ -1203,8 +1205,10 @@ window.carregarListaCertificadosModal = async function () {
                   <td class="small">${validadeStr}</td>
                   <td class="font-monospace small text-muted text-truncate" style="max-width: 180px;" title="${arqEsc}">${arqEsc}</td>
                   <td class="text-end pe-3">
-                    ${statusBadge}
-                    ${deleteBtn}
+                    <div class="d-inline-flex align-items-center justify-content-end gap-1">
+                      ${statusBadge}
+                      ${deleteBtn}
+                    </div>
                   </td>
                 </tr>
             `;
