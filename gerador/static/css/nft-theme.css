@@ -2716,6 +2716,195 @@ label.has-regex-tag,
     border-top: 1px solid var(--border, #E2E8F0) !important;
     justify-content: flex-end;
   }
+
+  /* Localidades (Países e Municípios), Relatórios (#tbody-notas) e Certificados A1 (#tabela-certificados-corpo) no mobile (<= 767px) */
+  .table-responsive:has(#tbody-paises),
+  .table-responsive:has(#tbody-municipios),
+  .table-responsive:has(#tbody-notas),
+  .table-responsive:has(#tabela-certificados-corpo) {
+    max-height: none !important;
+    overflow: visible !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+
+  .table-responsive:has(#tbody-paises) table,
+  .table-responsive:has(#tbody-paises) tbody,
+  .table-responsive:has(#tbody-paises) tr,
+  .table-responsive:has(#tbody-paises) td,
+  .table-responsive:has(#tbody-municipios) table,
+  .table-responsive:has(#tbody-municipios) tbody,
+  .table-responsive:has(#tbody-municipios) tr,
+  .table-responsive:has(#tbody-municipios) td,
+  #tabela-notas,
+  #tabela-notas tbody,
+  #tabela-notas tr,
+  #tabela-notas td,
+  .table-responsive:has(#tabela-certificados-corpo) table,
+  .table-responsive:has(#tabela-certificados-corpo) tbody,
+  .table-responsive:has(#tabela-certificados-corpo) tr,
+  .table-responsive:has(#tabela-certificados-corpo) td {
+    display: block;
+    width: 100% !important;
+  }
+
+  .table-responsive:has(#tbody-paises) thead,
+  .table-responsive:has(#tbody-municipios) thead,
+  #tabela-notas thead,
+  .table-responsive:has(#tabela-certificados-corpo) thead {
+    display: none;
+  }
+
+  #tbody-paises tr,
+  #tbody-municipios tr,
+  #tbody-notas tr,
+  #tabela-certificados-corpo tr,
+  [data-theme="dark"] #tbody-paises tr,
+  [data-bs-theme="dark"] #tbody-paises tr,
+  .dark #tbody-paises tr,
+  [data-theme="dark"] #tbody-municipios tr,
+  [data-bs-theme="dark"] #tbody-municipios tr,
+  .dark #tbody-municipios tr,
+  [data-theme="dark"] #tbody-notas tr,
+  [data-bs-theme="dark"] #tbody-notas tr,
+  .dark #tbody-notas tr,
+  [data-theme="dark"] #tabela-certificados-corpo tr,
+  [data-bs-theme="dark"] #tabela-certificados-corpo tr,
+  .dark #tabela-certificados-corpo tr {
+    background-color: var(--surface, #FFFFFF) !important;
+    --bs-table-bg: var(--surface, #FFFFFF) !important;
+    border: 1px solid var(--border, #E2E8F0);
+    border-radius: 12px;
+    overflow: hidden !important;
+    padding: 0.65rem 0.75rem;
+    margin-bottom: 0.6rem;
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  #tbody-paises td,
+  #tbody-municipios td,
+  #tbody-notas td,
+  #tabela-certificados-corpo td,
+  [data-theme="dark"] #tbody-paises td,
+  [data-bs-theme="dark"] #tbody-paises td,
+  .dark #tbody-paises td,
+  [data-theme="dark"] #tbody-municipios td,
+  [data-bs-theme="dark"] #tbody-municipios td,
+  .dark #tbody-municipios td,
+  [data-theme="dark"] #tbody-notas td,
+  [data-bs-theme="dark"] #tbody-notas td,
+  .dark #tbody-notas td,
+  [data-theme="dark"] #tabela-certificados-corpo td,
+  [data-bs-theme="dark"] #tabela-certificados-corpo td,
+  .dark #tabela-certificados-corpo td {
+    background: transparent !important;
+    background-color: transparent !important;
+    --bs-table-bg: transparent !important;
+    border: none !important;
+    padding: 0.2rem 0 !important;
+    text-align: left !important;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    flex: 0 0 100%;
+  }
+
+  /* Localidades: Países & Municípios */
+  #tbody-paises td:nth-child(1),
+  #tbody-municipios td:nth-child(1) {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    justify-content: flex-start !important;
+    padding-bottom: 0.4rem !important;
+    margin-bottom: 0.35rem;
+    padding-right: 0.4rem !important;
+    border-bottom: 1px solid var(--border, #E2E8F0) !important;
+    gap: 0 !important;
+  }
+
+  #tbody-paises td:nth-child(1)::after,
+  #tbody-municipios td:nth-child(1)::after {
+    content: "|";
+    margin-left: 0.4rem;
+    opacity: 0.5;
+  }
+
+  #tbody-paises td:nth-child(2),
+  #tbody-municipios td:nth-child(2) {
+    flex: 1 1 0% !important;
+    width: auto !important;
+    font-size: 0.88rem;
+    font-weight: 700;
+    padding-bottom: 0.4rem !important;
+    margin-bottom: 0.35rem;
+    border-bottom: 1px solid var(--border, #E2E8F0) !important;
+    display: block;
+  }
+
+  #tbody-paises td:nth-child(3)::before { content: "Tipo:"; color: var(--muted-foreground, #64748B); font-weight: 600; }
+  #tbody-municipios td:nth-child(3)::before { content: "UF:"; color: var(--muted-foreground, #64748B); font-weight: 600; }
+  #tbody-municipios td:nth-child(4)::before { content: "Cód. UF:"; color: var(--muted-foreground, #64748B); font-weight: 600; }
+
+  /* Relatórios: Notas Fiscais Geradas */
+  #tbody-notas td:nth-child(1),
+  #tabela-certificados-corpo td:nth-child(1) {
+    flex: 0 0 100% !important;
+    width: 100% !important;
+    font-size: 0.88rem;
+    font-weight: 700;
+    padding-bottom: 0.4rem !important;
+    margin-bottom: 0.35rem;
+    border-bottom: 1px solid var(--border, #E2E8F0) !important;
+    display: block;
+  }
+
+  #tbody-notas td:nth-child(2)::before { content: "Data/Hora:"; color: var(--muted-foreground, #64748B); font-weight: 600; }
+  #tbody-notas td:nth-child(3)::before { content: "Nº NF-e:"; color: var(--muted-foreground, #64748B); font-weight: 600; }
+  #tbody-notas td:nth-child(4)::before { content: "Operação:"; color: var(--muted-foreground, #64748B); font-weight: 600; }
+  #tbody-notas td:nth-child(5)::before { content: "Ambiente:"; color: var(--muted-foreground, #64748B); font-weight: 600; }
+  #tbody-notas td:nth-child(6)::before { content: "Chave:"; color: var(--muted-foreground, #64748B); font-weight: 600; }
+  #tbody-notas td:nth-child(7)::before { content: "Valor Total:"; color: var(--muted-foreground, #64748B); font-weight: 600; }
+  #tbody-notas td:nth-child(8)::before { content: "Arquivos:"; color: var(--muted-foreground, #64748B); font-weight: 600; }
+  #tbody-notas td:nth-child(9)::before { content: "Recibo/Prot.:"; color: var(--muted-foreground, #64748B); font-weight: 600; }
+
+  #tbody-paises td:last-child,
+  #tbody-municipios td:last-child,
+  #tbody-notas td:last-child,
+  #tabela-certificados-corpo td:last-child {
+    margin-top: 0.4rem;
+    padding-top: 0.45rem !important;
+    border-top: 1px solid var(--border, #E2E8F0) !important;
+    justify-content: flex-end;
+  }
+
+  #tabela-certificados-corpo td,
+  #tabela-certificados-corpo td *,
+  #cert-modal-active-arquivo {
+    word-break: break-all !important;
+    overflow-wrap: anywhere !important;
+    white-space: normal !important;
+  }
+
+  /* Espelho do Documento Fiscal: header em 2 linhas no mobile */
+  .nft-espelho-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.65rem !important;
+  }
+
+  .nft-espelho-header-left,
+  .nft-espelho-header-actions {
+    width: 100% !important;
+  }
+}
+
+#inputModalNovoCertArquivo {
+  padding-left: 0 !important;
 }
 
 .nft-status-pill {
