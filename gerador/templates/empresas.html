@@ -6,7 +6,7 @@
     <link href="/static/img/brand/nftlogo.webp" rel="icon" type="image/webp"/>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Empresas &amp; Cadastros - NFT Logistics</title>
+<title>Empresas - NFT Logistics</title>
 <!-- Bootstrap 5 CSS -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
 <!-- NFT Logistics Theme (Light & Dark) -->
@@ -120,7 +120,7 @@
 <div>
 <h4 class="mb-0 fw-bold d-flex align-items-center gap-2">
 <i class="text-primary" data-lucide="building-2"></i>
-<span>Empresas &amp; Cadastros</span>
+<span>Empresas</span>
 </h4>
 <small class="text-muted">Gerenciamento de Emitentes, Clientes, Transportadoras e Armazéns</small>
 </div>
@@ -402,14 +402,14 @@
                         <td>${e.municipio || '-'}/${e.uf || '-'}</td>
                         <td class="text-end">
                             <div class="d-inline-flex align-items-center justify-content-end gap-1">
-                                <button class="btn-nft rounded-circle d-inline-flex align-items-center justify-content-center p-0" style="width: 28px; height: 28px; min-height: 28px;" onclick="abrirModalEditar(${e.id})" title="Editar" type="button">
-                                    <i data-lucide="edit" style="width: 13px; height: 13px;"></i>
+                                <button class="btn-nft rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 28px; height: 28px; min-height: 28px; padding: 8px !important; border-radius: 9999px;" onclick="abrirModalEditar(${e.id})" title="Editar" type="button">
+                                    <i data-lucide="edit" style="width: 12px; height: 12px;"></i>
                                 </button>
-                                <button class="btn-nft btn-nft-warning rounded-circle d-inline-flex align-items-center justify-content-center p-0" style="width: 28px; height: 28px; min-height: 28px;" onclick="duplicarEmpresa(${e.id})" title="Duplicar Cadastro" type="button">
-                                    <i data-lucide="copy" style="width: 13px; height: 13px;"></i>
+                                <button class="btn-nft btn-nft-warning rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 28px; height: 28px; min-height: 28px; padding: 8px !important; border-radius: 9999px;" onclick="duplicarEmpresa(${e.id})" title="Duplicar Cadastro" type="button">
+                                    <i data-lucide="copy" style="width: 12px; height: 12px;"></i>
                                 </button>
-                                <button class="btn-nft btn-nft-danger rounded-circle d-inline-flex align-items-center justify-content-center p-0" style="width: 28px; height: 28px; min-height: 28px;" onclick="deletarEmpresa(${e.id})" title="Excluir" type="button">
-                                    <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
+                                <button class="btn-nft btn-nft-danger rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 28px; height: 28px; min-height: 28px; padding: 8px !important; border-radius: 9999px;" onclick="deletarEmpresa(${e.id})" title="Excluir" type="button">
+                                    <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
                                 </button>
                             </div>
                         </td>
