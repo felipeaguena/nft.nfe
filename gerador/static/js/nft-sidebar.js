@@ -1255,7 +1255,21 @@ window.selecionarCertificadoParaUso = async function (arquivo) {
 };
 
 window.excluirCertificado = async function (arquivo) {
-    if (!confirm(`Deseja realmente remover o certificado ${arquivo} do sistema?`)) return;
+    const msgConfirm = `Deseja realmente remover o certificado ${arquivo} do sistema?\n\nEsta ação também removerá o arquivo do armazenamento em nuvem (R2).`;
+    let confirmado = false;
+    if (typeof window.nftConfirm === 'function') {
+        confirmado = await window.nftConfirm(msgConfirm, {
+            title: 'Excluir Certificado Digital',
+            type: 'danger',
+            icon: 'trash-2',
+            confirmText: 'Sim, Excluir',
+            cancelText: 'Cancelar'
+        });
+    } else {
+        confirmado = confirm(msgConfirm);
+    }
+    if (!confirmado) return;
+
     try {
         const resp = await fetch('/api/certificado/excluir', {
             method: 'POST',
@@ -1265,11 +1279,34 @@ window.excluirCertificado = async function (arquivo) {
         const res = await resp.json();
         if (res.status === 'success') {
             await window.carregarListaCertificadosModal();
+            if (typeof window.nftAlert === 'function') {
+                await window.nftAlert(res.message || `Certificado ${arquivo} removido com sucesso.`, {
+                    title: 'Certificado Excluído',
+                    type: 'success',
+                    icon: 'check-circle'
+                });
+            }
         } else {
-            alert(res.message || 'Erro ao excluir certificado.');
+            if (typeof window.nftAlert === 'function') {
+                await window.nftAlert(res.message || 'Erro ao excluir certificado.', {
+                    title: 'Erro ao Excluir',
+                    type: 'danger',
+                    icon: 'alert-triangle'
+                });
+            } else {
+                alert(res.message || 'Erro ao excluir certificado.');
+            }
         }
     } catch (e) {
-        alert('Erro ao excluir: ' + e.message);
+        if (typeof window.nftAlert === 'function') {
+            await window.nftAlert('Erro ao excluir: ' + e.message, {
+                title: 'Erro',
+                type: 'danger',
+                icon: 'alert-triangle'
+            });
+        } else {
+            alert('Erro ao excluir: ' + e.message);
+        }
     }
 };
 
