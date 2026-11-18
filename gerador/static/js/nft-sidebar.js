@@ -876,17 +876,19 @@ window.aplicarDadosCertificadoSidebar = function (data) {
                 const partes = validadeFim.split('/');
                 if (partes.length === 3) {
                     const dia = parseInt(partes[0], 10);
-                    const mes = parseInt(parts[1], 10) - 1;
+                    const mes = parseInt(partes[1], 10) - 1;
                     const ano = parseInt(partes[2], 10);
-                    const dataVal = new Date(ano, mes, dia, 23, 59, 59);
-                    const diffDias = Math.ceil((dataVal.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-                    if (diffDias < 0) {
-                        badgeText = 'Vencido';
-                        badgeClass = 'badge bg-danger-subtle text-danger small';
-                    } else if (diffDias <= 30) {
-                        badgeText = 'Vence em breve';
-                        badgeClass = 'badge small';
-                        badgeStyle = 'font-size: 0.6rem; padding: 2px 5px; background-color: #FFEDD5; color: #C2410C;';
+                    if (!isNaN(dia) && !isNaN(mes) && !isNaN(ano)) {
+                        const dataVal = new Date(ano, mes, dia, 23, 59, 59);
+                        const diffDias = Math.ceil((dataVal.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                        if (diffDias < 0) {
+                            badgeText = 'Vencido';
+                            badgeClass = 'badge bg-danger-subtle text-danger small';
+                        } else if (diffDias <= 30) {
+                            badgeText = 'Vence em breve';
+                            badgeClass = 'badge small';
+                            badgeStyle = 'font-size: 0.6rem; padding: 2px 5px; background-color: #FFEDD5; color: #C2410C;';
+                        }
                     }
                 }
             }
@@ -935,6 +937,20 @@ window.aplicarDadosCertificadoSidebar = function (data) {
         badgeEl.textContent = 'Pendente';
         badgeEl.className = 'badge bg-warning-subtle text-warning small';
         badgeEl.setAttribute('style', 'font-size: 0.6rem; padding: 2px 5px;');
+    }
+    const aba2Container = document.getElementById('cert-info-container');
+    if (aba2Container) {
+        aba2Container.innerHTML = `
+            <div class="col-12">
+                <div class="alert alert-warning py-2 px-3 mb-0 d-flex align-items-center gap-2">
+                    <i data-lucide="alert-triangle" style="width: 16px; height: 16px;"></i>
+                    <span>Nenhum certificado ativo no momento. Clique em "Gerenciar Certificados" para instalar ou selecionar.</span>
+                </div>
+            </div>
+        `;
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons();
+        }
     }
     return false;
 };
@@ -2010,7 +2026,7 @@ window.abrirModalStatusSefaz = async function () {
 
     // Carrega info do certificado ativo
     try {
-        const respCert = await fetch('/api/certificado/status');
+        const respCert = await fetch('/api/certificado/status', { cache: 'no-store' });
         const certData = await respCert.json();
         const badgeEl = document.getElementById('sefaz-global-cert-badge');
         const infoEl = document.getElementById('sefaz-global-cert-info');

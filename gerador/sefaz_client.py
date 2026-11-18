@@ -155,7 +155,9 @@ def carregar_certificado_salvo(force=False):
 
 def ensure_certificate_loaded():
     global CERT_PATH, CERT_PASS
-    if not os.path.isfile(CERT_PATH) or os.path.getsize(CERT_PATH) == 0:
+    if os.environ.get('VERCEL') == '1':
+        carregar_certificado_salvo(force=True)
+    elif not os.path.isfile(CERT_PATH) or os.path.getsize(CERT_PATH) == 0:
         carregar_certificado_salvo()
 
 # Executa carga inicial

@@ -222,10 +222,16 @@ async function submeterImportarCertificado() {
             method: 'POST',
             body: formData
         });
-        const data = await resp.json();
+        const rawText = await resp.text();
+        let data = {};
+        try {
+            data = rawText ? JSON.parse(rawText) : {};
+        } catch (_) {
+            throw new Error(`Falha ao importar certificado digital (HTTP ${resp.status}).`);
+        }
 
         if (!resp.ok || data.status === 'error') {
-            throw new Error(data.message || 'Falha ao importar certificado digital.');
+            throw new Error(data.message || data.error || data.detail || `Falha ao importar certificado digital (HTTP ${resp.status}).`);
         }
 
         // Fecha modal

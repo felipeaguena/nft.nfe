@@ -6315,14 +6315,25 @@ def api_certificado_excluir():
         if not arquivo:
             return jsonify({'status': 'error', 'message': 'Nome do arquivo não informado.'}), 400
 
-        cert_dir = '/tmp/certificado' if os.environ.get('VERCEL') == '1' else os.path.join(os.path.dirname(__file__), 'certificado')
+        cert_dir = _get_cert_dir()
         caminho = os.path.join(cert_dir, arquivo)
 
-        if sefaz_client.CERT_PATH and os.path.basename(sefaz_client.CERT_PATH) == arquivo:
+        ativo_arquivo, _, _ = _ler_config_certificados_db()
+        is_ativo_db = bool(ativo_arquivo and os.path.basename(ativo_arquivo) == arquivo)
+        is_ativo_mem = bool(sefaz_client.CERT_PATH and os.path.basename(sefaz_client.CERT_PATH) == arquivo)
+        if is_ativo_db or is_ativo_mem:
             return jsonify({'status': 'error', 'message': 'Não é permitido excluir o certificado que está ativo no momento. Selecione outro certificado primeiro.'}), 400
 
-        if os.path.exists(caminho):
+        if os.path.isfile(caminho):
             os.remove(caminho)
+
+        # Remove também do Cloudflare R2 para evitar reaparecimento em ambiente serverless
+        try:
+            import r2_storage
+            r2_storage.delete_file_r2(f"certificado/{arquivo}")
+            r2_storage.delete_file_r2(arquivo)
+        except Exception as e_r2_del:
+            print(f"Aviso ao excluir certificado do R2: {e_r2_del}")
 
         try:
             conn = get_db_connection()
