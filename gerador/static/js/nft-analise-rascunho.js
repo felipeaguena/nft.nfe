@@ -18,28 +18,30 @@
         modalDiv.setAttribute('aria-labelledby', 'modalResultadoAnaliseLabel');
         modalDiv.setAttribute('aria-hidden', 'true');
 
+        modalDiv.setAttribute('data-ui', 'modal.analise.container');
+
         modalDiv.innerHTML = `
             <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-                <div class="modal-content shadow-lg border-0" style="border-radius: 12px; overflow: hidden;">
-                    <div class="modal-header py-3 px-4" id="modalAnaliseHeader" style="border-bottom: 1px solid var(--border);">
+                <div class="modal-content">
+                    <div class="modal-header" id="modalAnaliseHeader" data-ui="modal.analise.header">
                         <div class="d-flex align-items-center gap-2">
-                            <span id="modalAnaliseIcon" class="d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px; border-radius: 50%;"></span>
+                            <span id="modalAnaliseIcon" class="nft-kpi-icon" data-ui="modal.analise.icon"></span>
                             <div>
-                                <h5 class="modal-title fw-bold mb-0" id="modalResultadoAnaliseLabel">Resultado da Análise do Rascunho</h5>
-                                <small class="text-muted" id="modalAnaliseSubtitulo">Auditoria de conformidade com o Esquema XML da NF-e v4.00</small>
+                                <h5 class="modal-title" id="modalResultadoAnaliseLabel" data-ui="modal.analise.title">Resultado da Análise do Rascunho</h5>
+                                <small class="text-muted" id="modalAnaliseSubtitulo" data-ui="modal.analise.subtitle">Auditoria de conformidade com o Esquema XML da NF-e v4.00</small>
                             </div>
                         </div>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar janela" title="Fechar análise" data-ui="modal.analise.btn-close"></button>
                     </div>
-                    <div class="modal-body p-4" id="modalAnaliseCorpo" style="background-color: var(--surface);">
+                    <div class="modal-body" id="modalAnaliseCorpo" data-ui="modal.analise.body">
                         <!-- Conteúdo dinâmico -->
                     </div>
-                    <div class="modal-footer py-2 px-4 d-flex justify-content-between" style="border-top: 1px solid var(--border); background-color: var(--surface-secondary);">
-                        <span class="text-muted small" id="modalAnaliseFooterInfo">NFT Logistics XML Validator</span>
+                    <div class="modal-footer nft-modal-footer--split" data-ui="modal.analise.footer">
+                        <span class="text-muted small" id="modalAnaliseFooterInfo" data-ui="modal.analise.footer-info">NFT Logistics XML Validator</span>
                         <div class="d-flex gap-2">
-                            <button type="button" class="btn-nft px-3" data-bs-dismiss="modal">Fechar e Revisar</button>
-                            <button type="button" class="btn-nft px-3 fw-bold d-flex align-items-center gap-1 shadow-sm" id="btnGerarXMLModal" onclick="fecharModalEGerarXML()">
-                                <i data-lucide="download" style="width: 15px; height: 15px;"></i>
+                            <button type="button" class="nft-btn nft-btn--ghost nft-btn--sm" data-bs-dismiss="modal" title="Fechar janela e revisar os campos da nota" data-ui="modal.analise.btn-fechar">Fechar e Revisar</button>
+                            <button type="button" class="nft-btn nft-btn--primary nft-btn--sm" id="btnGerarXMLModal" onclick="fecharModalEGerarXML()" title="Gerar e baixar o arquivo XML da NF-e" data-ui="modal.analise.btn-download-xml">
+                                <i data-lucide="download"></i>
                                 <span>Download do XML</span>
                             </button>
                         </div>
@@ -201,7 +203,7 @@
     function destacarElementoComAnimacao(el) {
         if (!el) return;
         el.classList.add('nft-field-error-highlight');
-        const container = el.closest('.nft-notch-field') || el.closest('.form-group') || el.parentElement;
+        const container = el.closest('.nft-field, .nft-notch-field') || el.closest('.form-group') || el.parentElement;
         if (container && container !== document.body && container.tagName !== 'FORM') {
             container.classList.add('nft-field-error-highlight');
         }
@@ -391,27 +393,27 @@
         const cardsResumoHtml = `
             <div class="row g-2 mb-3">
                 <div class="col-6 col-md-3">
-                    <div class="p-2 px-3 rounded-3 border bg-light text-center h-100">
-                        <small class="text-muted d-block" style="font-size: 11px;">Itens na Nota</small>
-                        <strong class="fs-6 text-heading font-monospace">${resumo.total_itens || 0}</strong>
+                    <div class="card p-2 px-3 text-center h-100">
+                        <small class="text-muted d-block">Itens na Nota</small>
+                        <strong class="text-heading font-monospace">${resumo.total_itens || 0}</strong>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
-                    <div class="p-2 px-3 rounded-3 border bg-light text-center h-100">
-                        <small class="text-muted d-block" style="font-size: 11px;">Total Produtos</small>
-                        <strong class="fs-6 text-primary font-monospace">${formatMoeda(resumo.valor_total_produtos)}</strong>
+                    <div class="card p-2 px-3 text-center h-100">
+                        <small class="text-muted d-block">Total Produtos</small>
+                        <strong class="text-primary font-monospace">${formatMoeda(resumo.valor_total_produtos)}</strong>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
-                    <div class="p-2 px-3 rounded-3 border bg-light text-center h-100">
-                        <small class="text-muted d-block" style="font-size: 11px;">NF-e / Série</small>
-                        <strong class="fs-6 text-heading font-monospace">${resumo.n_nf || '-'} / ${resumo.serie || '-'}</strong>
+                    <div class="card p-2 px-3 text-center h-100">
+                        <small class="text-muted d-block">NF-e / Série</small>
+                        <strong class="text-heading font-monospace">${resumo.n_nf || '-'} / ${resumo.serie || '-'}</strong>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
-                    <div class="p-2 px-3 rounded-3 border bg-light text-center h-100">
-                        <small class="text-muted d-block" style="font-size: 11px;">Montagem XML</small>
-                        <span class="badge py-1 px-2 bg-info-subtle text-info fw-bold" style="font-size: 11px;">
+                    <div class="card p-2 px-3 text-center h-100">
+                        <small class="text-muted d-block">Montagem XML</small>
+                        <span class="nft-badge" data-tone="info">
                             ${resumo.xml_construido ? '100% Ok' : 'Incompleto'}
                         </span>
                     </div>
@@ -430,33 +432,34 @@
                 const abaDisplay = e.aba || 'Aba';
 
                 return `
-                <li class="list-group-item d-flex justify-content-between align-items-center gap-2 py-2 px-3 border-danger-subtle error-item-row" 
-                    style="background-color: rgba(239, 68, 68, 0.03); cursor: pointer;"
+                <li class="list-group-item d-flex justify-content-between align-items-center gap-2 py-2 px-3 border-danger-subtle error-item-row cursor-pointer"
                     onclick="irParaErro('${abaId}', '${campoId}', '${itemNum}', '${modalFieldId}')"
-                    title="Clique para ir até este campo na tela">
+                    title="Clique para ir até este campo na tela"
+                    data-ui="modal.analise-rascunho.row-erro">
                     <div class="ms-1 me-auto">
                         <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
-                            <span class="badge bg-danger text-white fw-bold" style="font-size: 10px;">${e.categoria || 'Erro'}</span>
-                            <strong class="text-heading" style="font-size: 13px;">${e.campo || ''}</strong>
-                            ${campoId ? `<code class="text-muted small" style="font-size: 10.5px;">#${campoId}</code>` : ''}
+                            <span class="nft-badge" data-tone="danger">${e.categoria || 'Erro'}</span>
+                            <strong class="text-heading small">${e.campo || ''}</strong>
+                            ${campoId ? `<code class="text-muted small">#${campoId}</code>` : ''}
                         </div>
-                        <div class="text-secondary small">${e.mensagem || ''}</div>
+                        <div class="text-muted small">${e.mensagem || ''}</div>
                     </div>
-                    <button type="button" class="btn-analise-corrigir-erro" 
-                        onclick="event.stopPropagation(); irParaErro('${abaId}', '${campoId}', '${itemNum}', '${modalFieldId}')" 
-                        title="Ir diretamente para a ${abaDisplay} e focar no campo">
-                        <i data-lucide="crosshair" style="width: 13px; height: 13px;"></i>
+                    <button type="button" class="btn-analise-corrigir-erro"
+                        onclick="event.stopPropagation(); irParaErro('${abaId}', '${campoId}', '${itemNum}', '${modalFieldId}')"
+                        title="Ir diretamente para a ${abaDisplay} e focar no campo"
+                        data-ui="modal.analise-rascunho.btn-corrigir">
+                        <i data-lucide="crosshair" class="nft-icon--sm"></i>
                         <span>Corrigir na ${abaDisplay}</span> &rarr;
                     </button>
                 </li>
             `}).join('');
 
             errosHtml = `
-                <div class="card border border-danger mb-3 shadow-sm rounded-3 overflow-hidden">
-                    <div class="card-header py-2 px-3 d-flex justify-content-between align-items-center text-secondary">
-                        <span class="fw-bold d-flex align-items-center gap-2 text-danger" style="font-size: 13px;">
-                            <i data-lucide="alert-octagon" style="width: 16px; height: 16px;"></i>
-                            O que precisa ser corrigido (${totalErros}):
+                <div class="card border border-danger mb-3 overflow-hidden" data-ui="modal.analise-rascunho.card-erros">
+                    <div class="card-header py-2 px-3 d-flex justify-content-between align-items-center">
+                        <span class="fw-bold d-flex align-items-center gap-2 text-danger small">
+                            <i data-lucide="alert-octagon" class="nft-icon--sm"></i>
+                            <span>O que precisa ser corrigido (${totalErros}):</span>
                         </span>
                     </div>
                     <ul class="list-group list-group-flush">
@@ -477,33 +480,34 @@
                 const abaDisplay = a.aba || 'Aba';
 
                 return `
-                <li class="list-group-item d-flex justify-content-between align-items-center gap-2 py-2 px-3 border-warning-subtle alert-item-row" 
-                    style="background-color: rgba(245, 158, 11, 0.03); cursor: pointer;"
+                <li class="list-group-item d-flex justify-content-between align-items-center gap-2 py-2 px-3 border-warning-subtle alert-item-row cursor-pointer"
                     onclick="irParaErro('${abaId}', '${campoId}', '${itemNum}', '${modalFieldId}')"
-                    title="Clique para ir até este campo na tela">
+                    title="Clique para ir até este campo na tela"
+                    data-ui="modal.analise-rascunho.row-alerta">
                     <div class="ms-1 me-auto">
                         <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
-                            <span class="badge bg-warning-subtle text-warning-emphasis fw-bold" style="font-size: 10px;">${a.categoria || 'Aviso'}</span>
-                            <strong class="text-heading" style="font-size: 13px;">${a.campo || ''}</strong>
-                            ${campoId ? `<code class="text-muted small" style="font-size: 10.5px;">#${campoId}</code>` : ''}
+                            <span class="nft-badge" data-tone="warning">${a.categoria || 'Aviso'}</span>
+                            <strong class="text-heading small">${a.campo || ''}</strong>
+                            ${campoId ? `<code class="text-muted small">#${campoId}</code>` : ''}
                         </div>
-                        <div class="text-secondary small">${a.mensagem || ''}</div>
+                        <div class="text-muted small">${a.mensagem || ''}</div>
                     </div>
-                    <button type="button" class="btn-analise-revisar-alerta" 
-                        onclick="event.stopPropagation(); irParaErro('${abaId}', '${campoId}', '${itemNum}', '${modalFieldId}')" 
-                        title="Ir diretamente para a ${abaDisplay} e revisar o campo">
-                        <i data-lucide="crosshair" style="width: 13px; height: 13px;"></i>
+                    <button type="button" class="btn-analise-revisar-alerta"
+                        onclick="event.stopPropagation(); irParaErro('${abaId}', '${campoId}', '${itemNum}', '${modalFieldId}')"
+                        title="Ir diretamente para a ${abaDisplay} e revisar o campo"
+                        data-ui="modal.analise-rascunho.btn-revisar">
+                        <i data-lucide="crosshair" class="nft-icon--sm"></i>
                         <span>Revisar na ${abaDisplay}</span> &rarr;
                     </button>
                 </li>
             `}).join('');
 
             alertasHtml = `
-                <div class="card border border-warning mb-3 shadow-sm rounded-3 overflow-hidden">
-                    <div class="card-header py-2 px-3 d-flex justify-content-between align-items-center text-secondary">
-                        <span class="fw-bold d-flex align-items-center gap-2 text-warning" style="font-size: 13px;">
-                            <i data-lucide="alert-triangle" style="width: 16px; height: 16px;"></i>
-                            Alertas e Recomendações (${totalAlertas}):
+                <div class="card border border-warning mb-3 overflow-hidden" data-ui="modal.analise-rascunho.card-alertas">
+                    <div class="card-header py-2 px-3 d-flex justify-content-between align-items-center">
+                        <span class="fw-bold d-flex align-items-center gap-2 text-warning small">
+                            <i data-lucide="alert-triangle" class="nft-icon--sm"></i>
+                            <span>Alertas e Recomendações (${totalAlertas}):</span>
                         </span>
                     </div>
                     <ul class="list-group list-group-flush">

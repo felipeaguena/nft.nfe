@@ -1,287 +1,183 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <!-- Favicon -->
-    <link href="/static/img/brand/nftlogo.webp" rel="icon" type="image/webp"/>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Descrição das Feiras - NFT Logistics</title>
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-    <!-- NFT Logistics Theme (Light & Dark) -->
-    <link href="/static/css/nft-theme.css?v=4.1" rel="stylesheet"/>
-    <link href="/static/css/nft-sidebar.css?v=4.3" rel="stylesheet"/>
-    <script src="/static/js/theme.js"></script>
-    <!-- Lucide Icons -->
-    <script src="/static/js/lucide.min.js"></script>
-    <script src="/static/js/nft-dialogs.js"></script>
-    <script defer src="/static/js/nft-sidebar.js?v=3.5"></script>
-    <script defer src="/static/js/nft-shortcuts.js?v=1.0"></script>
-</head>
-<body class="has-sidebar">
+{% extends 'layouts/base.html' %}
+{% import 'macros/ui.html' as ui %}
+
 {% set sidebar_active = 'feiras' %}
-{% include 'partials/sidebar.html' %}
+{% set topbar_modulo = 'Descrição da Feira' %}
+{% set topbar_tag = 'Eventos' %}
 
-<!-- ÁREA PRINCIPAL DE CONTEÚDO (DESLOCADA PELA SIDEBAR) -->
-<div class="nft-main-wrapper">
-  {% set topbar_modulo = 'Descrição da Feira' %}
-  {% set topbar_tag = 'Eventos' %}
-  {% include 'partials/topbar.html' %}
-    <div class="container-fluid px-4 py-3">
-        <!-- Cabeçalho da Página -->
-        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom gap-2">
-            <div class="d-flex align-items-center gap-3">
+{% block title %}Descrição das Feiras do Ano — NFT Logistics{% endblock %}
+{% block page_ui_id %}feiras.page.main{% endblock %}
 
-                <div>
-                    <h4 class="mb-0 fw-bold d-flex align-items-center gap-2">
-                        <i class="text-primary" data-lucide="calendar-days"></i>
-                        <span>Descrição das Feiras do Ano</span>
-                    </h4>
-                    <small class="text-muted">Base de feiras, datas, prazos (-30 dias), locais e organizadores para cálculos e descrição das notas fiscais</small>
-                </div>
+{% block content %}
+  {% call ui.page_header('Descrição das Feiras do Ano', subtitle='Base de feiras, datas, prazos (-30 dias), locais e organizadores para cálculos e descrição das notas fiscais.', icon='calendar-days', ui_id='feiras.header') %}
+    {{ ui.btn_icon('map-pin', 'Cadastrar ou gerenciar centros de exposições e locais de entrega', variant='secondary', onclick='abrirModalGerenciarLocais()', ui_id='feiras.header.btn-locais') }}
+    {{ ui.btn_icon('sheet', 'Configurar link do Google Sheets e sincronizar feiras', variant='success', onclick='abrirModalPlanilhaGoogle()', ui_id='feiras.header.btn-sheets') }}
+    {{ ui.btn_icon('plus', 'Cadastrar nova feira do ano', variant='primary', onclick='abrirModalNovaFeira()', ui_id='feiras.header.btn-nova') }}
+  {% endcall %}
+
+  <div class="card mb-4" data-ui="feiras.lista.card">
+    <div class="card-body">
+      <div class="row g-2 align-items-end mb-3">
+        <div class="col-md-6">
+          {% call ui.field_wrap('busca-feira', 'Buscar por Nome da Feira, Local ou Organizador', ui_id='feiras.lista.field-busca', extra_class='nft-field--flush') %}
+            <div class="input-group">
+              <span class="input-group-text"><i data-lucide="search" class="nft-icon--sm"></i></span>
+              <input class="nft-control" id="busca-feira" oninput="filtrarFeiras()" placeholder="Digite para filtrar feiras..." title="Filtrar tabela de feiras por nome, local, data ou organizador" type="text" data-ui="feiras.lista.input-busca"/>
+              <button class="nft-btn nft-btn--ghost" onclick="document.getElementById('busca-feira').value=''; filtrarFeiras();" title="Limpar filtro de feiras" type="button" data-ui="feiras.lista.btn-limpar">Limpar</button>
             </div>
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-                <!-- BOTÃO EXTRA PARA INCLUIR / GERENCIAR LOCAL DE ENTREGA -->
-                <button class="btn-nft btn-header-round" onclick="abrirModalGerenciarLocais()" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Cadastrar ou gerenciar centros de exposições e locais de entrega" aria-label="Cadastrar ou gerenciar centros de exposições e locais de entrega" type="button">
-                    <i data-lucide="map-pin"></i>
+          {% endcall %}
+        </div>
+        <div class="col-md-6 text-md-end text-muted small">
+          Total cadastrado: <strong class="text-heading font-monospace" id="lbl-total-feiras" data-ui="feiras.lista.total-feiras">0</strong> feiras |
+          <strong class="text-primary font-monospace" id="lbl-total-locais" data-ui="feiras.lista.total-locais">0</strong> locais de entrega.
+        </div>
+      </div>
+
+      <div class="nft-table-wrap table-responsive" style="max-height: 640px; overflow-y: auto;">
+        <table class="table table-hover align-middle nft-table-cards" data-ui="feiras.lista.table">
+          <thead class="sticky-top">
+            <tr>
+              <th class="text-center">#</th>
+              <th>Nome da Feira</th>
+              <th>Data da Feira</th>
+              <th>Prazo (-30 dias)</th>
+              <th>Local de Entrega</th>
+              <th class="text-end">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-feiras" data-ui="feiras.lista.tbody">
+            <tr><td class="text-center py-4 text-muted" colspan="6">Carregando feiras...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <datalist id="datalist-locais-entrega"></datalist>
+{% endblock %}
+
+{% block modals %}
+  <!-- MODAL 1: EDITAR / CRIAR FEIRA -->
+  {{ ui.modal_open('modalFeira', 'Editar Informações da Feira', size='lg', icon='calendar', ui_id='modal.feira', title_id='txt-modal-titulo') }}
+    <form id="formFeira" onsubmit="salvarFeira(event)" data-ui="modal.feira.form">
+      <div class="modal-body" data-ui="modal.feira.body">
+        <input type="hidden" id="feira_id" value=""/>
+        <div class="row g-2">
+          <div class="col-12">
+            {{ ui.field_input('feira_nome', 'Nome da Feira', required=True, placeholder='Ex: AGRISHOW, BEAUTY FAIR', title='Nome oficial do evento ou feira', ui_id='modal.feira.field-nome') }}
+          </div>
+          <div class="col-md-6">
+            {{ ui.field_input('feira_data', 'Data da Feira', placeholder='Ex: 27 DE ABRIL A 01 DE MAIO DE 2026', help='Período descritivo oficial da feira', title='Período de realização da feira usado em infCpl', ui_id='modal.feira.field-data') }}
+          </div>
+          <div class="col-md-6">
+            {{ ui.field_input('feira_deadline', 'Deadline (-30 dias da feira)', modifier='code', placeholder='Ex: 2026-03-28', help='Data limite recomendada para processos fiscais', title='Prazo limite operacional 30 dias antes do evento', ui_id='modal.feira.field-deadline') }}
+          </div>
+          <div class="col-md-6">
+            <div class="nft-field nft-field--has-icon" data-ui="modal.feira.field-local">
+              <label class="nft-field__label" for="feira_local">Local de Entrega / Pavilhão</label>
+              <span class="nft-field__action">
+                <button type="button" class="nft-btn nft-btn--link" onclick="abrirModalNovoLocalRapido()" title="Cadastrar um novo centro de exposições ou pavilhão" data-ui="modal.feira.btn-novo-local">
+                  <i data-lucide="plus-circle" class="nft-icon--sm"></i>
+                  <span>Novo Local</span>
                 </button>
-                <button class="btn-nft btn-header-round" onclick="abrirModalPlanilhaGoogle()" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Configurar link do Google Sheets e sincronizar feiras" aria-label="Sincronizar Planilha Google Sheets" type="button">
-                    <i data-lucide="sheet"></i>
-                </button>
-                <button class="btn-nft btn-header-round" onclick="abrirModalNovaFeira()" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Cadastrar Nova Feira" aria-label="Cadastrar Nova Feira" type="button">
-                    <i data-lucide="plus"></i>
-                </button>
+              </span>
+              <span class="nft-field__icon"><i data-lucide="map-pin" class="nft-icon--sm"></i></span>
+              <input type="text" class="nft-control" id="feira_local" list="datalist-locais-entrega" onchange="aoSelecionarLocalFeira(this.value)" placeholder="Selecione ou digite o centro de exposições" title="Local ou pavilhão de realização da feira" data-ui="modal.feira.input-local"/>
+              <small class="nft-field__help" id="info_local_endereco">Selecione um local pré-cadastrado ou digite livremente.</small>
             </div>
+          </div>
+          <div class="col-md-6">
+            {{ ui.field_input('feira_organizador', 'Organizador', placeholder='Ex: INFORMA MARKETS, RX GLOBAL', help='Empresa organizadora responsável', title='Nome da empresa organizadora da feira', ui_id='modal.feira.field-organizador') }}
+          </div>
         </div>
+      </div>
+      <div class="modal-footer" data-ui="modal.feira.footer">
+        {{ ui.btn('Cancelar', variant='ghost', size='sm', title='Cancelar edição da feira', ui_id='modal.feira.btn-cancelar', attrs='data-bs-dismiss="modal"') }}
+        {{ ui.btn('Salvar Feira', variant='primary', size='sm', icon='save', type='submit', id='btnSalvarFeira', title='Salvar informações da feira no banco de dados', ui_id='modal.feira.btn-salvar') }}
+      </div>
+    </form>
+  {{ ui.modal_close() }}
 
-        <!-- Card de Filtros e Listagem -->
-        <div class="card shadow-sm border mb-4 p-3">
-                <div class="row g-2 align-items-center mb-3">
-                    <div class="col-md-6">
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text"><i data-lucide="search" style="width: 14px; height: 14px;"></i></span>
-                            <input class="form-control form-control-sm" id="busca-feira" oninput="filtrarFeiras()" placeholder="Buscar por Nome da Feira, Local ou Organizador..." type="text"/>
-                            <button class="btn-nft" onclick="document.getElementById('busca-feira').value=''; filtrarFeiras();" type="button">Limpar</button>
-                        </div>
-                    </div>
-                    <div class="col-md-6 text-md-end text-muted small">
-                        Total cadastrado: <span class="fw-bold text-heading font-monospace" id="lbl-total-feiras">0</span> feiras | <span class="fw-bold text-primary font-monospace" id="lbl-total-locais">0</span> locais de entrega disponíveis.
-                    </div>
-                </div>
+  <!-- MODAL 2: GERENCIAR LOCAIS DE ENTREGA -->
+  {{ ui.modal_open('modalGerenciarLocais', 'Locais de Entrega (Centros de Exposições)', size='lg', icon='map-pin', scrollable=True, ui_id='modal.locais', title_id='modalLocaisTitulo') }}
+    <div class="modal-body" data-ui="modal.locais.body">
+      <div class="nft-section-box mb-3">
+        <h6 class="nft-section-title text-primary" id="txt-form-local-titulo">Cadastrar Novo Local de Entrega</h6>
+        <form id="formLocalEntrega" onsubmit="salvarLocalEntrega(event)" data-ui="modal.locais.form">
+          <input type="hidden" id="local_id" value=""/>
+          <div class="row g-2">
+            <div class="col-md-5">
+              {{ ui.field_input('local_nome', 'Nome do Local / Pavilhão', required=True, placeholder='Ex: SÃO PAULO EXPO', title='Nome do centro de exposições ou local de entrega', ui_id='modal.locais.field-nome') }}
+            </div>
+            <div class="col-md-7">
+              {{ ui.field_input('local_endereco', 'Endereço Completo + CEP', placeholder='Ex: RODOVIA DOS IMIGRANTES KM 1,5 - CEP 04329-900', title='Endereço completo usado automaticamente em infCpl', ui_id='modal.locais.field-endereco') }}
+            </div>
+          </div>
+          <div class="d-flex justify-content-end gap-2 mt-2">
+            <button type="button" class="nft-btn nft-btn--ghost nft-btn--sm" onclick="limparFormLocal()" id="btn-cancelar-edit-local" style="display: none;" title="Cancelar edição do local selecionado" data-ui="modal.locais.btn-cancelar-edit">Cancelar Edição</button>
+            <button type="submit" class="nft-btn nft-btn--primary nft-btn--sm" id="btn-salvar-local" title="Salvar local de entrega no cadastro" data-ui="modal.locais.btn-salvar">
+              <i data-lucide="check"></i>
+              <span id="btn-salvar-local-txt">Salvar Local</span>
+            </button>
+          </div>
+        </form>
+      </div>
 
-                <!-- Tabela de Feiras -->
-                <div class="table-responsive" style="max-height: 640px; overflow-y: auto;">
-                    <table class="table table-hover table-sm align-middle mb-0">
-                        <thead class="table-light sticky-top">
-                            <tr>
-                                <th class="text-center" style="width: 50px;">#</th>
-                                <th style="width: 38%;">Nome da Feira</th>
-                                <th style="width: 17%; min-width: 140px;">Data da Feira</th>
-                                <th style="width: 16%; min-width: 130px;">Prazo (-30 dias)</th>
-                                <th style="width: 29%; min-width: 180px;">Local de Entrega</th>
-                                <th class="text-end" style="width: 110px;">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-feiras">
-                            <tr>
-                                <td class="text-center py-4 text-muted" colspan="6">Carregando feiras...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-        </div>
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="nft-section-title border-0 pb-0 mb-0">Locais Cadastrados</h6>
+        <small class="text-muted"><strong id="lbl-contagem-locais-tabela">0</strong> locais encontrados</small>
+      </div>
+      <div class="nft-table-wrap table-responsive" style="max-height: 320px; overflow-y: auto;">
+        <table class="table table-hover align-middle nft-table-cards" data-ui="modal.locais.table">
+          <thead class="sticky-top">
+            <tr>
+              <th>Nome do Local</th>
+              <th>Endereço / Referência</th>
+              <th class="text-end">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-locais" data-ui="modal.locais.tbody">
+            <tr><td class="text-center py-3 text-muted" colspan="3">Carregando locais...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
-</div>
-
-<!-- DATALIST GLOBAL DE LOCAIS DE ENTREGA / CENTROS DE EXPOSIÇÕES -->
-<datalist id="datalist-locais-entrega"></datalist>
-
-<!-- MODAL 1: EDITAR / CRIAR FEIRA (COM CAMPO LOCAL DE SELEÇÃO DINÂMICA) -->
-<div class="modal fade" id="modalFeira" tabindex="-1" aria-labelledby="modalFeiraTitulo" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content shadow border-0">
-            <div class="modal-header bg-light py-2 px-3 border-bottom">
-                <h5 class="modal-title fw-bold fs-6 d-flex align-items-center gap-2" id="modalFeiraTitulo">
-                    <i data-lucide="calendar" class="text-primary" style="width: 18px; height: 18px;"></i>
-                    <span id="txt-modal-titulo">Editar Informações da Feira</span>
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form id="formFeira" onsubmit="salvarFeira(event)">
-                    <input type="hidden" id="feira_id" value=""/>
-                    <div class="row g-3">
-                        <div class="col-md-12">
-                            <label class="form-label small fw-bold" for="feira_nome">Nome da Feira <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-sm" id="feira_nome" required placeholder="Ex: AGRISHOW, BEAUTY FAIR, ETC" style="height: 31px;"/>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold" for="feira_data">Data da Feira</label>
-                            <input type="text" class="form-control form-control-sm" id="feira_data" placeholder="Ex: 27 DE ABRIL A 01 DE MAIO DE 2026" style="height: 31px;"/>
-                            <small class="text-muted" style="font-size: 11px;">Período descritivo oficial da feira</small>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold" for="feira_deadline">Deadline (-30 dias da feira)</label>
-                            <input type="text" class="form-control form-control-sm font-monospace" id="feira_deadline" placeholder="Ex: 2026-03-28" style="height: 31px;"/>
-                            <small class="text-muted" style="font-size: 11px;">Data limite recomendada para processos fiscais</small>
-                        </div>
-                        
-                        <!-- CAMPO LOCAL COM SELEÇÃO DO BANCO DE DADOS E BOTÃO RÁPIDO PARA NOVO LOCAL -->
-                        <div class="col-md-6">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <label class="form-label small fw-bold mb-0" for="feira_local">
-                                    Local de Entrega / Pavilhão
-                                </label>
-                                <button type="button" class="btn-nft btn-link p-0 text-decoration-none small text-primary d-inline-flex align-items-center gap-1" onclick="abrirModalNovoLocalRapido()" style="font-size: 11.5px;">
-                                    <i data-lucide="plus-circle" style="width: 12px; height: 12px;"></i>
-                                    <span>Cadastrar Novo Local</span>
-                                </button>
-                            </div>
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text"><i data-lucide="map-pin" style="width: 14px; height: 14px;"></i></span>
-                                <input type="text" class="form-control form-control-sm" id="feira_local" list="datalist-locais-entrega" onchange="aoSelecionarLocalFeira(this.value)" placeholder="Selecione ou digite o centro de exposições" style="height: 31px;"/>
-                            </div>
-                            <small class="text-muted" id="info_local_endereco" style="font-size: 11px;">Selecione um local pré-cadastrado ou digite livremente.</small>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold" for="feira_organizador">Organizador</label>
-                            <input type="text" class="form-control form-control-sm" id="feira_organizador" placeholder="Ex: INFORMA MARKETS, RX GLOBAL" style="height: 31px;"/>
-                            <small class="text-muted" style="font-size: 11px;">Empresa organizadora responsável</small>
-                        </div>
-                    </div>
-                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-                        <button type="button" class="btn-nft px-3" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn-nft px-4 d-inline-flex align-items-center gap-1" id="btnSalvarFeira">
-                            <i data-lucide="save" style="width: 14px; height: 14px;"></i>
-                            <span>Salvar Feira</span>
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+    <div class="modal-footer" data-ui="modal.locais.footer">
+      {{ ui.btn('Fechar', variant='ghost', size='sm', title='Fechar gerenciamento de locais', ui_id='modal.locais.btn-fechar', attrs='data-bs-dismiss="modal"') }}
     </div>
-</div>
+  {{ ui.modal_close() }}
 
-<!-- MODAL 2: GERENCIAR LOCAIS DE ENTREGA / CENTROS DE EXPOSIÇÕES -->
-<div class="modal fade" id="modalGerenciarLocais" tabindex="-1" aria-labelledby="modalLocaisTitulo" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content shadow border-0">
-            <div class="modal-header bg-light py-2 px-3 border-bottom">
-                <h5 class="modal-title fw-bold fs-6 d-flex align-items-center gap-2" id="modalLocaisTitulo">
-                    <i data-lucide="map-pin" class="text-primary" style="width: 18px; height: 18px;"></i>
-                    <span>Banco de Dados: Locais de Entrega (Centros de Exposições)</span>
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-            </div>
-            <div class="modal-body p-4">
-                <!-- Formulário para Criar / Editar Local -->
-                <div class="card border bg-light mb-3 p-3">
-                        <h6 class="fw-bold text-primary mb-2" id="txt-form-local-titulo">Cadastrar Novo Local de Entrega</h6>
-                        <form id="formLocalEntrega" onsubmit="salvarLocalEntrega(event)">
-                            <input type="hidden" id="local_id" value=""/>
-                            <div class="row g-2">
-                                <div class="col-md-5">
-                                    <label class="form-label small fw-bold" for="local_nome">Nome do Local / Pavilhão <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control form-control-sm" id="local_nome" required placeholder="Ex: SÃO PAULO EXPO" style="height: 31px;"/>
-                                </div>
-                                <div class="col-md-7">
-                                    <label class="form-label small fw-bold" for="local_endereco">Endereço Completo + Complemento / CEP</label>
-                                    <input type="text" class="form-control form-control-sm" id="local_endereco" placeholder="Ex: RODOVIA DOS IMIGRANTES KM 1,5, SN - CEP 04329-900..." style="height: 31px;"/>
-                                </div>
-                            </div>
-                            <div class="d-flex justify-content-end gap-2 mt-2">
-                                <button type="button" class="btn-nft" onclick="limparFormLocal()" id="btn-cancelar-edit-local" style="display:none;">Cancelar Edição</button>
-                                <button type="submit" class="btn-nft d-inline-flex align-items-center gap-1" id="btn-salvar-local">
-                                    <i data-lucide="check" style="width: 13px; height: 13px;"></i>
-                                    <span id="btn-salvar-local-txt">Salvar Local</span>
-                                </button>
-                            </div>
-                        </form>
-                </div>
+  <!-- MODAL 3: GOOGLE SHEETS SYNC -->
+  {{ ui.modal_open('modalPlanilhaGoogle', 'Sincronizar Feiras com Google Sheets', size='md', icon='sheet', ui_id='modal.sheets', title_id='modalPlanilhaGoogleTitulo') }}
+    <form id="formPlanilhaGoogle" onsubmit="confirmarSincronizarPlanilhaGoogle(event)" data-ui="modal.sheets.form">
+      <div class="modal-body" data-ui="modal.sheets.body">
+        <p class="text-muted small mb-3">
+          Cole abaixo o link da planilha do <strong>Google Sheets</strong> para puxar e atualizar automaticamente as feiras do ano.
+        </p>
 
-                <!-- Tabela de Locais Cadastrados -->
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="fw-bold mb-0">Locais Cadastrados para Seleção</h6>
-                    <small class="text-muted"><span id="lbl-contagem-locais-tabela">0</span> locais encontrados</small>
-                </div>
-                <div class="table-responsive border rounded" style="max-height: 320px; overflow-y: auto;">
-                    <table class="table table-hover table-sm align-middle mb-0">
-                        <thead class="table-light sticky-top">
-                            <tr>
-                                <th class="text-nowrap">Nome do Local</th>
-                                <th class="text-nowrap">Endereço / Referência</th>
-                                <th class="text-end text-nowrap" style="width: 100px;">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-locais">
-                            <tr>
-                                <td class="text-center py-3 text-muted" colspan="3">Carregando locais...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="modal-footer py-2 px-3 bg-light">
-                <button type="button" class="btn-nft" data-bs-dismiss="modal">Fechar</button>
-            </div>
+        <div class="mb-3">
+          {{ ui.field_input('input_sheets_url', 'Link da Planilha (Google Sheets)', type='url', modifier='code', icon='link', required=True, placeholder='https://docs.google.com/spreadsheets/d/.../edit#gid=...', help='Aceita link normal de visualização (/edit) ou exportação CSV.', title='URL da planilha pública do Google Sheets', ui_id='modal.sheets.field-url') }}
         </div>
-    </div>
-</div>
 
-<!-- MODAL 3: CONFIGURAR E SINCRONIZAR PLANILHA GOOGLE SHEETS -->
-<div class="modal fade" id="modalPlanilhaGoogle" tabindex="-1" aria-labelledby="modalPlanilhaGoogleTitulo" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content shadow border-0">
-            <div class="modal-header bg-light py-2 px-3 border-bottom">
-                <h5 class="modal-title fw-bold fs-6 d-flex align-items-center gap-2" id="modalPlanilhaGoogleTitulo">
-                    <i data-lucide="sheet" class="text-success" style="width: 18px; height: 18px;"></i>
-                    <span>Sincronizar Feiras com Google Sheets</span>
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-            </div>
-            <div class="modal-body p-4">
-                <p class="text-muted small mb-3">
-                    Cole abaixo o link da planilha do <strong>Google Sheets</strong> de onde o sistema deve puxar as feiras. O sistema salva esse link e atualiza automaticamente os dados.
-                </p>
-
-                <form id="formPlanilhaGoogle" onsubmit="confirmarSincronizarPlanilhaGoogle(event)">
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold" for="input_sheets_url">Link da Planilha (Google Sheets)</label>
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text"><i data-lucide="link" style="width: 14px; height: 14px;"></i></span>
-                            <input type="url" class="form-control form-control-sm font-monospace" id="input_sheets_url" required placeholder="https://docs.google.com/spreadsheets/d/.../edit#gid=..." style="height: 34px; font-size: 12px;"/>
-                        </div>
-                        <div class="form-text" style="font-size: 11px;">
-                            Pode ser o link normal de visualização do navegador (<code>/edit</code>) ou de exportação CSV.
-                        </div>
-                    </div>
-
-                    <div class="alert alert-light border small p-2 mb-3 d-flex align-items-start gap-2">
-                        <i data-lucide="info" class="text-primary mt-1 flex-shrink-0" style="width: 15px; height: 15px;"></i>
-                        <span class="text-muted" style="font-size: 11.5px;">
-                            <strong>Atenção:</strong> A planilha deve estar com acesso público de Leitor (no Google Sheets: <em>Compartilhar &rarr; Acesso Geral &rarr; Qualquer pessoa com o link &rarr; Leitor</em>).
-                        </span>
-                    </div>
-
-                    <div id="sheets_sync_status" class="mb-3" style="display: none;"></div>
-
-                    <div class="d-flex justify-content-end gap-2 pt-2 border-top">
-                        <button type="button" class="btn-nft px-3" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn-nft px-3 d-inline-flex align-items-center gap-1" id="btnSyncSheetsConfirm">
-                            <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
-                            <span id="txtBtnSyncSheets">Puxar Dados e Atualizar</span>
-                        </button>
-                    </div>
-                </form>
-            </div>
+        <div class="alert alert-info d-flex align-items-start gap-2 mb-3">
+          <i data-lucide="info" class="nft-icon--sm mt-1"></i>
+          <span><strong>Atenção:</strong> A planilha deve estar com acesso público de Leitor (<em>Compartilhar &rarr; Qualquer pessoa com o link &rarr; Leitor</em>).</span>
         </div>
-    </div>
-</div>
 
-<!-- Bootstrap 5 JS Bundle -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <div id="sheets_sync_status" class="mb-2" style="display: none;" data-ui="modal.sheets.status"></div>
+      </div>
+      <div class="modal-footer" data-ui="modal.sheets.footer">
+        {{ ui.btn('Cancelar', variant='ghost', size='sm', title='Cancelar sincronização com Google Sheets', ui_id='modal.sheets.btn-cancelar', attrs='data-bs-dismiss="modal"') }}
+        <button type="submit" class="nft-btn nft-btn--primary nft-btn--sm" id="btnSyncSheetsConfirm" title="Salvar link e sincronizar feiras da planilha agora" data-ui="modal.sheets.btn-sincronizar">
+          <i data-lucide="refresh-cw"></i>
+          <span id="txtBtnSyncSheets">Puxar Dados e Atualizar</span>
+        </button>
+      </div>
+    </form>
+  {{ ui.modal_close() }}
+{% endblock %}
 
+{% block scripts %}
 <script>
     let feirasCache = [];
     let locaisCache = [];
@@ -291,43 +187,27 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         if (typeof lucide !== 'undefined') lucide.createIcons();
-
         const modalFeiraEl = document.getElementById('modalFeira');
-        if (modalFeiraEl) {
-            modalFeiraInstancia = new bootstrap.Modal(modalFeiraEl);
-        }
-
+        if (modalFeiraEl) modalFeiraInstancia = new bootstrap.Modal(modalFeiraEl);
         const modalLocaisEl = document.getElementById('modalGerenciarLocais');
-        if (modalLocaisEl) {
-            modalGerenciarLocaisInstancia = new bootstrap.Modal(modalLocaisEl);
-        }
-
+        if (modalLocaisEl) modalGerenciarLocaisInstancia = new bootstrap.Modal(modalLocaisEl);
         const modalPlanilhaEl = document.getElementById('modalPlanilhaGoogle');
-        if (modalPlanilhaEl) {
-            modalPlanilhaGoogleInstancia = new bootstrap.Modal(modalPlanilhaEl);
-        }
+        if (modalPlanilhaEl) modalPlanilhaGoogleInstancia = new bootstrap.Modal(modalPlanilhaEl);
 
         carregarLocaisEntrega();
         carregarFeiras();
     });
-
-    // === GERENCIAMENTO DE LOCAIS DE ENTREGA ===
 
     async function carregarLocaisEntrega() {
         try {
             const resp = await fetch('/api/locais_entrega');
             if (!resp.ok) throw new Error('Erro ao buscar locais de entrega');
             locaisCache = await resp.json();
-
-            // Atualiza Datalist para seleção rápida nos campos
             atualizarDatalistLocais(locaisCache);
             renderizarTabelaLocais(locaisCache);
-
             const lblTotal = document.getElementById('lbl-total-locais');
             if (lblTotal) lblTotal.innerText = locaisCache.length;
-        } catch (err) {
-            console.error("Falha ao carregar locais:", err);
-        }
+        } catch (err) { console.error("Falha ao carregar locais:", err); }
     }
 
     function atualizarDatalistLocais(locais) {
@@ -344,46 +224,41 @@
         const lblCont = document.getElementById('lbl-contagem-locais-tabela');
         if (lblCont) lblCont.innerText = locais.length;
         if (!tbody) return;
-
         if (!locais || locais.length === 0) {
             tbody.innerHTML = `<tr><td colspan="3" class="text-center py-3 text-muted">Nenhum local cadastrado.</td></tr>`;
             return;
         }
-
         tbody.innerHTML = locais.map(l => {
             const nomeEsc = (l.nome || '').replace(/'/g, "\\'");
             const endFmt = (l.endereco || '').replace(/[\r\n]+/g, ' - ').replace(/\s+/g, ' ').trim();
             return `
                 <tr>
-                    <td class="fw-semibold text-heading text-nowrap">${escapeHtml(l.nome)}</td>
-                    <td class="small text-muted text-nowrap" style="white-space: nowrap;" title="${escapeHtml(endFmt)}">${escapeHtml(endFmt) || '<span class="text-muted">-</span>'}</td>
-                    <td class="text-end text-nowrap">
+                    <td data-card-title="true" class="fw-semibold text-heading">${escapeHtml(l.nome)}</td>
+                    <td data-label="Endereço" class="text-muted" title="${escapeHtml(endFmt)}">${escapeHtml(endFmt) || '-'}</td>
+                    <td data-card-actions="true" class="text-end text-nowrap">
                         <div class="d-flex justify-content-end gap-1">
-                            <button type="button" class="btn-nft py-0 px-2" onclick="prepararEdicaoLocal(${l.id})" title="Editar local">
-                                <i data-lucide="edit-3" style="width: 12px; height: 12px;"></i>
+                            <button type="button" class="nft-btn-icon nft-btn-icon--secondary nft-btn-icon--sm" data-bs-toggle="tooltip" onclick="prepararEdicaoLocal(${l.id})" title="Editar local de entrega" aria-label="Editar local" data-ui="modal.locais.btn-editar">
+                                <i data-lucide="edit-3"></i>
                             </button>
-                            <button type="button" class="btn-nft py-0 px-2" onclick="excluirLocal(${l.id}, '${nomeEsc}')" title="Excluir local">
-                                <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
+                            <button type="button" class="nft-btn-icon nft-btn-icon--danger nft-btn-icon--sm" data-bs-toggle="tooltip" onclick="excluirLocal(${l.id}, '${nomeEsc}')" title="Excluir local de entrega" aria-label="Excluir local" data-ui="modal.locais.btn-excluir">
+                                <i data-lucide="trash-2"></i>
                             </button>
                         </div>
                     </td>
                 </tr>
             `;
         }).join('');
-
-        if (typeof lucide !== 'undefined') lucide.createIcons();
+        if (typeof lucide !== 'undefined') lucide.createIcons({ root: tbody });
     }
 
     function abrirModalGerenciarLocais() {
         limparFormLocal();
         if (modalGerenciarLocaisInstancia) modalGerenciarLocaisInstancia.show();
-        if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
     function abrirModalNovoLocalRapido() {
         limparFormLocal();
         if (modalGerenciarLocaisInstancia) modalGerenciarLocaisInstancia.show();
-        if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
     function limparFormLocal() {
@@ -397,14 +272,12 @@
     function prepararEdicaoLocal(id) {
         const local = locaisCache.find(l => l.id === id);
         if (!local) return;
-
         document.getElementById('local_id').value = local.id;
         document.getElementById('local_nome').value = local.nome || '';
         document.getElementById('local_endereco').value = (local.endereco || '').replace(/[\r\n]+/g, ' - ').replace(/\s+/g, ' ').trim();
-
         document.getElementById('txt-form-local-titulo').innerText = `Editar Local: ${local.nome}`;
         document.getElementById('btn-salvar-local-txt').innerText = 'Atualizar Local';
-        document.getElementById('btn-cancelar-edit-local').style.display = 'inline-block';
+        document.getElementById('btn-cancelar-edit-local').style.display = 'inline-flex';
         document.getElementById('local_nome').focus();
     }
 
@@ -415,64 +288,32 @@
             nome: document.getElementById('local_nome').value.trim(),
             endereco: document.getElementById('local_endereco').value.replace(/[\r\n]+/g, ' - ').replace(/\s+/g, ' ').trim()
         };
-
-        if (!payload.nome) {
-            alert("O nome do local é obrigatório.");
-            return;
-        }
-
+        if (!payload.nome) { alert("O nome do local é obrigatório."); return; }
         try {
             const url = id ? `/api/locais_entrega/${id}` : '/api/locais_entrega';
-            const method = id ? 'PUT' : 'POST';
-
-            const resp = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
+            const resp = await fetch(url, { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             const data = await resp.json();
-            if (!resp.ok) {
-                alert(data.error || 'Erro ao salvar local de entrega.');
-                return;
-            }
-
+            if (!resp.ok) { alert(data.error || 'Erro ao salvar local de entrega.'); return; }
             limparFormLocal();
             await carregarLocaisEntrega();
-
-            // Se o modal de edição de feira estiver aberto, já preenche o local automaticamente
             const inputFeiraLocal = document.getElementById('feira_local');
             if (inputFeiraLocal && !inputFeiraLocal.value) {
                 inputFeiraLocal.value = payload.nome;
                 aoSelecionarLocalFeira(payload.nome);
             }
-        } catch (err) {
-            alert('Falha ao salvar local: ' + err.message);
-        }
+        } catch (err) { alert('Falha ao salvar local: ' + err.message); }
     }
 
     async function excluirLocal(id, nome) {
         const confirmar = await window.nftConfirm(`Deseja realmente remover o local "${nome}"?`, {
-            title: 'Excluir Local de Entrega',
-            type: 'danger',
-            confirmText: 'Sim, Excluir',
-            cancelText: 'Cancelar',
-            icon: 'trash-2'
+            title: 'Excluir Local de Entrega', type: 'danger', confirmText: 'Sim, Excluir', cancelText: 'Cancelar', icon: 'trash-2'
         });
-        if (!confirmar) {
-            return;
-        }
+        if (!confirmar) return;
         try {
             const resp = await fetch(`/api/locais_entrega/${id}`, { method: 'DELETE' });
-            if (!resp.ok) {
-                const data = await resp.json();
-                alert(data.error || 'Erro ao excluir local.');
-                return;
-            }
+            if (!resp.ok) { const data = await resp.json(); alert(data.error || 'Erro ao excluir local.'); return; }
             await carregarLocaisEntrega();
-        } catch (err) {
-            alert('Falha ao excluir local: ' + err.message);
-        }
+        } catch (err) { alert('Falha ao excluir local: ' + err.message); }
     }
 
     function aoSelecionarLocalFeira(nomeLocal) {
@@ -481,14 +322,12 @@
         const achou = locaisCache.find(l => (l.nome || '').toUpperCase() === (nomeLocal || '').trim().toUpperCase());
         if (achou && achou.endereco) {
             const preview = achou.endereco.replace(/\n/g, ' - ');
-            infoEl.innerHTML = `<span class="text-success"><i data-lucide="check-circle" style="width: 12px; height: 12px;"></i> Endereço cadastrado: ${escapeHtml(preview)}</span>`;
+            infoEl.innerHTML = `<span class="text-success"><i data-lucide="check-circle" class="nft-icon--sm"></i> Endereço cadastrado: ${escapeHtml(preview)}</span>`;
         } else {
             infoEl.innerText = "Selecione um local pré-cadastrado ou digite livremente.";
         }
-        if (typeof lucide !== 'undefined') lucide.createIcons();
+        if (typeof lucide !== 'undefined') lucide.createIcons({ root: infoEl });
     }
-
-    // === GERENCIAMENTO DE FEIRAS ===
 
     async function carregarFeiras() {
         try {
@@ -498,13 +337,7 @@
             renderizarTabela(feirasCache);
         } catch (err) {
             console.error(err);
-            document.getElementById('tbody-feiras').innerHTML = `
-                <tr>
-                    <td class="text-center py-4 text-danger" colspan="6">
-                        Não foi possível carregar as feiras: ${err.message}
-                    </td>
-                </tr>
-            `;
+            document.getElementById('tbody-feiras').innerHTML = `<tr><td class="text-center py-4 text-danger" colspan="6">Não foi possível carregar as feiras: ${err.message}</td></tr>`;
         }
     }
 
@@ -512,68 +345,49 @@
         const tbody = document.getElementById('tbody-feiras');
         const lblTotal = document.getElementById('lbl-total-feiras');
         if (lblTotal) lblTotal.innerText = lista.length;
-
         if (!lista || lista.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td class="text-center py-4 text-muted" colspan="6">
-                        Nenhuma feira encontrada para o termo pesquisado.
-                    </td>
-                </tr>
-            `;
+            tbody.innerHTML = `<tr><td class="text-center py-4 text-muted" colspan="6">Nenhuma feira encontrada para o termo pesquisado.</td></tr>`;
             return;
         }
-
         tbody.innerHTML = lista.map((f, idx) => {
             const nomeEscaped = (f.nome || '').replace(/'/g, "\\'");
             return `
-                <tr>
-                    <td class="text-muted small font-monospace text-center">${idx + 1}</td>
-                    <td>
-                        <strong class="text-heading d-block">${escapeHtml(f.nome)}</strong>
-                    </td>
-                    <td class="small text-nowrap">
-                        <i data-lucide="calendar" class="text-muted me-1" style="width: 13px; height: 13px; vertical-align: -2px;"></i>
+                <tr data-ui="feiras.lista.row-${f.id}">
+                    <td data-label="#" class="text-muted font-monospace text-center">${idx + 1}</td>
+                    <td data-card-title="true"><strong class="text-heading">${escapeHtml(f.nome)}</strong></td>
+                    <td data-label="Data da Feira" class="text-nowrap">
+                        <i data-lucide="calendar" class="nft-icon--sm text-muted me-1 d-none d-md-inline-block"></i>
                         <span>${escapeHtml(f.data_feira || '-')}</span>
                     </td>
-                    <td class="small text-nowrap">
-                        <span class="badge font-monospace px-2 py-1 bg-info-subtle text-info fw-bold" style="font-size: 11.5px;">
-                            ${escapeHtml(f.deadline || '-')}
-                        </span>
+                    <td data-label="Prazo (-30 dias)" class="text-nowrap">
+                        <span class="nft-badge nft-badge--mono" data-tone="info" title="Prazo limite recomendado">${escapeHtml(f.deadline || '-')}</span>
                     </td>
-                    <td class="small">
-                        <span class="badge px-2 py-1 d-inline-flex align-items-center gap-1 bg-info-subtle text-info fw-bold" style="font-size: 11.5px;">
-                            <i data-lucide="map-pin" style="width: 12px; height: 12px;"></i>
+                    <td data-label="Local">
+                        <span class="nft-badge" data-tone="primary" title="Local de entrega / pavilhão">
+                            <i data-lucide="map-pin" class="nft-icon--sm"></i>
                             <span>${escapeHtml(f.local || '-')}</span>
                         </span>
                     </td>
-                    <td class="text-end text-nowrap">
+                    <td data-card-actions="true" class="text-end text-nowrap">
                         <div class="d-flex justify-content-end gap-1">
-                            <button class="btn-nft btn-nft-warning py-0 px-2 d-inline-flex align-items-center gap-1"
-                                    onclick="abrirModalEditarFeira(${f.id})" style="height: 26px; font-size: 11.5px;" title="Editar informações da feira">
-                                <i data-lucide="edit-3" style="width: 12px; height: 12px;"></i>
-                                <span>Editar</span>
+                            <button type="button" class="nft-btn-icon nft-btn-icon--warning nft-btn-icon--sm" data-bs-toggle="tooltip" onclick="abrirModalEditarFeira(${f.id})" title="Editar informações da feira" aria-label="Editar feira" data-ui="feiras.row.btn-editar">
+                                <i data-lucide="edit-3"></i>
                             </button>
-                            <button class="btn-nft btn-nft-danger py-0 px-2 d-inline-flex align-items-center"
-                                    onclick="excluirFeira(${f.id}, '${nomeEscaped}')" style="height: 26px;" title="Excluir feira">
-                                <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
+                            <button type="button" class="nft-btn-icon nft-btn-icon--danger nft-btn-icon--sm" data-bs-toggle="tooltip" onclick="excluirFeira(${f.id}, '${nomeEscaped}')" title="Excluir feira cadastrada" aria-label="Excluir feira" data-ui="feiras.row.btn-excluir">
+                                <i data-lucide="trash-2"></i>
                             </button>
                         </div>
                     </td>
                 </tr>
             `;
         }).join('');
-
-        if (typeof lucide !== 'undefined') lucide.createIcons();
+        if (typeof lucide !== 'undefined') lucide.createIcons({ root: tbody });
     }
 
     function filtrarFeiras() {
         const termo = (document.getElementById('busca-feira').value || '').trim().toLowerCase();
-        if (!termo) {
-            renderizarTabela(feirasCache);
-            return;
-        }
-        const filtradas = feirasCache.filter(f => 
+        if (!termo) { renderizarTabela(feirasCache); return; }
+        const filtradas = feirasCache.filter(f =>
             (f.nome || '').toLowerCase().includes(termo) ||
             (f.local || '').toLowerCase().includes(termo) ||
             (f.organizador || '').toLowerCase().includes(termo) ||
@@ -586,28 +400,25 @@
     function abrirModalNovaFeira() {
         document.getElementById('formFeira').reset();
         document.getElementById('feira_id').value = '';
-        document.getElementById('txt-modal-titulo').innerText = 'Nova Feira';
+        const t = document.getElementById('txt-modal-titulo');
+        if (t) { const sp = t.querySelector('span'); if (sp) sp.innerText = 'Nova Feira'; else t.innerText = 'Nova Feira'; }
         document.getElementById('info_local_endereco').innerText = "Selecione um local pré-cadastrado ou digite livremente.";
         if (modalFeiraInstancia) modalFeiraInstancia.show();
-        if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
     function abrirModalEditarFeira(id) {
         const feira = feirasCache.find(f => f.id === id);
         if (!feira) return;
-
         document.getElementById('feira_id').value = feira.id;
         document.getElementById('feira_nome').value = feira.nome || '';
         document.getElementById('feira_data').value = feira.data_feira || '';
         document.getElementById('feira_deadline').value = feira.deadline || '';
         document.getElementById('feira_local').value = feira.local || '';
         document.getElementById('feira_organizador').value = feira.organizador || '';
-
-        document.getElementById('txt-modal-titulo').innerText = `Editar Feira: ${feira.nome}`;
+        const t = document.getElementById('txt-modal-titulo');
+        if (t) { const sp = t.querySelector('span'); if (sp) sp.innerText = `Editar Feira: ${feira.nome}`; else t.innerText = `Editar Feira: ${feira.nome}`; }
         aoSelecionarLocalFeira(feira.local || '');
-
         if (modalFeiraInstancia) modalFeiraInstancia.show();
-        if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
     async function salvarFeira(e) {
@@ -620,165 +431,84 @@
             local: document.getElementById('feira_local').value.trim(),
             organizador: document.getElementById('feira_organizador').value.trim()
         };
-
-        if (!payload.nome) {
-            alert("O nome da feira é obrigatório.");
-            return;
-        }
-
+        if (!payload.nome) { alert("O nome da feira é obrigatório."); return; }
         try {
             const url = id ? `/api/feiras/${id}` : '/api/feiras';
-            const method = id ? 'PUT' : 'POST';
-
-            const resp = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
+            const resp = await fetch(url, { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             const data = await resp.json();
-            if (!resp.ok) {
-                alert(data.error || 'Erro ao salvar feira.');
-                return;
-            }
-
+            if (!resp.ok) { alert(data.error || 'Erro ao salvar feira.'); return; }
             if (modalFeiraInstancia) modalFeiraInstancia.hide();
             await carregarFeiras();
-        } catch (err) {
-            alert('Falha de conexão ao salvar: ' + err.message);
-        }
+        } catch (err) { alert('Falha de conexão ao salvar: ' + err.message); }
     }
 
     async function excluirFeira(id, nome) {
         const confirmar = await window.nftConfirm(`Deseja realmente excluir a feira "${nome}"?`, {
-            title: 'Excluir Feira / Evento',
-            type: 'danger',
-            confirmText: 'Sim, Excluir',
-            cancelText: 'Cancelar',
-            icon: 'trash-2'
+            title: 'Excluir Feira / Evento', type: 'danger', confirmText: 'Sim, Excluir', cancelText: 'Cancelar', icon: 'trash-2'
         });
-        if (!confirmar) {
-            return;
-        }
+        if (!confirmar) return;
         try {
             const resp = await fetch(`/api/feiras/${id}`, { method: 'DELETE' });
-            if (!resp.ok) {
-                const data = await resp.json();
-                alert(data.error || 'Erro ao excluir feira.');
-                return;
-            }
+            if (!resp.ok) { const data = await resp.json(); alert(data.error || 'Erro ao excluir feira.'); return; }
             await carregarFeiras();
-        } catch (err) {
-            alert('Falha ao excluir: ' + err.message);
-        }
+        } catch (err) { alert('Falha ao excluir: ' + err.message); }
     }
 
     async function abrirModalPlanilhaGoogle() {
         const inputUrl = document.getElementById('input_sheets_url');
         const statusBox = document.getElementById('sheets_sync_status');
         if (statusBox) statusBox.style.display = 'none';
-
-        // Carrega o link atualmente configurado
         try {
             const resp = await fetch('/api/feiras/sync_sheets');
             const data = await resp.json();
-            if (data.url && inputUrl) {
-                inputUrl.value = data.url;
-            }
-        } catch (e) {
-            console.warn('Erro ao carregar URL da planilha:', e);
-        }
-
+            if (data.url && inputUrl) inputUrl.value = data.url;
+        } catch (e) { console.warn('Erro ao carregar URL da planilha:', e); }
         if (modalPlanilhaGoogleInstancia) {
             modalPlanilhaGoogleInstancia.show();
-            setTimeout(() => {
-                if (inputUrl) inputUrl.focus();
-            }, 300);
+            setTimeout(() => { if (inputUrl) inputUrl.focus(); }, 300);
         }
     }
 
     async function confirmarSincronizarPlanilhaGoogle(e) {
         if (e) e.preventDefault();
-
         const inputUrl = document.getElementById('input_sheets_url');
         const url = (inputUrl ? inputUrl.value : '').trim();
         const btn = document.getElementById('btnSyncSheetsConfirm');
         const txtBtn = document.getElementById('txtBtnSyncSheets');
         const statusBox = document.getElementById('sheets_sync_status');
-
-        if (!url) {
-            alert('Por favor, informe a URL da planilha do Google Sheets.');
-            if (inputUrl) inputUrl.focus();
-            return;
-        }
-
+        if (!url) { alert('Por favor, informe a URL da planilha do Google Sheets.'); if (inputUrl) inputUrl.focus(); return; }
         if (btn) btn.disabled = true;
         if (txtBtn) txtBtn.innerText = 'Sincronizando dados...';
         if (statusBox) {
             statusBox.style.display = 'block';
-            statusBox.className = 'alert alert-info border small p-2 d-flex align-items-center gap-2';
-            statusBox.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span><span>Conectando ao Google Sheets e importando feiras...</span>`;
+            statusBox.className = 'alert alert-info d-flex align-items-center gap-2';
+            statusBox.innerHTML = `<span class="spinner-border spinner-border-sm" role="status"></span><span>Conectando ao Google Sheets e importando feiras...</span>`;
         }
-
         try {
-            const resp = await fetch('/api/feiras/sync_sheets', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url: url })
-            });
+            const resp = await fetch('/api/feiras/sync_sheets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) });
             const data = await resp.json();
-
             if (data.status === 'success') {
-                if (statusBox) {
-                    statusBox.className = 'alert alert-success border small p-2';
-                    statusBox.innerHTML = `<strong>Sucesso:</strong> ${escapeHtml(data.message)}`;
-                }
+                if (statusBox) { statusBox.className = 'alert alert-success'; statusBox.innerHTML = `<strong>Sucesso:</strong> ${escapeHtml(data.message)}`; }
                 await carregarFeiras();
-                if (window.nftAlert) {
-                    await window.nftAlert(data.message, { type: 'success', title: 'Sincronização Concluída' });
-                }
-                setTimeout(() => {
-                    if (modalPlanilhaGoogleInstancia) modalPlanilhaGoogleInstancia.hide();
-                }, 1200);
+                if (window.nftAlert) await window.nftAlert(data.message, { type: 'success', title: 'Sincronização Concluída' });
+                setTimeout(() => { if (modalPlanilhaGoogleInstancia) modalPlanilhaGoogleInstancia.hide(); }, 1200);
             } else if (data.status === 'warning') {
-                if (statusBox) {
-                    statusBox.className = 'alert alert-warning border small p-2';
-                    statusBox.innerHTML = `<strong>Atenção:</strong> ${escapeHtml(data.message)}`;
-                }
-                if (window.nftAlert) {
-                    window.nftAlert(data.message, { type: 'warning', title: 'Atenção na Permissão da Planilha' });
-                } else {
-                    alert(data.message);
-                }
+                if (statusBox) { statusBox.className = 'alert alert-warning'; statusBox.innerHTML = `<strong>Atenção:</strong> ${escapeHtml(data.message)}`; }
+                if (window.nftAlert) window.nftAlert(data.message, { type: 'warning', title: 'Atenção na Permissão da Planilha' });
             } else {
-                if (statusBox) {
-                    statusBox.className = 'alert alert-danger border small p-2';
-                    statusBox.innerHTML = `<strong>Erro:</strong> ${escapeHtml(data.message || 'Falha ao sincronizar.')}`;
-                }
-                alert(data.message || 'Erro durante a sincronização.');
+                if (statusBox) { statusBox.className = 'alert alert-danger'; statusBox.innerHTML = `<strong>Erro:</strong> ${escapeHtml(data.message || 'Falha ao sincronizar.')}`; }
             }
         } catch (err) {
-            if (statusBox) {
-                statusBox.className = 'alert alert-danger border small p-2';
-                statusBox.innerHTML = `<strong>Falha de conexão:</strong> ${escapeHtml(err.message)}`;
-            }
-            alert('Erro de conexão ao tentar sincronizar com o Google Sheets: ' + err.message);
+            if (statusBox) { statusBox.className = 'alert alert-danger'; statusBox.innerHTML = `<strong>Falha de conexão:</strong> ${escapeHtml(err.message)}`; }
         } finally {
             if (btn) btn.disabled = false;
             if (txtBtn) txtBtn.innerText = 'Puxar Dados e Atualizar';
-            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
     }
 
     function escapeHtml(text) {
         if (!text) return '';
-        return String(text)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
+        return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
     }
 </script>
-</body>
-</html>
+{% endblock %}

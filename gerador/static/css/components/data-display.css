@@ -1,0 +1,863 @@
+/* ==========================================================================
+   NFT LOGISTICS — COMPONENT: DATA DISPLAY
+   Cards, KPIs, Tabelas, Tabulator, Badges canônicos, Tags SEFAZ e Dev HUD.
+   ========================================================================== */
+
+/* --- Cards & Caixas Internas --- */
+.card {
+  background-color: var(--surface);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+}
+
+.card-header {
+  background-color: var(--surface-secondary);
+  border-bottom: 1px solid var(--border);
+  padding: 12px var(--space-card);
+  color: var(--heading);
+  border-top-left-radius: calc(var(--radius-lg) - 1px);
+  border-top-right-radius: calc(var(--radius-lg) - 1px);
+}
+
+.card-body {
+  padding: var(--space-card);
+}
+
+.card-footer {
+  background-color: var(--surface-secondary);
+  border-top: 1px solid var(--border);
+  padding: 10px var(--space-card);
+  border-bottom-left-radius: calc(var(--radius-lg) - 1px);
+  border-bottom-right-radius: calc(var(--radius-lg) - 1px);
+}
+
+.nft-section-box {
+  background-color: var(--surface-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+
+.nft-section-title {
+  font-size: var(--fs-section-title);
+  font-weight: 700;
+  color: var(--heading);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  margin: 0 0 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* --- KPI / Metric Cards (Unifica Banco NCM, Localidades, Unidades, Relatórios) --- */
+.nft-kpi-card {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  box-shadow: var(--card-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 100%;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.nft-kpi-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--card-shadow-hover);
+}
+
+.nft-kpi-label {
+  font-size: var(--fs-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted-foreground);
+  margin-bottom: 4px;
+}
+
+.nft-kpi-value {
+  font-size: var(--fs-modal-title);
+  font-weight: 800;
+  color: var(--heading);
+  line-height: 1.2;
+  margin: 0;
+}
+
+.nft-kpi-value[data-tone="primary"] { color: var(--primary); }
+.nft-kpi-value[data-tone="success"] { color: var(--success); }
+.nft-kpi-value[data-tone="warning"] { color: var(--warning); }
+.nft-kpi-value[data-tone="danger"]  { color: var(--danger); }
+.nft-kpi-value[data-tone="info"]    { color: var(--info); }
+
+.nft-kpi-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background-color: var(--surface-secondary);
+  border: 1px solid var(--border);
+  color: var(--muted-foreground);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.nft-kpi-icon[data-tone="primary"] { background-color: var(--primary-subtle); border-color: var(--primary-border); color: var(--primary); }
+.nft-kpi-icon[data-tone="success"] { background-color: var(--success-subtle); border-color: var(--success-border); color: var(--success); }
+.nft-kpi-icon[data-tone="warning"] { background-color: var(--warning-subtle); border-color: var(--warning-border); color: var(--warning); }
+.nft-kpi-icon[data-tone="danger"]  { background-color: var(--danger-subtle);  border-color: var(--danger-border);  color: var(--danger); }
+.nft-kpi-icon[data-tone="info"]    { background-color: var(--info-subtle);    border-color: var(--info-border);    color: var(--info); }
+
+/* --- Tabelas Bootstrap & Relatórios --- */
+.nft-table-wrap,
+.table-report-wrap {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+
+.nft-table-wrap.table-responsive {
+  overflow-x: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table {
+  color: var(--foreground);
+  border-color: var(--border);
+  background-color: var(--surface);
+  font-size: var(--fs-compact);
+  margin-bottom: 0;
+}
+
+.table th,
+.table thead.table-light th {
+  background-color: var(--surface-secondary);
+  color: var(--heading);
+  border-color: var(--border);
+  font-weight: 700;
+  font-size: var(--fs-label);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 10px 10px;
+  white-space: nowrap;
+}
+
+.table td {
+  border-color: var(--border);
+  padding: 8px 10px;
+  vertical-align: middle;
+  color: var(--foreground);
+}
+
+/* Hover de linhas <tr> é aplicado exclusivamente no Desktop em layouts/layout-desktop.css */
+.table-striped tbody tr:nth-of-type(odd) {
+  background-color: var(--surface-secondary);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* --- Tabulator --- */
+.tabulator {
+  font-family: var(--font-sans);
+  font-size: var(--fs-compact);
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--foreground);
+  overflow: hidden;
+}
+
+.tabulator .tabulator-header {
+  background-color: var(--surface-secondary);
+  border-bottom: 2px solid var(--border);
+  color: var(--heading);
+  font-weight: 700;
+  font-size: var(--fs-label);
+}
+
+.tabulator .tabulator-header .tabulator-col {
+  background-color: var(--surface-secondary);
+  border-right: 1px solid var(--border);
+  color: var(--heading);
+}
+
+.tabulator .tabulator-header .tabulator-col .tabulator-col-content {
+  padding: 8px 8px;
+}
+
+.tabulator .tabulator-header .tabulator-col .tabulator-col-title {
+  color: var(--heading);
+  font-weight: 700;
+}
+
+.tabulator .tabulator-header .tabulator-col.tabulator-sortable:hover,
+.tabulator .tabulator-header .tabulator-col:hover {
+  background-color: var(--primary-subtle);
+}
+
+.tabulator .tabulator-header .tabulator-col.tabulator-frozen,
+.tabulator .tabulator-header .tabulator-col:nth-child(-n+3) {
+  background-color: var(--surface-secondary);
+  position: sticky;
+  z-index: 12;
+}
+
+.tabulator .tabulator-tableholder {
+  background-color: var(--surface);
+}
+
+.tabulator .tabulator-tableholder .tabulator-table {
+  background-color: transparent;
+  color: var(--foreground);
+}
+
+.tabulator .tabulator-tableholder .tabulator-placeholder .tabulator-placeholder-contents {
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+
+.tabulator .tabulator-row {
+  background-color: var(--surface);
+  color: var(--foreground);
+  border-bottom: 1px solid var(--border);
+}
+
+.tabulator .tabulator-row.tabulator-row-even {
+  background-color: var(--surface-secondary);
+}
+
+.tabulator .tabulator-row:hover,
+.tabulator .tabulator-row:hover .tabulator-cell {
+  background-color: var(--surface-tertiary);
+}
+
+.tabulator .tabulator-cell {
+  border-right: 1px solid var(--border);
+  padding: 6px 8px;
+  color: var(--foreground);
+}
+
+.tabulator .tabulator-cell[tabulator-field="_acoes"],
+.tabulator .tabulator-header .tabulator-col[tabulator-field="_acoes"] {
+  padding: 0;
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+}
+
+.tabulator .tabulator-row .tabulator-cell.tabulator-frozen,
+.tabulator .tabulator-row .tabulator-cell:nth-child(-n+3) {
+  background-color: inherit;
+  position: sticky;
+  z-index: 10;
+}
+
+/* Item selecionado: fundo mais leve com texto de alto contraste */
+.tabulator .tabulator-row.tabulator-selected,
+.tabulator .tabulator-row.tabulator-selected .tabulator-cell {
+  background-color: #dbeafe;
+  color: #0f172a;
+}
+
+.tabulator .tabulator-row.tabulator-selected:hover,
+.tabulator .tabulator-row.tabulator-selected:hover .tabulator-cell {
+  background-color: #bfdbfe;
+  color: #0f172a;
+}
+
+.tabulator input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: var(--primary);
+  width: 16px;
+  height: 16px;
+}
+
+.tabulator-footer {
+  background-color: var(--surface-secondary);
+  border-top: 1px solid var(--border);
+  color: var(--muted-foreground);
+}
+
+/* Tabulator — Dark Theme (alto contraste em cabeçalhos, linhas, edição e seleção leve) */
+[data-theme="dark"] .tabulator,
+[data-bs-theme="dark"] .tabulator,
+.dark .tabulator {
+  background-color: #161b26;
+  border-color: #283246;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .tabulator .tabulator-header,
+[data-bs-theme="dark"] .tabulator .tabulator-header,
+.dark .tabulator .tabulator-header {
+  background-color: #0f1420;
+  border-bottom: 2px solid #283246;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .tabulator .tabulator-header .tabulator-col,
+[data-bs-theme="dark"] .tabulator .tabulator-header .tabulator-col,
+.dark .tabulator .tabulator-header .tabulator-col {
+  background-color: #0f1420;
+  border-right: 1px solid #242d40;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .tabulator .tabulator-header .tabulator-col .tabulator-col-title,
+[data-bs-theme="dark"] .tabulator .tabulator-header .tabulator-col .tabulator-col-title,
+.dark .tabulator .tabulator-header .tabulator-col .tabulator-col-title {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .tabulator .tabulator-header .tabulator-col.tabulator-frozen,
+[data-bs-theme="dark"] .tabulator .tabulator-header .tabulator-col.tabulator-frozen,
+.dark .tabulator .tabulator-header .tabulator-col.tabulator-frozen,
+[data-theme="dark"] .tabulator .tabulator-header .tabulator-col:nth-child(-n+3),
+[data-bs-theme="dark"] .tabulator .tabulator-header .tabulator-col:nth-child(-n+3),
+.dark .tabulator .tabulator-header .tabulator-col:nth-child(-n+3) {
+  background-color: #0f1420;
+}
+
+[data-theme="dark"] .tabulator .tabulator-header .tabulator-col.tabulator-sortable:hover,
+[data-bs-theme="dark"] .tabulator .tabulator-header .tabulator-col:hover,
+.dark .tabulator .tabulator-header .tabulator-col:hover {
+  background-color: #1e273a;
+}
+
+[data-theme="dark"] .tabulator .tabulator-header .tabulator-col .tabulator-header-filter input,
+[data-theme="dark"] .tabulator .tabulator-header .tabulator-col .tabulator-header-filter select,
+.dark .tabulator .tabulator-header .tabulator-col .tabulator-header-filter input,
+.dark .tabulator .tabulator-header .tabulator-col .tabulator-header-filter select {
+  background-color: #121620;
+  border: 1px solid #334155;
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .tabulator .tabulator-tableholder,
+[data-bs-theme="dark"] .tabulator .tabulator-tableholder,
+.dark .tabulator .tabulator-tableholder {
+  background-color: #161b26;
+}
+
+[data-theme="dark"] .tabulator .tabulator-row,
+[data-bs-theme="dark"] .tabulator .tabulator-row,
+.dark .tabulator .tabulator-row {
+  background-color: #161b26;
+  color: #e2e8f0;
+  border-bottom: 1px solid #242d40;
+}
+
+[data-theme="dark"] .tabulator .tabulator-row.tabulator-row-even,
+[data-bs-theme="dark"] .tabulator .tabulator-row.tabulator-row-even,
+.dark .tabulator .tabulator-row.tabulator-row-even {
+  background-color: #121722;
+}
+
+[data-theme="dark"] .tabulator .tabulator-row .tabulator-cell,
+[data-bs-theme="dark"] .tabulator .tabulator-row .tabulator-cell,
+.dark .tabulator .tabulator-row .tabulator-cell {
+  border-right: 1px solid #242d40;
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .tabulator .tabulator-row:hover,
+[data-bs-theme="dark"] .tabulator .tabulator-row:hover,
+.dark .tabulator .tabulator-row:hover,
+[data-theme="dark"] .tabulator .tabulator-row:hover .tabulator-cell,
+[data-bs-theme="dark"] .tabulator .tabulator-row:hover .tabulator-cell,
+.dark .tabulator .tabulator-row:hover .tabulator-cell {
+  background-color: #1e273a;
+  color: #ffffff;
+}
+
+/* Dark Theme: linha selecionada com fundo azul suave/leve e texto claro bem contrastado */
+[data-theme="dark"] .tabulator .tabulator-row.tabulator-selected,
+[data-bs-theme="dark"] .tabulator .tabulator-row.tabulator-selected,
+.dark .tabulator .tabulator-row.tabulator-selected,
+[data-theme="dark"] .tabulator .tabulator-row.tabulator-selected .tabulator-cell,
+[data-bs-theme="dark"] .tabulator .tabulator-row.tabulator-selected .tabulator-cell,
+.dark .tabulator .tabulator-row.tabulator-selected .tabulator-cell {
+  background-color: #1e3358;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .tabulator .tabulator-row.tabulator-selected:hover,
+[data-bs-theme="dark"] .tabulator .tabulator-row.tabulator-selected:hover,
+.dark .tabulator .tabulator-row.tabulator-selected:hover,
+[data-theme="dark"] .tabulator .tabulator-row.tabulator-selected:hover .tabulator-cell,
+[data-bs-theme="dark"] .tabulator .tabulator-row.tabulator-selected:hover .tabulator-cell,
+.dark .tabulator .tabulator-row.tabulator-selected:hover .tabulator-cell {
+  background-color: #253e6b;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .tabulator .tabulator-row .tabulator-cell.tabulator-editing input,
+[data-theme="dark"] .tabulator .tabulator-row .tabulator-cell.tabulator-editing select,
+[data-theme="dark"] .tabulator .tabulator-row .tabulator-cell.tabulator-editing textarea,
+.dark .tabulator .tabulator-row .tabulator-cell.tabulator-editing input,
+.dark .tabulator .tabulator-row .tabulator-cell.tabulator-editing select,
+.dark .tabulator .tabulator-row .tabulator-cell.tabulator-editing textarea {
+  background-color: #0b0f17;
+  color: #ffffff;
+  border: 1px solid #3b82f6;
+}
+
+[data-theme="dark"] .tabulator-footer,
+[data-bs-theme="dark"] .tabulator-footer,
+.dark .tabulator-footer {
+  background-color: #0f1420;
+  border-top: 1px solid #283246;
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .tabulator-footer .tabulator-page,
+.dark .tabulator-footer .tabulator-page {
+  background-color: #161b26;
+  border-color: #283246;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .tabulator-footer .tabulator-page.active,
+.dark .tabulator-footer .tabulator-page.active {
+  background-color: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .tabulator-edit-list,
+[data-bs-theme="dark"] .tabulator-edit-list,
+.dark .tabulator-edit-list {
+  background-color: #161b26;
+  border: 1px solid #283246;
+  color: #e2e8f0;
+  box-shadow: var(--modal-shadow);
+}
+
+[data-theme="dark"] .tabulator-edit-list .tabulator-edit-list-item,
+[data-bs-theme="dark"] .tabulator-edit-list .tabulator-edit-list-item,
+.dark .tabulator-edit-list .tabulator-edit-list-item {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .tabulator-edit-list .tabulator-edit-list-item.active,
+[data-theme="dark"] .tabulator-edit-list .tabulator-edit-list-item:hover,
+[data-bs-theme="dark"] .tabulator-edit-list .tabulator-edit-list-item.active,
+[data-bs-theme="dark"] .tabulator-edit-list .tabulator-edit-list-item:hover,
+.dark .tabulator-edit-list .tabulator-edit-list-item.active,
+.dark .tabulator-edit-list .tabulator-edit-list-item:hover {
+  background-color: #1e3358;
+  color: #f8fafc;
+}
+
+.tabulator .tabulator-footer .tabulator-paginator .tabulator-page {
+  background-color: var(--surface-secondary);
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  border-radius: var(--radius-xs);
+}
+
+.tabulator .tabulator-footer .tabulator-paginator .tabulator-page.active {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+}
+
+.cell-qtrib-manual,
+.tabulator-cell.cell-qtrib-manual {
+  color: var(--warning) !important;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   BADGE CANÔNICO (.nft-badge + data-tone)
+   Substitui badge-cat, badge-role, badge-op, badge-variacao, badge-env, etc.
+   ========================================================================== */
+.nft-badge,
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: var(--fs-label);
+  font-weight: 700;
+  line-height: 1.25;
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  border: 1px solid transparent;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.nft-badge--pill {
+  border-radius: var(--radius-full);
+  padding: 3px 10px;
+}
+
+.nft-badge--mono {
+  font-family: var(--font-mono);
+}
+
+[title="Local de entrega / pavilhão"] {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  text-align: left;
+  max-width: 100%;
+}
+
+[title="Local de entrega / pavilhão"] > svg,
+[title="Local de entrega / pavilhão"] > i {
+  flex-shrink: 0;
+}
+
+.nft-badge[data-tone="neutral"] {
+  background-color: var(--neutral-badge-bg);
+  color: var(--neutral-badge-color);
+  border-color: var(--neutral-badge-border);
+}
+
+.nft-badge[data-tone="primary"] {
+  background-color: var(--primary-subtle);
+  color: var(--primary);
+  border-color: var(--primary-border);
+}
+
+.nft-badge[data-tone="info"] {
+  background-color: var(--info-subtle);
+  color: var(--info);
+  border-color: var(--info-border);
+}
+
+.nft-badge[data-tone="success"] {
+  background-color: var(--success-subtle);
+  color: var(--success);
+  border-color: var(--success-border);
+}
+
+.nft-badge[data-tone="warning"] {
+  background-color: var(--warning-subtle);
+  color: var(--warning);
+  border-color: var(--warning-border);
+}
+
+.nft-badge[data-tone="danger"] {
+  background-color: var(--danger-subtle);
+  color: var(--danger);
+  border-color: var(--danger-border);
+}
+
+.nft-badge[data-tone="cyan"] {
+  background-color: var(--cyan-subtle);
+  color: var(--cyan);
+  border-color: var(--cyan-border);
+}
+
+.nft-badge[data-tone="indigo"] {
+  background-color: var(--indigo-subtle);
+  color: var(--indigo);
+  border-color: var(--indigo-border);
+}
+
+/* Indicadores SEFAZ (cStat & Ambiente) */
+.sefaz-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  line-height: 1.25;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.sefaz-amb-homologacao {
+  background-color: var(--neutral-badge-bg);
+  color: var(--neutral-badge-color);
+  border-color: var(--neutral-badge-border);
+}
+
+.sefaz-amb-producao,
+.sefaz-cstat-autorizado {
+  background-color: var(--success-subtle);
+  color: var(--success);
+  border-color: var(--success-border);
+}
+
+.sefaz-cstat-rejeicao,
+.sefaz-cstat-erro {
+  background-color: var(--danger-subtle);
+  color: var(--danger);
+  border-color: var(--danger-border);
+}
+
+.sefaz-cstat-aguardando,
+.sefaz-cstat-denegada {
+  background-color: var(--warning-subtle);
+  color: var(--warning);
+  border-color: var(--warning-border);
+}
+
+/* ==========================================================================
+   WIDGETS DE DOMÍNIO (Relatórios, Usuários, Operações, Unidades, Análise)
+   ========================================================================== */
+.chave-display {
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  background-color: var(--surface-secondary);
+  color: var(--foreground);
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 170px;
+}
+
+.chave-text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 132px;
+  display: inline-block;
+}
+
+.chave-copy-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+.chave-copy-btn:hover { color: var(--primary); }
+
+.ref-tag {
+  font-weight: 700;
+  font-size: var(--fs-compact);
+  color: var(--primary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ref-tag:hover { text-decoration: underline; }
+.edit-ref-icon { opacity: 0.45; transition: opacity 0.15s ease; }
+.ref-tag:hover .edit-ref-icon { opacity: 1; }
+
+.user-avatar-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background-color: var(--primary-subtle);
+  color: var(--primary);
+  border: 1px solid var(--primary-border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: var(--fs-control);
+  flex-shrink: 0;
+}
+
+.modal-avatar-preview {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--primary);
+  box-shadow: var(--card-shadow);
+}
+
+.nft-logo-thumb {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border);
+  background-color: #ffffff;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.nft-logo-thumb--initials {
+  background-color: var(--surface-secondary);
+  color: var(--muted-foreground);
+  font-size: var(--fs-label);
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nft-logo-preview-box {
+  position: relative;
+  width: 86px;
+  height: 86px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background-color: #ffffff;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.nft-logo-preview-box__placeholder {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-label);
+  color: var(--muted-foreground);
+  text-align: center;
+  padding: 4px;
+}
+
+.nft-logo-preview-box__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background-color: #ffffff;
+  z-index: 2;
+}
+
+.perm-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-weight: 800;
+  font-size: var(--fs-compact);
+  line-height: 1;
+  user-select: none;
+}
+.perm-yes { background-color: var(--success-subtle); color: var(--success); border: 1px solid var(--success-border); }
+.perm-no  { background-color: var(--danger-subtle);  color: var(--danger);  border: 1px solid var(--danger-border); }
+
+.badge-variacao-remover {
+  cursor: pointer;
+  opacity: 0.65;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+.badge-variacao-remover:hover {
+  opacity: 1;
+  color: var(--danger);
+}
+
+/* Drag & Drop Operações e Enquadramento Ativo */
+.op-drag-item {
+  user-select: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+.op-drag-item:hover {
+  background-color: var(--surface-secondary);
+  border-color: var(--primary-border);
+}
+.op-drag-item.dragging {
+  opacity: 0.45;
+  background-color: var(--primary-subtle);
+  border: 2px dashed var(--primary);
+}
+.op-drag-item.op-drag-target-over {
+  border-top: 3px solid var(--primary);
+}
+.grip-handle { cursor: grab; touch-action: none; }
+.grip-handle:active { cursor: grabbing; }
+
+#cfg_enquadramentos_lista .cfg-enq-item {
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+#cfg_enquadramentos_lista .cfg-enq-item.active {
+  background-color: var(--surface-tertiary);
+  border-color: var(--primary-border);
+  color: var(--heading);
+  font-weight: 700;
+}
+#cfg_enquadramentos_lista .cfg-enq-item.active .cfg-enq-cfop {
+  color: var(--primary);
+  font-weight: 800;
+}
+
+.texto-categoria-rascunho {
+  font-size: var(--fs-compact);
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.error-item-row:hover,
+.alert-item-row:hover {
+  filter: brightness(0.97);
+}
+
+/* ==========================================================================
+   MODO INSPETOR DEV (Alt+Shift+I) — HUD Técnico Flutuante
+   ========================================================================== */
+.nft-dev-inspector-outline {
+  outline: 2px dashed #ec4899 !important;
+  outline-offset: 2px !important;
+}
+
+.nft-dev-inspector-hud {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: var(--z-inspector);
+  max-width: 440px;
+  background-color: #0f172a;
+  color: #f8fafc;
+  border: 1px solid #334155;
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.45;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.nft-dev-inspector-hud__tag {
+  color: #f472b6;
+  font-weight: 700;
+}
+
+.nft-dev-inspector-hud__ui {
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+.nft-dev-inspector-hud__title {
+  color: #a3e635;
+}
+
+.nft-dev-inspector-hud__hint {
+  color: #94a3b8;
+  margin-top: 4px;
+  border-top: 1px solid #1e293b;
+  padding-top: 4px;
+}

@@ -1,101 +1,86 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <link href="/static/img/brand/nftlogo.webp" rel="icon" type="image/webp"/>
-  <meta charset="utf-8"/>
-  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <title>{{ editor_cfg.page_title }}</title>
-  <!-- Bootstrap 5 CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <!-- NFT Logistics Theme (Light & Dark) -->
-  <link href="/static/css/nft-theme.css?v=4.1" rel="stylesheet"/>
-  <link href="/static/css/nft-sidebar.css?v=4.3" rel="stylesheet"/>
-  <script src="/static/js/theme.js"></script>
-  <!-- Lucide Icons -->
-  <script src="/static/js/lucide.min.js"></script>
-  <script src="/static/js/nft-dialogs.js"></script>
-  <!-- Tabulator CSS & JS -->
+{% extends 'layouts/base.html' %}
+{% import 'macros/ui.html' as ui %}
+
+{% set sidebar_active = editor_cfg.sidebar_active %}
+{% set topbar_modulo = editor_cfg.topbar_modulo %}
+{% set topbar_tag = editor_cfg.topbar_tag %}
+
+{% block title %}{{ editor_cfg.page_title }}{% endblock %}
+{% block page_ui_id %}editor.page.main{% endblock %}
+
+{% block vendor_css %}
+  <!-- Tabulator CSS (carregado antes do nft-app.css para respeitar os tokens Light/Dark) -->
   <link href="https://unpkg.com/tabulator-tables@5.5.0/dist/css/tabulator_bootstrap5.min.css" rel="stylesheet"/>
-  <link href="/static/css/nft-espelho.css?v=1.0" rel="stylesheet"/>
+{% endblock %}
+
+{% block extra_head %}
+  <!-- Tabulator JS & Módulos do Editor -->
   <script src="https://unpkg.com/tabulator-tables@5.5.0/dist/js/tabulator.min.js"></script>
-  <script defer src="/static/js/nft-sidebar.js?v=3.5"></script>
-  <script defer src="/static/js/nft-item-modal.js?v=1.1"></script>
-  <script defer src="/static/js/nft-analise-rascunho.js?v=1.0"></script>
+  <script defer src="/static/js/nft-item-modal.js?v=5.0"></script>
+  <script defer src="/static/js/nft-analise-rascunho.js?v=5.0"></script>
   <script defer src="/static/js/nft-exportacao.js?v=1.0"></script>
-  <script defer src="/static/js/nft-regex-visual.js?v=1.0"></script>
-  <script defer src="/static/js/nft-empresa-rapida.js?v=1.0"></script>
-  <script defer src="/static/js/nft-espelho.js?v=1.0"></script>
-</head>
-<body class="has-sidebar">
-  {% set sidebar_active = editor_cfg.sidebar_active %}
-  {% include 'partials/sidebar.html' %}
+  <script defer src="/static/js/nft-regex-visual.js?v=5.0"></script>
+  <script defer src="/static/js/nft-empresa-rapida.js?v=5.0"></script>
+  <script defer src="/static/js/nft-espelho.js?v=5.0"></script>
+{% endblock %}
 
-  <div class="nft-main-wrapper">
-    {% set topbar_modulo = editor_cfg.topbar_modulo %}
-    {% set topbar_tag = editor_cfg.topbar_tag %}
-    {% include 'partials/topbar.html' %}
+{% block content %}
+  {% include 'partials/editor/_header_acao.html' %}
 
-    <div class="container-fluid px-4 py-3">
-      {% include 'partials/editor/_header_acao.html' %}
+  <!-- Banner: Sessão Temporária Restaurada -->
+  <div class="alert alert-info py-2 px-3 mb-3 d-none align-items-center justify-content-between flex-wrap gap-2 shadow-sm" id="nft-autosave-alert" data-ui="editor.autosave.banner">
+    <div class="d-flex align-items-center flex-wrap gap-2">
+      <i data-lucide="history" class="nft-icon--md"></i>
+      <span><strong>Sessão restaurada automaticamente:</strong> Os dados e itens em edição foram preservados com segurança nesta página.</span>
+      <span class="nft-badge nft-badge--mono" data-tone="info" id="nft-autosave-time" title="Horário do último salvamento automático" data-ui="editor.autosave.time"></span>
+    </div>
+    <div class="d-flex align-items-center flex-wrap gap-2">
+      {{ ui.btn('Limpar (Nova Nota)', variant='secondary', size='sm', icon='rotate-ccw', onclick='limparSessaoTemporariaComConfirmacao()', title='Limpar formulário e começar nota fiscal em branco', ui_id='editor.autosave.btn-limpar') }}
+      <button aria-label="Fechar aviso de sessão restaurada" class="btn-close" onclick="fecharBannerSessaoRestaurada()" title="Fechar aviso de sessão restaurada" type="button" data-ui="editor.autosave.btn-fechar"></button>
+    </div>
+  </div>
 
-      <!-- Banner: Sessão Temporária Restaurada -->
-      <div class="alert alert-info py-2 px-3 mb-3 d-none align-items-center justify-content-between flex-wrap gap-2 shadow-sm border" id="nft-autosave-alert" style="font-size: 12.5px;">
-        <div class="d-flex align-items-center flex-wrap gap-2">
-          <i data-lucide="history" style="width: 16px; height: 16px;"></i>
-          <span><strong>Sessão restaurada automaticamente:</strong> Os dados e itens em edição foram preservados com segurança nesta página.</span>
-          <span class="badge font-monospace bg-info-subtle text-info fw-bold" id="nft-autosave-time"></span>
-        </div>
-        <div class="d-flex align-items-center flex-wrap gap-2">
-          <button class="btn-nft py-0 px-2 d-inline-flex align-items-center gap-1" onclick="limparSessaoTemporariaComConfirmacao()" title="Limpar formulário e começar nota em branco" type="button">
-            <i data-lucide="rotate-ccw" style="width: 12px; height: 12px;"></i>
-            <span>Limpar (Nova Nota)</span>
-          </button>
-          <button aria-label="Fechar" class="btn-close" onclick="fecharBannerSessaoRestaurada()" style="font-size: 10px;" type="button"></button>
-        </div>
-      </div>
+  <!-- Abas Principais -->
+  <ul class="nav nav-tabs mb-3" id="myTab" role="tablist" data-ui="editor.tabs.nav">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" data-bs-target="#cabecalho" data-bs-toggle="tab" id="cabecalho-tab" role="tab" type="button" title="Aba 1: Operação, PTAX, Transporte, DI/DUIMP e Observações" data-ui="editor.tabs.btn-cabecalho">
+        <i data-lucide="clipboard-list" class="nft-icon--sm"></i><span class="d-none d-md-inline">1. Operação</span>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-target="#identificacao" data-bs-toggle="tab" id="identificacao-tab" role="tab" type="button" title="Aba 2: Emitente, Destinatário, Retirada e Entrega" data-ui="editor.tabs.btn-identificacao">
+        <i data-lucide="contact" class="nft-icon--sm"></i><span class="d-none d-md-inline">2. Identificação</span>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-target="#itens" data-bs-toggle="tab" id="itens-tab" role="tab" type="button" title="Aba 3: Grade de Itens, Rateio e Totais da NF-e" data-ui="editor.tabs.btn-itens">
+        <i data-lucide="package" class="nft-icon--sm"></i><span class="d-none d-md-inline">3. Itens da Nota (</span><span class="text-danger fw-bold" id="itens-badge" title="Quantidade de itens na nota" data-ui="editor.tabs.badge-itens">0</span><span class="d-none d-md-inline">)</span>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link text-success" data-bs-target="#historico-sefaz" data-bs-toggle="tab" id="historico-sefaz-tab" role="tab" type="button" title="Aba 4: Transmissão, Consulta, CC-e, Cancelamento e Histórico SEFAZ" data-ui="editor.tabs.btn-sefaz">
+        <i data-lucide="activity" class="nft-icon--sm"></i><span class="d-none d-md-inline">4. SEFAZ (Envio &amp; Histórico)</span>
+      </button>
+    </li>
+  </ul>
 
-      <!-- Abas Principais -->
-      <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
-        <li class="nav-item" role="presentation">
-          <button class="nav-link active d-flex align-items-center gap-1" data-bs-target="#cabecalho" data-bs-toggle="tab" id="cabecalho-tab" role="tab" type="button" title="1. Operação">
-            <i data-lucide="clipboard-list"></i><span class="d-none d-md-inline">1. Operação</span>
-          </button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link d-flex align-items-center gap-1" data-bs-target="#identificacao" data-bs-toggle="tab" id="identificacao-tab" role="tab" type="button" title="2. Identificação">
-            <i data-lucide="contact"></i><span class="d-none d-md-inline">2. Identificação</span>
-          </button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link d-flex align-items-center gap-1" data-bs-target="#itens" data-bs-toggle="tab" id="itens-tab" role="tab" type="button" title="3. Itens da Nota">
-            <i data-lucide="package"></i><span class="d-none d-md-inline">3. Itens da Nota (</span><span class="text-danger fw-bold" id="itens-badge">0</span><span class="d-none d-md-inline">)</span>
-          </button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link bg-success-subtle text-success fw-bold d-flex align-items-center gap-1" data-bs-target="#historico-sefaz" data-bs-toggle="tab" id="historico-sefaz-tab" role="tab" type="button" title="4. SEFAZ (Envio &amp; Histórico)">
-            <i data-lucide="activity"></i><span class="d-none d-md-inline">4. SEFAZ (Envio &amp; Histórico)</span>
-          </button>
-        </li>
-      </ul>
+  <div class="tab-content mb-4" id="myTabContent" data-ui="editor.tabs.content">
+    {% include 'partials/editor/_aba_cabecalho.html' %}
+    {% include 'partials/editor/_aba_identificacao.html' %}
+    {% include 'partials/editor/_aba_sefaz.html' %}
+    {% include 'partials/editor/_aba_itens_totais.html' %}
+  </div>
+{% endblock %}
 
-      <div class="tab-content bg-white p-3 border rounded shadow-sm mb-4" id="myTabContent">
-        {% include 'partials/editor/_aba_cabecalho.html' %}
-        {% include 'partials/editor/_aba_identificacao.html' %}
-        {% include 'partials/editor/_aba_sefaz.html' %}
-        {% include 'partials/editor/_aba_itens_totais.html' %}
-      </div>
-    </div><!-- /container-fluid -->
-  </div><!-- /nft-main-wrapper -->
-
+{% block modals %}
   {% include 'partials/editor/_modais.html' %}
+{% endblock %}
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% block scripts %}
   <script>window.NFT_EDITOR_MODO = {{ editor_modo|tojson }};</script>
   <script src="/static/js/nft-editor-modos.js?v=1.0"></script>
-  <script src="/static/js/nft-editor-core.js?v=1.0"></script>
+  <script src="/static/js/nft-editor-core.js?v=5.0"></script>
   <script src="/static/js/nft-autosave.js?v=2.9"></script>
-  <script src="/static/js/nft-shortcuts.js?v=1.0"></script>
-  <script src="/static/js/nft-sefaz.js?v=3.1"></script>
-  <script src="/static/js/nft-operacoes-manager.js?v=3.1"></script>
-</body>
-</html>
+  <script src="/static/js/nft-sefaz.js?v=5.0"></script>
+  <script src="/static/js/nft-operacoes-manager.js?v=5.0"></script>
+{% endblock %}

@@ -1,0 +1,165 @@
+{% import 'macros/ui.html' as ui %}
+
+<!-- WORKSPACE COMPARTILHADO: TIPO DE NOTA (USADO EM tipo_nota.html E #modalTipoNota) -->
+<div class="row g-3" data-ui="tipo-nota.workspace.grid">
+  <!-- Coluna Esquerda: Lista de Operações Cadastradas -->
+  <div class="col-lg-4">
+    <div class="card h-100 d-flex flex-column" data-ui="tipo-nota.lista.card">
+      <div class="card-header d-flex justify-content-between align-items-center gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <span class="fw-bold">Operações Cadastradas</span>
+          {{ ui.badge('0', tone='neutral', mono=True, id='badge-total-operacoes', title='Total de tipos de operação cadastrados', ui_id='tipo-nota.lista.badge-total') }}
+        </div>
+        {{ ui.btn('Nova', variant='secondary', size='sm', icon='plus', onclick='novaOperacao()', title='Criar nova configuração de operação fiscal', ui_id='tipo-nota.lista.btn-nova') }}
+      </div>
+      <div class="card-body d-flex flex-column gap-2">
+        {% call ui.field_wrap('filtro-operacoes', 'Buscar operação ou CFOP', ui_id='tipo-nota.lista.field-filtro', extra_class='nft-field--flush') %}
+          <div class="input-group">
+            <span class="input-group-text"><i data-lucide="search" class="nft-icon--sm"></i></span>
+            <input type="text" id="filtro-operacoes" class="nft-control" placeholder="Buscar operação ou CFOP..." oninput="filtrarOperacoesCadastradas(this.value)" title="Filtrar operações cadastradas por nome ou CFOP" data-ui="tipo-nota.lista.input-filtro"/>
+            <button class="nft-btn nft-btn--ghost" type="button" onclick="limparFiltroOperacoes()" title="Limpar filtro de operações" data-ui="tipo-nota.lista.btn-limpar-filtro">
+              <i data-lucide="x"></i>
+            </button>
+          </div>
+        {% endcall %}
+        <small class="nft-field__help mt-0">
+          <i data-lucide="move" class="nft-icon--sm"></i> Arraste as operações para reorganizar a ordem de exibição
+        </small>
+        <div class="list-group flex-grow-1 overflow-auto" id="lista-operacoes" style="max-height: 560px;" data-ui="tipo-nota.lista.items">
+          <div class="text-center text-muted py-4 small">Carregando operações...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Coluna Direita: Formulário de Configuração -->
+  <div class="col-lg-8">
+    <div class="card h-100" data-ui="tipo-nota.form.card">
+      <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div id="titulo-form-op" data-ui="tipo-nota.form.header-title">
+          <small class="text-muted d-block">Configuração da Operação</small>
+          <strong id="lbl-op-nome" class="text-heading">Nova Operação</strong>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          {% if tipo_nota_in_modal %}
+            {{ ui.btn('Puxar Impostos do XML', variant='secondary', size='sm', icon='download', onclick='capturarImpostosDoXmlAtual()', title='Capturar regras fiscais diretamente do XML carregado no editor', ui_id='tipo-nota.form.btn-capturar-xml') }}
+          {% endif %}
+          <button class="nft-btn nft-btn--danger nft-btn--sm" id="btn-excluir-op" onclick="excluirOperacaoAtual()" style="display: none;" title="Excluir permanentemente esta operação cadastrada" type="button" data-ui="tipo-nota.form.btn-excluir">
+            <i data-lucide="trash-2"></i>
+            <span>Excluir</span>
+          </button>
+          {{ ui.btn('Salvar Configuração', variant='primary', size='sm', icon='save', onclick='salvarOperacao()', title='Salvar regras fiscais desta operação no banco de dados', ui_id='tipo-nota.form.btn-salvar') }}
+        </div>
+      </div>
+      <div class="card-body">
+        <form id="form-tipo-nota" onsubmit="event.preventDefault(); salvarOperacao();" data-ui="tipo-nota.form.element">
+          <input id="op_id" type="hidden"/>
+          <input type="hidden" id="op_p_ipi" value="0.00"/>
+          <input type="hidden" id="op_aliquota_ii" value="0.00"/>
+          <input type="hidden" id="op_p_pis" value="0.00"/>
+          <input type="hidden" id="op_p_cofins" value="0.00"/>
+
+          <div class="row g-2">
+            <div class="col-md-5">
+              {{ ui.field_input('op_nome', 'Nome da Operação (natOp)', placeholder='Ex: ADMISSAO TEMPORARIA, OUTRAS ENTRADAS...', tone='primary', extra_class='nft-field--highlight', required=True, title='Natureza da Operação exibida no cabeçalho da NF-e (tag XML <natOp>)', ui_id='tipo-nota.form.field-nome') }}
+            </div>
+            <div class="col-md-2">
+              {{ ui.field_input('op_cfop', 'CFOP Padrão', modifier='code', placeholder='Ex: 3930', input_class='fw-bold', title='Código CFOP padrão aplicado aos itens desta operação', ui_id='tipo-nota.form.field-cfop') }}
+            </div>
+            <div class="col-md-2">
+              {% call ui.field_select('op_tp_nf', 'Tipo NF (tpNF)', title='Tipo de operação: 0 Entrada ou 1 Saída', ui_id='tipo-nota.form.field-tpnf') %}
+                <option value="0">0 - Entrada</option>
+                <option value="1">1 - Saída</option>
+              {% endcall %}
+            </div>
+            <div class="col-md-3">
+              {% call ui.field_select('op_id_dest', 'Destino (idDest)', title='Local de destino da operação (Interna, Interestadual ou Exterior)', ui_id='tipo-nota.form.field-iddest') %}
+                <option value="1">1 - Interna (mesma UF)</option>
+                <option value="2">2 - Interestadual</option>
+                <option selected value="3">3 - Com exterior</option>
+              {% endcall %}
+            </div>
+
+            <div class="col-md-6">
+              <div class="nft-field nft-field--highlight" data-tone="primary" data-ui="tipo-nota.form.field-regime">
+                <label class="nft-field__label" for="op_regime">Enquadramento / Regime Fiscal</label>
+                <span class="nft-field__action">
+                  <button type="button" class="nft-btn nft-btn--link" onclick="abrirModalConfigRegimes()" title="Editar regras padrão dos enquadramentos fiscais" data-ui="tipo-nota.form.btn-editar-regimes">
+                    <i data-lucide="settings" class="nft-icon--sm"></i>
+                    <span>Editar Regras</span>
+                  </button>
+                </span>
+                <select class="nft-control form-select fw-bold" id="op_regime" onchange="if(window.atualizarResumoRegimeForm) window.atualizarResumoRegimeForm(this.value)" title="Define o regime fiscal padrão (Suspensão, Isenção, Recolhimento ou Imunidade)" data-ui="tipo-nota.form.select-regime">
+                  <option value="SUSPENSAO">Suspensão (Admissão Temp. / Feiras)</option>
+                  <option value="ISENCAO">Isenção (Benefício Fiscal Legal)</option>
+                  <option value="RECOLHIMENTO">Recolhimento (Tributada Regularmente)</option>
+                  <option value="IMUNIDADE">Imunidade (Reexportação / Exportação)</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-6 d-flex align-items-center">
+              <div class="nft-section-box w-100 py-2 mt-2" data-ui="tipo-nota.form.box-regime-info">
+                <small id="op_regime_info" class="text-muted fw-semibold d-block" title="Resumo automático das regras do regime selecionado"></small>
+              </div>
+            </div>
+
+            <div class="col-12">
+              {% call ui.field_select('op_t_pag', 'Meio de Pagamento Padrão (tPag)', title='Define o meio de pagamento padrão desta operação (tag XML <tPag>)', ui_id='tipo-nota.form.field-tpag') %}
+                <option value="90">90 - Sem Pagamento (Padrão Remessas, Retornos, Admissão, Reexp.)</option>
+                <option value="99">99 - Outros (Câmbio / Internacional)</option>
+                <option value="01">01 - Dinheiro</option>
+                <option value="15">15 - Boleto Bancário</option>
+                <option value="16">16 - Depósito Bancário</option>
+                <option value="17">17 - Pagamento Instantâneo (PIX)</option>
+                <option value="03">03 - Cartão de Crédito</option>
+                <option value="04">04 - Cartão de Débito</option>
+              {% endcall %}
+            </div>
+
+            <!-- 1. ICMS -->
+            <div class="col-12 mt-2"><h6 class="nft-section-title mb-1">1. ICMS</h6></div>
+            <div class="col-md-6">
+              {% call ui.field_select('op_orig', 'Origem da Mercadoria (orig)', title='Origem fiscal da mercadoria (tag XML <orig>)', ui_id='tipo-nota.form.field-orig') %}
+                <option value="0">0 - Nacional</option>
+                <option selected value="1">1 - Estrangeira - Importação direta</option>
+                <option value="2">2 - Estrangeira - Adquirida no mercado interno</option>
+              {% endcall %}
+            </div>
+            <div class="col-md-6">
+              {% call ui.field_select('op_csosn', 'CSOSN / CST ICMS', title='Código CSOSN ou CST de ICMS padrão da operação', ui_id='tipo-nota.form.field-csosn') %}{% endcall %}
+            </div>
+
+            <!-- 2. IPI -->
+            <div class="col-12 mt-2"><h6 class="nft-section-title mb-1">2. IPI</h6></div>
+            <div class="col-md-6">
+              {{ ui.field_input('op_c_enq', 'Código de Enquadramento (cEnq)', modifier='code', placeholder='Ex: 102, 999', title='Código de enquadramento legal do IPI (tag XML <cEnq>)', ui_id='tipo-nota.form.field-cenq') }}
+            </div>
+            <div class="col-md-6">
+              {% call ui.field_select('op_cst_ipi', 'CST IPI', title='Código CST de IPI padrão da operação', ui_id='tipo-nota.form.field-cst-ipi') %}{% endcall %}
+            </div>
+
+            <!-- 3. PIS & COFINS -->
+            <div class="col-12 mt-2"><h6 class="nft-section-title mb-1">3. PIS &amp; COFINS</h6></div>
+            <div class="col-md-6">
+              {% call ui.field_select('op_cst_pis', 'CST PIS', title='Código CST de PIS padrão da operação', ui_id='tipo-nota.form.field-cst-pis') %}{% endcall %}
+            </div>
+            <div class="col-md-6">
+              {% call ui.field_select('op_cst_cofins', 'CST COFINS', title='Código CST de COFINS padrão da operação', ui_id='tipo-nota.form.field-cst-cofins') %}{% endcall %}
+            </div>
+
+            <!-- 4. OBSERVAÇÕES -->
+            <div class="col-12 mt-2"><h6 class="nft-section-title mb-1">4. Observações Padronizadas da Operação</h6></div>
+            <div class="col-12">
+              {{ ui.field_textarea('op_inf_cpl', 'Texto Sugerido para Informações Complementares (infCpl)', rows=3, placeholder='Texto que será sugerido no rodapé da nota para esta operação...', title='Observação padrão aplicada em infCpl ao selecionar esta operação', ui_id='tipo-nota.form.field-infcpl', extra_class='nft-field--flush') }}
+            </div>
+          </div>
+        </form>
+      </div>
+      {% if not tipo_nota_in_modal %}
+      <div class="card-footer">
+        <small class="text-muted">As configurações salvas ficam gravadas no banco de dados e refletem em tempo real no preenchimento de todas as notas.</small>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>

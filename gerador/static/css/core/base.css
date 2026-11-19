@@ -1,0 +1,221 @@
+/* ==========================================================================
+   NFT LOGISTICS — CORE BASE & TYPOGRAPHY
+   Estilos globais, acessibilidade, Lucide icons e adaptação Bootstrap Dark.
+   ========================================================================== */
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: var(--fs-control);
+  line-height: 1.5;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+a:hover {
+  color: var(--primary-hover);
+}
+
+.font-monospace {
+  font-family: var(--font-mono) !important;
+}
+
+.text-muted {
+  color: var(--muted-foreground) !important;
+}
+
+.text-heading {
+  color: var(--heading) !important;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* Alternância de Logos (Light / Dark) */
+.logo-theme-white {
+  display: none !important;
+}
+.logo-theme-black {
+  display: inline-block !important;
+}
+[data-theme="dark"] .logo-theme-white {
+  display: inline-block !important;
+}
+[data-theme="dark"] .logo-theme-black {
+  display: none !important;
+}
+
+/* ==========================================================================
+   ÍCONES LUCIDE (3 TAMANHOS CANÔNICOS)
+   ========================================================================== */
+.lucide,
+svg.lucide,
+[data-lucide],
+svg:not(.logo-theme-black):not(.logo-theme-white):not(.logo-svg) {
+  width: 1em;
+  height: 1em;
+  stroke: currentColor;
+  stroke-width: 1.75px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vertical-align: -0.15em;
+  display: inline-block;
+  fill: none;
+  flex-shrink: 0;
+}
+
+.nft-icon--sm,
+.nft-icon--sm svg {
+  width: 14px;
+  height: 14px;
+}
+
+.nft-icon--md,
+.nft-icon--md svg {
+  width: 16px;
+  height: 16px;
+}
+
+.nft-icon--lg,
+.nft-icon--lg svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* ==========================================================================
+   SUPERFÍCIES, DROPDOWNS, ALERTAS E LIST-GROUPS (LIGHT + DARK)
+   ========================================================================== */
+.bg-white {
+  background-color: var(--surface) !important;
+  color: var(--foreground) !important;
+}
+
+.bg-light,
+.bg-body-tertiary {
+  background-color: var(--surface-secondary) !important;
+  color: var(--foreground) !important;
+}
+
+.border,
+.border-top,
+.border-bottom,
+.border-start,
+.border-end {
+  border-color: var(--border) !important;
+}
+
+[data-theme="dark"] .text-dark:not(.badge):not(.badge *):not(.btn-warning):not(.btn-warning *):not(.nft-btn--warning):not(.nft-btn--warning *) {
+  color: var(--heading) !important;
+}
+
+[data-theme="dark"] .text-secondary {
+  color: var(--muted-foreground) !important;
+}
+
+.dropdown-menu {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--card-shadow-hover);
+  color: var(--foreground);
+  font-size: var(--fs-compact);
+  z-index: var(--z-dropdown);
+}
+
+.dropdown-item {
+  color: var(--foreground);
+  font-size: var(--fs-compact);
+  border-radius: var(--radius-xs);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+  background-color: var(--surface-tertiary);
+  color: var(--heading);
+}
+
+.dropdown-divider {
+  border-top-color: var(--border);
+}
+
+.dropdown-header {
+  font-size: var(--fs-label);
+  color: var(--muted-foreground);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.list-group-item {
+  background-color: var(--surface);
+  color: var(--foreground);
+  border-color: var(--border);
+  font-size: var(--fs-compact);
+}
+
+.list-group-item-action:hover,
+.list-group-item-action:focus {
+  background-color: var(--surface-secondary);
+  color: var(--heading);
+}
+
+.alert {
+  border-radius: var(--radius-md);
+  font-size: var(--fs-compact);
+  border: 1px solid var(--border);
+}
+
+.alert-info {
+  background-color: var(--info-subtle);
+  border-color: var(--info-border);
+  color: var(--foreground);
+}
+
+.alert-warning {
+  background-color: var(--warning-subtle);
+  border-color: var(--warning-border);
+  color: var(--foreground);
+}
+
+.alert-danger {
+  background-color: var(--danger-subtle);
+  border-color: var(--danger-border);
+  color: var(--foreground);
+}
+
+.alert-success {
+  background-color: var(--success-subtle);
+  border-color: var(--success-border);
+  color: var(--foreground);
+}
+
+.alert-light,
+.alert-secondary {
+  background-color: var(--surface-secondary);
+  border-color: var(--border);
+  color: var(--foreground);
+}
+
+/* Página com inputs em caixa alta automática (ex.: Empresas) */
+.nft-uppercase-inputs input[type="text"],
+.nft-uppercase-inputs input[type="search"],
+.nft-uppercase-inputs textarea {
+  text-transform: uppercase;
+}

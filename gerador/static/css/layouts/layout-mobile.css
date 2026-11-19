@@ -1,0 +1,254 @@
+/* ==========================================================================
+   NFT LOGISTICS — LAYOUT 3: MOBILE (<= 767.98px — Padrão Bootstrap SM/XS)
+   Alvos de toque >= 40px, fonte de inputs 16px (previne auto-zoom no iOS),
+   tabelas responsivas unificadas (.nft-table-cards) e modais em tela cheia.
+   ========================================================================== */
+
+@media (max-width: 767.98px) {
+  :root {
+    --ctl-h: 44px;
+    --ctl-h-sm: 40px;
+    --ctl-icon-md: 40px;
+    --ctl-icon-sm: 36px;
+    --ctl-px: 12px;
+
+    --fs-page-title: 18px;
+    --fs-modal-title: 16px;
+    --fs-section-title: 14px;
+    --fs-control: 16px;
+    --fs-compact: 13px;
+    --fs-label: 12px;
+
+    --space-container: 10px;
+    --space-card: 12px;
+    --space-gap: 10px;
+    --topbar-h: 48px;
+  }
+
+  /* NOTA: A dinâmica responsiva do Topbar segue sua configuração original dedicada em components/navigation.css */
+
+  .nft-page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .nft-page-actions {
+    justify-content: flex-start;
+  }
+
+  /* Abas ocupam largura total de forma confortável */
+  .nav-tabs,
+  ul.nav-tabs {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .nav-tabs .nav-item {
+    flex: 1 1 auto;
+    text-align: center;
+  }
+
+  .nav-tabs .nav-link {
+    width: 100%;
+    justify-content: center;
+    padding: 8px 10px;
+  }
+
+  /* Modais confortáveis no Mobile */
+  .modal-dialog {
+    margin: 8px;
+    max-width: calc(100vw - 16px);
+  }
+
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: 12px 14px;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .modal-footer > .nft-btn,
+  .modal-footer > .btn,
+  .modal-footer > div {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .modal-footer > div > .nft-btn,
+  .modal-footer > div > .btn {
+    width: 100%;
+  }
+
+  /* Quebra de linha para nomes longos de arquivo sem espaços no Modal de Certificados A1 */
+  #cert-modal-active-arquivo {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  /* Modo Dark no Mobile: impede aplicação de --bs-table-bg do Bootstrap nas tags <tr> */
+  [data-theme="dark"] table tr,
+  [data-bs-theme="dark"] table tr,
+  .dark table tr,
+  [data-theme="dark"] .table tbody tr,
+  [data-bs-theme="dark"] .table tbody tr,
+  .dark .table tbody tr {
+    --bs-table-bg: transparent;
+    --bs-table-striped-bg: transparent;
+    --bs-table-active-bg: transparent;
+    --bs-table-hover-bg: transparent;
+    --bs-table-accent-bg: transparent;
+    --bs-table-bg-type: transparent;
+    --bs-table-bg-state: transparent;
+  }
+
+  [data-theme="dark"] .table tbody tr > *,
+  [data-bs-theme="dark"] .table tbody tr > *,
+  .dark .table tbody tr > * {
+    --bs-table-bg: transparent;
+    --bs-table-bg-type: transparent;
+    --bs-table-bg-state: transparent;
+    background-color: transparent;
+  }
+
+  /* ========================================================================
+     TABELAS RESPONSIVAS -> CARDS EMPILHADOS (.nft-table-cards)
+     Regra genérica única substituindo ~600 linhas duplicadas por #id!
+     ======================================================================== */
+  .nft-table-wrap:has(.nft-table-cards),
+  .table-responsive:has(.nft-table-cards) {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+    max-height: none !important;
+  }
+
+  table.nft-table-cards {
+    background: transparent;
+    border: none;
+  }
+
+  table.nft-table-cards thead {
+    display: none;
+  }
+
+  table.nft-table-cards tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  table.nft-table-cards tbody tr {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    box-shadow: var(--card-shadow);
+  }
+
+  table.nft-table-cards tbody td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 4px 0;
+    border: none;
+    font-size: var(--fs-compact);
+    text-align: right;
+  }
+
+  table.nft-table-cards tbody td[data-label]::before {
+    content: attr(data-label);
+    font-size: var(--fs-label);
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+    text-align: left;
+    flex-shrink: 0;
+  }
+
+  table.nft-table-cards tbody td[data-card-title="true"] {
+    font-size: var(--fs-section-title);
+    font-weight: 700;
+    color: var(--heading);
+    justify-content: flex-start;
+    text-align: left;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+    white-space: normal !important;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .text-heading {
+    white-space: normal !important;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  /* Oculta o ícone de calendário na tabela de Feiras no Mobile */
+  [data-ui="feiras.page.main"] [data-lucide="calendar"],
+  #tbody-feiras [data-lucide="calendar"] {
+    display: none !important;
+  }
+
+  table.nft-table-cards tbody td[data-card-title="true"]::before {
+    display: none;
+  }
+
+  table.nft-table-cards tbody td[data-card-actions="true"] {
+    justify-content: flex-end;
+    padding-top: 8px;
+    margin-top: 4px;
+    border-top: 1px dashed var(--border);
+  }
+
+  table.nft-table-cards tbody td[data-card-actions="true"]::before {
+    display: none;
+  }
+
+  /* Espelho Fiscal A4 adaptado ao Mobile */
+  .nft-espelho-header {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  .nft-espelho-header-left {
+    width: 100%;
+  }
+
+  .nft-espelho-header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .nft-paper-meta-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .nft-paper-parties,
+  .nft-paper-totals-box,
+  .nft-paper-extra-grid {
+    grid-template-columns: 1fr;
+  }
+}

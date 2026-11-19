@@ -1,0 +1,112 @@
+/* ==========================================================================
+   NFT LOGISTICS — LAYOUT 2: TABLET / COMPACTO (768px – 1199.98px)
+   Padrão Bootstrap LG/MD: inputs e botões encolhem JUNTOS em perfeita harmonia.
+   Nenhuma fonte fica abaixo de 11px.
+   ========================================================================== */
+
+@media (max-width: 1199.98px) {
+  :root {
+    --ctl-h: 36px;
+    --ctl-h-sm: 30px;
+    --ctl-icon-md: 34px;
+    --ctl-icon-sm: 28px;
+    --ctl-px: 11px;
+
+    --fs-page-title: 19px;
+    --fs-modal-title: 15px;
+    --fs-section-title: 13px;
+    --fs-control: 13px;
+    --fs-compact: 12px;
+    --fs-label: 11px;
+
+    --space-container: 14px;
+    --space-card: 12px;
+    --space-gap: 10px;
+  }
+
+  /* NOTA: A dinâmica responsiva do Topbar (.nft-topbar, #topbar-emitente-pill, #topbar-emitente-cnpj)
+     segue sua configuração original dedicada em components/navigation.css */
+
+  /* Neutraliza qualquer estado :hover em <tr> (inclusive nativo do Bootstrap) fora do Desktop */
+  .table-hover > tbody > tr:hover > *,
+  .table tbody tr:hover,
+  .table tbody tr:hover > * {
+    --bs-table-accent-bg: transparent;
+    --bs-table-bg-state: transparent;
+    --bs-table-color-state: inherit;
+  }
+
+  .nft-field__icon,
+  .nft-notch-icon {
+    display: none;
+  }
+
+  .nft-field--has-icon > .nft-control,
+  .nft-field--has-icon > .form-control,
+  .nft-field--has-icon > .form-select,
+  .nft-notch-input:not(.no-icon),
+  .nft-notch-select:not(.no-icon) {
+    padding-left: var(--ctl-px);
+  }
+
+  .modal-dialog {
+    max-width: min(95vw, 800px);
+  }
+  .modal-dialog.modal-xl {
+    max-width: 96vw;
+  }
+
+  /* Toolbar densa da aba Itens vira ícones compactos no modo Tablet */
+  #itens .nft-itens-toolbar .nft-btn > span,
+  #barra-status-ptax-rateio .nft-btn > span {
+    display: none;
+  }
+
+  #itens .nft-itens-toolbar .nft-btn,
+  #barra-status-ptax-rateio .nft-btn {
+    width: var(--ctl-icon-md);
+    min-width: var(--ctl-icon-md);
+    height: var(--ctl-icon-md);
+    min-height: var(--ctl-icon-md);
+    padding: 0;
+  }
+}
+
+/* ==========================================================================
+   TRANSIÇÃO DE SIDEBAR PARA DRAWER (Padrão Bootstrap LG: <= 991.98px)
+   ========================================================================== */
+@media (max-width: 991.98px) {
+  .nft-main-wrapper,
+  body.sidebar-collapsed .nft-main-wrapper {
+    margin-left: 0;
+  }
+
+  .nft-sidebar,
+  body.sidebar-collapsed .nft-sidebar {
+    width: var(--sidebar-w);
+    transform: translateX(-100%);
+    box-shadow: none;
+  }
+
+  body.sidebar-mobile-open .nft-sidebar {
+    transform: translateX(0);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  }
+
+  body.sidebar-mobile-open .nft-sidebar-backdrop {
+    display: block;
+  }
+
+  .sidebar-toggle-btn {
+    display: none;
+  }
+
+  .sidebar-mobile-close-btn {
+    display: inline-flex;
+  }
+
+  .portal-cards-grid {
+    flex-direction: column;
+    align-items: center;
+  }
+}

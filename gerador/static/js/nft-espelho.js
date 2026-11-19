@@ -278,7 +278,7 @@
               <div class="nft-item-desc"><strong>${num}.</strong> ${escHtml(desc)}</div>
               ${infad ? `<div class="nft-item-infad">↳ ${escHtml(infad)}</div>` : ''}
             </td>
-            <td style="width: 15%; text-align: center; font-family: monospace; font-size: 10px;">
+            <td style="width: 15%; text-align: center; font-family: monospace; font-size: 11px;">
               <div>${escHtml(ncm)}</div>
               <div style="color: #2563EB; font-weight: 600;">CFOP ${escHtml(cfop)}</div>
             </td>
@@ -400,7 +400,7 @@
             </div>
             <div class="nft-party-name">${escHtml(emitNome)}</div>
             <div class="nft-party-doc"><strong>CNPJ:</strong> <span style="font-family: monospace;">${escHtml(emitCnpj)}</span> &nbsp;•&nbsp; <strong>IE:</strong> ${escHtml(emitIE)}</div>
-            <div class="nft-party-meta" style="font-size: 10px; color: #475569; margin-top: 3px;">
+            <div class="nft-party-meta" style="font-size: 11px; color: #475569; margin-top: 3px;">
               <strong>Regime (CRT):</strong> ${escHtml(emitCRT)}
             </div>
             <div class="nft-party-address">
@@ -417,7 +417,7 @@
             </div>
             <div class="nft-party-name">${escHtml(destNome)}</div>
             <div class="nft-party-doc"><strong>Doc:</strong> <span style="font-family: monospace;">${escHtml(destDoc)}</span></div>
-            <div class="nft-party-meta" style="font-size: 10px; color: #475569; margin-top: 3px;">
+            <div class="nft-party-meta" style="font-size: 11px; color: #475569; margin-top: 3px;">
               <strong>IE:</strong> ${escHtml(destIE)}${!isExterior && destIndIE ? ' • <strong>Indicador:</strong> ' + escHtml(destIndIE) : ''}
             </div>
             <div class="nft-party-address">
@@ -549,27 +549,33 @@
       drawer = document.createElement('div');
       drawer.id = 'nftEspelhoDrawer';
       drawer.className = 'nft-espelho-drawer';
+      drawer.setAttribute('data-ui', 'drawer.espelho-fiscal');
 
       drawer.innerHTML = `
-        <header class="nft-espelho-header">
+        <header class="nft-espelho-header" data-ui="drawer.espelho-fiscal.header">
           <div class="nft-espelho-header-left">
             <h2 class="nft-espelho-title">
-              <span>📄</span> Espelho do Documento Fiscal
+              <i data-lucide="file-search" class="nft-icon--md"></i>
+              <span>Espelho do Documento Fiscal</span>
             </h2>
             <p class="nft-espelho-subtitle">Resumo executivo de configurações, itens e valores apurados da NF-e</p>
           </div>
-          <div class="nft-espelho-header-actions">
-            <button class="nft-espelho-btn" onclick="window.copiarResumoEspelho()" title="Copiar resumo textual para a área de transferência">
-              <span>📋</span> Copiar Resumo
+          <div class="nft-espelho-header-actions" data-ui="drawer.espelho-fiscal.actions">
+            <button type="button" class="nft-btn nft-btn--secondary nft-btn--sm" onclick="window.copiarResumoEspelho()" title="Copiar resumo textual para a área de transferência" data-ui="drawer.espelho-fiscal.btn-copiar">
+              <i data-lucide="clipboard-copy"></i>
+              <span>Copiar Resumo</span>
             </button>
-            <button class="nft-espelho-btn" onclick="window.imprimirEspelhoFiscal()" title="Imprimir visualização estilo DANFE">
-              <span>🖨️</span> Imprimir
+            <button type="button" class="nft-btn nft-btn--primary nft-btn--sm" onclick="window.imprimirEspelhoFiscal()" title="Imprimir visualização estilo DANFE" data-ui="drawer.espelho-fiscal.btn-imprimir">
+              <i data-lucide="printer"></i>
+              <span>Imprimir</span>
             </button>
-            <button class="nft-espelho-btn-close" onclick="window.fecharEspelhoFiscal()" title="Fechar Espelho (Esc)">✕</button>
+            <button type="button" class="nft-btn-icon nft-btn-icon--ghost nft-btn-icon--sm" onclick="window.fecharEspelhoFiscal()" title="Fechar Espelho (Esc)" aria-label="Fechar Espelho" data-ui="drawer.espelho-fiscal.btn-fechar">
+              <i data-lucide="x"></i>
+            </button>
           </div>
         </header>
 
-        <div class="nft-espelho-body" id="nftEspelhoBody">
+        <div class="nft-espelho-body" id="nftEspelhoBody" data-ui="drawer.espelho-fiscal.body">
           <!-- Conteúdo gerado dinamicamente via JS -->
         </div>
       `;
@@ -676,13 +682,17 @@
     if (document.getElementById('nftEspelhoFab')) return;
     var fab = document.createElement('button');
     fab.id = 'nftEspelhoFab';
-    fab.className = 'nft-espelho-fab-trigger';
+    fab.className = 'nft-btn nft-btn--primary nft-espelho-fab-trigger';
     fab.setAttribute('type', 'button');
     fab.setAttribute('title', 'Abrir Espelho do Documento Fiscal (Atalho: Alt + E)');
-    fab.innerHTML = '<span style="font-size: 15px;">📄</span><span>Espelho da Nota</span>';
+    fab.setAttribute('data-ui', 'editor.espelho.fab');
+    fab.innerHTML = '<i data-lucide="file-text"></i><span>Espelho da Nota</span>';
     fab.style.display = 'none';
     fab.addEventListener('click', window.abrirEspelhoFiscal);
     document.body.appendChild(fab);
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      window.lucide.createIcons({ root: fab });
+    }
 
     window.addEventListener('scroll', function () {
       if (window.scrollY > 180) {

@@ -1,0 +1,818 @@
+/* ==========================================================================
+   NFT LOGISTICS — COMPONENT: NAVIGATION (Sidebar, Topbar, Page Header, Tabs)
+   Sem duplicações v1/v2 e Dark Mode 100% guiado por tokens.
+   ========================================================================== */
+
+/* ==========================================================================
+   1. SIDEBAR FIXA (Desktop) / DRAWER (Tablet/Mobile via layouts/)
+   ========================================================================== */
+.nft-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--sidebar-w);
+  background-color: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  z-index: var(--z-sidebar);
+  transition: width var(--sidebar-transition), transform var(--sidebar-transition), box-shadow var(--sidebar-transition);
+  user-select: none;
+}
+
+.nft-main-wrapper {
+  margin-left: var(--sidebar-w);
+  min-height: 100vh;
+  transition: margin-left var(--sidebar-transition);
+  display: flex;
+  flex-direction: column;
+}
+
+.nft-sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background-color: rgba(9, 12, 18, 0.55);
+  backdrop-filter: blur(2px);
+  z-index: calc(var(--z-sidebar) - 1);
+}
+
+/* Header da Sidebar — acompanha dinamicamente a altura exata do .nft-topbar */
+.nft-sidebar-header {
+  height: var(--topbar-h-actual, var(--topbar-h));
+  min-height: var(--topbar-h-actual, var(--topbar-h));
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  background-color: var(--surface);
+  flex-shrink: 0;
+  gap: 8px;
+  box-sizing: border-box;
+  transition: height 0.12s ease, min-height 0.12s ease, padding 0.12s ease;
+}
+
+.sidebar-brand-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--heading);
+  overflow: hidden;
+  flex: 1;
+}
+
+.sidebar-brand-logo-wrap {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-brand-logo-wrap img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.sidebar-brand-title {
+  font-weight: 700;
+  font-size: var(--fs-compact);
+  color: var(--heading);
+  letter-spacing: -0.02em;
+}
+
+.sidebar-brand-badge {
+  font-size: var(--fs-label);
+  font-weight: 700;
+  border-radius: var(--radius-xs);
+  padding: 2px 6px;
+  background-color: var(--primary-subtle);
+  color: var(--primary);
+  border: 1px solid var(--primary-border);
+}
+
+.sidebar-toggle-btn,
+.sidebar-mobile-close-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border-input);
+  background-color: var(--surface-secondary);
+  color: var(--muted-foreground);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, width 0.12s ease, height 0.12s ease;
+}
+
+.sidebar-toggle-btn:hover,
+.sidebar-mobile-close-btn:hover {
+  background-color: var(--primary-subtle);
+  color: var(--primary);
+  border-color: var(--primary-border);
+}
+
+.sidebar-toggle-btn svg,
+.sidebar-mobile-close-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.sidebar-mobile-close-btn {
+  display: none;
+}
+
+/* Busca Rápida da Sidebar */
+.nft-sidebar-search-wrap {
+  padding: 10px 10px 4px;
+}
+
+.nft-sidebar-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.nft-sidebar-search input {
+  width: 100%;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 28px 0 32px;
+  background-color: var(--surface-inset);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-compact);
+  color: var(--foreground);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.nft-sidebar-search input::placeholder {
+  color: var(--placeholder);
+}
+
+.nft-sidebar-search input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--border-focus-ring);
+}
+
+.nft-sidebar-search .search-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--muted-foreground);
+  display: inline-flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.nft-sidebar-search .search-kbd {
+  position: absolute;
+  right: 8px;
+  background-color: var(--surface-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: var(--fs-label);
+  font-family: var(--font-mono);
+  color: var(--muted-foreground);
+  font-weight: 600;
+  pointer-events: none;
+}
+
+/* Corpo e Links da Sidebar */
+.nft-sidebar-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 0 10px;
+}
+
+.nft-sidebar-group {
+  margin-top: 6px;
+}
+
+.sidebar-section-title {
+  font-size: var(--fs-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+  padding: 8px 12px 4px;
+  margin-bottom: 2px;
+}
+
+.nft-sidebar-nav {
+  list-style: none;
+  padding: 0 6px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nft-sidebar-item {
+  width: 100%;
+}
+
+.nft-sidebar-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted-foreground);
+  text-decoration: none;
+  font-size: var(--fs-compact);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease;
+  text-align: left;
+}
+
+.nft-sidebar-btn:hover {
+  background-color: var(--surface-tertiary);
+  color: var(--heading);
+}
+
+.nft-sidebar-btn.active {
+  background-color: var(--primary-subtle);
+  color: var(--primary);
+  font-weight: 600;
+  border-color: var(--primary-border);
+}
+
+.nft-sidebar-btn .sidebar-icon {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: currentColor;
+  flex-shrink: 0;
+}
+
+.nft-sidebar-btn .sidebar-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.sidebar-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-badge {
+  font-size: var(--fs-label);
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  background-color: var(--primary-subtle);
+  color: var(--primary);
+  border: 1px solid var(--primary-border);
+  margin-left: auto;
+  line-height: 1.2;
+}
+
+/* Card de Certificado Digital na Sidebar */
+.nft-sidebar-card,
+#nftSidebarCertCard {
+  display: block;
+  background-color: var(--surface-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  margin: 8px 10px;
+  flex-shrink: 0;
+  width: calc(var(--sidebar-w) - 20px);
+  box-sizing: border-box;
+}
+
+.nft-sidebar-card-title {
+  font-size: var(--fs-label);
+  font-weight: 700;
+  color: var(--heading);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.nft-sidebar-card-desc {
+  font-size: var(--fs-label);
+  color: var(--muted-foreground);
+  margin-top: 4px;
+  line-height: 1.35;
+}
+
+.nft-sidebar-footer {
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+  background-color: var(--surface);
+  flex-shrink: 0;
+}
+
+.sidebar-footer-info {
+  font-size: var(--fs-label);
+}
+
+.nft-sidebar-cert-empresa {
+  max-width: 190px;
+}
+
+/* ==========================================================================
+   2. TOPBAR SUPERIOR (EXCEÇÃO DE CONFIGURAÇÃO ORIGINAL / DINÂMICA MOBILE)
+   ========================================================================== */
+.nft-topbar {
+  background-color: var(--surface, #FFFFFF);
+  border-bottom: 1px solid var(--border, #E2E8F0);
+  min-height: var(--topbar-h);
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  box-sizing: border-box;
+}
+
+.nft-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.nft-brand-icon {
+  width: 26px;
+  height: 26px;
+  background-color: #0F172A;
+  color: #FFFFFF;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+
+.nft-topbar-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--surface-secondary, #F8FAFC);
+  border: 1px solid var(--border, #E2E8F0);
+  border-radius: 9999px;
+  padding: 4px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--heading, #0F172A);
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.nft-topbar-pill:hover {
+  background-color: var(--border, #E2E8F0);
+  color: var(--heading, #0F172A);
+}
+
+.nft-topbar-pill .pill-tag {
+  background-color: var(--pill-tag-bg, #E2E8F0);
+  color: var(--pill-tag-color, #475569);
+  border: 1px solid var(--pill-tag-border, transparent);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.nft-topbar-divider {
+  color: #CBD5E1;
+  font-size: 15px;
+  font-weight: 300;
+  margin: 0 2px;
+}
+
+.nft-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.nft-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background-color: #F0FDF4;
+  border: 1px solid #BBF7D0;
+  border-radius: 9999px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #16A34A;
+}
+
+.nft-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #22C55E;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.25);
+  animation: nftStatusPulse 2s infinite ease-in-out;
+}
+
+@keyframes nftStatusPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+}
+
+.nft-btn-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border, #E2E8F0);
+  background-color: transparent;
+  color: var(--foreground, #64748B);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.nft-btn-circle:hover {
+  background-color: var(--surface-secondary, #F8FAFC);
+  color: var(--heading, #0F172A);
+  border-color: var(--border, #CBD5E1);
+}
+
+.nft-btn-circle.theme-toggle-btn {
+  background-color: var(--surface-secondary, #F8FAFC);
+  border: 1px solid var(--border, #E2E8F0);
+  color: var(--foreground, #475569);
+}
+
+.nft-btn-circle.theme-toggle-btn i,
+.nft-btn-circle.theme-toggle-btn svg {
+  width: 14px;
+  height: 14px;
+  color: currentColor;
+  stroke: currentColor;
+}
+
+.nft-btn-circle.theme-toggle-btn:hover {
+  background-color: var(--primary-subtle, rgba(37, 99, 235, 0.1));
+  border-color: var(--primary, #2563EB);
+  color: var(--primary, #2563EB);
+}
+
+[data-theme="dark"] .nft-btn-circle.theme-toggle-btn,
+[data-bs-theme="dark"] .nft-btn-circle.theme-toggle-btn,
+.dark .nft-btn-circle.theme-toggle-btn {
+  background-color: #1E273A !important;
+  border-color: #334155 !important;
+  color: #FBBF24 !important;
+}
+
+[data-theme="dark"] .nft-btn-circle.theme-toggle-btn:hover,
+[data-bs-theme="dark"] .nft-btn-circle.theme-toggle-btn:hover,
+.dark .nft-btn-circle.theme-toggle-btn:hover {
+  background-color: #27334C !important;
+  border-color: #FBBF24 !important;
+  color: #FDE68A !important;
+}
+
+/* Dropdown Topbar Pill */
+#topbar-emitente-dropdown .nft-topbar-pill {
+  border: 1px solid var(--border);
+  background-color: var(--surface);
+  transition: all 0.15s ease;
+}
+
+#topbar-emitente-dropdown .nft-topbar-pill:hover {
+  border-color: #CBD5E1;
+  background-color: #F8FAFC;
+}
+
+#topbar-emitente-menu .dropdown-item {
+  border-radius: 8px;
+  margin: 2px 6px;
+  width: auto;
+  transition: all 0.15s ease;
+}
+
+#topbar-emitente-menu .dropdown-item:hover {
+  background-color: #EFF6FF;
+  color: #1D4ED8;
+}
+
+#topbar-emitente-menu .dropdown-item.active {
+  background-color: #EFF6FF !important;
+  color: #2563EB !important;
+  font-weight: 700 !important;
+}
+
+/* Topbar & Topbar Pill Dropdown — Dark Theme */
+[data-theme="dark"] .nft-topbar,
+[data-bs-theme="dark"] .nft-topbar,
+.dark .nft-topbar {
+  background-color: #0F1420 !important;
+  border-bottom: 1px solid #242D40 !important;
+}
+
+[data-theme="dark"] .nft-sidebar-header,
+[data-bs-theme="dark"] .nft-sidebar-header,
+.dark .nft-sidebar-header {
+  border-bottom: 1px solid #242D40 !important;
+}
+
+[data-theme="dark"] .nft-topbar-pill,
+[data-bs-theme="dark"] .nft-topbar-pill,
+.dark .nft-topbar-pill,
+[data-theme="dark"] #topbar-emitente-dropdown .nft-topbar-pill,
+[data-bs-theme="dark"] #topbar-emitente-dropdown .nft-topbar-pill,
+.dark #topbar-emitente-dropdown .nft-topbar-pill {
+  background-color: #161B26 !important;
+  border: 1px solid #242D40 !important;
+  color: #E2E8F0 !important;
+}
+
+/* No modo dark, o visual de tag com fundo/cor/borda no CNPJ do emitente aplica-se apenas acima de 1350px (desktop amplo) */
+@media (min-width: 1350px) {
+  [data-theme="dark"] .nft-topbar-pill .pill-tag,
+  [data-bs-theme="dark"] .nft-topbar-pill .pill-tag,
+  .dark .nft-topbar-pill .pill-tag,
+  [data-theme="dark"] #topbar-emitente-cnpj,
+  [data-bs-theme="dark"] #topbar-emitente-cnpj,
+  .dark #topbar-emitente-cnpj,
+  [data-theme="dark"] #topbar-status-tag,
+  [data-bs-theme="dark"] #topbar-status-tag,
+  .dark #topbar-status-tag {
+    background-color: var(--pill-tag-bg, #0B0F17) !important;
+    color: var(--pill-tag-color, #E2E8F0) !important;
+    border: 1px solid var(--pill-tag-border, #242D40) !important;
+  }
+}
+
+[data-theme="dark"] #topbar-emitente-dropdown .nft-topbar-pill:hover,
+[data-bs-theme="dark"] #topbar-emitente-dropdown .nft-topbar-pill:hover,
+.dark #topbar-emitente-dropdown .nft-topbar-pill:hover {
+  background-color: #1E273A !important;
+  border-color: #3B4761 !important;
+  color: #FFFFFF !important;
+}
+
+[data-theme="dark"] #topbar-emitente-menu,
+[data-bs-theme="dark"] #topbar-emitente-menu,
+.dark #topbar-emitente-menu {
+  background-color: #161B26 !important;
+  border: 1px solid #242D40 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6) !important;
+}
+
+[data-theme="dark"] #topbar-emitente-menu .dropdown-item,
+[data-bs-theme="dark"] #topbar-emitente-menu .dropdown-item,
+.dark #topbar-emitente-menu .dropdown-item {
+  color: #E2E8F0 !important;
+}
+
+[data-theme="dark"] #topbar-emitente-menu .dropdown-item:hover,
+[data-bs-theme="dark"] #topbar-emitente-menu .dropdown-item:hover,
+.dark #topbar-emitente-menu .dropdown-item:hover {
+  background-color: #1E273A !important;
+  color: #FFFFFF !important;
+}
+
+[data-theme="dark"] #topbar-emitente-menu .dropdown-item.active,
+[data-bs-theme="dark"] #topbar-emitente-menu .dropdown-item.active,
+.dark #topbar-emitente-menu .dropdown-item.active {
+  background-color: rgba(51, 89, 232, 0.2) !important;
+  color: #38BDF8 !important;
+  font-weight: 700 !important;
+}
+
+/* Dinâmica responsiva original do Topbar + Sincronia com app.sidebar.header para telas menores */
+@media (max-width: 1349.98px) {
+  :root {
+    --topbar-h: 49px;
+  }
+
+  .nft-topbar {
+    padding: 8px 16px;
+  }
+
+  .nft-sidebar-header {
+    padding: 8px 12px;
+  }
+
+  .sidebar-brand-logo-wrap,
+  .sidebar-toggle-btn,
+  .sidebar-mobile-close-btn {
+    width: 26px;
+    height: 26px;
+  }
+
+  .nft-topbar-left {
+    gap: 5px;
+    min-width: 0;
+  }
+
+  .nft-topbar-right {
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  /* Ocultar itens secundários na barra superior em telas menores */
+  .nft-topbar-left > [title="Módulo Atual / Referência"],
+  .nft-topbar-divider,
+  #topbar-sefaz-pill,
+  #topbar-status-tag {
+    display: none !important;
+  }
+
+  /* Empilhar CNPJ em segunda linha dentro do pill do emitente e reduzir fonte */
+  #topbar-emitente-pill {
+    flex-wrap: wrap;
+    border-radius: 12px;
+    padding: 2px 8px !important;
+    gap: 0 4px !important;
+    font-size: 11px !important;
+    line-height: 1.15 !important;
+    max-width: 100%;
+  }
+
+  #topbar-emitente-pill > svg:last-of-type,
+  #topbar-emitente-pill > i:last-of-type {
+    display: none !important;
+  }
+
+  #topbar-emitente-cnpj {
+    flex-basis: 100%;
+    font-size: 9px !important;
+    line-height: 1.1 !important;
+    padding: 0 0 0 18px !important;
+    background: transparent !important;
+    border: none !important;
+    opacity: 0.85;
+  }
+
+  #topbar-user-name {
+    font-size: 11px !important;
+  }
+
+  .nft-btn-circle {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 12px !important;
+  }
+}
+
+@media (max-width: 991.98px) {
+  :root {
+    --topbar-h: 48px;
+  }
+
+  .nft-topbar {
+    padding: 6px 10px !important;
+    gap: 6px !important;
+    min-height: 48px;
+    align-items: center !important;
+  }
+
+  .nft-sidebar-header {
+    padding: 6px 10px;
+    min-height: 48px;
+  }
+
+  #topbar-user-name {
+    display: none !important;
+  }
+
+  #topbar-user-pill {
+    padding: 3px 6px !important;
+    gap: 4px !important;
+  }
+}
+
+/* ==========================================================================
+   3. CABEÇALHO DE PÁGINA (.nft-page-header — ÚNICO EM TODAS AS PÁGINAS)
+   ========================================================================== */
+.nft-page-container {
+  width: 100%;
+  padding: 16px var(--space-container) 28px;
+}
+
+.nft-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-gap);
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.nft-page-header__info {
+  min-width: 0;
+}
+
+.nft-page-title {
+  font-size: var(--fs-page-title);
+  font-weight: 700;
+  color: var(--heading);
+  letter-spacing: -0.02em;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  line-height: 1.25;
+}
+
+.nft-page-subtitle {
+  font-size: var(--fs-compact);
+  color: var(--muted-foreground);
+  margin: 4px 0 0;
+  line-height: 1.4;
+}
+
+.nft-page-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ==========================================================================
+   4. ABAS DE NAVEGAÇÃO (SEGMENTED CONTROL PILLS — DEFINIÇÃO ÚNICA)
+   ========================================================================== */
+.nav-tabs,
+ul.nav-tabs {
+  border: none;
+  --bs-nav-tabs-border-width: 0;
+  --bs-nav-tabs-border-color: transparent;
+  background-color: var(--surface-tertiary);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.nav-tabs .nav-item {
+  margin: 0;
+}
+
+.nav-tabs .nav-link {
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  font-size: var(--fs-compact);
+  font-weight: 600;
+  color: var(--muted-foreground);
+  background-color: transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.nav-tabs .nav-link:hover {
+  color: var(--heading);
+  background-color: var(--surface-secondary);
+}
+
+.nav-tabs .nav-link.active {
+  background-color: var(--surface);
+  color: var(--heading);
+  box-shadow: var(--card-shadow);
+}
+
+.tab-content {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-card);
+  box-shadow: var(--card-shadow);
+}

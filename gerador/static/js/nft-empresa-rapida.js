@@ -21,161 +21,194 @@
         modalDiv.tabIndex = -1;
         modalDiv.setAttribute('aria-hidden', 'true');
         modalDiv.setAttribute('data-bs-backdrop', 'static');
+        modalDiv.setAttribute('data-ui', 'modal.empresa-rapida');
 
         modalDiv.innerHTML = `
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-dark text-white py-3">
+            <div class="modal-content">
+                <div class="modal-header" data-tone="dark" data-ui="modal.empresa-rapida.header">
                     <div class="d-flex align-items-center gap-2">
-                        <div class="p-2 rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                            <i data-lucide="building-2" style="width: 20px; height: 20px;"></i>
-                        </div>
+                        <i data-lucide="building-2" class="nft-icon--md"></i>
                         <div>
-                            <h5 class="modal-title fw-bold mb-0 text-white" id="modal-rapida-titulo">Adicionar Nova Empresa</h5>
-                            <small class="text-white-50" style="font-size: 11.5px;">
-                                Cadastra na Listagem de Empresas & Cadastros e preenche automaticamente na nota fiscal.
+                            <h5 class="modal-title mb-0" id="modal-rapida-titulo">Adicionar Nova Empresa</h5>
+                            <small class="opacity-75">
+                                Cadastra na Listagem de Empresas e preenche automaticamente na nota fiscal.
                             </small>
                         </div>
                     </div>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar janela" title="Fechar janela" data-ui="modal.empresa-rapida.btn-close"></button>
                 </div>
 
-                <div class="modal-body p-3 p-md-4">
-                    <form id="formNovaEmpresaRapida" onsubmit="window.salvarNovaEmpresaRapido(event)">
+                <div class="modal-body" data-ui="modal.empresa-rapida.body">
+                    <form id="formNovaEmpresaRapida" onsubmit="window.salvarNovaEmpresaRapido(event)" data-ui="modal.empresa-rapida.form">
                         <!-- SEÇÃO 1: DADOS PRINCIPAIS -->
                         <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-3">
-                            <h6 class="fw-bold text-heading mb-0 d-flex align-items-center gap-2">
-                                <i data-lucide="info" class="text-primary" style="width: 16px; height: 16px;"></i>
+                            <h6 class="nft-section-title text-primary border-0 pb-0 mb-0">
+                                <i data-lucide="info" class="nft-icon--sm"></i>
                                 <span>Dados Principais da Empresa</span>
                             </h6>
-                            <span class="badge bg-primary-subtle text-primary font-monospace" id="rap_badge_tipo">Destinatário</span>
+                            <span class="nft-badge nft-badge--mono" data-tone="primary" id="rap_badge_tipo" title="Papel da empresa na NF-e atual" data-ui="modal.empresa-rapida.badge-tipo">Destinatário</span>
                         </div>
 
                         <div class="row g-2 mb-3">
                             <div class="col-md-3">
-                                <label class="form-label small fw-bold">Categoria / Tipo <span class="text-danger">*</span></label>
-                                <select class="form-select form-select-sm fw-bold" id="rap_tipo" required>
-                                    <option value="Cliente" selected>Cliente</option>
-                                    <option value="Emitente">Emitente</option>
-                                    <option value="Transportadora">Transportadora</option>
-                                    <option value="Armazem">Armazém</option>
-                                    <option value="Local de Desembaraço">Local de Desembaraço</option>
-                                    <option value="Exportador">Exportador / Fornecedor</option>
-                                </select>
+                                <div class="nft-field" data-ui="modal.empresa-rapida.field-tipo">
+                                    <label class="nft-field__label" for="rap_tipo">Categoria / Tipo <span class="nft-field__req">*</span></label>
+                                    <select class="nft-control form-select fw-bold" id="rap_tipo" required title="Categoria da empresa no cadastro geral" data-ui="modal.empresa-rapida.select-tipo">
+                                        <option value="Cliente" selected>Cliente</option>
+                                        <option value="Emitente">Emitente</option>
+                                        <option value="Transportadora">Transportadora</option>
+                                        <option value="Armazem">Armazém</option>
+                                        <option value="Local de Desembaraço">Local de Desembaraço</option>
+                                        <option value="Exportador">Exportador / Fornecedor</option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label small fw-bold">Localização</label>
-                                <select class="form-select form-select-sm fw-bold border-primary" id="rap_localidade" onchange="window.aoMudarLocalidadeRapida()">
-                                    <option value="Brasil" selected>Brasil (Nacional)</option>
-                                    <option value="Exterior">Exterior</option>
-                                </select>
+                                <div class="nft-field nft-field--highlight" data-tone="primary" data-ui="modal.empresa-rapida.field-localidade">
+                                    <label class="nft-field__label" for="rap_localidade">Localização</label>
+                                    <select class="nft-control form-select fw-bold" id="rap_localidade" onchange="window.aoMudarLocalidadeRapida()" title="Define se a empresa está localizada no Brasil ou no Exterior" data-ui="modal.empresa-rapida.select-localidade">
+                                        <option value="Brasil" selected>Brasil (Nacional)</option>
+                                        <option value="Exterior">Exterior</option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold">CNPJ / CPF / IdEstrangeiro</label>
-                                <div class="input-group input-group-sm">
-                                    <input type="text" class="form-control form-control-sm font-monospace fw-bold mask-cnpj-cpf" id="rap_cnpj_cpf" placeholder="00.000.000/0000-00">
-                                    <button type="button" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1" id="btn-busca-cnpj-rapido" onclick="window.buscarCnpjRapido()" title="Consultar CNPJ na Receita / BrasilAPI">
-                                        <i data-lucide="search" style="width: 13px; height: 13px;"></i>
-                                        <span class="small fw-bold">Buscar CNPJ</span>
-                                    </button>
+                                <div class="nft-field nft-field--code" data-ui="modal.empresa-rapida.field-cnpj">
+                                    <label class="nft-field__label" for="rap_cnpj_cpf">CNPJ / CPF / IdEstrangeiro</label>
+                                    <div class="input-group">
+                                        <input type="text" class="nft-control fw-bold mask-cnpj-cpf" id="rap_cnpj_cpf" placeholder="00.000.000/0000-00" title="CNPJ, CPF ou identificador estrangeiro" data-ui="modal.empresa-rapida.input-cnpj">
+                                        <button type="button" class="nft-btn nft-btn--secondary" id="btn-busca-cnpj-rapido" onclick="window.buscarCnpjRapido()" title="Consultar dados cadastrais do CNPJ na Receita / BrasilAPI" data-ui="modal.empresa-rapida.btn-buscar-cnpj">
+                                            <i data-lucide="search"></i>
+                                            <span>Buscar CNPJ</span>
+                                        </button>
+                                    </div>
+                                    <small class="nft-field__help" id="rap_cnpj_status" data-ui="modal.empresa-rapida.status-cnpj"></small>
                                 </div>
-                                <small class="text-muted" id="rap_cnpj_status" style="font-size: 10.5px;"></small>
                             </div>
 
                             <div class="col-md-7">
-                                <label class="form-label small fw-bold">Razão Social / Nome Oficial (xNome) <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control form-control-sm fw-bold" id="rap_nome" placeholder="Nome completo ou Razão Social" required>
+                                <div class="nft-field" data-ui="modal.empresa-rapida.field-nome">
+                                    <label class="nft-field__label" for="rap_nome">Razão Social / Nome Oficial (xNome) <span class="nft-field__req">*</span></label>
+                                    <input type="text" class="nft-control fw-bold" id="rap_nome" placeholder="Nome completo ou Razão Social" title="Razão social ou nome completo (tag XML xNome)" required data-ui="modal.empresa-rapida.input-nome">
+                                </div>
                             </div>
                             <div class="col-md-5">
-                                <label class="form-label small fw-bold">Nome Fantasia / Apelido</label>
-                                <input type="text" class="form-control form-control-sm" id="rap_apelido" placeholder="Nome Fantasia para identificação rápida">
+                                <div class="nft-field" data-ui="modal.empresa-rapida.field-apelido">
+                                    <label class="nft-field__label" for="rap_apelido">Nome Fantasia / Apelido</label>
+                                    <input type="text" class="nft-control" id="rap_apelido" placeholder="Nome Fantasia para identificação rápida" title="Nome fantasia ou apelido interno" data-ui="modal.empresa-rapida.input-apelido">
+                                </div>
                             </div>
 
                             <div class="col-md-4">
-                                <label class="form-label small fw-bold">Inscrição Estadual (IE)</label>
-                                <input type="text" class="form-control form-control-sm font-monospace" id="rap_ie" placeholder="Apenas p/ Contribuinte ICMS">
+                                <div class="nft-field nft-field--code" data-ui="modal.empresa-rapida.field-ie">
+                                    <label class="nft-field__label" for="rap_ie">Inscrição Estadual (IE)</label>
+                                    <input type="text" class="nft-control" id="rap_ie" placeholder="Apenas p/ Contribuinte ICMS" title="Inscrição Estadual do contribuinte" data-ui="modal.empresa-rapida.input-ie">
+                                </div>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small fw-bold">Indicador de IE (indIEDest)</label>
-                                <select class="form-select form-select-sm" id="rap_ind_ie" onchange="window.aoMudarIndIeRapida()">
-                                    <option value="1">1 - Contribuinte ICMS</option>
-                                    <option value="2">2 - Isento de Contribuição</option>
-                                    <option value="9" selected>9 - Não Contribuinte</option>
-                                </select>
+                                <div class="nft-field" data-ui="modal.empresa-rapida.field-ind-ie">
+                                    <label class="nft-field__label" for="rap_ind_ie">Indicador de IE (indIEDest)</label>
+                                    <select class="nft-control form-select" id="rap_ind_ie" onchange="window.aoMudarIndIeRapida()" title="Indicador de contribuinte ICMS da empresa" data-ui="modal.empresa-rapida.select-ind-ie">
+                                        <option value="1">1 - Contribuinte ICMS</option>
+                                        <option value="2">2 - Isento de Contribuição</option>
+                                        <option value="9" selected>9 - Não Contribuinte</option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small fw-bold">Telefone / Contato</label>
-                                <input type="text" class="form-control form-control-sm mask-telefone font-monospace" id="rap_fone" placeholder="(00) 00000-0000">
+                                <div class="nft-field nft-field--code" data-ui="modal.empresa-rapida.field-fone">
+                                    <label class="nft-field__label" for="rap_fone">Telefone / Contato</label>
+                                    <input type="text" class="nft-control mask-telefone" id="rap_fone" placeholder="(00) 00000-0000" title="Telefone de contato da empresa" data-ui="modal.empresa-rapida.input-fone">
+                                </div>
                             </div>
                         </div>
 
                         <!-- SEÇÃO 2: ENDEREÇO -->
-                        <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-3 mt-4">
-                            <h6 class="fw-bold text-heading mb-0 d-flex align-items-center gap-2">
-                                <i data-lucide="map-pin" class="text-primary" style="width: 16px; height: 16px;"></i>
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom pb-2 mb-3 mt-4">
+                            <h6 class="nft-section-title text-primary border-0 pb-0 mb-0">
+                                <i data-lucide="map-pin" class="nft-icon--sm"></i>
                                 <span>Endereço Completo</span>
                             </h6>
-                            <small class="text-muted" style="font-size: 11px;">Busca automática via CEP ou preenchimento manual</small>
+                            <small class="text-muted">Busca automática via CEP ou preenchimento manual</small>
                         </div>
 
                         <div class="row g-2">
                             <div class="col-md-4">
-                                <label class="form-label small fw-bold">CEP</label>
-                                <div class="input-group input-group-sm">
-                                    <input type="text" class="form-control form-control-sm font-monospace fw-bold" id="rap_cep" onblur="window.buscarCepRapido()" placeholder="00000-000 ou 99999-999">
-                                    <button type="button" class="btn-nft py-0 px-2" onclick="window.buscarCepRapido()" title="Consultar CEP na base nacional">
-                                        <i data-lucide="search" style="width: 13px; height: 13px;"></i>
-                                    </button>
+                                <div class="nft-field nft-field--code" data-ui="modal.empresa-rapida.field-cep">
+                                    <label class="nft-field__label" for="rap_cep">CEP</label>
+                                    <div class="input-group">
+                                        <input type="text" class="nft-control fw-bold" id="rap_cep" onblur="window.buscarCepRapido()" placeholder="00000-000 ou 99999-999" title="CEP do endereço — busca automaticamente ao sair do campo" data-ui="modal.empresa-rapida.input-cep">
+                                        <button type="button" class="nft-btn nft-btn--secondary" onclick="window.buscarCepRapido()" title="Consultar CEP na base nacional" aria-label="Consultar CEP" data-ui="modal.empresa-rapida.btn-cep">
+                                            <i data-lucide="search"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-md-5">
-                                <label class="form-label small fw-bold">Logradouro (xLgr)</label>
-                                <input type="text" class="form-control form-control-sm" id="rap_logradouro" placeholder="Rua, Av, Alameda...">
+                            <div class="col-md-6">
+                                <div class="nft-field" data-ui="modal.empresa-rapida.field-logradouro">
+                                    <label class="nft-field__label" for="rap_logradouro">Logradouro (xLgr)</label>
+                                    <input type="text" class="nft-control" id="rap_logradouro" placeholder="Rua, Av, Alameda..." title="Logradouro do endereço (tag XML xLgr)" data-ui="modal.empresa-rapida.input-logradouro">
+                                </div>
                             </div>
                             <div class="col-md-2">
-                                <label class="form-label small fw-bold">Número (nro)</label>
-                                <input type="text" class="form-control form-control-sm font-monospace" id="rap_numero" placeholder="123 ou S/N">
+                                <div class="nft-field nft-field--code" data-ui="modal.empresa-rapida.field-numero">
+                                    <label class="nft-field__label" for="rap_numero">Número (nro)</label>
+                                    <input type="text" class="nft-control" id="rap_numero" placeholder="123 ou S/N" title="Número do imóvel (tag XML nro)" data-ui="modal.empresa-rapida.input-numero">
+                                </div>
                             </div>
-                            <div class="col-md-5">
-                                <label class="form-label small fw-bold">Complemento (xCpl)</label>
-                                <input type="text" class="form-control form-control-sm" id="rap_complemento" placeholder="Sala, Bloco, Galpão...">
+                            <div class="col-md-6">
+                                <div class="nft-field" data-ui="modal.empresa-rapida.field-complemento">
+                                    <label class="nft-field__label" for="rap_complemento">Complemento (xCpl)</label>
+                                    <input type="text" class="nft-control" id="rap_complemento" placeholder="Sala, Bloco, Galpão..." title="Complemento do endereço (tag XML xCpl)" data-ui="modal.empresa-rapida.input-complemento">
+                                </div>
                             </div>
 
-                            <div class="col-md-4">
-                                <label class="form-label small fw-bold">Bairro (xBairro)</label>
-                                <input type="text" class="form-control form-control-sm" id="rap_bairro" placeholder="Bairro">
+                            <div class="col-md-6">
+                                <div class="nft-field" data-ui="modal.empresa-rapida.field-bairro">
+                                    <label class="nft-field__label" for="rap_bairro">Bairro (xBairro)</label>
+                                    <input type="text" class="nft-control" id="rap_bairro" placeholder="Bairro" title="Bairro do endereço (tag XML xBairro)" data-ui="modal.empresa-rapida.input-bairro">
+                                </div>
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label small fw-bold">Município (xMun)</label>
-                                <input type="text" class="form-control form-control-sm" id="rap_municipio" placeholder="Nome da Cidade">
+                            <div class="col-md-6">
+                                <div class="nft-field" data-ui="modal.empresa-rapida.field-municipio">
+                                    <label class="nft-field__label" for="rap_municipio">Município (xMun)</label>
+                                    <input type="text" class="nft-control" id="rap_municipio" placeholder="Nome da Cidade" title="Nome do município (tag XML xMun)" data-ui="modal.empresa-rapida.input-municipio">
+                                </div>
                             </div>
                             <div class="col-md-2">
-                                <label class="form-label small fw-bold">UF</label>
-                                <input type="text" class="form-control form-control-sm text-uppercase font-monospace fw-bold" id="rap_uf" maxlength="2" placeholder="SP">
+                                <div class="nft-field nft-field--sigla" data-ui="modal.empresa-rapida.field-uf">
+                                    <label class="nft-field__label" for="rap_uf">UF</label>
+                                    <input type="text" class="nft-control" id="rap_uf" maxlength="2" placeholder="SP" title="Sigla da Unidade Federativa (2 letras)" data-ui="modal.empresa-rapida.input-uf">
+                                </div>
                             </div>
-                            <div class="col-md-2">
-                                <label class="form-label small fw-bold">Cód. IBGE (cMun)</label>
-                                <input type="text" class="form-control form-control-sm font-monospace" id="rap_cmun" placeholder="3550308">
+                            <div class="col-md-4">
+                                <div class="nft-field nft-field--code" data-ui="modal.empresa-rapida.field-cmun">
+                                    <label class="nft-field__label" for="rap_cmun">Cód. IBGE (cMun)</label>
+                                    <input type="text" class="nft-control" id="rap_cmun" placeholder="3550308" title="Código IBGE de 7 dígitos do município" data-ui="modal.empresa-rapida.input-cmun">
+                                </div>
                             </div>
 
                             <div class="col-md-8 position-relative">
-                                <label class="form-label small fw-bold mb-1">País (xPais)</label>
-                                <div class="position-relative">
-                                    <input type="text" autocomplete="off" class="form-control form-control-sm fw-bold" id="rap_xpais" onfocus="window.aoDigitarPaisRapidoAutocomplete()" oninput="window.aoDigitarPaisRapidoAutocomplete()" onblur="window.aoPerderFocoPaisRapido()" placeholder="Digite para filtrar e selecionar o País..." value="Brasil">
-                                    <div class="dropdown-menu shadow w-100 overflow-auto p-1" id="dropdown_menu_rap_xpais" style="max-height: 220px; display: none; position: absolute; z-index: 1070; top: 100%; left: 0;"></div>
+                                <div class="nft-field nft-field--flush" data-ui="modal.empresa-rapida.field-xpais">
+                                    <label class="nft-field__label" for="rap_xpais">País (xPais)</label>
+                                    <input type="text" autocomplete="off" class="nft-control fw-bold" id="rap_xpais" onfocus="window.aoDigitarPaisRapidoAutocomplete()" oninput="window.aoDigitarPaisRapidoAutocomplete()" onblur="window.aoPerderFocoPaisRapido()" placeholder="Digite para filtrar e selecionar o País..." value="Brasil" title="Nome do país (preenche código BACEN automaticamente)" data-ui="modal.empresa-rapida.input-xpais">
                                 </div>
+                                <div class="dropdown-menu w-100 overflow-auto p-1 nft-topbar-dropdown-menu" id="dropdown_menu_rap_xpais" style="display: none; position: absolute; z-index: 1070; top: 100%; left: 0;" data-ui="modal.empresa-rapida.dropdown-pais"></div>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small fw-bold mb-1">Cód. BACEN (cPais)</label>
-                                <input type="text" class="form-control form-control-sm font-monospace fw-bold bg-light" id="rap_cpais" readonly value="1058">
+                                <div class="nft-field nft-field--code nft-field--flush" data-ui="modal.empresa-rapida.field-cpais">
+                                    <label class="nft-field__label" for="rap_cpais">Cód. BACEN (cPais)</label>
+                                    <input type="text" class="nft-control fw-bold" id="rap_cpais" readonly value="1058" title="Código BACEN do país (tag XML cPais)" data-ui="modal.empresa-rapida.input-cpais">
+                                </div>
                             </div>
                         </div>
 
-                        <div class="modal-footer d-flex justify-content-between p-0 pt-4 mt-3 border-top bg-transparent">
-                            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
+                        <div class="modal-footer d-flex justify-content-between px-0 pb-0 pt-3 mt-4 border-top bg-transparent" data-ui="modal.empresa-rapida.footer">
+                            <button type="button" class="nft-btn nft-btn--ghost" data-bs-dismiss="modal" title="Fechar sem cadastrar empresa" data-ui="modal.empresa-rapida.btn-cancelar">
                                 Cancelar
                             </button>
-                            <button type="submit" class="btn btn-primary btn-sm fw-bold d-inline-flex align-items-center gap-2 shadow-sm" id="btn-salvar-empresa-rapida">
+                            <button type="submit" class="nft-btn nft-btn--primary" id="btn-salvar-empresa-rapida" title="Salvar empresa no cadastro e preencher na NF-e atual" data-ui="modal.empresa-rapida.btn-salvar">
                                 <i data-lucide="save"></i>
                                 <span>Salvar e Preencher na Nota</span>
                             </button>
@@ -343,8 +376,8 @@
         } finally {
             if (btnBusca) {
                 btnBusca.disabled = false;
-                btnBusca.innerHTML = '<i data-lucide="search" style="width: 13px; height: 13px;"></i> <span class="small fw-bold">Buscar CNPJ</span>';
-                if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+                btnBusca.innerHTML = '<i data-lucide="search"></i> <span>Buscar CNPJ</span>';
+                if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons({ root: btnBusca });
             }
         }
     };

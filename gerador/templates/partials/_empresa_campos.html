@@ -1,0 +1,103 @@
+{% import 'macros/ui.html' as ui %}
+{# Partial compartilhado entre aba Nova Empresa (p='cad') e modal Editar Empresa (p='edit') #}
+
+<h6 class="nft-section-title text-primary">
+  <i data-lucide="building-2" class="nft-icon--sm"></i>
+  <span>Dados Principais</span>
+</h6>
+<div class="row g-2 mb-3">
+  <div class="col-md-3">
+    {% call ui.field_select(p ~ '_tipo', 'Categoria / Tipo', required=True, title='Categoria da empresa no sistema', ui_id=ui_ns ~ '.field-tipo') %}
+      <option value="Emitente">Emitente</option>
+      <option value="Cliente">Cliente</option>
+      <option value="Transportadora">Transportadora</option>
+      <option value="Armazem">Armazém</option>
+      <option value="Local de Desembaraço">Local de Desembaraço</option>
+    {% endcall %}
+  </div>
+  <div class="col-md-3">
+    {% call ui.field_select(p ~ '_localidade', 'Localização', tone='primary', extra_class='nft-field--highlight', title='Define se a empresa é brasileira ou estrangeira', ui_id=ui_ns ~ '.field-localidade', attrs='onchange="aoMudarLocalidade(\'' ~ p ~ '\')"') %}
+      <option value="Brasil" selected>Brasil</option>
+      <option value="Exterior">Exterior</option>
+    {% endcall %}
+  </div>
+  <div class="col-md-6">
+    {{ ui.field_input(p ~ '_nome', 'Nome / Razão Social', required=True, title='Razão social ou nome completo da empresa', ui_id=ui_ns ~ '.field-nome') }}
+  </div>
+  <div class="col-md-4">
+    {{ ui.field_input(p ~ '_apelido', 'Apelido', placeholder='Nome Fantasia / Apelido', title='Nome fantasia ou apelido para busca rápida', ui_id=ui_ns ~ '.field-apelido') }}
+  </div>
+  <div class="col-md-4">
+    <div class="nft-field nft-field--code" data-ui="{{ ui_ns }}.field-cnpj">
+      <label class="nft-field__label" for="{{ p }}_cnpj_cpf" {% if p == 'edit' %}id="lbl_edit_cnpj_cpf"{% endif %}>CNPJ / CPF / IdEstrangeiro</label>
+      <input class="nft-control mask-cnpj-cpf" id="{{ p }}_cnpj_cpf" placeholder="00.000.000/0000-00" title="CNPJ, CPF ou identificador estrangeiro" type="text" data-ui="{{ ui_ns }}.input-cnpj"/>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="nft-field nft-field--code" data-ui="{{ ui_ns }}.field-ie">
+      <label class="nft-field__label" for="{{ p }}_ie" {% if p == 'edit' %}id="lbl_edit_ie"{% endif %}>Inscrição Estadual (IE)</label>
+      <input class="nft-control" id="{{ p }}_ie" title="Inscrição Estadual da empresa" type="text" data-ui="{{ ui_ns }}.input-ie"/>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="nft-field" data-ui="{{ ui_ns }}.field-ind-ie">
+      <label class="nft-field__label" for="{{ p }}_ind_ie" {% if p == 'edit' %}id="lbl_edit_ind_ie"{% endif %}>Ind. IE</label>
+      <select class="nft-control form-select" id="{{ p }}_ind_ie" title="Indicador de contribuinte ICMS" data-ui="{{ ui_ns }}.select-ind-ie">
+        <option value="1">Contribuinte</option>
+        <option value="2">Isento de Contribuição</option>
+        <option value="9">Não Contribuinte</option>
+      </select>
+    </div>
+  </div>
+  <div class="col-md-4">
+    {{ ui.field_input(p ~ '_fone', 'Telefone', modifier='code', input_class='mask-telefone', placeholder='(00) 00000-0000', title='Telefone de contato da empresa', ui_id=ui_ns ~ '.field-fone') }}
+  </div>
+</div>
+
+<h6 class="nft-section-title text-primary">
+  <i data-lucide="map-pin" class="nft-icon--sm"></i>
+  <span>Endereço</span>
+</h6>
+<div class="row g-2">
+  <div class="col-md-4">
+    {% call ui.field_wrap(p ~ '_cep', 'CEP', modifier='code', ui_id=ui_ns ~ '.field-cep') %}
+      <div class="input-group">
+        <input class="nft-control" id="{{ p }}_cep" onblur="{{ cep_fn }}()" placeholder="00000-000 ou 99999-999" title="CEP da empresa — busca endereço automaticamente ao sair do campo" type="text" data-ui="{{ ui_ns }}.input-cep"/>
+        <button class="nft-btn nft-btn--secondary" onclick="{{ cep_fn }}()" title="Consultar CEP e preencher endereço" type="button" data-ui="{{ ui_ns }}.btn-cep">
+          <i data-lucide="search"></i>
+        </button>
+      </div>
+    {% endcall %}
+  </div>
+  <div class="col-md-6">
+    {{ ui.field_input(p ~ '_logradouro', 'Logradouro', placeholder='Rua, Avenida, etc.', title='Logradouro do endereço', ui_id=ui_ns ~ '.field-logradouro') }}
+  </div>
+  <div class="col-md-2">
+    {{ ui.field_input(p ~ '_numero', 'Número', modifier='code', placeholder='Ex: 123', title='Número do endereço', ui_id=ui_ns ~ '.field-numero') }}
+  </div>
+
+  <div class="col-md-6">
+    {{ ui.field_input(p ~ '_complemento', 'Complemento', placeholder='Sala, Bloco, Galpão, Andar...', title='Complemento do endereço', ui_id=ui_ns ~ '.field-complemento') }}
+  </div>
+  <div class="col-md-6">
+    {{ ui.field_input(p ~ '_bairro', 'Bairro', placeholder='Nome do Bairro', title='Bairro do endereço', ui_id=ui_ns ~ '.field-bairro') }}
+  </div>
+
+  <div class="col-md-6">
+    {{ ui.field_input(p ~ '_municipio', 'Município', placeholder='Nome do Município', title='Nome do município', ui_id=ui_ns ~ '.field-municipio') }}
+  </div>
+  <div class="col-md-2">
+    {{ ui.field_input(p ~ '_uf', 'UF', modifier='sigla', placeholder='UF', title='Sigla da Unidade Federativa (2 letras)', ui_id=ui_ns ~ '.field-uf', attrs='maxlength="2"') }}
+  </div>
+  <div class="col-md-4">
+    {{ ui.field_input(p ~ '_cmun', 'Cód. Mun. (IBGE)', modifier='code', placeholder='Ex: 3550308', title='Código IBGE de 7 dígitos do município', ui_id=ui_ns ~ '.field-cmun') }}
+  </div>
+
+  <div class="col-md-8 position-relative">
+    {{ ui.field_input(p ~ '_xpais', 'País (Nome)', value=('Brasil' if p == 'cad' else ''), placeholder='Digite para filtrar e selecionar o País...', input_class='fw-bold', title='País da empresa (preenche automaticamente o código BACEN)', ui_id=ui_ns ~ '.field-xpais', attrs='autocomplete="off" onblur="aoPerderFocoPaisEmpresa(\'' ~ p ~ '\')" onfocus="aoDigitarPaisAutocompleteEmpresa(\'' ~ p ~ '\')" oninput="aoDigitarPaisAutocompleteEmpresa(\'' ~ p ~ '\')"') }}
+    <div class="dropdown-menu w-100 overflow-auto p-1 nft-topbar-dropdown-menu" id="dropdown_menu_{{ p }}_xpais" style="display: none; position: absolute; top: 100%; left: 0;" data-ui="{{ ui_ns }}.dropdown-pais"></div>
+  </div>
+  <div class="col-md-4">
+    {{ ui.field_input(p ~ '_cpais', 'Cód. BACEN (<cPais>)', value=('1058' if p == 'cad' else ''), modifier='code', readonly=True, input_class='fw-bold', title='Código BACEN do país (tag XML <cPais>)', ui_id=ui_ns ~ '.field-cpais') }}
+  </div>
+</div>

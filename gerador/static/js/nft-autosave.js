@@ -383,32 +383,34 @@
                             : null;
                             
                         if (norm) {
+                            tr.setAttribute('data-ui', 'sefaz.historico.row');
                             tr.innerHTML = `
-                                <td class="align-middle text-nowrap">${norm.data}</td>
-                                <td class="align-middle text-center"><span class="badge bg-light text-dark border font-monospace px-2 py-1 fw-bold" style="font-size: 11px;">${norm.nnf}</span></td>
-                                <td class="align-middle text-center">${norm.ambienteHtml}</td>
-                                <td class="text-center align-middle">${norm.arquivosHtml}</td>
-                                <td class="text-center align-middle">${norm.chaveHtml}</td>
-                                <td class="align-middle text-center">${norm.cstatHtml}</td>
-                                <td class="text-start align-middle" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${norm.motivoTitle}">
+                                <td data-label="Data/Hora" class="align-middle text-nowrap">${norm.data}</td>
+                                <td data-card-title="true" data-label="Nº NF-e" class="align-middle text-center"><span class="nft-badge nft-badge--mono" data-tone="neutral">${norm.nnf}</span></td>
+                                <td data-label="Ambiente" class="align-middle text-center">${norm.ambienteHtml}</td>
+                                <td data-label="Arquivos" class="text-center align-middle">${norm.arquivosHtml}</td>
+                                <td data-label="Chave da NF-e" class="text-center align-middle">${norm.chaveHtml}</td>
+                                <td data-label="cStat" class="align-middle text-center">${norm.cstatHtml}</td>
+                                <td data-label="Motivo / Retorno" class="text-start align-middle text-truncate" style="max-width: 250px;" title="${norm.motivoTitle}">
                                     ${norm.motivo}
                                 </td>
-                                <td class="align-middle text-center" style="font-size: 11px;">${norm.protocolo}</td>
+                                <td data-label="Protocolo" class="align-middle text-center small font-monospace">${norm.protocolo}</td>
                             `;
                         } else {
                             const rawCh = String(item.chave || '').replace(/<[^>]*>?/gm, '').trim();
                             const nnfVal = item.nnf || (rawCh.length >= 34 ? String(parseInt(rawCh.substring(25, 34), 10)) : '-');
+                            tr.setAttribute('data-ui', 'sefaz.historico.row');
                             tr.innerHTML = `
-                                <td class="align-middle text-nowrap">${item.data || ''}</td>
-                                <td class="align-middle text-center"><span class="badge bg-light text-dark border font-monospace px-2 py-1 fw-bold" style="font-size: 11px;">${nnfVal}</span></td>
-                                <td class="align-middle text-center">${item.ambiente || ''}</td>
-                                <td class="text-center align-middle">${item.arquivos || '-'}</td>
-                                <td class="text-center align-middle">${typeof window.renderChaveComBotaoCopiar === 'function' ? window.renderChaveComBotaoCopiar(rawCh) : rawCh}</td>
-                                <td class="align-middle text-center">${item.status || ''}</td>
-                                <td class="text-start align-middle" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.motivoTitle || ''}">
+                                <td data-label="Data/Hora" class="align-middle text-nowrap">${item.data || ''}</td>
+                                <td data-card-title="true" data-label="Nº NF-e" class="align-middle text-center"><span class="nft-badge nft-badge--mono" data-tone="neutral">${nnfVal}</span></td>
+                                <td data-label="Ambiente" class="align-middle text-center">${item.ambiente || ''}</td>
+                                <td data-label="Arquivos" class="text-center align-middle">${item.arquivos || '-'}</td>
+                                <td data-label="Chave da NF-e" class="text-center align-middle">${typeof window.renderChaveComBotaoCopiar === 'function' ? window.renderChaveComBotaoCopiar(rawCh) : rawCh}</td>
+                                <td data-label="cStat" class="align-middle text-center">${item.status || ''}</td>
+                                <td data-label="Motivo / Retorno" class="text-start align-middle text-truncate" style="max-width: 250px;" title="${item.motivoTitle || ''}">
                                     ${item.motivo || ''}
                                 </td>
-                                <td class="align-middle text-center" style="font-size: 11px;">${item.protocolo || ''}</td>
+                                <td data-label="Protocolo" class="align-middle text-center small font-monospace">${item.protocolo || ''}</td>
                             `;
                         }
                         tbody.appendChild(tr);

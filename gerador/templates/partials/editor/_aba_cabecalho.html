@@ -1,672 +1,606 @@
-<!-- ABA 1: CABECALHO -->
-<div class="tab-pane fade show active" id="cabecalho" role="tabpanel">
-<form id="form-cabecalho">
-<div class="row g-3 mt-3">
-<div class="col-12"><h6 class="border-bottom pb-2 fw-bold" style="color: var(--heading); font-size: 13.5px;">Identificação e Seleção da Operação</h6></div>
+{% import 'macros/ui.html' as ui %}
 
-<!-- LINHA 1: nNF, Série e Consumidor Final -->
-<div class="col-md-4">
-  <div class="nft-notch-field">
-    <label class="nft-notch-label">Número NF-e (nNF)</label>
-    <span class="nft-notch-icon"><i data-lucide="hash" style="width: 15px; height: 15px; stroke-width: 1.75px;"></i></span>
-    <input class="nft-notch-input" id="nNF" oninput="calcularChaveAcessoDinamica()" type="text"/>
-  </div>
-</div>
+<!-- ABA 1: CABEÇALHO & OPERAÇÃO -->
+<div class="tab-pane fade show active" id="cabecalho" role="tabpanel" data-ui="editor.cabecalho.pane">
+  <form id="form-cabecalho" data-ui="editor.cabecalho.form">
+    <div class="row g-3">
+      <div class="col-12">
+        <h6 class="nft-section-title">
+          <i data-lucide="clipboard-list" class="nft-icon--sm text-primary"></i>
+          <span>Identificação e Seleção da Operação</span>
+        </h6>
+      </div>
 
-<div class="col-md-4">
-  <div class="nft-notch-field">
-    <label class="nft-notch-label">Série</label>
-    <span class="nft-notch-icon"><i data-lucide="layers" style="width: 15px; height: 15px; stroke-width: 1.75px;"></i></span>
-    <input class="nft-notch-input" id="serie" oninput="calcularChaveAcessoDinamica()" type="text"/>
-  </div>
-</div>
+      <!-- LINHA 1: nNF, Série e Consumidor Final -->
+      <div class="col-md-4">
+        {{ ui.field_input('nNF', 'Número NF-e (nNF)', modifier='code', icon='hash', title='Número sequencial da NF-e (tag XML <nNF>) — recalcula Chave de Acesso', ui_id='editor.cabecalho.field-nNF', attrs='oninput="calcularChaveAcessoDinamica()"') }}
+      </div>
+      <div class="col-md-4">
+        {{ ui.field_input('serie', 'Série', modifier='code', icon='layers', title='Série fiscal da NF-e (tag XML <serie>) — recalcula Chave de Acesso', ui_id='editor.cabecalho.field-serie', attrs='oninput="calcularChaveAcessoDinamica()"') }}
+      </div>
+      <div class="col-md-4">
+        {% call ui.field_select('indFinal', 'Consumidor Final', title='Indica operação com consumidor final (tag XML <indFinal>)', ui_id='editor.cabecalho.field-indFinal') %}
+          <option value="0">0 - Não</option>
+          <option selected value="1">1 - Sim</option>
+        {% endcall %}
+      </div>
 
-<div class="col-md-4">
-  <div class="nft-notch-field">
-    <label class="nft-notch-label">Consumidor Final</label>
-    <select class="nft-notch-select no-icon" id="indFinal">
-      <option value="0">0 - Não</option>
-      <option selected="" value="1">1 - Sim</option>
-    </select>
-  </div>
-</div>
-
-<!-- LINHA 2 (DIV DE BAIXO): Tipo de Operação e Chave de Acesso NF-e -->
-<div class="col-md-6">
-  <div class="nft-notch-field">
-    <div class="d-flex justify-content-between align-items-center" style="position: absolute; top: -8px; left: 12px; right: 12px; z-index: 50; pointer-events: none;">
-      <label class="nft-notch-label" style="position: static !important; background-color: var(--surface, #FFFFFF); padding: 0 4px; pointer-events: none;">
-        Tipo de Operação (Regras Padrão)
-      </label>
-      <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-primary fw-bold d-none d-md-inline-block" onclick="abrirModalTipoNota()" title="Gerenciar Tipos de Nota e Regras de Impostos" style="font-size: 11px; pointer-events: auto; background-color: var(--surface, #FFFFFF); padding: 0 4px;">
-        <i data-lucide="settings" style="width: 12px; height: 12px; vertical-align: -1px;"></i> Gerenciar
-      </button>
-    </div>
-    <span class="nft-notch-icon"><i data-lucide="sliders-horizontal" style="width: 15px; height: 15px; stroke-width: 1.75px;"></i></span>
-    <select class="nft-notch-select fw-bold" id="select_operacao" onchange="aoSelecionarOperacao(this.value)">
-      <option value="">-- Carregando operações cadastradas... --</option>
-    </select>
-  </div>
-  <input id="natOp" type="hidden"/>
-  <input id="cfop_padrao" type="hidden"/>
-</div>
-
-<div class="col-md-6">
-  <div class="nft-notch-field">
-    <div class="d-flex justify-content-between align-items-center" style="position: absolute; top: -8px; left: 12px; right: 12px; z-index: 50; pointer-events: none;">
-      <label class="nft-notch-label" style="position: static !important; background-color: var(--surface, #FFFFFF); padding: 0 4px; pointer-events: none;">
-        Chave de Acesso NF-e (44 Dígitos)
-      </label>
-      <small class="text-muted font-monospace d-none d-md-inline" style="font-size: 10px; background-color: var(--surface, #FFFFFF); padding: 0 4px;">MOC SEFAZ Dinâmica</small>
-    </div>
-    <div class="input-group">
-      <input class="form-control font-monospace fw-bold text-primary" id="chaveAcessoDisplay" placeholder="Aguardando dados da nota..." readonly="" style="border: none !important; box-shadow: none !important; height: 100% !important; background-color: var(--surface-secondary, #F8FAFC); letter-spacing: 0.04em; font-size: 0.88rem; padding-left: 14px;" type="text"/>
-      <button class="nft-btn-secondary px-3 d-flex align-items-center gap-1" id="btnCopiarChave" onclick="copiarChaveAcesso()" title="Copiar chave de acesso completa" type="button" style="border: none !important; border-left: 1px solid var(--border, #E2E8F0) !important; border-radius: 0 !important; height: 100% !important; font-size: 12px;">
-        <i data-lucide="copy" style="width: 14px; height: 14px;"></i>
-        <span>Copiar</span>
-      </button>
-    </div>
-  </div>
-  <!-- Campos Ocultos de Apoio a Chave e Identificacao -->
-  <input id="chaveAcesso" type="hidden"/>
-  <input id="tpNF" type="hidden" value="0"/>
-  <input id="idDest" type="hidden" value="3"/>
-  <input id="cUF" type="hidden" value="35"/>
-  <input id="cNF" type="hidden" value=""/>
-  <input id="mod" type="hidden" value="55"/>
-  <input id="tpEmis" type="hidden" value="1"/>
-  <input id="cDV" type="hidden" value=""/>
-  <input id="verProc" type="hidden" value="4.01_sebrae_b057"/>
-</div>
-
-<!-- DATAS E HORAS DA NOTA (dhEmi e dhSaiEnt) -->
-<div class="col-md-6">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-1 mb-1">
-        <label class="form-label small fw-bold mb-0 d-flex align-items-center gap-1" for="dhEmi">
-            <i data-lucide="calendar"></i>
-            <span>Data e Hora de Emissão (&lt;dhEmi&gt;)</span>
-        </label>
-        <button class="btn-nft py-0 px-2 text-primary border-primary-subtle" onclick="definirDataHoraAgora('dhEmi')" style="font-size: 11px; height: 22px;" title="Preencher com a data e hora atual" type="button">
-            <i data-lucide="clock" style="width: 12px; height: 12px;"></i> Agora
-        </button>
-    </div>
-    <input class="form-control form-control-sm font-monospace" id="dhEmi" onchange="aoAlterarDataEmissao()" type="datetime-local"/>
-    <small class="text-muted" style="font-size: 11px;">Gera a tag &lt;dhEmi&gt; no XML e atualiza o mês da Chave de Acesso.</small>
-</div>
-
-<div class="col-md-6">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-1 mb-1">
-        <label class="form-label small fw-bold mb-0 d-flex align-items-center gap-1" for="dhSaiEnt">
-            <i data-lucide="truck"></i>
-            <span>Data e Hora Saída/Entrada (&lt;dhSaiEnt&gt;)</span>
-        </label>
-        <div class="d-flex gap-1">
-            <button class="btn-nft py-0 px-2 text-secondary border-secondary-subtle" onclick="copiarDataEmissaoParaSaida()" style="font-size: 11px; height: 22px;" title="Copiar mesma data/hora de emissão" type="button">
-                <i data-lucide="copy" style="width: 12px; height: 12px;"></i> Igual Emissão
+      <!-- LINHA 2: Tipo de Operação e Chave de Acesso -->
+      <div class="col-md-6">
+        <div class="nft-field nft-field--has-icon" data-ui="editor.cabecalho.field-operacao">
+          <label class="nft-field__label" for="select_operacao">Tipo de Operação (Regras Padrão)</label>
+          <span class="nft-field__action d-none d-md-inline-flex">
+            <button type="button" class="nft-btn nft-btn--link" onclick="abrirModalTipoNota()" title="Gerenciar Tipos de Nota e regras fiscais padrão" data-ui="editor.cabecalho.btn-gerenciar-operacao">
+              <i data-lucide="settings" class="nft-icon--sm"></i>
+              <span>Gerenciar</span>
             </button>
-            <button class="btn-nft py-0 px-2 text-primary border-primary-subtle" onclick="definirDataHoraAgora('dhSaiEnt')" style="font-size: 11px; height: 22px;" title="Preencher com a data e hora atual" type="button">
-                <i data-lucide="clock" style="width: 12px; height: 12px;"></i> Agora
-            </button>
+          </span>
+          <span class="nft-field__icon"><i data-lucide="sliders-horizontal" class="nft-icon--sm"></i></span>
+          <select class="nft-control form-select fw-bold" id="select_operacao" onchange="aoSelecionarOperacao(this.value)" title="Seleciona o tipo de operação e aplica regras fiscais padrão" data-ui="editor.cabecalho.select-operacao">
+            <option value="">-- Carregando operações cadastradas... --</option>
+          </select>
         </div>
-    </div>
-    <input class="form-control form-control-sm font-monospace" id="dhSaiEnt" type="datetime-local"/>
-    <small class="text-muted" style="font-size: 11px;">Gera a tag &lt;dhSaiEnt&gt; no XML da NF-e.</small>
-</div>
+        <input id="natOp" type="hidden"/>
+        <input id="cfop_padrao" type="hidden"/>
+      </div>
 
-<!-- Inputs Ocultos de Apoio ao Meio de Pagamento & Regime Fiscal (configurados em Tipo de Nota e Totais) -->
-<input id="tPag" type="hidden" value="90"/>
-<input id="regime_tributario_ativo_hidden" type="hidden" value="SUSPENSAO"/>
+      <div class="col-md-6">
+        {% call ui.field_wrap('chaveAcessoDisplay', 'Chave de Acesso NF-e (44 Dígitos)', modifier='code', tone='primary', extra_class='nft-field--highlight', ui_id='editor.cabecalho.field-chave') %}
+          <div class="input-group">
+            <input class="nft-control" id="chaveAcessoDisplay" placeholder="Aguardando dados da nota..." readonly title="Chave de Acesso de 44 dígitos gerada dinamicamente (MOC SEFAZ)" type="text" data-ui="editor.cabecalho.input-chave"/>
+            <button class="nft-btn nft-btn--secondary" id="btnCopiarChave" onclick="copiarChaveAcesso()" title="Copiar os 44 dígitos da chave de acesso" type="button" data-ui="editor.cabecalho.btn-copiar-chave">
+              <i data-lucide="copy"></i>
+              <span>Copiar</span>
+            </button>
+          </div>
+        {% endcall %}
+        <!-- Campos Ocultos de Apoio à Chave e Identificação -->
+        <input id="chaveAcesso" type="hidden"/>
+        <input id="tpNF" type="hidden" value="0"/>
+        <input id="idDest" type="hidden" value="3"/>
+        <input id="cUF" type="hidden" value="35"/>
+        <input id="cNF" type="hidden" value=""/>
+        <input id="mod" type="hidden" value="55"/>
+        <input id="tpEmis" type="hidden" value="1"/>
+        <input id="cDV" type="hidden" value=""/>
+        <input id="verProc" type="hidden" value="4.01_sebrae_b057"/>
+        <input id="tPag" type="hidden" value="90"/>
+        <input id="regime_tributario_ativo_hidden" type="hidden" value="SUSPENSAO"/>
+      </div>
 
-<!-- NOTA FISCAL REFERENCIADA (NFREF - CHAVE DE ACESSO DE 44 DÍGITOS) -->
-<div class="col-md-12">
-<div class="p-2 border rounded bg-light" id="box-ref-nfe">
-<div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
-<div class="d-flex align-items-center gap-2 flex-wrap">
-<label class="form-label small fw-bold mb-0 d-flex align-items-center gap-1" for="refNFe">
-<i data-lucide="file-check" style="width: 14px; height: 14px;"></i>
-<span>Nota Fiscal Referenciada (Chave de Acesso)</span>
-<span class="text-muted fw-normal d-none d-md-inline" style="font-size: 11px;">(Tag SEFAZ: &lt;NFref&gt;&lt;refNFe&gt;)</span>
-</label>
-<span class="badge bg-warning text-dark fw-bold" id="refNFe_aviso_operacao" style="display: none; font-size: 11px;">
-<i data-lucide="alert-triangle" style="width: 11px; height: 11px;"></i> Requer NF-e Origem
-</span>
-</div>
-<div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2">
-<span class="badge font-monospace bg-info-subtle text-info fw-bold" id="refNFe_badge" style="font-size: 11px;">0 / 44 dígitos</span>
-<button class="btn-nft py-0 px-2 d-inline-flex align-items-center gap-1" onclick="sincronizarRefNFeComInfCpl(true)" style="height: 24px; font-size: 11.5px;" title="Adicionar ou atualizar a nota referenciada nas Informações Complementares" type="button">
-<i data-lucide="plus-circle" style="width: 12px; height: 12px;"></i>
-<span>Incluir em Inf. Complementares</span>
-</button>
-</div>
-</div>
-<div class="input-group input-group-sm">
-<input class="form-control form-control-sm font-monospace" id="refNFe" maxlength="44" oninput="aoDigitarRefNFe(this)" placeholder="Digite ou cole os 44 dígitos numéricos da chave de acesso da nota referenciada" style="letter-spacing: 0.05em; font-size: 0.88rem;" type="text"/>
-<button class="btn-nft px-2 d-flex align-items-center gap-1" onclick="limparRefNFe()" title="Limpar nota referenciada" type="button">
-<i data-lucide="x" style="width: 13px; height: 13px;"></i>
-<span>Limpar</span>
-</button>
-</div>
-<small class="text-muted d-block mt-1" style="font-size: 11px;">
-Aceita exclusivamente números. Ao completar 44 dígitos, a chave é incluída no grupo <code>&lt;NFref&gt;</code> do XML e também sincronizada automaticamente nas informações complementares (<code>infCpl</code>).
-</small>
-</div>
-</div>
+      <!-- LINHA 3: Datas e Horas (dhEmi e dhSaiEnt) com slot de ação no topo direito -->
+      <div class="col-md-6">
+        <div class="nft-field nft-field--code" data-ui="editor.cabecalho.field-dhEmi">
+          <label class="nft-field__label" for="dhEmi">Data e Hora de Emissão (&lt;dhEmi&gt;)</label>
+          <span class="nft-field__action">
+            <button class="nft-btn nft-btn--secondary" onclick="definirDataHoraAgora('dhEmi')" title="Preencher Data e Hora de Emissão com o horário atual" type="button" data-ui="editor.cabecalho.btn-dhEmi-agora">
+              <i data-lucide="clock"></i>
+              <span>Agora</span>
+            </button>
+          </span>
+          <input class="nft-control" id="dhEmi" onchange="aoAlterarDataEmissao()" title="Data e hora de emissão da NF-e (tag XML <dhEmi>) — atualiza mês da Chave" type="datetime-local" data-ui="editor.cabecalho.input-dhEmi"/>
+          <small class="nft-field__help">Gera a tag &lt;dhEmi&gt; no XML e atualiza o mês da Chave de Acesso.</small>
+        </div>
+      </div>
 
-<!-- Caixa de Operação Ativa e Regras Herdadas -->
-<div class="col-12">
-<div class="card border p-2 px-3 mb-0 d-flex flex-row justify-content-between align-items-center flex-wrap gap-2" id="card-resumo-heranca">
-<div class="w-100 fw-bold text-uppercase text-muted" style="font-size: 0.7rem; letter-spacing: 0.03em;">Resumo para Repasse aos Itens</div>
-<div class="d-flex align-items-center flex-wrap gap-3">
-<div><span class="text-muted">Operação:</span> <strong id="lbl-operacao-ativa">Nenhuma selecionada</strong></div>
-<span id="lbl-regime-ativo" style="display:none;"></span>
-<div><span class="text-muted">Pagto:</span> <span class="fw-semibold font-monospace" id="lbl-tpag-ativo">90 - Sem Pagamento</span></div>
-<div><span class="text-muted">Tipo NF:</span> <span class="fw-semibold" id="lbl-tp-nf-ativo">-</span></div>
-<div><span class="text-muted">Destino:</span> <span class="fw-semibold" id="lbl-id-dest-ativo">-</span></div>
-<div><span class="text-muted">CFOP:</span> <span class="fw-semibold" id="lbl-cfop-ativo">-</span></div>
-<div><span class="text-muted">CSOSN/ICMS:</span> <span class="fw-semibold" id="lbl-icms-ativo">-</span></div>
-<div><span class="text-muted">IPI CST:</span> <span class="fw-semibold" id="lbl-ipi-ativo">-</span></div>
-<div><span class="text-muted">PIS/COFINS:</span> <span class="fw-semibold" id="lbl-pis-ativo">-</span></div>
-</div>
-<div>
-<button class="btn-nft d-inline-flex align-items-center gap-1" onclick="aplicarOperacaoSelecionadaAosItens()" type="button">
-<i data-lucide="zap" style="width: 14px; height: 14px;"></i>
-<span>Reaplicar Regras aos Itens</span>
-</button>
-</div>
-</div>
-</div>
-<!-- NOVO CARD: PARÂMETROS PRINCIPAIS: CÂMBIO PTAX & RATEIO DE DESPESAS (MARINHA MERCANTE, SISCOMEX) -->
-<div class="col-12 mt-3" id="card-parametros-rateio-ptax">
-<div class="card border shadow-sm">
-<div class="card-header py-2 d-flex justify-content-between align-items-center flex-wrap gap-2 text-secondary">
-<div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2">
-<span class="badge px-2 py-1 d-flex align-items-center gap-1 bg-info-subtle text-info fw-bold"><i data-lucide="sliders"></i> Parâmetros Principais</span>
-<span class="fw-bold">Câmbio Oficial PTAX &amp; Rateios Globais da NF-e</span>
-</div>
-<div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2">
-<span class="badge bg-info-subtle text-info fw-bold" id="badge-itens-para-rateio">0 itens carregados</span>
-</div>
-</div>
-<div class="card-body p-3">
-<div class="row g-3">
+      <div class="col-md-6">
+        <div class="nft-field nft-field--code" data-ui="editor.cabecalho.field-dhSaiEnt">
+          <label class="nft-field__label" for="dhSaiEnt">Data e Hora Saída/Entrada (&lt;dhSaiEnt&gt;)</label>
+          <span class="nft-field__action">
+            <button class="nft-btn nft-btn--ghost" onclick="copiarDataEmissaoParaSaida()" title="Copiar mesma data e hora da emissão" type="button" data-ui="editor.cabecalho.btn-dhSaiEnt-igual">
+              <i data-lucide="copy"></i>
+              <span>Igual Emissão</span>
+            </button>
+            <button class="nft-btn nft-btn--secondary" onclick="definirDataHoraAgora('dhSaiEnt')" title="Preencher Saída/Entrada com o horário atual" type="button" data-ui="editor.cabecalho.btn-dhSaiEnt-agora">
+              <i data-lucide="clock"></i>
+              <span>Agora</span>
+            </button>
+          </span>
+          <input class="nft-control" id="dhSaiEnt" title="Data e hora de saída ou entrada da mercadoria (tag XML <dhSaiEnt>)" type="datetime-local" data-ui="editor.cabecalho.input-dhSaiEnt"/>
+          <small class="nft-field__help">Gera a tag &lt;dhSaiEnt&gt; no XML da NF-e.</small>
+        </div>
+      </div>
 
-<!-- PAINEL 1: MOEDA E CÂMBIO PTAX DO BANCO CENTRAL -->
-<div class="col-lg-6 col-md-12 border-end-lg">
-<div class="p-3 rounded bg-light border h-100 d-flex flex-column justify-content-between">
-<div>
-<div class="d-flex align-items-center justify-content-between mb-2">
-<h6 class="mb-0 fw-bold d-flex align-items-center gap-2">
-<i data-lucide="coins" style="width: 16px; height: 16px;"></i>
-<span>Moeda Estrangeira &amp; Câmbio PTAX</span>
-</h6>
-<span class="badge bg-info-subtle text-info fw-bold d-none d-md-inline-block" id="badge-boletim-status">API Bacen Olinda</span>
-</div>
-<small class="text-muted d-block mb-3">
-Defina a moeda e a taxa PTAX utilizada na operação para fixar a base nos itens ou consulte o boletim mais recente do Banco Central.
-</small>
-
-<!-- SUB-BLOCO 1: CÂMBIO UTILIZADO NA OPERAÇÃO (BASE DOS ITENS) -->
-<div class="p-2 mb-2 rounded bg-white border shadow-sm">
-<div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
-<span class="small fw-bold text-primary d-inline-flex align-items-center gap-1">
-<i data-lucide="arrow-down-to-dot" style="width: 13px; height: 13px;"></i>
-<span>Câmbio Utilizado na Operação</span>
-</span>
-<span class="badge bg-primary-subtle text-primary fw-semibold" style="font-size: 10px;">Base dos Itens</span>
-</div>
-<div class="row g-2">
-<!-- Campo Moeda da Operação -->
-<div class="col-sm-6">
-<label class="form-label small fw-bold mb-1" for="ptax_moeda">Moeda da Operação</label>
-<select class="form-select form-select-sm fw-bold" id="ptax_moeda" onchange="aoMudarMoedaPtax()">
-<option selected="" value="USD">USD - Dólar dos EUA</option>
-<option value="EUR">EUR - Euro</option>
-<option value="GBP">GBP - Libra Esterlina</option>
-<option value="JPY">JPY - Iene Japonês</option>
-<option value="CAD">CAD - Dólar Canadense</option>
-<option value="CHF">CHF - Franco Suíço</option>
-<option value="AUD">AUD - Dólar Australiano</option>
-<option value="NOK">NOK - Coroa Norueguesa</option>
-<option value="SEK">SEK - Coroa Sueca</option>
-<option value="DKK">DKK - Coroa Dinamarquesa</option>
-<option value="OUTRA">Outra Moeda / Digitar...</option>
-</select>
-<input class="form-control form-control-sm mt-1 text-uppercase fw-bold font-monospace" id="ptax_moeda_custom" placeholder="Código (Ex: CNY, EUR)" style="display: none;" type="text"/>
-</div>
-<!-- Campo Taxa PTAX Venda Utilizada -->
-<div class="col-sm-6">
-<label class="form-label small fw-bold mb-1" for="ptax_taxa_utilizada">Taxa PTAX Venda Utilizada</label>
-<div class="input-group input-group-sm">
-<span class="input-group-text font-monospace fw-bold">R$</span>
-<input class="form-control form-control-sm font-monospace text-end fw-bold text-primary" id="ptax_taxa_utilizada" onchange="formatarInputVisualBR(this, 4, 4)" placeholder="0,0000" type="text" title="Taxa PTAX de Venda efetivamente utilizada no faturamento/conversão original dos itens"/>
-</div>
-</div>
-<!-- Botão para Incluir em Todos os Itens -->
-<div class="col-12 mt-2">
-<button class="btn-nft w-100 fw-bold d-inline-flex align-items-center justify-content-center gap-1 shadow-sm text-primary border-primary-subtle" id="btn-aplicar-moeda-taxa-itens" onclick="aplicarMoedaETaxaUtilizadaAosItens()" type="button" title="Inclui esta Moeda e Taxa Utilizada em todos os itens e calcula o valor da moeda (V. Prod ÷ Taxa) como base para recálculo">
-<i data-lucide="check-check" style="width: 15px; height: 15px;"></i>
-<span>Incluir Moeda e Câmbio Base em Todos os Itens</span>
-</button>
-</div>
-</div>
-</div>
-
-<!-- SUB-BLOCO 2: CONSULTA BACEN & RECÁLCULO CAMBIAL -->
-<div class="p-2 rounded bg-white border shadow-sm">
-<div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
-<span class="small fw-bold text-secondary d-inline-flex align-items-center gap-1">
-<i data-lucide="refresh-cw" style="width: 13px; height: 13px;"></i>
-<span>Cotação Bacen &amp; Recálculo</span>
-</span>
-<span class="badge bg-info-subtle text-info fw-semibold" style="font-size: 10px;">Atualização</span>
-</div>
-<div class="row g-2 align-items-center">
-<!-- 1. Data da Cotação PTAX -->
-<div class="col-sm-6">
-<label class="form-label small fw-bold mb-1" for="ptax_data">Data Cotação PTAX</label>
-<div class="input-group" style="height: 36px;">
-<input class="form-control" id="ptax_data" type="date" style="font-size: 13px; height: 36px;"/>
-<button class="btn btn-outline-secondary" onclick="definirDataPtaxHoje()" title="Definir data de hoje" type="button" style="font-size: 12px; height: 36px;">Hoje</button>
-</div>
-</div>
-<!-- 2. Botão de Consulta à API PTAX -->
-<div class="col-sm-6">
-<button class="btn-nft w-100 fw-bold d-inline-flex align-items-center justify-content-center gap-1 shadow-sm text-primary border-primary-subtle" id="btn-consultar-ptax" onclick="consultarCotacaoPtax()" type="button" style="margin-top: 0 !important;" title="Consultar cotação oficial PTAX no Banco Central">
-<span class="spinner-border spinner-border-sm d-none" id="spinner-ptax" role="status"></span>
-<i data-lucide="zap" style="width: 15px; height: 15px;"></i>
-<span>Puxar Bacen</span>
-</button>
-</div>
-<!-- 3. Valores de Câmbio Retornados -->
-<div class="col-sm-6 mt-2">
-<label class="form-label small fw-bold mb-1 text-primary" for="ptax_cotacao_venda">Nova Taxa PTAX Venda (R$)</label>
-<div class="input-group input-group-sm">
-<span class="input-group-text font-monospace fw-bold">R$</span>
-<input class="form-control form-control-sm font-monospace text-end fw-bold text-primary border-primary" id="ptax_cotacao_venda" onchange="formatarInputVisualBR(this, 4, 4)" placeholder="0,0000" type="text" title="Informe a nova taxa PTAX para recálculo dos itens ou clique em Puxar Bacen"/>
-</div>
-</div>
-<div class="col-sm-6 mt-2">
-<label class="form-label small mb-1 text-muted">Taxa PTAX Compra (R$)</label>
-<div class="input-group input-group-sm">
-<span class="input-group-text font-monospace text-muted">R$</span>
-<input class="form-control form-control-sm font-monospace text-end text-muted" id="ptax_cotacao_compra" placeholder="0,0000" readonly="" type="text"/>
-</div>
-</div>
-<!-- 4. Box de Detalhes do Boletim -->
-<div class="col-12 mt-2">
-<div class="p-2 border rounded bg-white small font-monospace mt-1" id="box-info-boletim" style="font-size: 11px; display: none;">
-<div class="d-flex justify-content-between align-items-center">
-<span><strong id="lbl-boletim-tipo">Boletim:</strong> <span id="lbl-boletim-detalhe">-</span></span>
-<span class="badge bg-info-subtle text-info fw-bold" id="badge-boletim-ok">Atualizado</span>
-</div>
-<div class="text-muted mt-1"><span id="lbl-boletim-datahora">-</span></div>
-</div>
-</div>
-<!-- 5. Gravar Taxa em infCpl e Ações de Câmbio -->
-<div class="col-12 mt-2">
-<div class="form-check">
-<input checked="" class="form-check-input" id="chk_ptax_infcpl" type="checkbox"/>
-<label class="form-check-label small" for="chk_ptax_infcpl" style="font-size: 11px;">
-Gravar taxa de câmbio nas Informações Complementares (<code>infCpl</code>)
-</label>
-</div>
-</div>
-<div class="col-12 d-flex flex-wrap gap-2 mt-2">
-<button class="btn-nft flex-grow-1 fw-bold d-inline-flex align-items-center justify-content-center gap-1 shadow-sm text-primary border-primary-subtle" onclick="aplicarCotacaoNasObservacoes()" type="button" title="Grava a taxa de câmbio e data nas Observações / Informações Complementares da nota">
-<i data-lucide="file-text" style="width: 15px; height: 15px;"></i>
-<span>Registrar Câmbio em infCpl</span>
-</button>
-<button class="btn-nft flex-grow-1 fw-bold d-inline-flex align-items-center justify-content-center gap-1 shadow-sm text-primary border-primary-subtle" onclick="recalcularConversaoItens()" title="Recalcula o valor dos itens dividindo pela taxa anterior e multiplicando pela nova taxa PTAX" type="button">
-<i data-lucide="refresh-cw" style="width: 15px; height: 15px;"></i>
-<span>Recalcular Conversão</span>
-</button>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-
-<!-- PAINEL 2: RATEIO DE DESPESAS GLOBAIS ENTRE OS ITENS -->
-<div class="col-lg-6 col-md-12">
-<div class="p-3 rounded bg-light border h-100 d-flex flex-column justify-content-between">
-<div>
-<div class="d-flex align-items-center justify-content-between mb-2">
-<h6 class="mb-0 fw-bold d-flex align-items-center gap-2">
-<i data-lucide="scale" style="width: 16px; height: 16px;"></i>
-<span>Rateios Globais &amp; Despesas Aduaneiras</span>
-</h6>
-<span class="badge bg-primary-subtle text-primary fw-bold d-none d-md-inline-block">Rateio Automático</span>
-</div>
-<small class="text-muted d-block mb-3">
-Lançamento de despesas globais (Marinha Mercante, Taxa Siscomex, Frete e Seguro) para rateio proporcional entre os itens.
-</small>
-
-<!-- SUB-BLOCO 1: DESPESAS ADUANEIRAS PRINCIPAIS (DI / DUIMP) -->
-<div class="p-2 mb-2 rounded bg-white border shadow-sm">
-<div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
-<span class="small fw-bold text-dark d-inline-flex align-items-center gap-1">
-<i data-lucide="file-spreadsheet" style="width: 13px; height: 13px;"></i>
-<span>Despesas Aduaneiras Principais da DI / DUIMP</span>
-</span>
-<span class="badge bg-info-subtle text-info fw-semibold d-none d-md-inline-block" style="font-size: 10px;">Aduana / Siscomex</span>
-</div>
-<div class="row g-2">
-<!-- VALOR MARINHA MERCANTE (AFRMM) -->
-<div class="col-sm-6">
-<label class="form-label small fw-bold mb-1 d-flex justify-content-between align-items-center" for="rateio_vAFRMM">
-<span class="d-inline-flex align-items-center gap-1"><i data-lucide="anchor" style="width: 13px; height: 13px;"></i> VALOR MARINHA MERCANTE</span>
-<span class="badge font-monospace bg-info-subtle text-info fw-bold" style="font-size: 10px;">vAFRMM (DI)</span>
-</label>
-<div class="input-group input-group-sm">
-<span class="input-group-text font-monospace fw-bold">R$</span>
-<input class="form-control form-control-sm font-monospace text-end fw-bold" id="rateio_vAFRMM" onchange="formatarInputVisualBR(this, 2, 2); verificarAvisoZeradoRateio(this);" placeholder="0,00" type="text"/>
-</div>
-<small class="text-muted d-block mt-0.5" style="font-size: 10.5px;">Adicional Marinha Mercante lançado na Declaração de Importação</small>
-</div>
-<!-- TAXA SISCOMEX -->
-<div class="col-sm-6">
-<label class="form-label small fw-bold mb-1 d-flex justify-content-between align-items-center" for="rateio_vSiscomex">
-<span class="d-inline-flex align-items-center gap-1"><i data-lucide="landmark" style="width: 13px; height: 13px;"></i> TAXA SISCOMEX</span>
-<span class="badge font-monospace bg-info-subtle text-info fw-bold" style="font-size: 10px;">vDespAdu (II) / vOutro</span>
-</label>
-<div class="input-group input-group-sm">
-<span class="input-group-text font-monospace fw-bold">R$</span>
-<input class="form-control form-control-sm font-monospace text-end fw-bold" id="rateio_vSiscomex" onchange="formatarInputVisualBR(this, 2, 2); verificarAvisoZeradoRateio(this);" placeholder="0,00" type="text"/>
-</div>
-<small class="text-muted d-block mt-0.5" style="font-size: 10.5px;">Taxa Siscomex da DI lançada em Desp. Aduaneiras e Outras Desp.</small>
-</div>
-<!-- Opções de Lançamento da Taxa Siscomex -->
-<div class="col-12 pt-2 border-top mt-1">
-<div class="d-flex flex-wrap gap-x-3 gap-y-1">
-<div class="form-check me-3">
-<input checked="" class="form-check-input" id="chk_siscomex_despadu" type="checkbox"/>
-<label class="form-check-label small" for="chk_siscomex_despadu" style="font-size: 11px;">
-Ratear em Despesas Aduaneiras (<code>vDespAdu</code> no grupo II)
-</label>
-</div>
-<div class="form-check me-3">
-<input checked="" class="form-check-input" id="chk_siscomex_outro" type="checkbox"/>
-<label class="form-check-label small" for="chk_siscomex_outro" style="font-size: 11px;">
-Somar em Outras Despesas (<code>vOutro</code>) para compor Total da NF (<code>vNF</code>)
-</label>
-</div>
-<div class="form-check">
-<input checked="" class="form-check-input" id="chk_siscomex_infcpl" type="checkbox"/>
-<label class="form-check-label small" for="chk_siscomex_infcpl" style="font-size: 11px;">
-Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code>)
-</label>
-</div>
-</div>
-</div>
-</div>
-</div>
-
-<!-- SUB-BLOCO 2: OUTROS RATEIOS GLOBAIS (FRETE, SEGURO E OUTRAS DESPESAS) -->
-<div class="p-2 mb-2 rounded bg-white border shadow-sm">
-<div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
-<span class="small fw-bold text-dark d-inline-flex align-items-center gap-1">
-<i data-lucide="truck" style="width: 13px; height: 13px;"></i>
-<span>Outros Rateios da Operação (Valores Globais da NF-e)</span>
-</span>
-<span class="badge bg-secondary-subtle text-secondary fw-semibold d-none d-md-inline-block" style="font-size: 10px;">Aberto / Visível</span>
-</div>
-<div class="row g-2">
-<div class="col-sm-4">
-<label class="form-label small fw-bold mb-1" for="rateio_vFrete">Frete Total (vFrete)</label>
-<div class="input-group input-group-sm">
-<span class="input-group-text font-monospace fw-bold">R$</span>
-<input class="form-control form-control-sm font-monospace text-end fw-bold" id="rateio_vFrete" onchange="formatarInputVisualBR(this, 2, 2); verificarAvisoZeradoRateio(this);" placeholder="0,00" type="text"/>
-</div>
-<small class="text-muted d-block mt-0.5" style="font-size: 10px;">Frete internacional / nacional</small>
-</div>
-<div class="col-sm-4">
-<label class="form-label small fw-bold mb-1" for="rateio_vSeg">Seguro Total (vSeg)</label>
-<div class="input-group input-group-sm">
-<span class="input-group-text font-monospace fw-bold">R$</span>
-<input class="form-control form-control-sm font-monospace text-end fw-bold" id="rateio_vSeg" onchange="formatarInputVisualBR(this, 2, 2); verificarAvisoZeradoRateio(this);" placeholder="0,00" type="text"/>
-</div>
-<small class="text-muted d-block mt-0.5" style="font-size: 10px;">Seguro de transporte internacional</small>
-</div>
-<div class="col-sm-4">
-<label class="form-label small fw-bold mb-1" for="rateio_vOutro">Outras Desp. (vOutro)</label>
-<div class="input-group input-group-sm">
-<span class="input-group-text font-monospace fw-bold">R$</span>
-<input class="form-control form-control-sm font-monospace text-end fw-bold" id="rateio_vOutro" onchange="formatarInputVisualBR(this, 2, 2); verificarAvisoZeradoRateio(this);" placeholder="0,00" type="text"/>
-</div>
-<small class="text-muted d-block mt-0.5" style="font-size: 10px;">Despesas acessórias complementares</small>
-</div>
-</div>
-</div>
-</div>
-
-<!-- SUB-BLOCO 3: CRITÉRIO DE RATEIO E BOTÃO DE APLICAÇÃO -->
-<div class="p-2 rounded bg-white border shadow-sm mt-auto">
-<div class="row g-2 align-items-center">
-<div class="col-sm-6">
-<label class="form-label small fw-bold mb-1" for="rateio_criterio">Critério de Proporcionalidade</label>
-<select class="form-select fw-bold" id="rateio_criterio" style="height: 36px; font-size: 13px;">
-<option selected="" value="vProd">Proporcional ao Valor dos Produtos (vProd)</option>
-<option value="qCom">Proporcional à Quantidade (qCom)</option>
-<option value="igual">Dividir Igualmente entre os Itens</option>
-</select>
-</div>
-<div class="col-sm-6">
-<button class="btn-nft w-100 fw-bold d-inline-flex align-items-center justify-content-center gap-1 shadow-sm text-primary border-primary-subtle" onclick="executarRateioGlobal()" type="button" title="Executar o rateio das despesas e câmbio em todos os itens da nota">
-<i data-lucide="calculator" style="width: 15px; height: 15px;"></i>
-<span>Executar Rateio nos Itens (<span id="lbl-qtd-itens-rateio">0</span>)</span>
-</button>
-</div>
-<div class="col-12 mt-2 pt-2 border-top">
-<button class="btn-nft w-100 fw-bold d-inline-flex align-items-center justify-content-center gap-1 shadow-sm text-primary border-primary-subtle" id="btn-converter-item-fob" onclick="converterValorItensEmFOB()" type="button" title="Subtrai o valor do frete rateado dos itens no campo V. Unit. Com. para considerar como FOB, zera o frete dos itens e exclui o Frete Total (vFrete) da aba 1. Operação">
-<i data-lucide="package-minus" style="width: 15px; height: 15px;"></i>
-<span>Converter valor do item em FOB</span>
-</button>
-</div>
-</div>
-</div>
-</div>
-</div>
-
-</div>
-</div>
-</div>
-</div>
-<!-- VOLUMES E PESOS -->
-<div class="col-12 mt-3"><div class="card shadow-sm border mb-3"><div class="card-header py-2 fw-bold text-secondary"><i data-lucide="package"></i> Volumes e Pesos</div><div class="card-body py-2"><div class="row g-2"><div class="col-md-3">
-<label class="form-label small fw-bold mb-1">Qtd. Volumes (qVol)</label>
-<input class="form-control form-control-sm font-monospace text-end" id="transp_qVol" placeholder="Ex: 10" type="text"/>
-</div><div class="col-md-3">
-<label class="form-label small fw-bold mb-1">Espécie de Volumes (esp)</label>
-<input class="form-control form-control-sm" id="transp_esp" placeholder="Ex: CAIXAS, PALETES, VOLUMES" type="text"/>
-</div><div class="col-md-3">
-<label class="form-label small fw-bold mb-1">Peso Líquido Total (kg)</label>
-<input class="form-control form-control-sm font-monospace text-end" id="transp_pesoL" onchange="formatarInputVisualBR(this, 3, 3); aoMudarPesoLiquidoTransporte();" placeholder="0,000" type="text"/>
-</div><div class="col-md-3">
-<label class="form-label small fw-bold mb-1">Peso Bruto Total (kg)</label>
-<input class="form-control form-control-sm font-monospace text-end" id="transp_pesoB" onchange="formatarInputVisualBR(this, 3, 3)" placeholder="0,000" type="text"/>
-</div></div></div></div></div>
-
-<!-- DADOS DE EXPORTAÇÃO (SEFAZ: <exporta>) -->
-<div class="col-12 mt-3" id="secao_exportacao" style="display: none;">
-    <div class="card shadow-sm border mb-3">
-        <div class="card-header py-2 d-flex justify-content-between align-items-center flex-wrap gap-2 text-secondary">
-            <span class="fw-bold d-flex align-items-center gap-1 text-secondary">
-                <i data-lucide="plane-takeoff"></i>
-                <span>Exportação</span>
-                <span class="text-muted fw-normal" style="font-size: 11px;">(Tag SEFAZ: &lt;exporta&gt;)</span>
-            </span>
-            <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2">
-                <span class="badge font-monospace bg-info-subtle text-info fw-bold" id="badge_exporta_status" style="font-size: 11px;">Opcional (CFOP 7xxx / Exterior)</span>
-                <button class="btn-nft py-0 px-2 d-inline-flex align-items-center gap-1" onclick="limparCamposExportacao()" style="height: 24px; font-size: 11px;" title="Limpar campos de exportação" type="button">
-                    <i data-lucide="eraser" style="width: 12px; height: 12px;"></i>
-                    <span>Limpar</span>
-                </button>
+      <!-- NOTA FISCAL REFERENCIADA (NFref) -->
+      <div class="col-12">
+        <div class="nft-section-box" id="box-ref-nfe" data-ui="editor.cabecalho.box-refNFe">
+          <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <i data-lucide="file-check" class="nft-icon--sm text-primary"></i>
+              <span class="fw-bold">Nota Fiscal Referenciada (Chave de Acesso)</span>
+              <small class="text-muted d-none d-md-inline font-monospace">&lt;NFref&gt;&lt;refNFe&gt;</small>
+              <span class="nft-badge" data-tone="warning" id="refNFe_aviso_operacao" style="display: none;" title="Esta operação requer a chave da NF-e de origem" data-ui="editor.cabecalho.badge-ref-aviso">
+                <i data-lucide="alert-triangle" class="nft-icon--sm"></i> Requer NF-e Origem
+              </span>
             </div>
-        </div>
-        <div class="card-body py-2">
-            <div class="row g-2">
-                <div class="col-md-3">
-                    <label class="form-label small fw-bold mb-1" for="exporta_UFSaidaPais">UF de embarque <span class="text-danger exporta-req-indicator" style="display: none;">*</span></label>
-                    <select class="form-select form-select-sm font-monospace" id="exporta_UFSaidaPais">
-                        <option value="">Selecione a UF...</option>
-                        <option value="AC">AC</option>
-                        <option value="AL">AL</option>
-                        <option value="AM">AM</option>
-                        <option value="AP">AP</option>
-                        <option value="BA">BA</option>
-                        <option value="CE">CE</option>
-                        <option value="DF">DF</option>
-                        <option value="ES">ES</option>
-                        <option value="GO">GO</option>
-                        <option value="MA">MA</option>
-                        <option value="MG">MG</option>
-                        <option value="MS">MS</option>
-                        <option value="MT">MT</option>
-                        <option value="PA">PA</option>
-                        <option value="PB">PB</option>
-                        <option value="PE">PE</option>
-                        <option value="PI">PI</option>
-                        <option value="PR">PR</option>
-                        <option value="RJ">RJ</option>
-                        <option value="RN">RN</option>
-                        <option value="RO">RO</option>
-                        <option value="RR">RR</option>
-                        <option value="RS">RS</option>
-                        <option value="SC">SC</option>
-                        <option value="SE">SE</option>
-                        <option value="SP">SP</option>
-                        <option value="TO">TO</option>
-                    </select>
-                </div>
-                <div class="col-md-5">
-                    <label class="form-label small fw-bold mb-1" for="exporta_xLocExporta">Local de embarque <span class="text-danger exporta-req-indicator" style="display: none;">*</span></label>
-                    <input class="form-control form-control-sm" id="exporta_xLocExporta" maxlength="60" placeholder="Ex: PORTO DE SANTOS, AEROPORTO DE VIRACOPOS" type="text"/>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label small fw-bold mb-1" for="exporta_xLocDespacho">Local de despacho</label>
-                    <input class="form-control form-control-sm" id="exporta_xLocDespacho" maxlength="60" placeholder="Ex: RECINTO ALFANDEGADO SANTOS (Opcional)" type="text"/>
-                </div>
+            <div class="d-flex align-items-center flex-wrap gap-2">
+              {{ ui.badge('0 / 44 dígitos', tone='info', mono=True, id='refNFe_badge', title='Contador de dígitos informados na chave referenciada', ui_id='editor.cabecalho.badge-ref-count') }}
+              {{ ui.btn('Incluir em Inf. Complementares', variant='secondary', size='sm', icon='plus-circle', onclick='sincronizarRefNFeComInfCpl(true)', title='Adicionar ou atualizar a nota referenciada nas Informações Complementares', ui_id='editor.cabecalho.btn-sync-ref') }}
             </div>
-        </div>
-    </div>
-</div>
+          </div>
 
-<!-- IDENTIFICAÇÃO DA IMPORTAÇÃO -->
-<div class="col-12 mt-3">
-    <div class="card shadow-sm border mb-3">
-        <div class="card-header py-2 d-flex justify-content-between align-items-center flex-wrap gap-2 text-secondary">
-            <span class="fw-bold d-flex align-items-center gap-1 text-secondary">
-                <i data-lucide="globe"></i>
-                <span>Identificação da Importação</span>
-            </span>
-            <button class="btn-nft py-0 px-2 d-flex align-items-center gap-1 shadow-sm" onclick="repassarImportacaoParaItens()" title="Repassar estes dados de importação para todos os itens da nota" type="button">
-                <i data-lucide="arrow-down-to-dot" style="width: 14px; height: 14px;"></i>
-                <span>Repassar para itens</span>
-            </button>
+          {% call ui.field_wrap('refNFe', 'Chave Referenciada (44 dígitos numéricos)', modifier='code', ui_id='editor.cabecalho.field-refNFe', extra_class='nft-field--flush') %}
+            <div class="input-group">
+              <input class="nft-control" id="refNFe" maxlength="44" oninput="aoDigitarRefNFe(this)" placeholder="Digite ou cole os 44 dígitos numéricos da chave de acesso da nota referenciada" title="Chave de 44 dígitos da NF-e referenciada (somente números)" type="text" data-ui="editor.cabecalho.input-refNFe"/>
+              <button class="nft-btn nft-btn--ghost" onclick="limparRefNFe()" title="Limpar chave de nota referenciada" type="button" data-ui="editor.cabecalho.btn-limpar-ref">
+                <i data-lucide="x"></i>
+                <span>Limpar</span>
+              </button>
+            </div>
+          {% endcall %}
+          <small class="nft-field__help">
+            Aceita exclusivamente números. Ao completar 44 dígitos, a chave é incluída em <code>&lt;NFref&gt;</code> e sincronizada em <code>infCpl</code>.
+          </small>
         </div>
-        <div class="card-body py-2">
-            <div class="row g-2">
-                <div class="col-md-3">
-                    <label class="form-label small fw-bold mb-1" for="import_nDI">Número DI/DSI/DA/DRI-E/DUImp</label>
-                    <input class="form-control form-control-sm font-monospace" id="import_nDI" placeholder="Ex: 24/1234567-8 ou DUImp" type="text"/>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label small fw-bold mb-1" for="import_dDI">Data Registro</label>
-                    <input class="form-control form-control-sm" id="import_dDI" type="date"/>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label small fw-bold mb-1" for="import_cExportador">
-                        <span>Cód. Exportador</span>
-                        <a class="text-decoration-none small text-muted" href="javascript:void(0)" onclick="puxarNomeDestinatarioParaExportador()" title="Puxar Nome do Destinatário">
-                            <i data-lucide="user-check" style="width: 12px; height: 12px;"></i> Puxar Destinatário
-                        </a>
-                    </label>
-                    <div class="input-group input-group-sm">
-                        <input class="form-control form-control-sm" id="import_cExportador" placeholder="Puxa o Nome do Destinatário..." type="text"/>
-                        <button class="btn-nft" onclick="puxarNomeDestinatarioParaExportador()" title="Puxar Nome dos Dados do Destinatário" type="button">
-                            <i data-lucide="refresh-cw" style="width: 13px; height: 13px;"></i>
-                        </button>
+      </div>
+
+      <!-- Caixa de Operação Ativa e Regras Herdadas -->
+      <div class="col-12">
+        <div class="card" id="card-resumo-heranca" data-ui="editor.cabecalho.card-heranca">
+          <div class="card-body py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="d-flex align-items-center flex-wrap gap-3">
+              <div><span class="nft-kv__label">Operação:</span> <strong id="lbl-operacao-ativa" title="Tipo de operação fiscal ativa" data-ui="editor.cabecalho.lbl-operacao">Nenhuma selecionada</strong></div>
+              <span id="lbl-regime-ativo" style="display: none;"></span>
+              <div><span class="nft-kv__label">Pagto:</span> <span class="fw-semibold font-monospace" id="lbl-tpag-ativo" title="Meio de pagamento herdado" data-ui="editor.cabecalho.lbl-tpag">90 - Sem Pagamento</span></div>
+              <div><span class="nft-kv__label">Tipo NF:</span> <span class="fw-semibold" id="lbl-tp-nf-ativo" title="Entrada ou Saída herdada" data-ui="editor.cabecalho.lbl-tpnf">-</span></div>
+              <div><span class="nft-kv__label">Destino:</span> <span class="fw-semibold" id="lbl-id-dest-ativo" title="Destino da operação herdado" data-ui="editor.cabecalho.lbl-iddest">-</span></div>
+              <div><span class="nft-kv__label">CFOP:</span> <span class="fw-semibold font-monospace" id="lbl-cfop-ativo" title="CFOP padrão herdado" data-ui="editor.cabecalho.lbl-cfop">-</span></div>
+              <div><span class="nft-kv__label">CSOSN/ICMS:</span> <span class="fw-semibold font-monospace" id="lbl-icms-ativo" title="Tributação de ICMS herdada" data-ui="editor.cabecalho.lbl-icms">-</span></div>
+              <div><span class="nft-kv__label">IPI CST:</span> <span class="fw-semibold font-monospace" id="lbl-ipi-ativo" title="CST de IPI herdado" data-ui="editor.cabecalho.lbl-ipi">-</span></div>
+              <div><span class="nft-kv__label">PIS/COFINS:</span> <span class="fw-semibold font-monospace" id="lbl-pis-ativo" title="CST de PIS/COFINS herdado" data-ui="editor.cabecalho.lbl-pis">-</span></div>
+            </div>
+            {{ ui.btn('Reaplicar Regras aos Itens', variant='secondary', size='sm', icon='zap', onclick='aplicarOperacaoSelecionadaAosItens()', title='Aplicar todas as regras da operação ativa sobre os itens da grade', ui_id='editor.cabecalho.btn-reaplicar-regras') }}
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD: CÂMBIO PTAX & RATEIO DE DESPESAS -->
+      <div class="col-12" id="card-parametros-rateio-ptax" data-ui="editor.ptax-rateio.card">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="d-flex align-items-center flex-wrap gap-2">
+              {{ ui.badge('Parâmetros Principais', tone='info', title='Configurações globais de câmbio e rateio', ui_id='editor.ptax-rateio.badge-titulo') }}
+              <span class="fw-bold">Câmbio Oficial PTAX &amp; Rateios Globais da NF-e</span>
+            </div>
+            {{ ui.badge('0 itens carregados', tone='info', mono=True, id='badge-itens-para-rateio', title='Quantidade de itens disponíveis para rateio', ui_id='editor.ptax-rateio.badge-itens') }}
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+
+              <!-- PAINEL 1: MOEDA E CÂMBIO PTAX -->
+              <div class="col-lg-6 col-12">
+                <div class="nft-section-box h-100 d-flex flex-column gap-3" data-ui="editor.ptax.panel">
+                  <div>
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                      <h6 class="nft-section-title border-0 pb-0 mb-0">
+                        <i data-lucide="coins" class="nft-icon--sm text-primary"></i>
+                        <span>Moeda Estrangeira &amp; Câmbio PTAX</span>
+                      </h6>
+                      {{ ui.badge('API Bacen Olinda', tone='info', id='badge-boletim-status', title='Status da conexão com a API PTAX do Banco Central', ui_id='editor.ptax.badge-bacen', extra_class='d-none d-md-inline-flex') }}
                     </div>
+                    <small class="text-muted d-block">Defina a moeda e a taxa PTAX utilizada na operação ou consulte o boletim oficial do Banco Central.</small>
+                  </div>
+
+                  <!-- Sub-bloco 1: Câmbio Base -->
+                  <div class="card" data-ui="editor.ptax.sub-base">
+                    <div class="card-body">
+                      <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
+                        <span class="fw-bold text-primary d-inline-flex align-items-center gap-1">
+                          <i data-lucide="arrow-down-to-dot" class="nft-icon--sm"></i>
+                          <span>Câmbio Utilizado na Operação</span>
+                        </span>
+                        {{ ui.badge('Base dos Itens', tone='primary', title='Base de cálculo inicial para conversão dos itens') }}
+                      </div>
+                      <div class="row g-2">
+                        <div class="col-sm-6">
+                          {% call ui.field_select('ptax_moeda', 'Moeda da Operação', title='Moeda estrangeira utilizada na fatura comercial', ui_id='editor.ptax.field-moeda', attrs='onchange="aoMudarMoedaPtax()"') %}
+                            <option selected value="USD">USD - Dólar dos EUA</option>
+                            <option value="EUR">EUR - Euro</option>
+                            <option value="GBP">GBP - Libra Esterlina</option>
+                            <option value="JPY">JPY - Iene Japonês</option>
+                            <option value="CAD">CAD - Dólar Canadense</option>
+                            <option value="CHF">CHF - Franco Suíço</option>
+                            <option value="AUD">AUD - Dólar Australiano</option>
+                            <option value="NOK">NOK - Coroa Norueguesa</option>
+                            <option value="SEK">SEK - Coroa Sueca</option>
+                            <option value="DKK">DKK - Coroa Dinamarquesa</option>
+                            <option value="OUTRA">Outra Moeda / Digitar...</option>
+                          {% endcall %}
+                          <input class="nft-control font-monospace text-uppercase fw-bold mt-2" id="ptax_moeda_custom" placeholder="Código (Ex: CNY, EUR)" style="display: none;" title="Informe a sigla ISO da moeda personalizada" type="text" data-ui="editor.ptax.input-moeda-custom"/>
+                        </div>
+                        <div class="col-sm-6">
+                          {% call ui.field_wrap('ptax_taxa_utilizada', 'Taxa PTAX Venda Utilizada', modifier='number', tone='primary', extra_class='nft-field--highlight', ui_id='editor.ptax.field-taxa-utilizada') %}
+                            <div class="input-group">
+                              <span class="input-group-text font-monospace">R$</span>
+                              <input class="nft-control" id="ptax_taxa_utilizada" onchange="formatarInputVisualBR(this, 4, 4)" placeholder="0,0000" title="Taxa PTAX de venda utilizada originalmente na conversão dos itens" type="text" data-ui="editor.ptax.input-taxa-utilizada"/>
+                            </div>
+                          {% endcall %}
+                        </div>
+                        <div class="col-12 mt-2">
+                          {{ ui.btn('Incluir Moeda e Câmbio Base em Todos os Itens', variant='secondary', icon='check-check', id='btn-aplicar-moeda-taxa-itens', onclick='aplicarMoedaETaxaUtilizadaAosItens()', title='Inclui Moeda e Taxa Base em todos os itens para permitir recálculo cambial', ui_id='editor.ptax.btn-aplicar-base', extra_class='w-100') }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Sub-bloco 2: Consulta Bacen & Recálculo -->
+                  <div class="card mt-auto" data-ui="editor.ptax.sub-bacen">
+                    <div class="card-body">
+                      <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
+                        <span class="fw-bold d-inline-flex align-items-center gap-1">
+                          <i data-lucide="refresh-cw" class="nft-icon--sm text-primary"></i>
+                          <span>Cotação Bacen &amp; Recálculo</span>
+                        </span>
+                        {{ ui.badge('Atualização', tone='info', title='Consulta oficial via API do Banco Central') }}
+                      </div>
+                      <div class="row g-2 align-items-end">
+                        <div class="col-sm-6">
+                          {% call ui.field_wrap('ptax_data', 'Data Cotação PTAX', ui_id='editor.ptax.field-data') %}
+                            <div class="input-group">
+                              <input class="nft-control" id="ptax_data" title="Data de referência para consulta PTAX no Banco Central" type="date" data-ui="editor.ptax.input-data"/>
+                              <button class="nft-btn nft-btn--ghost" onclick="definirDataPtaxHoje()" title="Definir data da cotação PTAX para hoje" type="button" data-ui="editor.ptax.btn-hoje">Hoje</button>
+                            </div>
+                          {% endcall %}
+                        </div>
+                        <div class="col-sm-6 mb-1">
+                          <button class="nft-btn nft-btn--primary w-100" id="btn-consultar-ptax" onclick="consultarCotacaoPtax()" title="Consultar cotação oficial PTAX na API do Banco Central" type="button" data-ui="editor.ptax.btn-puxar-bacen">
+                            <span class="spinner-border spinner-border-sm d-none" id="spinner-ptax" role="status"></span>
+                            <i data-lucide="zap"></i>
+                            <span>Puxar Bacen</span>
+                          </button>
+                        </div>
+
+                        <div class="col-sm-6">
+                          {% call ui.field_wrap('ptax_cotacao_venda', 'Nova Taxa PTAX Venda (R$)', modifier='number', tone='primary', extra_class='nft-field--highlight', ui_id='editor.ptax.field-venda') %}
+                            <div class="input-group">
+                              <span class="input-group-text font-monospace">R$</span>
+                              <input class="nft-control" id="ptax_cotacao_venda" onchange="formatarInputVisualBR(this, 4, 4)" placeholder="0,0000" title="Nova taxa PTAX de venda para recalcular o valor dos itens" type="text" data-ui="editor.ptax.input-venda"/>
+                            </div>
+                          {% endcall %}
+                        </div>
+                        <div class="col-sm-6">
+                          {% call ui.field_wrap('ptax_cotacao_compra', 'Taxa PTAX Compra (R$)', modifier='number', ui_id='editor.ptax.field-compra') %}
+                            <div class="input-group">
+                              <span class="input-group-text font-monospace">R$</span>
+                              <input class="nft-control" id="ptax_cotacao_compra" placeholder="0,0000" readonly title="Taxa PTAX de compra retornada pelo Banco Central" type="text" data-ui="editor.ptax.input-compra"/>
+                            </div>
+                          {% endcall %}
+                        </div>
+
+                        <div class="col-12">
+                          <div class="nft-section-box font-monospace small" id="box-info-boletim" style="display: none;" data-ui="editor.ptax.box-boletim">
+                            <div class="d-flex justify-content-between align-items-center">
+                              <span><strong id="lbl-boletim-tipo">Boletim:</strong> <span id="lbl-boletim-detalhe">-</span></span>
+                              {{ ui.badge('Atualizado', tone='info', id='badge-boletim-ok', title='Status do boletim Bacen consultado') }}
+                            </div>
+                            <div class="text-muted mt-1"><span id="lbl-boletim-datahora">-</span></div>
+                          </div>
+                        </div>
+
+                        <div class="col-12">
+                          <div class="form-check">
+                            <input checked class="form-check-input" id="chk_ptax_infcpl" title="Incluir automaticamente a taxa de câmbio nas informações complementares" type="checkbox" data-ui="editor.ptax.chk-infcpl"/>
+                            <label class="nft-check__label" for="chk_ptax_infcpl">
+                              Gravar taxa de câmbio nas Informações Complementares (<code>infCpl</code>)
+                            </label>
+                          </div>
+                        </div>
+
+                        <div class="col-12 d-flex flex-wrap gap-2 mt-1">
+                          {{ ui.btn('Registrar Câmbio em infCpl', variant='secondary', size='sm', icon='file-text', onclick='aplicarCotacaoNasObservacoes()', title='Gravar taxa de câmbio e data nas Informações Complementares', ui_id='editor.ptax.btn-registrar-infcpl', extra_class='flex-grow-1') }}
+                          {{ ui.btn('Recalcular Conversão', variant='secondary', size='sm', icon='refresh-cw', onclick='recalcularConversaoItens()', title='Recalcular o valor dos itens com base na nova taxa PTAX', ui_id='editor.ptax.btn-recalcular', extra_class='flex-grow-1') }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label small fw-bold mb-1" for="import_tpIntermedio">Tipo de Importação</label>
-                    <select class="form-select form-select-sm" id="import_tpIntermedio">
-                        <option value="1">1 - Por conta própria</option>
-                        <option value="2">2 - Por conta e ordem</option>
-                        <option value="3">3 - Por encomenda</option>
-                    </select>
+              </div>
+
+              <!-- PAINEL 2: RATEIO DE DESPESAS GLOBAIS -->
+              <div class="col-lg-6 col-12">
+                <div class="nft-section-box h-100 d-flex flex-column gap-3" data-ui="editor.rateio.panel">
+                  <div>
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                      <h6 class="nft-section-title border-0 pb-0 mb-0">
+                        <i data-lucide="scale" class="nft-icon--sm text-primary"></i>
+                        <span>Rateios Globais &amp; Despesas Aduaneiras</span>
+                      </h6>
+                      {{ ui.badge('Rateio Automático', tone='primary', title='Rateia valores proporcionalmente entre os itens', extra_class='d-none d-md-inline-flex') }}
+                    </div>
+                    <small class="text-muted d-block">Lançamento de despesas globais (AFRMM, Taxa Siscomex, Frete e Seguro) para rateio proporcional entre os itens.</small>
+                  </div>
+
+                  <!-- Sub-bloco 1: Despesas Aduaneiras -->
+                  <div class="card" data-ui="editor.rateio.sub-aduana">
+                    <div class="card-body">
+                      <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
+                        <span class="fw-bold d-inline-flex align-items-center gap-1">
+                          <i data-lucide="file-spreadsheet" class="nft-icon--sm text-primary"></i>
+                          <span>Despesas Aduaneiras (DI / DUIMP)</span>
+                        </span>
+                        {{ ui.badge('Aduana / Siscomex', tone='info', extra_class='d-none d-md-inline-flex') }}
+                      </div>
+                      <div class="row g-2">
+                        <div class="col-sm-6">
+                          {% call ui.field_wrap('rateio_vAFRMM', 'Valor Marinha Mercante (vAFRMM)', modifier='number', help='Adicional Marinha Mercante lançado na DI', ui_id='editor.rateio.field-afrmm') %}
+                            <div class="input-group">
+                              <span class="input-group-text font-monospace">R$</span>
+                              <input class="nft-control fw-bold" id="rateio_vAFRMM" onchange="formatarInputVisualBR(this, 2, 2); verificarAvisoZeradoRateio(this);" placeholder="0,00" title="Valor total de AFRMM (Marinha Mercante) para rateio" type="text" data-ui="editor.rateio.input-afrmm"/>
+                            </div>
+                          {% endcall %}
+                        </div>
+                        <div class="col-sm-6">
+                          {% call ui.field_wrap('rateio_vSiscomex', 'Taxa Siscomex (vDespAdu / vOutro)', modifier='number', help='Taxa Siscomex rateada em Desp. Aduaneiras e Outras Desp.', ui_id='editor.rateio.field-siscomex') %}
+                            <div class="input-group">
+                              <span class="input-group-text font-monospace">R$</span>
+                              <input class="nft-control fw-bold" id="rateio_vSiscomex" onchange="formatarInputVisualBR(this, 2, 2); verificarAvisoZeradoRateio(this);" placeholder="0,00" title="Valor total da Taxa Siscomex para rateio" type="text" data-ui="editor.rateio.input-siscomex"/>
+                            </div>
+                          {% endcall %}
+                        </div>
+
+                        <div class="col-12 pt-2 border-top d-flex flex-column gap-1">
+                          <div class="form-check">
+                            <input checked class="form-check-input" id="chk_siscomex_despadu" title="Ratear Taxa Siscomex no campo vDespAdu do grupo II" type="checkbox" data-ui="editor.rateio.chk-despadu"/>
+                            <label class="nft-check__label" for="chk_siscomex_despadu">Ratear em Despesas Aduaneiras (<code>vDespAdu</code> no grupo II)</label>
+                          </div>
+                          <div class="form-check">
+                            <input checked class="form-check-input" id="chk_siscomex_outro" title="Somar Taxa Siscomex em vOutro para compor o Total da NF (vNF)" type="checkbox" data-ui="editor.rateio.chk-outro"/>
+                            <label class="nft-check__label" for="chk_siscomex_outro">Somar em Outras Despesas (<code>vOutro</code>) para compor Total da NF (<code>vNF</code>)</label>
+                          </div>
+                          <div class="form-check">
+                            <input checked class="form-check-input" id="chk_siscomex_infcpl" title="Atualizar texto TX SISCOMEX nas Informações Complementares" type="checkbox" data-ui="editor.rateio.chk-infcpl"/>
+                            <label class="nft-check__label" for="chk_siscomex_infcpl">Atualizar <code>TX SISCOMEX R$: ...</code> nas Observações (<code>infCpl</code>)</label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Sub-bloco 2: Outros Rateios -->
+                  <div class="card" data-ui="editor.rateio.sub-globais">
+                    <div class="card-body">
+                      <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
+                        <span class="fw-bold d-inline-flex align-items-center gap-1">
+                          <i data-lucide="truck" class="nft-icon--sm text-primary"></i>
+                          <span>Outros Rateios Globais</span>
+                        </span>
+                      </div>
+                      <div class="row g-2">
+                        <div class="col-sm-4">
+                          {% call ui.field_wrap('rateio_vFrete', 'Frete Total (vFrete)', modifier='number', help='Frete internacional/nacional', ui_id='editor.rateio.field-frete') %}
+                            <div class="input-group">
+                              <span class="input-group-text font-monospace">R$</span>
+                              <input class="nft-control fw-bold" id="rateio_vFrete" onchange="formatarInputVisualBR(this, 2, 2); verificarAvisoZeradoRateio(this);" placeholder="0,00" title="Frete total da operação para rateio entre itens" type="text" data-ui="editor.rateio.input-frete"/>
+                            </div>
+                          {% endcall %}
+                        </div>
+                        <div class="col-sm-4">
+                          {% call ui.field_wrap('rateio_vSeg', 'Seguro Total (vSeg)', modifier='number', help='Seguro de transporte', ui_id='editor.rateio.field-seg') %}
+                            <div class="input-group">
+                              <span class="input-group-text font-monospace">R$</span>
+                              <input class="nft-control fw-bold" id="rateio_vSeg" onchange="formatarInputVisualBR(this, 2, 2); verificarAvisoZeradoRateio(this);" placeholder="0,00" title="Seguro total para rateio entre itens" type="text" data-ui="editor.rateio.input-seg"/>
+                            </div>
+                          {% endcall %}
+                        </div>
+                        <div class="col-sm-4">
+                          {% call ui.field_wrap('rateio_vOutro', 'Outras Desp. (vOutro)', modifier='number', help='Despesas acessórias', ui_id='editor.rateio.field-outro') %}
+                            <div class="input-group">
+                              <span class="input-group-text font-monospace">R$</span>
+                              <input class="nft-control fw-bold" id="rateio_vOutro" onchange="formatarInputVisualBR(this, 2, 2); verificarAvisoZeradoRateio(this);" placeholder="0,00" title="Outras despesas acessórias para rateio" type="text" data-ui="editor.rateio.input-outro"/>
+                            </div>
+                          {% endcall %}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Sub-bloco 3: Critério e Ação -->
+                  <div class="card mt-auto" data-ui="editor.rateio.sub-criterio">
+                    <div class="card-body">
+                      <div class="row g-2 align-items-end">
+                        <div class="col-sm-6">
+                          {% call ui.field_select('rateio_criterio', 'Critério de Proporcionalidade', title='Define como o valor global será dividido entre os itens', ui_id='editor.rateio.field-criterio', extra_class='nft-field--flush') %}
+                            <option selected value="vProd">Proporcional ao Valor dos Produtos (vProd)</option>
+                            <option value="qCom">Proporcional à Quantidade (qCom)</option>
+                            <option value="igual">Dividir Igualmente entre os Itens</option>
+                          {% endcall %}
+                        </div>
+                        <div class="col-sm-6">
+                          <button class="nft-btn nft-btn--primary w-100" onclick="executarRateioGlobal()" title="Executar o rateio das despesas em todos os itens da nota" type="button" data-ui="editor.rateio.btn-executar">
+                            <i data-lucide="calculator"></i>
+                            <span>Ratear nos Itens (<span id="lbl-qtd-itens-rateio">0</span>)</span>
+                          </button>
+                        </div>
+                        <div class="col-12 pt-2 border-top mt-1">
+                          {{ ui.btn('Converter valor do item em FOB', variant='secondary', size='sm', icon='package-minus', id='btn-converter-item-fob', onclick='converterValorItensEmFOB()', title='Subtrai frete rateado do V. Unit. Com. para FOB e zera vFrete', ui_id='editor.rateio.btn-fob', extra_class='w-100') }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label small fw-bold mb-1" for="import_tpViaTransp">Via de Transporte</label>
-                    <select class="form-select form-select-sm" id="import_tpViaTransp">
-                        <option value="1">1 - Marítima</option>
-                        <option value="2">2 - Fluvial</option>
-                        <option value="3">3 - Lacustre</option>
-                        <option value="4">4 - Aérea</option>
-                        <option value="5">5 - Postal</option>
-                        <option value="6">6 - Ferroviária</option>
-                        <option value="7">7 - Rodoviária</option>
-                        <option value="8">8 - Conduto / Rede Transmissão</option>
-                        <option value="9">9 - Meios Próprios</option>
-                        <option value="10">10 - Entrada / Saída Ficta</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label small fw-bold mb-1" for="import_UFDesemb">Desembaraço - UF</label>
-                    <input class="form-control form-control-sm text-uppercase text-center font-monospace" id="import_UFDesemb" maxlength="2" placeholder="Ex: SP" type="text"/>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label small fw-bold mb-1" for="import_xLocDesemb">Desembaraço - Local</label>
-                    <input class="form-control form-control-sm" id="import_xLocDesemb" placeholder="Ex: PORTO DE SANTOS" type="text"/>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label small fw-bold mb-1" for="import_dDesemb">Desembaraço - Data</label>
-                    <input class="form-control form-control-sm" id="import_dDesemb" type="date"/>
-                </div>
+              </div>
+
             </div>
+          </div>
         </div>
+      </div>
+
+      <!-- VOLUMES E PESOS -->
+      <div class="col-12">
+        <div class="card" data-ui="editor.volumes.card">
+          <div class="card-header d-flex align-items-center gap-2 fw-bold">
+            <i data-lucide="package" class="nft-icon--md text-primary"></i>
+            <span>Volumes e Pesos</span>
+          </div>
+          <div class="card-body">
+            <div class="row g-2">
+              <div class="col-md-3 col-6">
+                {{ ui.field_input('transp_qVol', 'Qtd. Volumes (qVol)', modifier='number', placeholder='Ex: 10', title='Quantidade total de volumes transportados (tag XML <qVol>)', ui_id='editor.volumes.field-qVol') }}
+              </div>
+              <div class="col-md-3 col-6">
+                {{ ui.field_input('transp_esp', 'Espécie de Volumes (esp)', placeholder='Ex: CAIXAS, PALETES', title='Espécie dos volumes transportados (tag XML <esp>)', ui_id='editor.volumes.field-esp') }}
+              </div>
+              <div class="col-md-3 col-6">
+                {{ ui.field_input('transp_pesoL', 'Peso Líquido Total (kg)', modifier='number', placeholder='0,000', title='Peso líquido total da carga em kg (tag XML <pesoL>)', ui_id='editor.volumes.field-pesoL', attrs='onchange="formatarInputVisualBR(this, 3, 3); aoMudarPesoLiquidoTransporte();"') }}
+              </div>
+              <div class="col-md-3 col-6">
+                {{ ui.field_input('transp_pesoB', 'Peso Bruto Total (kg)', modifier='number', placeholder='0,000', title='Peso bruto total da carga em kg (tag XML <pesoB>)', ui_id='editor.volumes.field-pesoB', attrs='onchange="formatarInputVisualBR(this, 3, 3)"') }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DADOS DE EXPORTAÇÃO (<exporta>) -->
+      <div class="col-12" id="secao_exportacao" style="display: none;" data-ui="editor.exportacao.section">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="fw-bold d-inline-flex align-items-center gap-2">
+              <i data-lucide="plane-takeoff" class="nft-icon--md text-primary"></i>
+              <span>Exportação</span>
+              <small class="text-muted font-monospace">(&lt;exporta&gt;)</small>
+            </span>
+            <div class="d-flex align-items-center flex-wrap gap-2">
+              {{ ui.badge('Opcional (CFOP 7xxx / Exterior)', tone='info', mono=True, id='badge_exporta_status', title='Obrigatoriedade do bloco de exportação conforme CFOP', ui_id='editor.exportacao.badge-status') }}
+              {{ ui.btn('Limpar', variant='ghost', size='sm', icon='eraser', onclick='limparCamposExportacao()', title='Limpar campos do bloco de exportação', ui_id='editor.exportacao.btn-limpar') }}
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="row g-2">
+              <div class="col-md-3">
+                <div class="nft-field nft-field--code" data-ui="editor.exportacao.field-uf">
+                  <label class="nft-field__label" for="exporta_UFSaidaPais">UF de embarque <span class="nft-field__req exporta-req-indicator" style="display: none;">*</span></label>
+                  <select class="nft-control form-select" id="exporta_UFSaidaPais" title="UF de saída da mercadoria do país (tag XML <UFSaidaPais>)" data-ui="editor.exportacao.select-uf">
+                    <option value="">Selecione a UF...</option>
+                    <option value="AC">AC</option><option value="AL">AL</option><option value="AM">AM</option>
+                    <option value="AP">AP</option><option value="BA">BA</option><option value="CE">CE</option>
+                    <option value="DF">DF</option><option value="ES">ES</option><option value="GO">GO</option>
+                    <option value="MA">MA</option><option value="MG">MG</option><option value="MS">MS</option>
+                    <option value="MT">MT</option><option value="PA">PA</option><option value="PB">PB</option>
+                    <option value="PE">PE</option><option value="PI">PI</option><option value="PR">PR</option>
+                    <option value="RJ">RJ</option><option value="RN">RN</option><option value="RO">RO</option>
+                    <option value="RR">RR</option><option value="RS">RS</option><option value="SC">SC</option>
+                    <option value="SE">SE</option><option value="SP">SP</option><option value="TO">TO</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-5">
+                <div class="nft-field" data-ui="editor.exportacao.field-local">
+                  <label class="nft-field__label" for="exporta_xLocExporta">Local de embarque <span class="nft-field__req exporta-req-indicator" style="display: none;">*</span></label>
+                  <input class="nft-control" id="exporta_xLocExporta" maxlength="60" placeholder="Ex: PORTO DE SANTOS, AEROPORTO DE VIRACOPOS" title="Local de embarque ou transposição de fronteira (tag XML <xLocExporta>)" type="text" data-ui="editor.exportacao.input-local"/>
+                </div>
+              </div>
+              <div class="col-md-4">
+                {{ ui.field_input('exporta_xLocDespacho', 'Local de despacho', placeholder='Ex: RECINTO ALFANDEGADO SANTOS (Opcional)', title='Local de despacho da mercadoria (tag XML <xLocDespacho>)', ui_id='editor.exportacao.field-despacho', attrs='maxlength="60"') }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- IDENTIFICAÇÃO DA IMPORTAÇÃO -->
+      <div class="col-12">
+        <div class="card" data-ui="editor.importacao.card">
+          <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="fw-bold d-inline-flex align-items-center gap-2">
+              <i data-lucide="globe" class="nft-icon--md text-primary"></i>
+              <span>Identificação da Importação (DI / DUIMP)</span>
+            </span>
+            {{ ui.btn('Repassar para itens', variant='secondary', size='sm', icon='arrow-down-to-dot', onclick='repassarImportacaoParaItens()', title='Repassar estes dados de importação para todos os itens da grade', ui_id='editor.importacao.btn-repassar') }}
+          </div>
+          <div class="card-body">
+            <div class="row g-2">
+              <div class="col-md-3">
+                {{ ui.field_input('import_nDI', 'Número DI/DSI/DA/DUImp', modifier='code', placeholder='Ex: 24/1234567-8 ou DUImp', title='Número da Declaração de Importação ou DUIMP (tag XML <nDI>)', ui_id='editor.importacao.field-nDI') }}
+              </div>
+              <div class="col-md-2">
+                {{ ui.field_input('import_dDI', 'Data Registro', type='date', title='Data de registro da DI ou DUIMP (tag XML <dDI>)', ui_id='editor.importacao.field-dDI') }}
+              </div>
+              <div class="col-md-4">
+                {% call ui.field_wrap('import_cExportador', 'Cód. Exportador', ui_id='editor.importacao.field-cExportador') %}
+                  <div class="input-group">
+                    <input class="nft-control" id="import_cExportador" placeholder="Puxa o Nome do Destinatário..." title="Código ou nome do exportador estrangeiro (tag XML <cExportador>)" type="text" data-ui="editor.importacao.input-cExportador"/>
+                    <button class="nft-btn nft-btn--secondary" onclick="puxarNomeDestinatarioParaExportador()" title="Puxar nome dos Dados do Destinatário para o Exportador" type="button" data-ui="editor.importacao.btn-puxar-dest">
+                      <i data-lucide="refresh-cw"></i>
+                    </button>
+                  </div>
+                {% endcall %}
+              </div>
+              <div class="col-md-3">
+                {% call ui.field_select('import_tpIntermedio', 'Tipo de Importação', title='Forma de importação quanto a intermediação (tag XML <tpIntermedio>)', ui_id='editor.importacao.field-tpIntermedio') %}
+                  <option value="1">1 - Por conta própria</option>
+                  <option value="2">2 - Por conta e ordem</option>
+                  <option value="3">3 - Por encomenda</option>
+                {% endcall %}
+              </div>
+              <div class="col-md-3">
+                {% call ui.field_select('import_tpViaTransp', 'Via de Transporte', title='Via de transporte internacional (tag XML <tpViaTransp>)', ui_id='editor.importacao.field-tpViaTransp') %}
+                  <option value="1">1 - Marítima</option>
+                  <option value="2">2 - Fluvial</option>
+                  <option value="3">3 - Lacustre</option>
+                  <option value="4">4 - Aérea</option>
+                  <option value="5">5 - Postal</option>
+                  <option value="6">6 - Ferroviária</option>
+                  <option value="7">7 - Rodoviária</option>
+                  <option value="8">8 - Conduto / Rede Transmissão</option>
+                  <option value="9">9 - Meios Próprios</option>
+                  <option value="10">10 - Entrada / Saída Ficta</option>
+                {% endcall %}
+              </div>
+              <div class="col-md-2">
+                {{ ui.field_input('import_UFDesemb', 'Desembaraço - UF', modifier='sigla', placeholder='Ex: SP', title='Sigla da UF do local de desembaraço (tag XML <UFDesemb>)', ui_id='editor.importacao.field-UFDesemb', attrs='maxlength="2"') }}
+              </div>
+              <div class="col-md-4">
+                {{ ui.field_input('import_xLocDesemb', 'Desembaraço - Local', placeholder='Ex: PORTO DE SANTOS', title='Local de desembaraço aduaneiro (tag XML <xLocDesemb>)', ui_id='editor.importacao.field-xLocDesemb') }}
+              </div>
+              <div class="col-md-3">
+                {{ ui.field_input('import_dDesemb', 'Desembaraço - Data', type='date', title='Data do desembaraço aduaneiro (tag XML <dDesemb>)', ui_id='editor.importacao.field-dDesemb') }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INFORMAÇÕES COMPLEMENTARES (infCpl) -->
+      <div class="col-12">
+        <div class="card" data-ui="editor.infcpl.card">
+          <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="fw-bold d-inline-flex align-items-center gap-2">
+              <i data-lucide="file-text" class="nft-icon--md text-primary"></i>
+              <span>Informações Complementares / Observações da Nota (infCpl)</span>
+            </span>
+            {{ ui.btn('Puxar Observação Padrão do Tipo de Nota', variant='secondary', size='sm', icon='file-edit', onclick='aplicarObsDaOperacao()', title='Aplicar o texto de observação padrão configurado para esta operação', ui_id='editor.infcpl.btn-obs-padrao') }}
+          </div>
+          <div class="card-body">
+            <div class="row g-2 align-items-center mb-3 pb-2 border-bottom">
+              <div class="col-lg-7 col-md-8">
+                {% call ui.field_wrap('select_feira_infcpl', 'Adicionar Dados da Feira nas Observações', ui_id='editor.infcpl.field-feira', extra_class='nft-field--flush') %}
+                  <div class="input-group">
+                    <select class="nft-control form-select" id="select_feira_infcpl" onchange="aoSelecionarFeiraInfCpl(this)" title="Selecionar feira cadastrada para gerar texto legal em infCpl" data-ui="editor.infcpl.select-feira">
+                      <option value="">Selecione uma feira para adicionar em infCpl...</option>
+                    </select>
+                    <button class="nft-btn nft-btn--secondary" onclick="aplicarTextoFeiraSelecionada(true)" title="Inserir ou atualizar texto da feira em infCpl" type="button" data-ui="editor.infcpl.btn-inserir-feira">
+                      <i data-lucide="plus-circle"></i>
+                      <span>Inserir</span>
+                    </button>
+                    <button class="nft-btn nft-btn--ghost" onclick="limparTextoFeiraInfCpl()" title="Remover texto da feira de infCpl" type="button" data-ui="editor.infcpl.btn-limpar-feira">
+                      <i data-lucide="x"></i>
+                    </button>
+                  </div>
+                {% endcall %}
+              </div>
+              <div class="col-lg-5 col-md-4 text-md-end">
+                <small class="nft-field__help mt-0" id="lbl-ajuda-texto-feira" data-ui="editor.infcpl.help-feira">
+                  Insere o texto: <code>CARGA DESTINADA A {Feira} {Ano} A SER REALIZADA ENTRE {Data} NO {Local} BRASIL. {Endereço}</code>
+                </small>
+              </div>
+            </div>
+
+            {{ ui.field_textarea('infCpl', 'Texto de Informações Complementares (<infCpl>)', rows=4, modifier='code', placeholder='Observações de interesse do contribuinte gravadas no XML...', title='Observações complementares da NF-e (tag XML <infAdic><infCpl>)', ui_id='editor.infcpl.field-texto', extra_class='nft-field--flush') }}
+          </div>
+        </div>
+      </div>
+
     </div>
-</div>
-
-<div class="col-12 mt-3">
-<div class="card border mb-3 shadow-sm">
-<div class="card-header py-2 d-flex justify-content-between align-items-center flex-wrap gap-2 text-secondary">
-<span class="fw-bold d-inline-flex align-items-center gap-2"><i data-lucide="file-text" style="width: 16px; height: 16px;"></i> Informações Complementares / Observações da Nota (infCpl)</span>
-<button class="btn-nft py-0 px-2" onclick="aplicarObsDaOperacao()" type="button">
-<i data-lucide="file-edit" style="width: 13px; height: 13px;"></i> Puxar Observação Padrão do Tipo de Nota
-                        </button>
-</div>
-<div class="card-body py-2">
-<!-- SELETOR DE FEIRA PARA infCpl -->
-<div class="row g-2 align-items-center mb-2 pb-2 border-bottom">
-<div class="col-md-8 col-lg-7">
-<label class="form-label small fw-bold mb-1" for="select_feira_infcpl">
-<i data-lucide="calendar-days" style="width: 14px; height: 14px;"></i>
-<span>Adicionar Dados da Feira nas Observações</span>
-</label>
-<div class="input-group input-group-sm">
-
-<select class="form-select form-select-sm" id="select_feira_infcpl" onchange="aoSelecionarFeiraInfCpl(this)">
-<option value="">Selecione uma feira para adicionar em infCpl...</option>
-</select>
-<button class="btn-nft d-flex align-items-center gap-1" onclick="aplicarTextoFeiraSelecionada(true)" title="Inserir ou atualizar dados da feira em infCpl" type="button">
-<i data-lucide="plus-circle" style="width: 13px; height: 13px;"></i>
-<span>Inserir</span>
-</button>
-<button class="btn-nft" onclick="limparTextoFeiraInfCpl()" title="Remover texto da feira de infCpl" type="button">
-<i data-lucide="x" style="width: 13px; height: 13px;"></i>
-</button>
-</div>
-</div>
-<div class="col-md-4 col-lg-5 text-md-end pt-md-3">
-<small class="text-muted" id="lbl-ajuda-texto-feira" style="font-size: 11px;">Insere o texto: <code>CARGA DESTINADA A {Feira} {Ano} A SER REALIZADA ENTRE {Data} NO {Local} BRASIL. {Endereço}</code></small>
-</div>
-</div>
-<textarea class="form-control font-monospace form-control-sm" id="infCpl" placeholder="Observações de interesse do contribuinte gravadas no XML..." rows="4"></textarea>
-</div>
-</div>
-</div>
-</div>
-</form>
+  </form>
 </div>

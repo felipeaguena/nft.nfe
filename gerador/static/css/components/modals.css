@@ -1,0 +1,380 @@
+/* ==========================================================================
+   NFT LOGISTICS — COMPONENT: MODALS, DIALOGS & DRAWER ESPELHO
+   Anatomia única de modal em páginas HTML e popups JS.
+   ========================================================================== */
+
+/* --- Bootstrap Modal Padronizado --- */
+.modal-backdrop {
+  background-color: rgba(9, 12, 18, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.modal-content {
+  background-color: var(--surface);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--modal-shadow);
+  overflow: hidden;
+}
+
+.modal-header {
+  background-color: var(--surface-secondary);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.modal-title {
+  font-size: var(--fs-modal-title);
+  font-weight: 700;
+  color: var(--heading);
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.3;
+}
+
+.modal-body {
+  padding: 20px;
+  color: var(--foreground);
+}
+
+.modal-footer {
+  background-color: var(--surface-secondary);
+  border-top: 1px solid var(--border);
+  padding: 12px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.modal-footer.nft-modal-footer--split {
+  justify-content: space-between;
+}
+
+/* Tons semânticos exclusivos para cabeçalho de modal (ações críticas / homologação) */
+.modal-header[data-tone="danger"] {
+  background-color: var(--danger-subtle);
+  border-bottom-color: var(--danger-border);
+}
+.modal-header[data-tone="danger"] .modal-title {
+  color: var(--danger);
+}
+
+.modal-header[data-tone="warning"] {
+  background-color: var(--warning-subtle);
+  border-bottom-color: var(--warning-border);
+}
+.modal-header[data-tone="warning"] .modal-title {
+  color: var(--warning);
+}
+
+.modal-header[data-tone="dark"] {
+  background-color: #0f172a;
+  border-bottom-color: #1e293b;
+  color: #ffffff;
+}
+.modal-header[data-tone="dark"] .modal-title {
+  color: #ffffff;
+}
+.modal-header[data-tone="dark"] .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+[data-theme="dark"] .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* ==========================================================================
+   DIÁLOGOS GLOBAIS (nft-dialogs.js)
+   ========================================================================== */
+.nft-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(9, 12, 18, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 20px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.nft-dialog-overlay.active {
+  opacity: 1;
+}
+
+.nft-dialog-box {
+  background-color: var(--surface);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--modal-shadow);
+  max-width: 460px;
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transform: scale(0.96);
+  transition: transform 0.2s ease;
+}
+
+.nft-dialog-box.nft-dialog-wide {
+  max-width: 600px;
+}
+
+.nft-dialog-overlay.active .nft-dialog-box {
+  transform: scale(1);
+}
+
+.nft-dialog-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+
+.nft-dialog-icon-wrap.type-info {
+  background-color: var(--primary-subtle);
+  border: 1px solid var(--primary-border);
+  color: var(--primary);
+}
+
+.nft-dialog-icon-wrap.type-success {
+  background-color: var(--success-subtle);
+  border: 1px solid var(--success-border);
+  color: var(--success);
+}
+
+.nft-dialog-icon-wrap.type-warning {
+  background-color: var(--warning-subtle);
+  border: 1px solid var(--warning-border);
+  color: var(--warning);
+}
+
+.nft-dialog-icon-wrap.type-danger {
+  background-color: var(--danger-subtle);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
+}
+
+.nft-dialog-title {
+  color: var(--heading);
+  font-size: var(--fs-modal-title);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.nft-dialog-message {
+  color: var(--foreground);
+  font-size: var(--fs-control);
+  line-height: 1.55;
+  margin-bottom: 20px;
+}
+
+.nft-dialog-input-wrap {
+  width: 100%;
+  margin-bottom: 18px;
+  text-align: left;
+}
+
+.nft-dialog-input,
+.nft-dialog-textarea {
+  width: 100%;
+  background-color: var(--surface-inset);
+  color: var(--foreground);
+  border: 1px solid var(--border-input);
+  border-radius: var(--ctl-radius);
+  padding: 10px 14px;
+  font-size: var(--fs-control);
+  font-family: var(--font-sans);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.nft-dialog-input {
+  height: var(--ctl-h);
+}
+
+.nft-dialog-textarea {
+  min-height: 120px;
+  max-height: 300px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.nft-dialog-input:focus,
+.nft-dialog-textarea:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--border-focus-ring);
+}
+
+.nft-dialog-input-wrap.has-error .nft-dialog-input,
+.nft-dialog-input-wrap.has-error .nft-dialog-textarea {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px var(--danger-subtle);
+}
+
+.nft-dialog-input-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  font-size: var(--fs-label);
+  gap: 8px;
+}
+
+.nft-dialog-hint {
+  color: var(--muted-foreground);
+  font-size: var(--fs-label);
+  flex: 1;
+}
+
+.nft-dialog-counter {
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  font-weight: 600;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+
+.nft-dialog-counter.is-valid { color: var(--success); }
+.nft-dialog-counter.is-invalid { color: var(--warning); }
+.nft-dialog-counter.is-danger { color: var(--danger); }
+
+.nft-dialog-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.nft-dialog-actions .nft-btn,
+.nft-dialog-actions .btn {
+  flex: 1;
+}
+
+/* ==========================================================================
+   DRAWER ESPELHO FISCAL (Container + Header)
+   ========================================================================== */
+.nft-espelho-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: var(--z-espelho);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.nft-espelho-backdrop.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.nft-espelho-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 780px;
+  max-width: 96vw;
+  height: 100vh;
+  background-color: var(--background);
+  box-shadow: -10px 0 35px rgba(0, 0, 0, 0.25);
+  z-index: calc(var(--z-espelho) + 1);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nft-espelho-drawer.active {
+  transform: translateX(0);
+}
+
+.nft-espelho-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background-color: var(--surface);
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.nft-espelho-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.nft-espelho-title {
+  margin: 0;
+  font-size: var(--fs-modal-title);
+  font-weight: 700;
+  color: var(--heading);
+}
+
+.nft-espelho-subtitle {
+  margin: 2px 0 0;
+  font-size: var(--fs-label);
+  color: var(--muted-foreground);
+}
+
+.nft-espelho-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.nft-espelho-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.nft-espelho-disclaimer-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  border-radius: var(--radius-md);
+  background-color: var(--warning-subtle);
+  border: 1px solid var(--warning-border);
+  color: var(--foreground);
+  font-size: var(--fs-compact);
+}
+
+.nft-espelho-fab-trigger {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: var(--z-topbar, 1040);
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.35);
+}
+
+.nft-espelho-fab-trigger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.45);
+}

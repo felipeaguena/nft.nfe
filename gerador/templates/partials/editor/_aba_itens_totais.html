@@ -1,182 +1,156 @@
-<!-- ABA 2: ITENS DA NOTA (TABELA EM SEQUENCIA ESTILO GOOGLE SHEETS) -->
-<div class="tab-pane fade" id="itens" role="tabpanel">
-<div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom flex-wrap gap-2">
-<div>
-<h6 class="mb-0 fw-bold">Planilha de Itens da NF-e (det nItem)</h6>
-<small class="text-muted">Clique em qualquer célula para editar diretamente. Use a barra de rolagem horizontal para ver todas as colunas.</small>
-</div>
-<div class="d-flex align-items-center flex-wrap gap-1">
-<button class="btn-nft btn-nft-success me-1 fw-bold d-flex align-items-center justify-content-center shadow-sm" onclick="adicionarNovoItem()" title="Adicionar um novo item na nota" type="button">
-<i data-lucide="plus-circle"></i>
-</button>
-<button class="btn-nft btn-nft-danger me-1 fw-bold d-flex align-items-center justify-content-center shadow-sm" onclick="excluirItensSelecionados()" title="Excluir item(ns) selecionado(s) na grade" type="button">
-<i data-lucide="trash-2"></i>
-</button>
-<button class="btn-nft me-1 fw-bold d-flex align-items-center justify-content-center" onclick="duplicarItensSelecionados()" title="Duplicar item(ns) selecionado(s) na grade" type="button">
-<i data-lucide="copy"></i>
-</button>
-<button class="btn-nft btn-nft-warning me-1 fw-bold d-flex align-items-center gap-1 shadow-sm" onclick="zerarImpostosTodosItensComConfirmacao()" title="Zerar Base de Cálculo, Porcentagem e Valor de II, IPI, PIS e COFINS de todos os itens" type="button">
-<i data-lucide="percent"></i>
-<span>Zerar Impostos</span>
-</button>
-<button class="btn-nft fw-bold d-flex align-items-center gap-1 me-1 shadow-sm" type="button" onclick="abrirModalAplicarEnquadramentoItens()" title="Aplicar Enquadramento Fiscal aos itens da nota">
-    <i data-lucide="shield-check"></i>
-    <span>Enquadramento Fiscal</span>
-</button>
-<button class="btn-nft fw-bold d-flex align-items-center gap-1 me-1 shadow-sm" type="button" onclick="repassarImportacaoParaItens()" title="Repassar Número e Dados da Declaração de Importação (DI) para os itens da grade">
-    <i data-lucide="globe"></i>
-    <span>Repassar DI</span>
-</button>
-<button class="btn-nft fw-bold d-flex align-items-center gap-1 me-1 shadow-sm" type="button" onclick="substituirUnidadesPorAbreviadas()" title="Padronizar e substituir nomes de unidades pelos códigos abreviados oficiais (Un. Trib. e Un. Com. com confirmação)">
-    <i data-lucide="wand-2"></i>
-    <span>Abreviar Unidades</span>
-</button>
-<button class="btn-nft me-1 fw-bold d-flex align-items-center gap-1" onclick="abrirPainelRateio()" title="Ir para Parâmetros de Rateio e Câmbio PTAX">
-<i data-lucide="scale"></i>
-<span>Rateio &amp; PTAX</span>
-</button>
-<button class="btn-nft me-1 d-flex align-items-center gap-1" onclick="recarregarTabelaItens()" title="Redesenhar Grade" type="button">
-<i data-lucide="refresh-cw"></i>
-<span>Redesenhar Grade</span>
-</button>
-<button class="btn-nft me-1 fw-bold d-flex align-items-center gap-1" onclick="exportarExcel()" title="Exportar Excel (.xlsx)" type="button">
-<i data-lucide="file-spreadsheet"></i>
-<span>Exportar Excel (.xlsx)</span>
-</button>
-<button class="btn-nft fw-bold d-flex align-items-center gap-1" onclick="document.getElementById('importExcelInput').click()" title="Importar Excel (.xlsx)" type="button">
-<i data-lucide="upload"></i>
-<span>Importar Excel (.xlsx)</span>
-</button>
-<input accept=".xlsx" id="importExcelInput" onchange="importarExcel(this)" style="display:none" type="file"/>
-</div>
-</div>
-<!-- Barra de Status Rápido de Câmbio PTAX & Despesas de Rateio Ativas -->
-<div class="card border mb-2 p-2 px-3 bg-light d-flex flex-row justify-content-between align-items-center flex-wrap gap-2 shadow-sm mt-3" id="barra-status-ptax-rateio" style="font-size: 12.5px;">
-<div class="d-flex align-items-center flex-wrap gap-3">
-<div><span class="text-muted">Moeda:</span> <span class="badge bg-info-subtle text-info fw-bold" id="lbl-bar-ptax-moeda">USD</span></div>
-<div><span class="text-muted">Cotação PTAX:</span> <strong class="text-primary font-monospace" id="lbl-bar-ptax-taxa">R$ -</strong></div>
-<div class="border-start ps-3"><span class="text-muted">Marinha Mercante (AFRMM):</span> <span class="fw-bold font-monospace text-heading" id="lbl-bar-rateio-afrmm">R$ 0,00</span></div>
-<div><span class="text-muted">Taxa Siscomex:</span> <span class="fw-bold font-monospace text-heading" id="lbl-bar-rateio-siscomex">R$ 0,00</span></div>
-<div><span class="text-muted">Outras Desp. (vOutro):</span> <span class="fw-bold font-monospace text-heading" id="lbl-bar-rateio-outro">R$ 0,00</span></div>
-</div>
-<div class="d-flex align-items-center gap-2">
-<button class="btn-nft fw-bold shadow-sm d-flex align-items-center gap-1" onclick="recalcularConversaoItens()" title="Recalcula a conversão de moeda dos itens com base na nova taxa PTAX" type="button">
-<i data-lucide="refresh-cw"></i>
-<span>Recalcular Conversão</span>
-</button>
-<button class="btn-nft fw-semibold d-flex align-items-center gap-1" onclick="aplicarUnidadesExportacaoManual()" title="Recalcula uTrib/qTrib de exportação com base no peso líquido e tabela Comex" type="button">
-<i data-lucide="globe"></i>
-<span>uTrib Exportação</span>
-</button>
-<button class="btn-nft fw-semibold d-flex align-items-center gap-1" onclick="reaplicarRateioItens()" title="Recalcula e reaplica as despesas de rateio aos itens da tabela" type="button">
-<i data-lucide="refresh-cw"></i>
-<span>Reaplicar Rateio</span>
-</button>
-</div>
-</div>
-<div id="itens-table"></div>
-<div class="card border mt-4 mb-3">
-<div class="card-header py-2 d-flex justify-content-between align-items-center flex-wrap gap-2 text-secondary">
-<div class="d-flex align-items-center gap-2">
-<span class="fw-bold d-inline-flex align-items-center gap-2"><i data-lucide="calculator" style="width: 16px; height: 16px;"></i> Totais da Nota Fiscal (Grupo &lt;total&gt; / &lt;ICMSTot&gt;)</span>
-<small class="text-muted d-none d-md-inline">(Valores em R$)</small>
-</div>
-<button class="btn-nft py-1 px-3 fw-bold shadow-sm" onclick="recalcularTotaisDosItens()" type="button">
-<i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> Recalcular Totais da Nota
-                        </button>
-</div>
-<div class="card-body py-3">
-<!-- Linha de Destaques Comerciais -->
-<div class="row g-2 pb-3 mb-3 border-bottom">
-<div class="col-md-2">
-<label class="form-label small mb-1 fw-bold">Total dos Produtos (vProd)</label>
-<input class="form-control form-control-sm font-monospace text-end fw-bold" id="tot_vProd" onchange="formatarInputVisualBR(this, 2, 2); calcularVNFAutomatico();" oninput="calcularVNFAutomatico()" type="text"/>
-</div>
-<div class="col-md-2">
-<label class="form-label small mb-1">Total do Frete (vFrete)</label>
-<input class="form-control form-control-sm font-monospace text-end" id="tot_vFrete" onchange="formatarInputVisualBR(this, 2, 2); calcularVNFAutomatico();" oninput="calcularVNFAutomatico()" type="text"/>
-</div>
-<div class="col-md-2">
-<label class="form-label small mb-1">Total do Seguro (vSeg)</label>
-<input class="form-control form-control-sm font-monospace text-end" id="tot_vSeg" onchange="formatarInputVisualBR(this, 2, 2); calcularVNFAutomatico();" oninput="calcularVNFAutomatico()" type="text"/>
-</div>
-<div class="col-md-2">
-<label class="form-label small mb-1">Outras Despesas (vOutro)</label>
-<input class="form-control form-control-sm font-monospace text-end" id="tot_vOutro" onchange="formatarInputVisualBR(this, 2, 2); calcularVNFAutomatico();" oninput="calcularVNFAutomatico()" type="text"/>
-</div>
-<div class="col-md-2">
-<label class="form-label small mb-1">Total Desconto (vDesc)</label>
-<input class="form-control form-control-sm font-monospace text-end text-danger" id="tot_vDesc" onchange="formatarInputVisualBR(this, 2, 2); calcularVNFAutomatico();" oninput="calcularVNFAutomatico()" type="text"/>
-</div>
-<div class="col-md-2">
-<label class="form-label small mb-1 fw-bold text-success">Valor Total da NF (vNF)</label>
-<input class="form-control form-control-sm font-monospace text-end fw-bold text-success border-success" id="tot_vNF" onchange="formatarInputVisualBR(this, 2, 2); setVal('vNF', this.value);" oninput="setVal('vNF', this.value)" type="text"/>
-<input id="vNF" type="hidden"/>
-</div>
-</div>
-<!-- Linha de Cobrança & Meio de Pagamento (SEFAZ YA04-10) -->
-<div class="row g-2 pb-3 mb-3 border-bottom align-items-center bg-light p-2 rounded">
-    <div class="col-md-5">
-        <label class="form-label small mb-1 fw-bold d-flex align-items-center gap-1 text-secondary">
-            <i data-lucide="credit-card" style="width: 14px; height: 14px;"></i>
-            <span>Meio de Pagamento SEFAZ (&lt;detPag&gt;&lt;tPag&gt;)</span>
-        </label>
-        <select class="form-select form-select-sm fw-semibold" id="tot_tPag" onchange="aoMudarMeioPagamento(this.value)">
-            <option value="90" selected>90 - Sem Pagamento (Remessas / Retornos / Admissão / Reexportação)</option>
-            <option value="99">99 - Outros (Câmbio / Internacional)</option>
-            <option value="01">01 - Dinheiro</option>
-            <option value="15">15 - Boleto Bancário</option>
-            <option value="16">16 - Depósito Bancário</option>
-            <option value="17">17 - Pagamento Instantâneo (PIX)</option>
-            <option value="03">03 - Cartão de Crédito</option>
-            <option value="04">04 - Cartão de Débito</option>
-        </select>
+{% import 'macros/ui.html' as ui %}
+
+<!-- ABA 3: ITENS DA NOTA (TABELA TABULATOR & TOTAIS) -->
+<div class="tab-pane fade" id="itens" role="tabpanel" data-ui="editor.itens.pane">
+  <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom flex-wrap gap-2" data-ui="editor.itens.header">
+    <div>
+      <h6 class="nft-section-title border-0 pb-0 mb-1">
+        <i data-lucide="package" class="nft-icon--sm text-primary"></i>
+        <span>Planilha de Itens da NF-e (det nItem)</span>
+      </h6>
+      <small class="text-muted">Clique em qualquer célula para editar diretamente. Use a barra de rolagem horizontal para ver todas as colunas.</small>
     </div>
-    <div class="col-md-3">
-        <label class="form-label small mb-1 fw-bold text-secondary">Valor do Pagamento (vPag)</label>
-        <input class="form-control form-control-sm font-monospace text-end fw-bold" id="tot_vPag" value="0,00" readonly style="background-color: var(--surface-secondary);" type="text"/>
+
+    <div class="d-flex align-items-center flex-wrap gap-1 nft-itens-toolbar" data-ui="editor.itens.toolbar">
+      {{ ui.btn_icon('plus-circle', 'Adicionar um novo item na nota', variant='success', size='sm', onclick='adicionarNovoItem()', ui_id='editor.itens.btn-adicionar') }}
+      {{ ui.btn_icon('trash-2', 'Excluir item(ns) selecionado(s) na grade', variant='danger', size='sm', onclick='excluirItensSelecionados()', ui_id='editor.itens.btn-excluir') }}
+      {{ ui.btn_icon('copy', 'Duplicar item(ns) selecionado(s) na grade', variant='secondary', size='sm', onclick='duplicarItensSelecionados()', ui_id='editor.itens.btn-duplicar') }}
+
+      {{ ui.btn('Zerar Impostos', variant='warning', size='sm', icon='percent', onclick='zerarImpostosTodosItensComConfirmacao()', title='Zerar Base, Alíquota e Valor de II, IPI, PIS e COFINS de todos os itens', ui_id='editor.itens.btn-zerar-impostos') }}
+      {{ ui.btn('Enquadramento Fiscal', variant='secondary', size='sm', icon='shield-check', onclick='abrirModalAplicarEnquadramentoItens()', title='Aplicar Enquadramento Fiscal (CFOP/CST) em lote aos itens', ui_id='editor.itens.btn-enquadramento') }}
+      {{ ui.btn('Repassar DI', variant='secondary', size='sm', icon='globe', onclick='repassarImportacaoParaItens()', title='Repassar dados da Declaração de Importação (DI) para todos os itens', ui_id='editor.itens.btn-repassar-di') }}
+      {{ ui.btn('Abreviar Unidades', variant='secondary', size='sm', icon='wand-2', onclick='substituirUnidadesPorAbreviadas()', title='Substituir unidades comerciais/tributáveis pelas abreviações oficiais', ui_id='editor.itens.btn-abreviar-un') }}
+      {{ ui.btn('Rateio & PTAX', variant='secondary', size='sm', icon='scale', onclick='abrirPainelRateio()', title='Ir para parâmetros de Rateio e Câmbio PTAX', ui_id='editor.itens.btn-rateio') }}
+      {{ ui.btn('Redesenhar', variant='ghost', size='sm', icon='refresh-cw', onclick='recarregarTabelaItens()', title='Redesenhar a grade de itens', ui_id='editor.itens.btn-redesenhar') }}
+      {{ ui.btn('Exportar .xlsx', variant='secondary', size='sm', icon='file-spreadsheet', onclick='exportarExcel()', title='Exportar grade de itens para Excel (.xlsx)', ui_id='editor.itens.btn-exportar-xlsx') }}
+      {{ ui.btn('Importar .xlsx', variant='secondary', size='sm', icon='upload', onclick="document.getElementById('importExcelInput').click()", title='Importar itens a partir de planilha Excel (.xlsx)', ui_id='editor.itens.btn-importar-xlsx') }}
+      <input accept=".xlsx" class="d-none" id="importExcelInput" onchange="importarExcel(this)" title="Selecionar arquivo Excel (.xlsx) de itens" type="file" data-ui="editor.itens.input-import-xlsx"/>
     </div>
-    <div class="col-md-4">
-        <small class="text-muted d-block" id="msg-tpag-ajuda" style="font-size: 11px;">
-            <i data-lucide="info" style="width: 12px; height: 12px;"></i>
-            Regra YA04-10: Para <strong>tPag=90</strong>, o valor <strong>vPag é obrigatoriamente 0,00</strong> e o grupo de duplicatas &lt;cobr&gt; é omitido.
-        </small>
+  </div>
+
+  <!-- Barra de Status Rápido de Câmbio PTAX & Despesas de Rateio -->
+  <div class="nft-section-box mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2" id="barra-status-ptax-rateio" data-ui="editor.itens.barra-ptax">
+    <div class="d-flex align-items-center flex-wrap gap-3">
+      <div class="d-flex align-items-center gap-1">
+        <span class="nft-kv__label">Moeda:</span>
+        {{ ui.badge('USD', tone='info', mono=True, id='lbl-bar-ptax-moeda', title='Moeda estrangeira ativa no câmbio PTAX', ui_id='editor.itens.ptax-moeda') }}
+      </div>
+      <div class="d-flex align-items-center gap-1">
+        <span class="nft-kv__label">PTAX:</span>
+        <strong class="text-primary font-monospace" id="lbl-bar-ptax-taxa" title="Taxa de câmbio PTAX aplicada" data-ui="editor.itens.ptax-taxa">R$ -</strong>
+      </div>
+      <div class="border-start ps-3 d-flex align-items-center gap-1">
+        <span class="nft-kv__label">AFRMM:</span>
+        <span class="fw-bold font-monospace text-heading" id="lbl-bar-rateio-afrmm" title="Valor de Marinha Mercante (AFRMM) em rateio" data-ui="editor.itens.rateio-afrmm">R$ 0,00</span>
+      </div>
+      <div class="d-flex align-items-center gap-1">
+        <span class="nft-kv__label">Siscomex:</span>
+        <span class="fw-bold font-monospace text-heading" id="lbl-bar-rateio-siscomex" title="Taxa Siscomex em rateio" data-ui="editor.itens.rateio-siscomex">R$ 0,00</span>
+      </div>
+      <div class="d-flex align-items-center gap-1">
+        <span class="nft-kv__label">Outras (vOutro):</span>
+        <span class="fw-bold font-monospace text-heading" id="lbl-bar-rateio-outro" title="Outras despesas acessórias em rateio" data-ui="editor.itens.rateio-outro">R$ 0,00</span>
+      </div>
     </div>
+
+    <div class="d-flex align-items-center flex-wrap gap-2">
+      {{ ui.btn('Recalcular Conversão', variant='secondary', size='sm', icon='refresh-cw', onclick='recalcularConversaoItens()', title='Recalcular conversão de moeda dos itens com a taxa PTAX', ui_id='editor.itens.btn-recalcular-ptax') }}
+      {{ ui.btn('uTrib Exportação', variant='secondary', size='sm', icon='globe', onclick='aplicarUnidadesExportacaoManual()', title='Recalcular uTrib/qTrib de exportação pelo peso líquido e tabela Comex', ui_id='editor.itens.btn-utrib-exp') }}
+      {{ ui.btn('Reaplicar Rateio', variant='secondary', size='sm', icon='refresh-cw', onclick='reaplicarRateioItens()', title='Reaplicar despesas acessórias rateadas nos itens', ui_id='editor.itens.btn-reaplicar-rateio') }}
+    </div>
+  </div>
+
+  <!-- Grade Tabulator -->
+  <div id="itens-table" data-ui="editor.itens.tabulator"></div>
+
+  <!-- Card Totais da Nota -->
+  <div class="card mt-4 mb-2" data-ui="editor.totais.card">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div class="d-flex align-items-center gap-2">
+        <i data-lucide="calculator" class="nft-icon--md text-primary"></i>
+        <span class="fw-bold">Totais da Nota Fiscal (Grupo &lt;total&gt; / &lt;ICMSTot&gt;)</span>
+        <small class="text-muted d-none d-md-inline">(Valores em R$)</small>
+      </div>
+      {{ ui.btn('Recalcular Totais da Nota', variant='secondary', size='sm', icon='refresh-cw', onclick='recalcularTotaisDosItens()', title='Somar todos os itens da grade e atualizar os totais fiscais', ui_id='editor.totais.btn-recalcular') }}
+    </div>
+    <div class="card-body">
+      <!-- Linha de Destaques Comerciais -->
+      <div class="row g-2 pb-3 mb-3 border-bottom" data-ui="editor.totais.comerciais">
+        <div class="col-lg-2 col-md-4 col-6">
+          {{ ui.field_input('tot_vProd', 'Total dos Produtos (vProd)', modifier='number', title='Valor total bruto dos produtos (tag XML <vProd>)', ui_id='editor.totais.field-vProd', input_class='fw-bold', attrs='onchange="formatarInputVisualBR(this, 2, 2); calcularVNFAutomatico();" oninput="calcularVNFAutomatico()"') }}
+        </div>
+        <div class="col-lg-2 col-md-4 col-6">
+          {{ ui.field_input('tot_vFrete', 'Total do Frete (vFrete)', modifier='number', title='Valor total do frete (tag XML <vFrete>)', ui_id='editor.totais.field-vFrete', attrs='onchange="formatarInputVisualBR(this, 2, 2); calcularVNFAutomatico();" oninput="calcularVNFAutomatico()"') }}
+        </div>
+        <div class="col-lg-2 col-md-4 col-6">
+          {{ ui.field_input('tot_vSeg', 'Total do Seguro (vSeg)', modifier='number', title='Valor total do seguro (tag XML <vSeg>)', ui_id='editor.totais.field-vSeg', attrs='onchange="formatarInputVisualBR(this, 2, 2); calcularVNFAutomatico();" oninput="calcularVNFAutomatico()"') }}
+        </div>
+        <div class="col-lg-2 col-md-4 col-6">
+          {{ ui.field_input('tot_vOutro', 'Outras Despesas (vOutro)', modifier='number', title='Total de outras despesas acessórias (tag XML <vOutro>)', ui_id='editor.totais.field-vOutro', attrs='onchange="formatarInputVisualBR(this, 2, 2); calcularVNFAutomatico();" oninput="calcularVNFAutomatico()"') }}
+        </div>
+        <div class="col-lg-2 col-md-4 col-6">
+          {{ ui.field_input('tot_vDesc', 'Total Desconto (vDesc)', modifier='number', tone='danger', title='Valor total de descontos (tag XML <vDesc>)', ui_id='editor.totais.field-vDesc', extra_class='nft-field--highlight', attrs='onchange="formatarInputVisualBR(this, 2, 2); calcularVNFAutomatico();" oninput="calcularVNFAutomatico()"') }}
+        </div>
+        <div class="col-lg-2 col-md-4 col-6">
+          {{ ui.field_input('tot_vNF', 'Valor Total da NF (vNF)', modifier='number', tone='success', title='Valor total final da NF-e (tag XML <vNF>)', ui_id='editor.totais.field-vNF', extra_class='nft-field--highlight', attrs='onchange="formatarInputVisualBR(this, 2, 2); setVal(\'vNF\', this.value);" oninput="setVal(\'vNF\', this.value)"') }}
+          <input id="vNF" type="hidden"/>
+        </div>
+      </div>
+
+      <!-- Linha de Cobrança & Meio de Pagamento -->
+      <div class="nft-section-box mb-3" data-ui="editor.totais.pagamento">
+        <div class="row g-2 align-items-center">
+          <div class="col-md-5 col-12">
+            {% call ui.field_select('tot_tPag', 'Meio de Pagamento SEFAZ (<detPag><tPag>)', title='Define o meio de pagamento da NF-e e a obrigatoriedade de vPag', ui_id='editor.totais.field-tPag', extra_class='nft-field--flush', attrs='onchange="aoMudarMeioPagamento(this.value)"') %}
+              <option value="90" selected>90 - Sem Pagamento (Remessas / Retornos / Admissão / Reexportação)</option>
+              <option value="99">99 - Outros (Câmbio / Internacional)</option>
+              <option value="01">01 - Dinheiro</option>
+              <option value="15">15 - Boleto Bancário</option>
+              <option value="16">16 - Depósito Bancário</option>
+              <option value="17">17 - Pagamento Instantâneo (PIX)</option>
+              <option value="03">03 - Cartão de Crédito</option>
+              <option value="04">04 - Cartão de Débito</option>
+            {% endcall %}
+          </div>
+          <div class="col-md-3 col-12">
+            {{ ui.field_input('tot_vPag', 'Valor do Pagamento (vPag)', value='0,00', modifier='number', readonly=True, title='Valor do pagamento calculado conforme tPag (tag XML <vPag>)', ui_id='editor.totais.field-vPag', extra_class='nft-field--flush', input_class='fw-bold') }}
+          </div>
+          <div class="col-md-4 col-12">
+            <small class="nft-field__help mt-0" id="msg-tpag-ajuda" data-ui="editor.totais.help-tPag">
+              <i data-lucide="info" class="nft-icon--sm"></i>
+              Regra YA04-10: Para <strong>tPag=90</strong>, o valor <strong>vPag é obrigatoriamente 0,00</strong> e o grupo &lt;cobr&gt; é omitido.
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Linha de Impostos e Tributos -->
+      <div class="row g-2" data-ui="editor.totais.tributos">
+        <div class="col-lg-3 col-md-4 col-6">
+          {{ ui.field_input('tot_vBC', 'Base de Cálculo ICMS (vBC)', modifier='number', title='Base de cálculo total do ICMS (tag XML <vBC>)', ui_id='editor.totais.field-vBC', attrs='onchange="formatarInputVisualBR(this, 2, 2)"') }}
+        </div>
+        <div class="col-lg-3 col-md-4 col-6">
+          {{ ui.field_input('tot_vICMS', 'Total ICMS (vICMS)', modifier='number', title='Valor total do ICMS (tag XML <vICMS>)', ui_id='editor.totais.field-vICMS', attrs='onchange="formatarInputVisualBR(this, 2, 2)"') }}
+        </div>
+        <div class="col-lg-3 col-md-4 col-6">
+          {{ ui.field_input('tot_vBCST', 'Base ICMS ST (vBCST)', modifier='number', title='Base de cálculo do ICMS Substituição Tributária (tag XML <vBCST>)', ui_id='editor.totais.field-vBCST', attrs='onchange="formatarInputVisualBR(this, 2, 2)"') }}
+        </div>
+        <div class="col-lg-3 col-md-4 col-6">
+          {{ ui.field_input('tot_vST', 'Total ICMS ST (vST)', modifier='number', title='Valor total do ICMS ST (tag XML <vST>)', ui_id='editor.totais.field-vST', attrs='onchange="formatarInputVisualBR(this, 2, 2); calcularVNFAutomatico();" oninput="calcularVNFAutomatico()"') }}
+        </div>
+        <div class="col-lg-3 col-md-4 col-6">
+          {{ ui.field_input('tot_vII', 'Total Imposto Importação (vII)', modifier='number', title='Valor total do Imposto de Importação (tag XML <vII>)', ui_id='editor.totais.field-vII', attrs='onchange="formatarInputVisualBR(this, 2, 2); calcularVNFAutomatico();" oninput="calcularVNFAutomatico()"') }}
+        </div>
+        <div class="col-lg-3 col-md-4 col-6">
+          {{ ui.field_input('tot_vIPI', 'Total IPI (vIPI)', modifier='number', title='Valor total do IPI (tag XML <vIPI>)', ui_id='editor.totais.field-vIPI', attrs='onchange="formatarInputVisualBR(this, 2, 2); calcularVNFAutomatico();" oninput="calcularVNFAutomatico()"') }}
+        </div>
+        <div class="col-lg-3 col-md-4 col-6">
+          {{ ui.field_input('tot_vPIS', 'Total PIS (vPIS)', modifier='number', title='Valor total do PIS (tag XML <vPIS>)', ui_id='editor.totais.field-vPIS', attrs='onchange="formatarInputVisualBR(this, 2, 2)"') }}
+        </div>
+        <div class="col-lg-3 col-md-4 col-6">
+          {{ ui.field_input('tot_vCOFINS', 'Total COFINS (vCOFINS)', modifier='number', title='Valor total da COFINS (tag XML <vCOFINS>)', ui_id='editor.totais.field-vCOFINS', attrs='onchange="formatarInputVisualBR(this, 2, 2)"') }}
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
-<!-- Linha de Impostos e Tributos -->
-<div class="row g-2">
-<div class="col-md-3">
-<label class="form-label small mb-1 text-muted">Base de Cálculo ICMS (vBC)</label>
-<input class="form-control form-control-sm font-monospace text-end" id="tot_vBC" onchange="formatarInputVisualBR(this, 2, 2)" type="text"/>
-</div>
-<div class="col-md-3">
-<label class="form-label small mb-1 text-muted">Total ICMS (vICMS)</label>
-<input class="form-control form-control-sm font-monospace text-end" id="tot_vICMS" onchange="formatarInputVisualBR(this, 2, 2)" type="text"/>
-</div>
-<div class="col-md-3">
-<label class="form-label small mb-1 text-muted">Base ICMS ST (vBCST)</label>
-<input class="form-control form-control-sm font-monospace text-end" id="tot_vBCST" onchange="formatarInputVisualBR(this, 2, 2)" type="text"/>
-</div>
-<div class="col-md-3">
-<label class="form-label small mb-1 text-muted">Total ICMS ST (vST)</label>
-<input class="form-control form-control-sm font-monospace text-end" id="tot_vST" onchange="formatarInputVisualBR(this, 2, 2); calcularVNFAutomatico();" oninput="calcularVNFAutomatico()" type="text"/>
-</div>
-<div class="col-md-3">
-<label class="form-label small mb-1 text-muted">Total Imposto Importação (vII)</label>
-<input class="form-control form-control-sm font-monospace text-end" id="tot_vII" onchange="formatarInputVisualBR(this, 2, 2); calcularVNFAutomatico();" oninput="calcularVNFAutomatico()" type="text"/>
-</div>
-<div class="col-md-3">
-<label class="form-label small mb-1 text-muted">Total IPI (vIPI)</label>
-<input class="form-control form-control-sm font-monospace text-end" id="tot_vIPI" onchange="formatarInputVisualBR(this, 2, 2); calcularVNFAutomatico();" oninput="calcularVNFAutomatico()" type="text"/>
-</div>
-<div class="col-md-3">
-<label class="form-label small mb-1 text-muted">Total PIS (vPIS)</label>
-<input class="form-control form-control-sm font-monospace text-end" id="tot_vPIS" onchange="formatarInputVisualBR(this, 2, 2)" type="text"/>
-</div>
-<div class="col-md-3">
-<label class="form-label small mb-1 text-muted">Total COFINS (vCOFINS)</label>
-<input class="form-control form-control-sm font-monospace text-end" id="tot_vCOFINS" onchange="formatarInputVisualBR(this, 2, 2)" type="text"/>
-</div>
-</div>
-</div>
-</div></div>

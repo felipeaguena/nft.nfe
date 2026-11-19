@@ -1,302 +1,157 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <!-- Favicon -->
-    <link href="/static/img/brand/nftlogo.webp" rel="icon" type="image/webp"/>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Unidades Tributáveis - NFT Logistics</title>
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-    <!-- NFT Logistics Theme (Light & Dark) -->
-    <link href="/static/css/nft-theme.css?v=4.1" rel="stylesheet"/>
-    <link href="/static/css/nft-sidebar.css?v=4.3" rel="stylesheet"/>
-    <script src="/static/js/theme.js"></script>
-    <!-- Lucide Icons -->
-    <script src="/static/js/lucide.min.js"></script>
-    <script src="/static/js/nft-dialogs.js"></script>
-    <script defer src="/static/js/nft-sidebar.js?v=3.5"></script>
-    <script defer src="/static/js/nft-shortcuts.js?v=1.0"></script>
-    <style>
-        .badge-variacao {
-            font-size: 11px;
-            font-weight: 600;
-            padding: 3px 8px;
-            border-radius: 6px;
-            background-color: rgba(14, 165, 233, 0.12);
-            color: #0284c7;
-            border: 1px solid rgba(14, 165, 233, 0.3);
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            margin: 2px;
-            font-family: monospace;
-        }
-        [data-bs-theme="dark"] .badge-variacao {
-            background-color: rgba(56, 189, 248, 0.18);
-            color: #7dd3fc;
-            border-color: rgba(56, 189, 248, 0.35);
-        }
-        .badge-variacao-remover {
-            cursor: pointer;
-            opacity: 0.6;
-            transition: opacity 0.15s;
-        }
-        .badge-variacao-remover:hover {
-            opacity: 1;
-            color: #ef4444;
-        }
-        .tag-input-container {
-            min-height: 42px;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 4px;
-            padding: 6px;
-            border: 1px solid var(--bs-border-color);
-            border-radius: 8px;
-            background-color: var(--bs-body-bg);
-        }
-    </style>
-</head>
-<body class="has-sidebar">
+{% extends 'layouts/base.html' %}
+{% import 'macros/ui.html' as ui %}
+
 {% set sidebar_active = 'unidades_tributaveis' %}
-{% include 'partials/sidebar.html' %}
+{% set topbar_modulo = 'Unidades Tributáveis' %}
+{% set topbar_tag = 'Cadastros' %}
 
-<!-- ÁREA PRINCIPAL DE CONTEÚDO (DESLOCADA PELA SIDEBAR, PADRÃO DO SITE) -->
-<div class="nft-main-wrapper">
-  {% set topbar_modulo = 'Unidades Tributáveis' %}
-  {% set topbar_tag = 'Cadastros' %}
-  {% include 'partials/topbar.html' %}
-    <div class="container-fluid px-4 py-3">
-        <!-- Cabeçalho da Página -->
-        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom gap-2">
-            <div class="d-flex align-items-center gap-3">
+{% block title %}Unidades Tributáveis &amp; Abreviações — NFT Logistics{% endblock %}
+{% block page_ui_id %}unidades.page.main{% endblock %}
 
-                <div>
-                    <h4 class="mb-0 fw-bold d-flex align-items-center gap-2">
-                        <i class="text-primary" data-lucide="scale"></i>
-                        <span>Unidades Tributáveis &amp; Abreviações</span>
-                    </h4>
-                    <small class="text-muted">Padronize códigos abreviados oficiais (uTrib e uCom) da SEFAZ/Siscomex e suas variações aceitas para substituição nos itens</small>
-                </div>
-            </div>
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-                <button type="button" class="btn btn-outline-secondary btn-header-round shadow-sm" onclick="restaurarPadraoOficial()" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Restaurar Padrão SEFAZ" aria-label="Restaurar Padrão SEFAZ">
-                    <i data-lucide="rotate-ccw"></i>
-                </button>
-                <button type="button" class="btn btn-primary btn-header-round shadow-sm" onclick="abrirModalNovaUnidade()" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Cadastrar Nova Unidade" aria-label="Cadastrar Nova Unidade">
-                    <i data-lucide="plus-circle"></i>
-                </button>
-            </div>
-        </div>
+{% block content %}
+  {% call ui.page_header('Unidades Tributáveis & Abreviações', subtitle='Padronize códigos abreviados oficiais (uTrib e uCom) da SEFAZ/Siscomex e suas variações aceitas para substituição nos itens.', icon='scale', ui_id='unidades.header') %}
+    {{ ui.btn_icon('rotate-ccw', 'Restaurar tabela padrão oficial SEFAZ', variant='ghost', onclick='restaurarPadraoOficial()', ui_id='unidades.header.btn-restaurar') }}
+    {{ ui.btn_icon('plus-circle', 'Cadastrar nova unidade tributável', variant='primary', onclick='abrirModalNovaUnidade()', ui_id='unidades.header.btn-nova') }}
+  {% endcall %}
 
-        <!-- CARDS DE ESTATÍSTICAS / INFORMAÇÕES -->
-        <div class="row g-3 mb-3">
-            <div class="col-sm-6 col-lg-3">
-                <div class="card border shadow-sm p-3 rounded-3 h-100 bg-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="text-secondary small fw-semibold">Unidades Cadastradas</span>
-                            <h3 class="fw-bold mb-0 mt-1" id="stat-total-unidades">0</h3>
-                        </div>
-                        <div class="rounded-3 p-2 bg-primary-subtle text-primary">
-                            <i data-lucide="layers" style="width: 22px; height: 22px;"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-sm-6 col-lg-3">
-                <div class="card border shadow-sm p-3 rounded-3 h-100 bg-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="text-secondary small fw-semibold">Total de Variações Mapeadas</span>
-                            <h3 class="fw-bold mb-0 mt-1 text-info" id="stat-total-variacoes">0</h3>
-                        </div>
-                        <div class="rounded-3 p-2 bg-info-subtle text-info">
-                            <i data-lucide="tags" style="width: 22px; height: 22px;"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-sm-6 col-lg-3">
-                <div class="card border shadow-sm p-3 rounded-3 h-100 bg-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="text-secondary small fw-semibold">Padrão SEFAZ / Siscomex</span>
-                            <h3 class="fw-bold mb-0 mt-1 text-success fs-6">Tabela Única</h3>
-                        </div>
-                        <div class="rounded-3 p-2 bg-success-subtle text-success">
-                            <i data-lucide="shield-check" style="width: 22px; height: 22px;"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-sm-6 col-lg-3">
-                <div class="card border shadow-sm p-3 rounded-3 h-100 bg-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="text-secondary small fw-semibold">Substituição Inteligente</span>
-                            <h3 class="fw-bold mb-0 mt-1 text-warning fs-6">Trib. &amp; Comercial</h3>
-                        </div>
-                        <div class="rounded-3 p-2 bg-warning-subtle text-warning">
-                            <i data-lucide="wand-2" style="width: 22px; height: 22px;"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- TABELA PRINCIPAL DE UNIDADES -->
-        <div class="card border shadow-sm rounded-3">
-            <div class="card-header bg-body py-3 border-bottom d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
-                <div class="d-flex align-items-center gap-2">
-                    <span class="fw-bold text-heading">Catálogo de Unidades &amp; Regras de Substituição</span>
-                    <span class="badge bg-primary-subtle text-primary rounded-pill fw-semibold" id="badge-count-tabela">0</span>
-                </div>
-                <div class="d-flex align-items-center gap-2" style="min-width: 280px; max-width: 420px; width: 100%;">
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text bg-body border-end-0 text-secondary">
-                            <i data-lucide="search" style="width: 14px; height: 14px;"></i>
-                        </span>
-                        <input type="text" class="form-control border-start-0" id="filtro-busca" placeholder="Buscar por código, descrição ou variação..." oninput="filtrarTabela()"/>
-                    </div>
-                </div>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" id="tabela-unidades" style="font-size: 13px;">
-                    <thead class="table-light">
-                        <tr>
-                            <th style="width: 110px;" class="text-center">Código Abreviado</th>
-                            <th style="width: 180px;">Descrição Oficial</th>
-                            <th>Variações que serão Substituídas por este Código</th>
-                            <th style="width: 90px;" class="text-center">Status</th>
-                            <th style="width: 140px;" class="text-center">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="unidades-tbody">
-                        <tr>
-                            <td colspan="5" class="text-center py-4 text-secondary">
-                                <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
-                                Carregando unidades cadastradas...
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+  <!-- Cards KPI -->
+  <div class="row g-3 mb-3" data-ui="unidades.kpis.grid">
+    <div class="col-lg-3 col-sm-6">
+      {{ ui.kpi_card('Unidades Cadastradas', '0', id='stat-total-unidades', icon='layers', tone='primary', ui_id='unidades.kpis.total', title='Total de códigos de unidades cadastrados') }}
     </div>
-</div>
+    <div class="col-lg-3 col-sm-6">
+      {{ ui.kpi_card('Variações Mapeadas', '0', id='stat-total-variacoes', icon='tags', tone='info', ui_id='unidades.kpis.variacoes', title='Total de termos alternativos mapeados para substituição') }}
+    </div>
+    <div class="col-lg-3 col-sm-6">
+      {{ ui.kpi_card('Padrão SEFAZ / Siscomex', 'Tabela Única', icon='shield-check', tone='success', ui_id='unidades.kpis.padrao', title='Conformidade oficial SEFAZ e Siscomex') }}
+    </div>
+    <div class="col-lg-3 col-sm-6">
+      {{ ui.kpi_card('Substituição Inteligente', 'Trib. & Comercial', icon='wand-2', tone='warning', ui_id='unidades.kpis.substituicao', title='Aplica automaticamente em uTrib e uCom') }}
+    </div>
+  </div>
 
-<!-- MODAL: EDITAR VARIAÇÕES DE UMA UNIDADE -->
-<div class="modal fade" id="modalEditarVariacoes" tabindex="-1" aria-labelledby="modalEditarVariacoesLabel" aria-hidden="true">
+  <!-- Tabela Principal -->
+  <div class="card mb-4" data-ui="unidades.lista.card">
+    <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+      <div class="d-flex align-items-center gap-2">
+        <span class="fw-bold">Catálogo de Unidades &amp; Regras de Substituição</span>
+        {{ ui.badge('0', tone='primary', pill=True, id='badge-count-tabela', title='Total de unidades listadas', ui_id='unidades.lista.badge-total') }}
+      </div>
+      <div style="min-width: 260px; max-width: 400px; width: 100%;">
+        {% call ui.field_wrap('filtro-busca', 'Buscar código, descrição ou variação', ui_id='unidades.lista.field-busca', extra_class='nft-field--flush') %}
+          <div class="input-group">
+            <span class="input-group-text"><i data-lucide="search" class="nft-icon--sm"></i></span>
+            <input type="text" class="nft-control" id="filtro-busca" placeholder="Ex: PC, PEÇA, KG, CAIXA..." oninput="filtrarTabela()" title="Filtrar catálogo de unidades em tempo real" data-ui="unidades.lista.input-busca"/>
+          </div>
+        {% endcall %}
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle nft-table-cards" id="tabela-unidades" data-ui="unidades.lista.table">
+          <thead>
+            <tr>
+              <th class="text-center">Código Abreviado</th>
+              <th>Descrição Oficial</th>
+              <th>Variações Substituídas</th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="unidades-tbody" data-ui="unidades.lista.tbody">
+            <tr><td colspan="5" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Carregando unidades cadastradas...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block modals %}
+  <!-- MODAL 1: EDITAR VARIAÇÕES -->
+  <div class="modal fade" id="modalEditarVariacoes" tabindex="-1" aria-labelledby="modalEditarVariacoesLabel" aria-hidden="true" data-ui="modal.variacoes">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content shadow-lg border-0 rounded-3">
-            <div class="modal-header border-bottom py-3">
-                <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="modalEditarVariacoesLabel">
-                    <i data-lucide="tags" class="text-primary"></i>
-                    Editar Variações para Substituição: <span class="badge bg-primary text-white font-monospace ms-1" id="m_var_codigo_badge">PC</span>
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-            </div>
-            <div class="modal-body p-4">
-                <input type="hidden" id="m_var_unidade_id"/>
-                <div class="alert alert-info py-2 px-3 small d-flex align-items-center gap-2 mb-3">
-                    <i data-lucide="info" style="width: 18px; height: 18px; flex-shrink: 0;"></i>
-                    <span>Sempre que qualquer uma dessas variações for encontrada no item (na coluna "Un. Trib." ou "Un. Com."), ela será substituída automaticamente pelo código oficial <strong><span id="m_var_codigo_text">PC</span></strong>.</span>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label small fw-bold mb-1">Adicionar Nova Variação Individual:</label>
-                    <div class="input-group input-group-sm">
-                        <input type="text" class="form-control" id="m_nova_variacao_input" placeholder="Ex: Peças, Peca, Peça..." onkeydown="if(event.key === 'Enter'){ event.preventDefault(); adicionarVariacaoTag(); }"/>
-                        <button type="button" class="btn btn-primary" onclick="adicionarVariacaoTag()">
-                            <i data-lucide="plus" style="width: 14px; height: 14px;"></i> Adicionar
-                        </button>
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label small fw-bold mb-1">Variações Ativas (clique no "x" para remover):</label>
-                    <div class="tag-input-container" id="m_var_tags_container">
-                        <!-- Tags renderizadas dinamicamente -->
-                    </div>
-                </div>
-
-                <div class="mb-2">
-                    <label class="form-label small fw-semibold text-secondary mb-1">Edição Rápida em Massa (separadas por vírgula):</label>
-                    <textarea class="form-control form-control-sm font-monospace" id="m_var_raw_textarea" rows="3" placeholder="PECA, PECAS, PEÇA, PEÇAS, PC, PCS" oninput="sincronizarTagsDoTextarea()"></textarea>
-                    <small class="text-muted" style="font-size: 11px;">Você pode colar múltiplos termos separados por vírgula para cadastrar de uma só vez.</small>
-                </div>
-            </div>
-            <div class="modal-footer border-top py-2">
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-sm btn-primary fw-semibold d-flex align-items-center gap-1" onclick="salvarVariacoesDaUnidade()">
-                    <i data-lucide="check" style="width: 14px; height: 14px;"></i>
-                    Salvar Variações
-                </button>
-            </div>
+      <div class="modal-content">
+        <div class="modal-header" data-ui="modal.variacoes.header">
+          <h5 class="modal-title" id="modalEditarVariacoesLabel">
+            <i data-lucide="tags" class="nft-icon--md text-primary"></i>
+            <span>Editar Variações:</span>
+            <span class="nft-badge nft-badge--mono" data-tone="primary" id="m_var_codigo_badge">PC</span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar janela" title="Fechar edição de variações" data-ui="modal.variacoes.btn-close"></button>
         </div>
-    </div>
-</div>
+        <div class="modal-body" data-ui="modal.variacoes.body">
+          <input type="hidden" id="m_var_unidade_id"/>
+          <div class="alert alert-info d-flex align-items-center gap-2 mb-3">
+            <i data-lucide="info" class="nft-icon--md"></i>
+            <span>Qualquer uma dessas variações encontrada em uTrib ou uCom será convertida para <strong id="m_var_codigo_text">PC</strong>.</span>
+          </div>
 
-<!-- MODAL: NOVA / EDITAR UNIDADE COMPLETA -->
-<div class="modal fade" id="modalUnidadeCompleta" tabindex="-1" aria-labelledby="modalUnidadeCompletaLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content shadow-lg border-0 rounded-3">
-            <div class="modal-header border-bottom py-3">
-                <h5 class="modal-title fw-bold" id="modalUnidadeCompletaLabel">Nova Unidade Tributável</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-            </div>
-            <div class="modal-body p-4">
-                <input type="hidden" id="m_unidade_id"/>
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label small fw-bold mb-1">Código (uTrib) *</label>
-                        <input type="text" class="form-control form-control-sm font-monospace text-uppercase" id="m_unidade_codigo" placeholder="Ex: PC" maxlength="10" required/>
-                    </div>
-                    <div class="col-md-8">
-                        <label class="form-label small fw-bold mb-1">Descrição Oficial *</label>
-                        <input type="text" class="form-control form-control-sm" id="m_unidade_descricao" placeholder="Ex: Peça" required/>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label small fw-bold mb-1">Variações Aceitas (separadas por vírgula)</label>
-                        <textarea class="form-control form-control-sm font-monospace" id="m_unidade_variacoes" rows="3" placeholder="PECA, PECAS, PEÇA, PEÇAS, PC, PCS"></textarea>
-                        <small class="text-muted" style="font-size: 11px;">Termos que, quando escritos nos itens, serão convertidos para este código.</small>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label small fw-semibold mb-1">Ordem de Exibição</label>
-                        <input type="number" class="form-control form-control-sm" id="m_unidade_ordem" value="0"/>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label small fw-semibold mb-1">Status</label>
-                        <select class="form-select form-select-sm" id="m_unidade_ativo">
-                            <option value="1">Ativo</option>
-                            <option value="0">Inativo</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer border-top py-2">
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-sm btn-primary fw-semibold d-flex align-items-center gap-1" onclick="salvarUnidadeCompleta()">
-                    <i data-lucide="save" style="width: 14px; height: 14px;"></i>
-                    Salvar Unidade
+          <div class="mb-3">
+            {% call ui.field_wrap('m_nova_variacao_input', 'Adicionar Nova Variação Individual', ui_id='modal.variacoes.field-nova') %}
+              <div class="input-group">
+                <input type="text" class="nft-control" id="m_nova_variacao_input" placeholder="Ex: Peças, Peca, Peça..." onkeydown="if(event.key === 'Enter'){ event.preventDefault(); adicionarVariacaoTag(); }" title="Digite uma ou mais variações separadas por vírgula e pressione Enter" data-ui="modal.variacoes.input-nova"/>
+                <button type="button" class="nft-btn nft-btn--primary" onclick="adicionarVariacaoTag()" title="Adicionar variação à lista ativa" data-ui="modal.variacoes.btn-adicionar">
+                  <i data-lucide="plus"></i>
+                  <span>Adicionar</span>
                 </button>
-            </div>
-        </div>
-    </div>
-</div>
+              </div>
+            {% endcall %}
+          </div>
 
-<!-- SCRIPTS E CONTROLE DA PÁGINA -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+          <div class="mb-3">
+            <span class="nft-kv__label d-block mb-1">Variações Ativas (clique no × para remover)</span>
+            <div class="tag-input-container" id="m_var_tags_container" data-ui="modal.variacoes.tags-container"></div>
+          </div>
+
+          {{ ui.field_textarea('m_var_raw_textarea', 'Edição Rápida em Massa (separadas por vírgula)', rows=3, modifier='code', placeholder='PECA, PECAS, PEÇA, PEÇAS, PC, PCS', help='Cole múltiplos termos separados por vírgula para cadastrar de uma só vez.', title='Lista completa de variações separadas por vírgula', ui_id='modal.variacoes.field-massa', extra_class='nft-field--flush', attrs='oninput="sincronizarTagsDoTextarea()"') }}
+        </div>
+        <div class="modal-footer" data-ui="modal.variacoes.footer">
+          {{ ui.btn('Cancelar', variant='ghost', size='sm', title='Cancelar edição de variações', ui_id='modal.variacoes.btn-cancelar', attrs='data-bs-dismiss="modal"') }}
+          {{ ui.btn('Salvar Variações', variant='primary', size='sm', icon='check', onclick='salvarVariacoesDaUnidade()', title='Gravar alterações das variações no banco', ui_id='modal.variacoes.btn-salvar') }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: NOVA / EDITAR UNIDADE COMPLETA -->
+  {{ ui.modal_open('modalUnidadeCompleta', 'Nova Unidade Tributável', size='md', icon='scale', ui_id='modal.unidade', title_id='modalUnidadeCompletaLabel') }}
+    <div class="modal-body" data-ui="modal.unidade.body">
+      <input type="hidden" id="m_unidade_id"/>
+      <div class="row g-2">
+        <div class="col-md-4">
+          {{ ui.field_input('m_unidade_codigo', 'Código (uTrib)', modifier='sigla', required=True, placeholder='Ex: PC', title='Sigla oficial abreviada da unidade (até 10 caracteres)', ui_id='modal.unidade.field-codigo', attrs='maxlength="10"') }}
+        </div>
+        <div class="col-md-8">
+          {{ ui.field_input('m_unidade_descricao', 'Descrição Oficial', required=True, placeholder='Ex: Peça', title='Nome descritivo oficial da unidade', ui_id='modal.unidade.field-descricao') }}
+        </div>
+        <div class="col-12">
+          {{ ui.field_textarea('m_unidade_variacoes', 'Variações Aceitas (separadas por vírgula)', rows=3, modifier='code', placeholder='PECA, PECAS, PEÇA, PEÇAS, PC, PCS', help='Termos que serão convertidos automaticamente para este código.', title='Lista de variações aceitas para substituição', ui_id='modal.unidade.field-variacoes') }}
+        </div>
+        <div class="col-md-6">
+          {{ ui.field_input('m_unidade_ordem', 'Ordem de Exibição', type='number', value='0', modifier='number', title='Prioridade de ordenação na tabela', ui_id='modal.unidade.field-ordem') }}
+        </div>
+        <div class="col-md-6">
+          {% call ui.field_select('m_unidade_ativo', 'Status', title='Define se esta unidade está ativa para substituições', ui_id='modal.unidade.field-status') %}
+            <option value="1">Ativo</option>
+            <option value="0">Inativo</option>
+          {% endcall %}
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" data-ui="modal.unidade.footer">
+      {{ ui.btn('Cancelar', variant='ghost', size='sm', title='Cancelar cadastro/edição de unidade', ui_id='modal.unidade.btn-cancelar', attrs='data-bs-dismiss="modal"') }}
+      {{ ui.btn('Salvar Unidade', variant='primary', size='sm', icon='save', onclick='salvarUnidadeCompleta()', title='Salvar unidade tributável no banco', ui_id='modal.unidade.btn-salvar') }}
+    </div>
+  {{ ui.modal_close() }}
+{% endblock %}
+
+{% block scripts %}
 <script>
     let listaUnidades = [];
     let variacoesModalAtuais = [];
 
-    document.addEventListener('DOMContentLoaded', () => {
-        carregarUnidades();
-    });
+    document.addEventListener('DOMContentLoaded', () => { carregarUnidades(); });
 
     async function carregarUnidades() {
         try {
@@ -307,14 +162,7 @@
             atualizarEstatisticas(listaUnidades);
         } catch (e) {
             console.error(e);
-            document.getElementById('unidades-tbody').innerHTML = `
-                <tr>
-                    <td colspan="5" class="text-center py-4 text-danger">
-                        <i data-lucide="alert-triangle" class="me-1"></i> Erro ao carregar unidades: ${e.message}
-                    </td>
-                </tr>
-            `;
-            if (window.lucide) window.lucide.createIcons();
+            document.getElementById('unidades-tbody').innerHTML = `<tr><td colspan="5" class="text-center py-4 text-danger">Erro ao carregar unidades: ${e.message}</td></tr>`;
         }
     }
 
@@ -322,102 +170,76 @@
         document.getElementById('stat-total-unidades').innerText = lista.length;
         document.getElementById('badge-count-tabela').innerText = `${lista.length} unidades`;
         let totalVar = 0;
-        lista.forEach(u => {
-            if (Array.isArray(u.variacoes)) totalVar += u.variacoes.length;
-        });
+        lista.forEach(u => { if (Array.isArray(u.variacoes)) totalVar += u.variacoes.length; });
         document.getElementById('stat-total-variacoes').innerText = totalVar;
     }
 
     function renderizarTabela(lista) {
         const tbody = document.getElementById('unidades-tbody');
         if (!lista || lista.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="5" class="text-center py-4 text-secondary">
-                        Nenhuma unidade tributável encontrada.
-                    </td>
-                </tr>
-            `;
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">Nenhuma unidade tributável encontrada.</td></tr>`;
             return;
         }
-
         tbody.innerHTML = lista.map(u => {
             const vars = Array.isArray(u.variacoes) ? u.variacoes : [];
-            const tagsHtml = vars.map(v => `<span class="badge-variacao">${v}</span>`).join('');
+            const tagsHtml = vars.map(v => `<span class="nft-badge nft-badge--mono" data-tone="info">${v}</span>`).join('');
             const statusBadge = u.ativo == 1
-                ? '<span class="badge bg-success-subtle text-success border border-success-subtle fw-semibold">Ativo</span>'
-                : '<span class="badge bg-secondary-subtle text-secondary fw-semibold">Inativo</span>';
+                ? '<span class="nft-badge" data-tone="success">Ativo</span>'
+                : '<span class="nft-badge" data-tone="neutral">Inativo</span>';
 
             return `
-                <tr>
-                    <td class="text-center">
-                        <span class="badge bg-primary fs-6 font-monospace px-2 py-1 shadow-sm">${u.codigo}</span>
+                <tr data-ui="unidades.lista.row-${u.id}">
+                    <td data-label="Código" class="text-center">
+                        <span class="nft-badge nft-badge--mono" data-tone="primary">${u.codigo}</span>
                     </td>
-                    <td>
-                        <strong class="text-heading">${u.descricao}</strong>
-                    </td>
-                    <td>
-                        <div class="d-flex flex-wrap align-items-center">
-                            ${tagsHtml || '<span class="text-muted small fst-italic">Nenhuma variação cadastrada</span>'}
+                    <td data-card-title="true"><strong class="text-heading">${u.descricao}</strong></td>
+                    <td data-label="Variações">
+                        <div class="d-flex flex-wrap gap-1 justify-content-md-start justify-content-end">
+                            ${tagsHtml || '<span class="text-muted fst-italic">Nenhuma variação</span>'}
                         </div>
                     </td>
-                    <td class="text-center">
-                        ${statusBadge}
-                    </td>
-                    <td class="text-center">
-                        <div class="d-inline-flex align-items-center justify-content-center gap-1" role="group">
-                            <button type="button" class="btn-nft btn-nft-action-round" onclick="abrirModalEditarVariacoes(${u.id})" title="Editar variações deste código">
-                                <i data-lucide="tags" style="width: 13px; height: 13px;"></i>
+                    <td data-label="Status" class="text-center">${statusBadge}</td>
+                    <td data-card-actions="true" class="text-center">
+                        <div class="d-inline-flex align-items-center justify-content-center gap-1">
+                            <button type="button" class="nft-btn-icon nft-btn-icon--info nft-btn-icon--sm" data-bs-toggle="tooltip" onclick="abrirModalEditarVariacoes(${u.id})" title="Editar variações deste código" aria-label="Editar variações" data-ui="unidades.row.btn-variacoes">
+                                <i data-lucide="tags"></i>
                             </button>
-                            <button type="button" class="btn-nft btn-nft-action-round" onclick="abrirModalEditarUnidade(${u.id})" title="Editar dados da unidade">
-                                <i data-lucide="edit-2" style="width: 13px; height: 13px;"></i>
+                            <button type="button" class="nft-btn-icon nft-btn-icon--secondary nft-btn-icon--sm" data-bs-toggle="tooltip" onclick="abrirModalEditarUnidade(${u.id})" title="Editar dados da unidade" aria-label="Editar unidade" data-ui="unidades.row.btn-editar">
+                                <i data-lucide="edit-2"></i>
                             </button>
-                            <button type="button" class="btn-nft btn-nft-danger btn-nft-action-round" onclick="excluirUnidade(${u.id}, '${u.codigo}')" title="Excluir unidade">
-                                <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
+                            <button type="button" class="nft-btn-icon nft-btn-icon--danger nft-btn-icon--sm" data-bs-toggle="tooltip" onclick="excluirUnidade(${u.id}, '${u.codigo}')" title="Excluir unidade tributável" aria-label="Excluir unidade" data-ui="unidades.row.btn-excluir">
+                                <i data-lucide="trash-2"></i>
                             </button>
                         </div>
                     </td>
                 </tr>
             `;
         }).join('');
-
-        if (window.lucide) window.lucide.createIcons();
+        if (window.lucide) window.lucide.createIcons({ root: tbody });
     }
 
     function filtrarTabela() {
         const termo = (document.getElementById('filtro-busca').value || '').trim().toLowerCase();
-        if (!termo) {
-            renderizarTabela(listaUnidades);
-            return;
-        }
-
-        const filtrados = listaUnidades.filter(u => {
-            const codMatch = (u.codigo || '').toLowerCase().includes(termo);
-            const descMatch = (u.descricao || '').toLowerCase().includes(termo);
-            const varsMatch = Array.isArray(u.variacoes) && u.variacoes.some(v => v.toLowerCase().includes(termo));
-            return codMatch || descMatch || varsMatch;
-        });
-
+        if (!termo) { renderizarTabela(listaUnidades); return; }
+        const filtrados = listaUnidades.filter(u =>
+            (u.codigo || '').toLowerCase().includes(termo) ||
+            (u.descricao || '').toLowerCase().includes(termo) ||
+            (Array.isArray(u.variacoes) && u.variacoes.some(v => v.toLowerCase().includes(termo)))
+        );
         renderizarTabela(filtrados);
     }
 
-    // === MODAL EDITAR VARIAÇÕES ===
     function abrirModalEditarVariacoes(uid) {
         const u = listaUnidades.find(x => x.id === uid);
         if (!u) return;
-
         document.getElementById('m_var_unidade_id').value = u.id;
         document.getElementById('m_var_codigo_badge').innerText = u.codigo;
         document.getElementById('m_var_codigo_text').innerText = u.codigo;
         document.getElementById('m_nova_variacao_input').value = '';
-
         variacoesModalAtuais = Array.isArray(u.variacoes) ? [...u.variacoes] : [];
         renderizarTagsModal();
         sincronizarTextareaDasTags();
-
-        const modalEl = document.getElementById('modalEditarVariacoes');
-        const modal = new bootstrap.Modal(modalEl);
-        modal.show();
+        new bootstrap.Modal(document.getElementById('modalEditarVariacoes')).show();
         setTimeout(() => document.getElementById('m_nova_variacao_input').focus(), 300);
     }
 
@@ -427,11 +249,10 @@
             container.innerHTML = '<span class="text-muted small fst-italic">Nenhuma variação adicionada ainda.</span>';
             return;
         }
-
         container.innerHTML = variacoesModalAtuais.map((v, idx) => `
-            <span class="badge-variacao">
+            <span class="nft-badge nft-badge--mono" data-tone="info">
                 ${v}
-                <span class="badge-variacao-remover" onclick="removerVariacaoTag(${idx})" title="Remover variação">&times;</span>
+                <span class="badge-variacao-remover" onclick="removerVariacaoTag(${idx})" title="Remover variação ${v}" data-ui="modal.variacoes.btn-remover-tag">&times;</span>
             </span>
         `).join('');
     }
@@ -440,14 +261,9 @@
         const input = document.getElementById('m_nova_variacao_input');
         const val = (input.value || '').trim().toUpperCase();
         if (!val) return;
-
-        const partes = val.split(',').map(p => p.trim().toUpperCase()).filter(p => p.length > 0);
-        partes.forEach(p => {
-            if (!variacoesModalAtuais.includes(p)) {
-                variacoesModalAtuais.push(p);
-            }
+        val.split(',').map(p => p.trim().toUpperCase()).filter(Boolean).forEach(p => {
+            if (!variacoesModalAtuais.includes(p)) variacoesModalAtuais.push(p);
         });
-
         input.value = '';
         renderizarTagsModal();
         sincronizarTextareaDasTags();
@@ -466,45 +282,28 @@
 
     function sincronizarTagsDoTextarea() {
         const raw = document.getElementById('m_var_raw_textarea').value || '';
-        variacoesModalAtuais = raw.split(',').map(s => s.trim().toUpperCase()).filter(s => s.length > 0);
+        variacoesModalAtuais = raw.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
         renderizarTagsModal();
     }
 
     async function salvarVariacoesDaUnidade() {
         const uid = document.getElementById('m_var_unidade_id').value;
         if (!uid) return;
-
         try {
             const res = await fetch(`/api/unidades_tributaveis/${uid}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ variacoes: variacoesModalAtuais })
+                method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ variacoes: variacoesModalAtuais })
             });
-
-            if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.error || 'Falha ao salvar');
-            }
-
-            const modalEl = document.getElementById('modalEditarVariacoes');
-            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Falha ao salvar'); }
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarVariacoes'));
             if (modal) modal.hide();
-
             await carregarUnidades();
-
-            if (typeof window.nftAlert === 'function') {
-                window.nftAlert('✅ Variações atualizadas com sucesso!', 'success');
-            } else {
-                alert('Variações atualizadas com sucesso!');
-            }
-        } catch (e) {
-            alert('Erro ao salvar variações: ' + e.message);
-        }
+            if (typeof window.nftAlert === 'function') window.nftAlert('Variações atualizadas com sucesso!', { type: 'success', title: 'Salvo' });
+        } catch (e) { alert('Erro ao salvar variações: ' + e.message); }
     }
 
-    // === MODAL NOVA / EDITAR UNIDADE COMPLETA ===
     function abrirModalNovaUnidade() {
-        document.getElementById('modalUnidadeCompletaLabel').innerText = 'Nova Unidade Tributável';
+        const lbl = document.getElementById('modalUnidadeCompletaLabel');
+        if (lbl) { const sp = lbl.querySelector('span'); if (sp) sp.innerText = 'Nova Unidade Tributável'; else lbl.innerText = 'Nova Unidade Tributável'; }
         document.getElementById('m_unidade_id').value = '';
         document.getElementById('m_unidade_codigo').value = '';
         document.getElementById('m_unidade_codigo').removeAttribute('readonly');
@@ -512,25 +311,21 @@
         document.getElementById('m_unidade_variacoes').value = '';
         document.getElementById('m_unidade_ordem').value = listaUnidades.length + 1;
         document.getElementById('m_unidade_ativo').value = '1';
-
-        const modal = new bootstrap.Modal(document.getElementById('modalUnidadeCompleta'));
-        modal.show();
+        new bootstrap.Modal(document.getElementById('modalUnidadeCompleta')).show();
     }
 
     function abrirModalEditarUnidade(uid) {
         const u = listaUnidades.find(x => x.id === uid);
         if (!u) return;
-
-        document.getElementById('modalUnidadeCompletaLabel').innerText = `Editar Unidade: ${u.codigo}`;
+        const lbl = document.getElementById('modalUnidadeCompletaLabel');
+        if (lbl) { const sp = lbl.querySelector('span'); if (sp) sp.innerText = `Editar Unidade: ${u.codigo}`; else lbl.innerText = `Editar Unidade: ${u.codigo}`; }
         document.getElementById('m_unidade_id').value = u.id;
         document.getElementById('m_unidade_codigo').value = u.codigo;
         document.getElementById('m_unidade_descricao').value = u.descricao;
         document.getElementById('m_unidade_variacoes').value = (Array.isArray(u.variacoes) ? u.variacoes : []).join(', ');
         document.getElementById('m_unidade_ordem').value = u.ordem || 0;
         document.getElementById('m_unidade_ativo').value = String(u.ativo !== undefined ? u.ativo : 1);
-
-        const modal = new bootstrap.Modal(document.getElementById('modalUnidadeCompleta'));
-        modal.show();
+        new bootstrap.Modal(document.getElementById('modalUnidadeCompleta')).show();
     }
 
     async function salvarUnidadeCompleta() {
@@ -540,101 +335,46 @@
         const variacoesRaw = (document.getElementById('m_unidade_variacoes').value || '').trim();
         const ordem = parseInt(document.getElementById('m_unidade_ordem').value) || 0;
         const ativo = parseInt(document.getElementById('m_unidade_ativo').value) || 1;
-
-        if (!codigo || !descricao) {
-            alert('Código e Descrição são obrigatórios!');
-            return;
-        }
-
-        const variacoes = variacoesRaw.split(',').map(s => s.trim().toUpperCase()).filter(s => s.length > 0);
-        if (!variacoes.includes(codigo)) {
-            variacoes.push(codigo);
-        }
-
-        const payload = { codigo, descricao, variacoes, ordem, ativo };
-        const url = uid ? `/api/unidades_tributaveis/${uid}` : '/api/unidades_tributaveis';
-        const method = uid ? 'PUT' : 'POST';
-
+        if (!codigo || !descricao) { alert('Código e Descrição são obrigatórios!'); return; }
+        const variacoes = variacoesRaw.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+        if (!variacoes.includes(codigo)) variacoes.push(codigo);
         try {
-            const res = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+            const res = await fetch(uid ? `/api/unidades_tributaveis/${uid}` : '/api/unidades_tributaveis', {
+                method: uid ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ codigo, descricao, variacoes, ordem, ativo })
             });
-
-            if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.error || 'Erro na requisição');
-            }
-
+            if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Erro na requisição'); }
             const modal = bootstrap.Modal.getInstance(document.getElementById('modalUnidadeCompleta'));
             if (modal) modal.hide();
-
             await carregarUnidades();
-
-            if (typeof window.nftAlert === 'function') {
-                window.nftAlert(uid ? '✅ Unidade atualizada com sucesso!' : '✅ Nova unidade cadastrada com sucesso!', 'success');
-            } else {
-                alert('Unidade salva com sucesso!');
-            }
-        } catch (e) {
-            alert('Erro ao salvar unidade: ' + e.message);
-        }
+            if (typeof window.nftAlert === 'function') window.nftAlert(uid ? 'Unidade atualizada com sucesso!' : 'Nova unidade cadastrada com sucesso!', { type: 'success', title: 'Salvo' });
+        } catch (e) { alert('Erro ao salvar unidade: ' + e.message); }
     }
 
     async function excluirUnidade(uid, codigo) {
-        let confirmar = false;
-        if (window.nftConfirm) {
-            confirmar = await window.nftConfirm(`Deseja realmente excluir a unidade ${codigo}?`, {
-                title: 'Excluir Unidade',
-                type: 'danger',
-                confirmText: 'Excluir'
-            });
-        } else {
-            confirmar = confirm(`Deseja realmente excluir a unidade ${codigo}?`);
-        }
-
+        const confirmar = window.nftConfirm
+            ? await window.nftConfirm(`Deseja realmente excluir a unidade ${codigo}?`, { title: 'Excluir Unidade', type: 'danger', confirmText: 'Excluir' })
+            : confirm(`Deseja realmente excluir a unidade ${codigo}?`);
         if (!confirmar) return;
-
         try {
             const res = await fetch(`/api/unidades_tributaveis/${uid}`, { method: 'DELETE' });
             if (!res.ok) throw new Error('Falha ao excluir');
             await carregarUnidades();
-            if (typeof window.nftAlert === 'function') {
-                window.nftAlert(`Unidade ${codigo} excluída com sucesso!`, 'info');
-            }
-        } catch (e) {
-            alert('Erro ao excluir unidade: ' + e.message);
-        }
+            if (typeof window.nftAlert === 'function') window.nftAlert(`Unidade ${codigo} excluída com sucesso!`, { type: 'info', title: 'Excluída' });
+        } catch (e) { alert('Erro ao excluir unidade: ' + e.message); }
     }
 
     async function restaurarPadraoOficial() {
-        let confirmar = false;
-        if (window.nftConfirm) {
-            confirmar = await window.nftConfirm('Deseja recarregar a tabela padrão oficial da SEFAZ com todas as 29 unidades e variações pré-configuradas?', {
-                title: 'Restaurar Tabela Oficial SEFAZ',
-                type: 'question',
-                confirmText: 'Sim, Restaurar'
-            });
-        } else {
-            confirmar = confirm('Deseja restaurar as unidades padrão da SEFAZ?');
-        }
-
+        const confirmar = window.nftConfirm
+            ? await window.nftConfirm('Deseja recarregar a tabela padrão oficial da SEFAZ com todas as 29 unidades e variações pré-configuradas?', { title: 'Restaurar Tabela Oficial SEFAZ', type: 'warning', confirmText: 'Sim, Restaurar' })
+            : confirm('Deseja restaurar as unidades padrão da SEFAZ?');
         if (!confirmar) return;
-
         try {
             const res = await fetch('/api/unidades_tributaveis/reset_padrao', { method: 'POST' });
             if (!res.ok) throw new Error('Falha ao restaurar');
             await carregarUnidades();
-            if (typeof window.nftAlert === 'function') {
-                window.nftAlert('✅ Tabela oficial da SEFAZ restaurada com sucesso!', 'success');
-            } else {
-                alert('Tabela padrão restaurada!');
-            }
-        } catch (e) {
-            alert('Erro ao restaurar: ' + e.message);
-        }
+            if (typeof window.nftAlert === 'function') window.nftAlert('Tabela oficial da SEFAZ restaurada com sucesso!', { type: 'success', title: 'Restaurada' });
+        } catch (e) { alert('Erro ao restaurar: ' + e.message); }
     }
 </script>
-</body>
-</html>
+{% endblock %}

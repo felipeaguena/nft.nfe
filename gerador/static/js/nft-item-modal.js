@@ -29,132 +29,134 @@
     function injectItemModalHTML() {
         if (document.getElementById('modalItemDetalhe')) return;
 
+        const fIn = (id, label, o = {}) => `
+            <div class="nft-field${o.mod ? ' nft-field--' + o.mod : ''}${o.flush ? ' nft-field--flush' : ''}"${o.tone ? ' data-tone="' + o.tone + '"' : ''} data-ui="modal.item.field-${id}">
+                <label class="nft-field__label" for="${id}">${label}${o.req ? ' <span class="nft-field__req">*</span>' : ''}</label>
+                <input type="${o.type || 'text'}"${o.step ? ' step="' + o.step + '"' : ''} class="nft-control${o.cls ? ' ' + o.cls : ''}" id="${id}"${o.val !== undefined ? ' value="' + o.val + '"' : ''}${o.ph ? ' placeholder="' + o.ph + '"' : ''}${o.max ? ' maxlength="' + o.max + '"' : ''}${o.ro ? ' readonly' : ''} title="${o.title || label}" data-ui="modal.item.input-${id}">
+            </div>`;
+
+        const fSel = (id, label, optionsHtml = '', o = {}) => `
+            <div class="nft-field${o.mod ? ' nft-field--' + o.mod : ''}${o.flush ? ' nft-field--flush' : ''}" data-ui="modal.item.field-${id}">
+                <label class="nft-field__label" for="${id}">${label}</label>
+                <select class="nft-control form-select${o.cls ? ' ' + o.cls : ''}" id="${id}" title="${o.title || label}" data-ui="modal.item.select-${id}">${optionsHtml}</select>
+            </div>`;
+
         const modalDiv = document.createElement('div');
         modalDiv.className = 'modal fade';
         modalDiv.id = 'modalItemDetalhe';
         modalDiv.tabIndex = -1;
         modalDiv.setAttribute('aria-labelledby', 'modalItemDetalheTitle');
         modalDiv.setAttribute('aria-hidden', 'true');
+        modalDiv.setAttribute('data-ui', 'modal.item');
 
         modalDiv.innerHTML = `
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content shadow-lg border-0">
+            <div class="modal-content">
                 <!-- CABEÇALHO DO POPUP -->
-                <div class="modal-header border-bottom bg-body-tertiary py-2 px-3">
+                <div class="modal-header" data-ui="modal.item.header">
                     <div class="d-flex align-items-center gap-2">
-                        <div class="d-flex align-items-center justify-content-center bg-primary text-white rounded-2" style="width: 32px; height: 32px;" id="modalItemHeaderIcon">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                        <div class="nft-kpi-icon" data-tone="primary" id="modalItemHeaderIcon">
+                            <i data-lucide="package" class="nft-icon--md"></i>
                         </div>
                         <div>
                             <div class="d-flex align-items-center gap-2">
-                                <h5 class="modal-title fw-bold mb-0 text-body" id="modalItemDetalheTitle">Item da NF-e</h5>
-                                <span class="badge font-monospace bg-info-subtle text-info fw-bold" id="modalItemBadgeNum">#1</span>
+                                <h5 class="modal-title mb-0" id="modalItemDetalheTitle">Item da NF-e</h5>
+                                <span class="nft-badge nft-badge--mono" data-tone="info" id="modalItemBadgeNum" title="Número ou código do item na nota" data-ui="modal.item.badge-num">#1</span>
                             </div>
                             <small class="text-muted" id="modalItemSubtitle">Preenchimento objetivo de produtos, quantidades, rateios e impostos.</small>
                         </div>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar janela" title="Fechar janela" data-ui="modal.item.btn-close"></button>
                 </div>
 
                 <!-- CORPO DO POPUP COM ABAS -->
-                <div class="modal-body p-3">
+                <div class="modal-body" data-ui="modal.item.body">
                     <!-- NAVEGAÇÃO DE SUB-ABAS -->
-                    <ul class="nav nav-tabs nav-fill mb-3" id="modalItemNavTabs" role="tablist">
+                    <ul class="nav nav-tabs nav-fill mb-3" id="modalItemNavTabs" role="tablist" data-ui="modal.item.tabs">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active fw-semibold d-flex align-items-center justify-content-center gap-2 py-2" id="tab-item-geral-btn" data-bs-toggle="tab" data-bs-target="#tab-item-geral" type="button" role="tab">
-                                <span>📦 1. Produto & Valores</span>
-                                <span class="badge font-monospace bg-info-subtle text-info fw-bold" id="modal-badge-resumo-vprod">R$ 0,00</span>
+                            <button class="nav-link active" id="tab-item-geral-btn" data-bs-toggle="tab" data-bs-target="#tab-item-geral" type="button" role="tab" title="Dados do produto, quantidades e valores comerciais" data-ui="modal.item.tab-geral">
+                                <i data-lucide="package" class="nft-icon--sm"></i>
+                                <span>1. Produto &amp; Valores</span>
+                                <span class="nft-badge nft-badge--mono" data-tone="info" id="modal-badge-resumo-vprod" title="Valor total bruto deste item (vProd)" data-ui="modal.item.badge-vprod">R$ 0,00</span>
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link fw-semibold d-flex align-items-center justify-content-center gap-2 py-2" id="tab-item-tributos-btn" data-bs-toggle="tab" data-bs-target="#tab-item-tributos" type="button" role="tab">
-                                <span>⚖️ 2. Tributação (ICMS, IPI, PIS, COFINS, II)</span>
+                            <button class="nav-link" id="tab-item-tributos-btn" data-bs-toggle="tab" data-bs-target="#tab-item-tributos" type="button" role="tab" title="Alíquotas e valores de ICMS, IPI, PIS, COFINS e II" data-ui="modal.item.tab-tributos">
+                                <i data-lucide="scale" class="nft-icon--sm"></i>
+                                <span>2. Tributação (ICMS, IPI, PIS, COFINS, II)</span>
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link fw-semibold d-flex align-items-center justify-content-center gap-2 py-2" id="tab-item-aduaneiro-btn" data-bs-toggle="tab" data-bs-target="#tab-item-aduaneiro" type="button" role="tab">
-                                <span>🌐 3. Declaração Aduaneira (DI / DUIMP) & Trib.</span>
+                            <button class="nav-link" id="tab-item-aduaneiro-btn" data-bs-toggle="tab" data-bs-target="#tab-item-aduaneiro" type="button" role="tab" title="Unidade tributável na SEFAZ e declaração de importação (DI/DUIMP)" data-ui="modal.item.tab-aduaneiro">
+                                <i data-lucide="globe" class="nft-icon--sm"></i>
+                                <span>3. Declaração Aduaneira (DI / DUIMP) &amp; Trib.</span>
                             </button>
                         </li>
                     </ul>
 
                     <!-- CONTEÚDO DAS ABAS -->
-                    <div class="tab-content" id="modalItemTabContent">
-                        
+                    <div class="tab-content" id="modalItemTabContent" data-ui="modal.item.tab-content">
                         <!-- ABA 1: PRODUTO & VALORES -->
-                        <div class="tab-pane fade show active" id="tab-item-geral" role="tabpanel">
+                        <div class="tab-pane fade show active" id="tab-item-geral" role="tabpanel" data-ui="modal.item.pane-geral">
                             <div class="row g-2">
                                 <div class="col-md-2">
-                                    <label class="form-label small fw-bold mb-1">Item (nItem)</label>
-                                    <input type="text" class="form-control form-control-sm font-monospace text-center bg-body-tertiary fw-bold" id="m_item_nItem" readonly value="1">
+                                    ${fIn('m_item_nItem', 'Item (nItem)', { mod: 'sigla', val: '1', ro: true, cls: 'fw-bold', title: 'Número sequencial do item na NF-e (tag XML nItem)' })}
                                 </div>
                                 <div class="col-md-3">
-                                    <label class="form-label small fw-bold mb-1">Cód. Produto (cProd) <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control form-control-sm font-monospace" id="m_item_cProd" placeholder="Ex: 0001 ou SKU">
+                                    ${fIn('m_item_cProd', 'Cód. Produto (cProd)', { mod: 'code', req: true, ph: 'Ex: 0001 ou SKU', title: 'Código interno do produto ou serviço (tag XML cProd)' })}
                                 </div>
                                 <div class="col-md-3">
-                                    <label class="form-label small fw-bold mb-1">Código EAN/GTIN (cEAN)</label>
-                                    <input type="text" class="form-control form-control-sm font-monospace" id="m_item_cEAN" value="SEM GTIN">
+                                    ${fIn('m_item_cEAN', 'Código EAN/GTIN (cEAN)', { mod: 'code', val: 'SEM GTIN', title: 'Código de barras GTIN/EAN do produto ou SEM GTIN (tag XML cEAN)' })}
                                 </div>
                                 <div class="col-md-2">
-                                    <label class="form-label small fw-bold mb-1">CFOP <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control form-control-sm font-monospace text-center fw-bold text-primary" id="m_item_CFOP" placeholder="5102" maxlength="4">
+                                    ${fIn('m_item_CFOP', 'CFOP', { mod: 'sigla', req: true, ph: '5102', max: '4', cls: 'fw-bold text-primary', title: 'Código Fiscal de Operações e Prestações de 4 dígitos (tag XML CFOP)' })}
                                 </div>
                                 <div class="col-md-2">
-                                    <label class="form-label small fw-bold mb-1">Origem Mercad.</label>
-                                    <select class="form-select form-select-sm" id="m_item_orig">
+                                    ${fSel('m_item_orig', 'Origem Mercad.', `
                                         <option value="0">0 - Nacional</option>
                                         <option value="1">1 - Estrang. Import. Direta</option>
                                         <option value="2">2 - Estrang. Mercado Interno</option>
-                                        <option value="3">3 - Nac. Conteúdo Imp. > 40%</option>
+                                        <option value="3">3 - Nac. Conteúdo Imp. &gt; 40%</option>
                                         <option value="4">4 - Nac. Conf. Proc. Básicos</option>
-                                        <option value="5">5 - Nac. Conteúdo Imp. <= 40%</option>
+                                        <option value="5">5 - Nac. Conteúdo Imp. &lt;= 40%</option>
                                         <option value="6">6 - Estrang. sem similar CAMEX</option>
                                         <option value="7">7 - Estrang. Mercado s/ similar</option>
-                                        <option value="8">8 - Nac. Conteúdo Imp. > 70%</option>
-                                    </select>
+                                        <option value="8">8 - Nac. Conteúdo Imp. &gt; 70%</option>
+                                    `, { title: 'Origem da mercadoria na tabela ICMS (tag XML orig)' })}
                                 </div>
 
                                 <div class="col-md-7">
-                                    <label class="form-label small fw-bold mb-1">Descrição do Produto (xProd) <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control form-control-sm" id="m_item_xProd" placeholder="Descrição comercial completa do produto...">
+                                    ${fIn('m_item_xProd', 'Descrição do Produto (xProd)', { req: true, ph: 'Descrição comercial completa do produto...', title: 'Descrição comercial completa do produto ou serviço (tag XML xProd)' })}
                                 </div>
                                 <div class="col-md-3">
-                                    <label class="form-label small fw-bold mb-1">NCM <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control form-control-sm font-monospace" id="m_item_NCM" placeholder="Ex: 84713012" maxlength="8">
+                                    ${fIn('m_item_NCM', 'NCM', { mod: 'code', req: true, ph: 'Ex: 84713012', max: '8', title: 'Código NCM de 8 dígitos da mercadoria (tag XML NCM)' })}
                                 </div>
                                 <div class="col-md-2">
-                                    <label class="form-label small fw-bold mb-1">CEST</label>
-                                    <input type="text" class="form-control form-control-sm font-monospace" id="m_item_CEST" placeholder="Opcional" maxlength="7">
+                                    ${fIn('m_item_CEST', 'CEST', { mod: 'code', ph: 'Opcional', max: '7', title: 'Código Especificador da Substituição Tributária (tag XML CEST)' })}
                                 </div>
 
                                 <!-- CARD DE QUANTIDADE E VALORES -->
                                 <div class="col-12 mt-3">
-                                    <div class="card border bg-body-tertiary p-3">
-                                        <h6 class="fw-bold mb-2 text-primary d-flex align-items-center gap-1">
-                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                                            <span>Quantidades & Valores Comerciais</span>
+                                    <div class="card p-3">
+                                        <h6 class="nft-section-title text-primary">
+                                            <i data-lucide="dollar-sign" class="nft-icon--sm"></i>
+                                            <span>Quantidades &amp; Valores Comerciais</span>
                                         </h6>
                                         <div class="row g-2">
                                             <div class="col-md-2">
-                                                <label class="form-label small mb-1">Un. Comercial (uCom) <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control form-control-sm text-uppercase text-center font-monospace" id="m_item_uCom" value="UN" maxlength="6">
+                                                ${fIn('m_item_uCom', 'Un. Comercial (uCom)', { mod: 'sigla', req: true, val: 'UN', max: '6', title: 'Unidade comercial de venda ou remessa (tag XML uCom)' })}
                                             </div>
                                             <div class="col-md-3">
-                                                <label class="form-label small mb-1">Quantidade (qCom) <span class="text-danger">*</span></label>
-                                                <input type="number" step="0.0001" class="form-control form-control-sm text-end font-monospace fw-semibold" id="m_item_qCom" value="1.0000">
+                                                ${fIn('m_item_qCom', 'Quantidade (qCom)', { mod: 'number', type: 'number', step: '0.0001', req: true, val: '1.0000', cls: 'fw-semibold', title: 'Quantidade comercial do item (tag XML qCom)' })}
                                             </div>
                                             <div class="col-md-3">
-                                                <label class="form-label small mb-1">V. Unitário R$ (vUnCom) <span class="text-danger">*</span></label>
-                                                <input type="number" step="0.0001" class="form-control form-control-sm text-end font-monospace fw-semibold" id="m_item_vUnCom" value="0.0000">
+                                                ${fIn('m_item_vUnCom', 'V. Unitário R$ (vUnCom)', { mod: 'number', type: 'number', step: '0.0001', req: true, val: '0.0000', cls: 'fw-semibold', title: 'Valor unitário comercial em Reais (tag XML vUnCom)' })}
                                             </div>
                                             <div class="col-md-2">
-                                                <label class="form-label small mb-1 fw-bold text-primary">Kg Líquido</label>
-                                                <input type="number" step="0.001" class="form-control form-control-sm text-end font-monospace fw-semibold" id="m_item_pesoL" placeholder="0.000">
+                                                ${fIn('m_item_pesoL', 'Kg Líquido', { mod: 'number', type: 'number', step: '0.001', ph: '0.000', cls: 'fw-semibold', title: 'Peso líquido em quilogramas para unidade tributável e volume' })}
                                             </div>
                                             <div class="col-md-2">
-                                                <label class="form-label small mb-1 fw-bold text-success">Total do Produto R$</label>
-                                                <input type="text" class="form-control form-control-sm text-end font-monospace fw-bold bg-success-subtle text-success border-success-subtle" id="m_item_vProd" readonly value="0.00">
+                                                ${fIn('m_item_vProd', 'Total do Produto R$', { mod: 'number highlight', tone: 'success', val: '0.00', ro: true, cls: 'fw-bold text-success', title: 'Valor total bruto do produto (qCom × vUnCom — tag XML vProd)' })}
                                             </div>
                                         </div>
                                     </div>
@@ -162,27 +164,23 @@
 
                                 <!-- RATEIOS E DESCONTOS -->
                                 <div class="col-12 mt-2">
-                                    <div class="card border p-3">
-                                        <h6 class="fw-bold mb-2 text-secondary d-flex align-items-center gap-1">
-                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
-                                            <span>Rateio de Despesas, Frete & Descontos (R$)</span>
+                                    <div class="card p-3">
+                                        <h6 class="nft-section-title">
+                                            <i data-lucide="git-branch" class="nft-icon--sm"></i>
+                                            <span>Rateio de Despesas, Frete &amp; Descontos (R$)</span>
                                         </h6>
                                         <div class="row g-2">
                                             <div class="col-md-3">
-                                                <label class="form-label small mb-1">Frete (vFrete)</label>
-                                                <input type="number" step="0.01" class="form-control form-control-sm text-end font-monospace" id="m_item_vFrete" value="0.00">
+                                                ${fIn('m_item_vFrete', 'Frete (vFrete)', { mod: 'number', type: 'number', step: '0.01', val: '0.00', title: 'Valor do frete rateado para este item (tag XML vFrete)' })}
                                             </div>
                                             <div class="col-md-3">
-                                                <label class="form-label small mb-1">Seguro (vSeg)</label>
-                                                <input type="number" step="0.01" class="form-control form-control-sm text-end font-monospace" id="m_item_vSeg" value="0.00">
+                                                ${fIn('m_item_vSeg', 'Seguro (vSeg)', { mod: 'number', type: 'number', step: '0.01', val: '0.00', title: 'Valor do seguro rateado para este item (tag XML vSeg)' })}
                                             </div>
                                             <div class="col-md-3">
-                                                <label class="form-label small mb-1">Desconto (vDesc)</label>
-                                                <input type="number" step="0.01" class="form-control form-control-sm text-end font-monospace" id="m_item_vDesc" value="0.00">
+                                                ${fIn('m_item_vDesc', 'Desconto (vDesc)', { mod: 'number', type: 'number', step: '0.01', val: '0.00', title: 'Valor do desconto concedido neste item (tag XML vDesc)' })}
                                             </div>
                                             <div class="col-md-3">
-                                                <label class="form-label small mb-1">Outras Desp. (vOutro)</label>
-                                                <input type="number" step="0.01" class="form-control form-control-sm text-end font-monospace" id="m_item_vOutro" value="0.00">
+                                                ${fIn('m_item_vOutro', 'Outras Desp. (vOutro)', { mod: 'number', type: 'number', step: '0.01', val: '0.00', title: 'Outras despesas acessórias rateadas para este item (tag XML vOutro)' })}
                                             </div>
                                         </div>
                                     </div>
@@ -190,28 +188,28 @@
 
                                 <!-- INFORMAÇÕES ADICIONAIS DO PRODUTO -->
                                 <div class="col-12 mt-2">
-                                    <label class="form-label small fw-bold mb-1">Informações Adicionais do Produto (infAdProd)</label>
-                                    <textarea class="form-control form-control-sm" id="m_item_infAdProd" rows="2" placeholder="Informações técnicas, número de série, lote, observações específicas deste item..."></textarea>
+                                    <div class="nft-field nft-field--flush" data-ui="modal.item.field-m_item_infAdProd">
+                                        <label class="nft-field__label" for="m_item_infAdProd">Informações Adicionais do Produto (infAdProd)</label>
+                                        <textarea class="nft-control" id="m_item_infAdProd" rows="2" placeholder="Informações técnicas, número de série, lote, observações específicas deste item..." title="Informações adicionais impressas abaixo da descrição do item no DANFE (tag XML infAdProd)" data-ui="modal.item.textarea-infAdProd"></textarea>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- ABA 2: TRIBUTAÇÃO -->
-                        <div class="tab-pane fade" id="tab-item-tributos" role="tabpanel">
+                        <div class="tab-pane fade" id="tab-item-tributos" role="tabpanel" data-ui="modal.item.pane-tributos">
                             <!-- BARRA DE AJUSTE RÁPIDO DE REGIME FISCAL DO ITEM -->
-                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 p-2 mb-3 rounded border bg-body-tertiary">
+                            <div class="card p-2 mb-3 d-flex flex-row flex-wrap align-items-center justify-content-between gap-2" data-ui="modal.item.bar-regimes">
                                 <div class="d-flex align-items-center gap-2 flex-wrap">
-                                    <span class="small fw-bold text-secondary text-uppercase" style="font-size: 11px;">Enquadramento Rápido:</span>
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.aplicarRegimeAoItemModal('SUSPENSAO')" title="Aplicar Suspensão (CST 50, cEnq 108/107, PIS/COF 08)">Suspensão</button>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.aplicarRegimeAoItemModal('ISENCAO')" title="Aplicar Isenção (CST 40, cEnq 301, CST IPI 52, PIS/COF 07)">Isenção</button>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.aplicarRegimeAoItemModal('RECOLHIMENTO')" title="Aplicar Recolhimento/Tributada (CST 00, cEnq 999, CST IPI 49, PIS 1.65%, COF 7.60%)">Recolhimento</button>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.aplicarRegimeAoItemModal('IMUNIDADE')" title="Aplicar Imunidade / Reexportação (CST 41, cEnq 999, CST IPI 55, PIS/COF 08)">Imunidade</button>
-                                    </div>
+                                    <span class="small fw-bold text-muted text-uppercase">Enquadramento Rápido:</span>
+                                    <button type="button" class="nft-btn nft-btn--secondary nft-btn--sm" onclick="window.aplicarRegimeAoItemModal('SUSPENSAO')" title="Aplicar Suspensão (CST 50, cEnq 108/107, PIS/COF 08)" data-ui="modal.item.btn-regime-suspensao">Suspensão</button>
+                                    <button type="button" class="nft-btn nft-btn--secondary nft-btn--sm" onclick="window.aplicarRegimeAoItemModal('ISENCAO')" title="Aplicar Isenção (CST 40, cEnq 301, CST IPI 52, PIS/COF 07)" data-ui="modal.item.btn-regime-isencao">Isenção</button>
+                                    <button type="button" class="nft-btn nft-btn--secondary nft-btn--sm" onclick="window.aplicarRegimeAoItemModal('RECOLHIMENTO')" title="Aplicar Recolhimento/Tributada (CST 00, cEnq 999, CST IPI 49, PIS 1.65%, COF 7.60%)" data-ui="modal.item.btn-regime-recolhimento">Recolhimento</button>
+                                    <button type="button" class="nft-btn nft-btn--secondary nft-btn--sm" onclick="window.aplicarRegimeAoItemModal('IMUNIDADE')" title="Aplicar Imunidade / Reexportação (CST 41, cEnq 999, CST IPI 55, PIS/COF 08)" data-ui="modal.item.btn-regime-imunidade">Imunidade</button>
                                 </div>
                                 <div>
-                                    <button type="button" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1" onclick="window.zerarImpostosItemModal()" title="Zerar todas as bases e alíquotas de tributos deste item">
-                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                    <button type="button" class="nft-btn nft-btn--danger nft-btn--sm" onclick="window.zerarImpostosItemModal()" title="Zerar todas as bases e alíquotas de tributos deste item" data-ui="modal.item.btn-zerar-impostos">
+                                        <i data-lucide="trash-2"></i>
                                         <span>Zerar Impostos</span>
                                     </button>
                                 </div>
@@ -220,28 +218,23 @@
                             <div class="row g-3">
                                 <!-- ICMS -->
                                 <div class="col-md-6">
-                                    <div class="card border p-3 h-100 shadow-sm">
-                                        <h6 class="fw-bold mb-2 text-primary border-bottom pb-1">ICMS / CSOSN</h6>
+                                    <div class="card p-3 h-100">
+                                        <h6 class="nft-section-title text-primary">ICMS / CSOSN</h6>
                                         <div class="row g-2">
                                             <div class="col-12">
-                                                <label class="form-label small mb-1">Situação Tributária (CST / CSOSN)</label>
-                                                <select class="form-select form-select-sm font-monospace" id="m_item_CSOSN"></select>
+                                                ${fSel('m_item_CSOSN', 'Situação Tributária (CST / CSOSN)', '', { mod: 'code', title: 'Código de Situação Tributária do ICMS (CST ou CSOSN)' })}
                                             </div>
                                             <div class="col-md-4">
-                                                <label class="form-label small mb-1">% Red. Base</label>
-                                                <input type="number" step="0.01" class="form-control form-control-sm text-end font-monospace" id="m_item_pRedBC" value="0.00">
+                                                ${fIn('m_item_pRedBC', '% Red. Base', { mod: 'number', type: 'number', step: '0.01', val: '0.00', title: 'Percentual de redução da base de cálculo do ICMS (tag XML pRedBC)' })}
                                             </div>
                                             <div class="col-md-4">
-                                                <label class="form-label small mb-1">Base ICMS R$</label>
-                                                <input type="number" step="0.01" class="form-control form-control-sm text-end font-monospace" id="m_item_vBC_ICMS" value="0.00">
+                                                ${fIn('m_item_vBC_ICMS', 'Base ICMS R$', { mod: 'number', type: 'number', step: '0.01', val: '0.00', title: 'Base de cálculo do ICMS em Reais (tag XML vBC)' })}
                                             </div>
                                             <div class="col-md-4">
-                                                <label class="form-label small mb-1">Alíq. ICMS %</label>
-                                                <input type="number" step="0.01" class="form-control form-control-sm text-end font-monospace" id="m_item_pICMS" value="0.00">
+                                                ${fIn('m_item_pICMS', 'Alíq. ICMS %', { mod: 'number', type: 'number', step: '0.01', val: '0.00', title: 'Alíquota do ICMS em percentual (tag XML pICMS)' })}
                                             </div>
                                             <div class="col-12">
-                                                <label class="form-label small fw-bold mb-1">Valor ICMS R$ (vICMS)</label>
-                                                <input type="text" class="form-control form-control-sm text-end font-monospace fw-bold bg-body-tertiary" id="m_item_vICMS" value="0.00">
+                                                ${fIn('m_item_vICMS', 'Valor ICMS R$ (vICMS)', { mod: 'number', val: '0.00', cls: 'fw-bold', title: 'Valor do ICMS calculado em Reais (tag XML vICMS)' })}
                                             </div>
                                         </div>
                                     </div>
@@ -249,28 +242,23 @@
 
                                 <!-- IPI -->
                                 <div class="col-md-6">
-                                    <div class="card border p-3 h-100 shadow-sm">
-                                        <h6 class="fw-bold mb-2 text-secondary border-bottom pb-1">IPI</h6>
+                                    <div class="card p-3 h-100">
+                                        <h6 class="nft-section-title">IPI</h6>
                                         <div class="row g-2">
                                             <div class="col-md-8">
-                                                <label class="form-label small mb-1">CST IPI</label>
-                                                <select class="form-select form-select-sm font-monospace" id="m_item_CST_IPI"></select>
+                                                ${fSel('m_item_CST_IPI', 'CST IPI', '', { mod: 'code', title: 'Código de Situação Tributária do IPI (tag XML CST)' })}
                                             </div>
                                             <div class="col-md-4">
-                                                <label class="form-label small mb-1">cEnq IPI</label>
-                                                <input type="text" class="form-control form-control-sm text-center font-monospace" id="m_item_cEnq" value="999">
+                                                ${fIn('m_item_cEnq', 'cEnq IPI', { mod: 'sigla', val: '999', title: 'Código de Enquadramento Legal do IPI (tag XML cEnq)' })}
                                             </div>
                                             <div class="col-md-4">
-                                                <label class="form-label small mb-1">Base IPI R$</label>
-                                                <input type="number" step="0.01" class="form-control form-control-sm text-end font-monospace" id="m_item_vBC_IPI" value="0.00">
+                                                ${fIn('m_item_vBC_IPI', 'Base IPI R$', { mod: 'number', type: 'number', step: '0.01', val: '0.00', title: 'Base de cálculo do IPI em Reais' })}
                                             </div>
                                             <div class="col-md-4">
-                                                <label class="form-label small mb-1">Alíq. IPI %</label>
-                                                <input type="number" step="0.01" class="form-control form-control-sm text-end font-monospace" id="m_item_pIPI" value="0.00">
+                                                ${fIn('m_item_pIPI', 'Alíq. IPI %', { mod: 'number', type: 'number', step: '0.01', val: '0.00', title: 'Alíquota do IPI em percentual (tag XML pIPI)' })}
                                             </div>
                                             <div class="col-md-4">
-                                                <label class="form-label small mb-1 fw-bold">Valor IPI R$</label>
-                                                <input type="text" class="form-control form-control-sm text-end font-monospace fw-bold bg-body-tertiary" id="m_item_vIPI" value="0.00">
+                                                ${fIn('m_item_vIPI', 'Valor IPI R$', { mod: 'number', val: '0.00', cls: 'fw-bold', title: 'Valor do IPI em Reais (tag XML vIPI)' })}
                                             </div>
                                         </div>
                                     </div>
@@ -278,24 +266,20 @@
 
                                 <!-- PIS -->
                                 <div class="col-md-6">
-                                    <div class="card border p-3 shadow-sm">
-                                        <h6 class="fw-bold mb-2 text-secondary border-bottom pb-1">PIS</h6>
+                                    <div class="card p-3">
+                                        <h6 class="nft-section-title">PIS</h6>
                                         <div class="row g-2">
                                             <div class="col-12">
-                                                <label class="form-label small mb-1">CST PIS</label>
-                                                <select class="form-select form-select-sm font-monospace" id="m_item_CST_PIS"></select>
+                                                ${fSel('m_item_CST_PIS', 'CST PIS', '', { mod: 'code', title: 'Código de Situação Tributária do PIS' })}
                                             </div>
                                             <div class="col-md-4">
-                                                <label class="form-label small mb-1">Base PIS R$</label>
-                                                <input type="number" step="0.01" class="form-control form-control-sm text-end font-monospace" id="m_item_vBC_PIS" value="0.00">
+                                                ${fIn('m_item_vBC_PIS', 'Base PIS R$', { mod: 'number', type: 'number', step: '0.01', val: '0.00', title: 'Base de cálculo do PIS em Reais' })}
                                             </div>
                                             <div class="col-md-4">
-                                                <label class="form-label small mb-1">Alíq. PIS %</label>
-                                                <input type="number" step="0.01" class="form-control form-control-sm text-end font-monospace" id="m_item_pPIS" value="1.65">
+                                                ${fIn('m_item_pPIS', 'Alíq. PIS %', { mod: 'number', type: 'number', step: '0.01', val: '1.65', title: 'Alíquota do PIS em percentual (tag XML pPIS)' })}
                                             </div>
                                             <div class="col-md-4">
-                                                <label class="form-label small mb-1 fw-bold">Valor PIS R$</label>
-                                                <input type="text" class="form-control form-control-sm text-end font-monospace fw-bold bg-body-tertiary" id="m_item_vPIS" value="0.00">
+                                                ${fIn('m_item_vPIS', 'Valor PIS R$', { mod: 'number', val: '0.00', cls: 'fw-bold', title: 'Valor do PIS em Reais (tag XML vPIS)' })}
                                             </div>
                                         </div>
                                     </div>
@@ -303,24 +287,20 @@
 
                                 <!-- COFINS -->
                                 <div class="col-md-6">
-                                    <div class="card border p-3 shadow-sm">
-                                        <h6 class="fw-bold mb-2 text-secondary border-bottom pb-1">COFINS</h6>
+                                    <div class="card p-3">
+                                        <h6 class="nft-section-title">COFINS</h6>
                                         <div class="row g-2">
                                             <div class="col-12">
-                                                <label class="form-label small mb-1">CST COFINS</label>
-                                                <select class="form-select form-select-sm font-monospace" id="m_item_CST_COFINS"></select>
+                                                ${fSel('m_item_CST_COFINS', 'CST COFINS', '', { mod: 'code', title: 'Código de Situação Tributária da COFINS' })}
                                             </div>
                                             <div class="col-md-4">
-                                                <label class="form-label small mb-1">Base COFINS R$</label>
-                                                <input type="number" step="0.01" class="form-control form-control-sm text-end font-monospace" id="m_item_vBC_COFINS" value="0.00">
+                                                ${fIn('m_item_vBC_COFINS', 'Base COFINS R$', { mod: 'number', type: 'number', step: '0.01', val: '0.00', title: 'Base de cálculo da COFINS em Reais' })}
                                             </div>
                                             <div class="col-md-4">
-                                                <label class="form-label small mb-1">Alíq. COFINS %</label>
-                                                <input type="number" step="0.01" class="form-control form-control-sm text-end font-monospace" id="m_item_pCOFINS" value="7.60">
+                                                ${fIn('m_item_pCOFINS', 'Alíq. COFINS %', { mod: 'number', type: 'number', step: '0.01', val: '7.60', title: 'Alíquota da COFINS em percentual (tag XML pCOFINS)' })}
                                             </div>
                                             <div class="col-md-4">
-                                                <label class="form-label small mb-1 fw-bold">Valor COFINS R$</label>
-                                                <input type="text" class="form-control form-control-sm text-end font-monospace fw-bold bg-body-tertiary" id="m_item_vCOFINS" value="0.00">
+                                                ${fIn('m_item_vCOFINS', 'Valor COFINS R$', { mod: 'number', val: '0.00', cls: 'fw-bold', title: 'Valor da COFINS em Reais (tag XML vCOFINS)' })}
                                             </div>
                                         </div>
                                     </div>
@@ -328,24 +308,20 @@
 
                                 <!-- IMPOSTO DE IMPORTAÇÃO (II) & IOF -->
                                 <div class="col-12">
-                                    <div class="card border p-3 shadow-sm bg-body-tertiary">
-                                        <h6 class="fw-bold mb-2 text-heading border-bottom pb-1">Imposto de Importação (II) & Despesas Aduaneiras</h6>
+                                    <div class="card p-3">
+                                        <h6 class="nft-section-title">Imposto de Importação (II) &amp; Despesas Aduaneiras</h6>
                                         <div class="row g-2">
                                             <div class="col-md-3">
-                                                <label class="form-label small mb-1">Base II (R$)</label>
-                                                <input type="number" step="0.01" class="form-control form-control-sm text-end font-monospace" id="m_item_vBC_II" value="0.00">
+                                                ${fIn('m_item_vBC_II', 'Base II (R$)', { mod: 'number', type: 'number', step: '0.01', val: '0.00', title: 'Base de cálculo do Imposto de Importação' })}
                                             </div>
                                             <div class="col-md-3">
-                                                <label class="form-label small mb-1">Desp. Aduaneiras (vDespAdu)</label>
-                                                <input type="number" step="0.01" class="form-control form-control-sm text-end font-monospace" id="m_item_vDespAdu" value="0.00">
+                                                ${fIn('m_item_vDespAdu', 'Desp. Aduaneiras (vDespAdu)', { mod: 'number', type: 'number', step: '0.01', val: '0.00', title: 'Valor das despesas aduaneiras (tag XML vDespAdu)' })}
                                             </div>
                                             <div class="col-md-3">
-                                                <label class="form-label small mb-1">Valor II (vII)</label>
-                                                <input type="number" step="0.01" class="form-control form-control-sm text-end font-monospace" id="m_item_vII" value="0.00">
+                                                ${fIn('m_item_vII', 'Valor II (vII)', { mod: 'number', type: 'number', step: '0.01', val: '0.00', title: 'Valor do Imposto de Importação (tag XML vII)' })}
                                             </div>
                                             <div class="col-md-3">
-                                                <label class="form-label small mb-1">Valor IOF (vIOF)</label>
-                                                <input type="number" step="0.01" class="form-control form-control-sm text-end font-monospace" id="m_item_vIOF" value="0.00">
+                                                ${fIn('m_item_vIOF', 'Valor IOF (vIOF)', { mod: 'number', type: 'number', step: '0.01', val: '0.00', title: 'Valor do IOF aduaneiro (tag XML vIOF)' })}
                                             </div>
                                         </div>
                                     </div>
@@ -354,37 +330,33 @@
                         </div>
 
                         <!-- ABA 3: DECLARAÇÃO ADUANEIRA (DI / DUIMP) & UNIDADE TRIBUTÁVEL -->
-                        <div class="tab-pane fade" id="tab-item-aduaneiro" role="tabpanel">
+                        <div class="tab-pane fade" id="tab-item-aduaneiro" role="tabpanel" data-ui="modal.item.pane-aduaneiro">
                             <div class="row g-3">
                                 <!-- UNIDADES TRIBUTÁVEIS (uTrib) -->
                                 <div class="col-12">
-                                    <div class="card border p-3 bg-body-tertiary">
-                                        <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
-                                            <h6 class="fw-bold mb-0 text-primary">Unidade Tributável na SEFAZ (uTrib / qTrib / vUnTrib)</h6>
-                                            <button type="button" class="btn-nft py-0 px-2" id="btn-copiar-com-para-trib">
-                                                Copiar Comercial ➔ Tributável
+                                    <div class="card p-3">
+                                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 border-bottom pb-2">
+                                            <h6 class="nft-section-title text-primary border-0 pb-0 mb-0">Unidade Tributável na SEFAZ (uTrib / qTrib / vUnTrib)</h6>
+                                            <button type="button" class="nft-btn nft-btn--secondary nft-btn--sm" id="btn-copiar-com-para-trib" title="Copiar unidade, quantidade e valor comercial para os campos tributáveis" data-ui="modal.item.btn-copiar-trib">
+                                                <i data-lucide="copy"></i>
+                                                <span>Copiar Comercial &rarr; Tributável</span>
                                             </button>
                                         </div>
                                         <div class="row g-2">
                                             <div class="col-md-2">
-                                                <label class="form-label small mb-1">Un. Trib (uTrib)</label>
-                                                <input type="text" class="form-control form-control-sm text-uppercase text-center font-monospace" id="m_item_uTrib" value="UN" maxlength="6">
+                                                ${fIn('m_item_uTrib', 'Un. Trib (uTrib)', { mod: 'sigla', val: 'UN', max: '6', title: 'Unidade tributável exigida pela tabela NCM SEFAZ (tag XML uTrib)' })}
                                             </div>
                                             <div class="col-md-2">
-                                                <label class="form-label small mb-1">Qtd. Trib (qTrib)</label>
-                                                <input type="number" step="0.0001" class="form-control form-control-sm text-end font-monospace" id="m_item_qTrib" value="1.0000">
+                                                ${fIn('m_item_qTrib', 'Qtd. Trib (qTrib)', { mod: 'number', type: 'number', step: '0.0001', val: '1.0000', title: 'Quantidade na unidade tributável (tag XML qTrib)' })}
                                             </div>
                                             <div class="col-md-2">
-                                                <label class="form-label small mb-1 fw-bold text-primary">Kg Líquido</label>
-                                                <input type="number" step="0.001" class="form-control form-control-sm text-end font-monospace" id="m_item_pesoL_adu" placeholder="0.000">
+                                                ${fIn('m_item_pesoL_adu', 'Kg Líquido', { mod: 'number', type: 'number', step: '0.001', ph: '0.000', title: 'Peso líquido em quilogramas deste item' })}
                                             </div>
                                             <div class="col-md-3">
-                                                <label class="form-label small mb-1">V. Unit. Trib (vUnTrib)</label>
-                                                <input type="number" step="0.0001" class="form-control form-control-sm text-end font-monospace" id="m_item_vUnTrib" value="0.0000">
+                                                ${fIn('m_item_vUnTrib', 'V. Unit. Trib (vUnTrib)', { mod: 'number', type: 'number', step: '0.0001', val: '0.0000', title: 'Valor unitário de tributação (vProd / qTrib — tag XML vUnTrib)' })}
                                             </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label small mb-1">GTIN Tributável (cEANTrib)</label>
-                                                <input type="text" class="form-control form-control-sm font-monospace" id="m_item_cEANTrib" value="SEM GTIN">
+                                            <div class="col-md-3">
+                                                ${fIn('m_item_cEANTrib', 'GTIN Tributável (cEANTrib)', { mod: 'code', val: 'SEM GTIN', title: 'Código GTIN da unidade tributável ou SEM GTIN (tag XML cEANTrib)' })}
                                             </div>
                                         </div>
                                     </div>
@@ -392,33 +364,27 @@
 
                                 <!-- DADOS DA DI / DUIMP -->
                                 <div class="col-12">
-                                    <div class="card border p-3">
-                                        <h6 class="fw-bold mb-2 text-heading border-bottom pb-1">Declaração de Importação (DI / DUIMP) & Adição</h6>
+                                    <div class="card p-3">
+                                        <h6 class="nft-section-title">Declaração de Importação (DI / DUIMP) &amp; Adição</h6>
                                         <div class="row g-2">
                                             <div class="col-md-3">
-                                                <label class="form-label small mb-1">Número DI/DUIMP (nDI)</label>
-                                                <input type="text" class="form-control form-control-sm font-monospace" id="m_item_nDI" placeholder="Ex: 24/1234567-8">
+                                                ${fIn('m_item_nDI', 'Número DI/DUIMP (nDI)', { mod: 'code', ph: 'Ex: 24/1234567-8', title: 'Número do documento de importação DI/DUIMP (tag XML nDI)' })}
                                             </div>
                                             <div class="col-md-3">
-                                                <label class="form-label small mb-1">Data Registro (dDI)</label>
-                                                <input type="date" class="form-control form-control-sm" id="m_item_dDI">
+                                                ${fIn('m_item_dDI', 'Data Registro (dDI)', { type: 'date', title: 'Data de registro da DI/DUIMP (tag XML dDI)' })}
                                             </div>
                                             <div class="col-md-4">
-                                                <label class="form-label small mb-1">Local Desembaraço (xLocDesemb)</label>
-                                                <input type="text" class="form-control form-control-sm" id="m_item_xLocDesemb" placeholder="Ex: PORTO DE SANTOS">
+                                                ${fIn('m_item_xLocDesemb', 'Local Desembaraço (xLocDesemb)', { ph: 'Ex: PORTO DE SANTOS', title: 'Local onde ocorreu o desembaraço aduaneiro (tag XML xLocDesemb)' })}
                                             </div>
                                             <div class="col-md-2">
-                                                <label class="form-label small mb-1">UF Desemb.</label>
-                                                <input type="text" class="form-control form-control-sm text-uppercase text-center font-monospace" id="m_item_UFDesemb" maxlength="2" placeholder="SP">
+                                                ${fIn('m_item_UFDesemb', 'UF Desemb.', { mod: 'sigla', max: '2', ph: 'SP', title: 'Sigla da UF onde ocorreu o desembaraço aduaneiro (tag XML UFDesemb)' })}
                                             </div>
 
                                             <div class="col-md-3">
-                                                <label class="form-label small mb-1">Data Desembaraço</label>
-                                                <input type="date" class="form-control form-control-sm" id="m_item_dDesemb">
+                                                ${fIn('m_item_dDesemb', 'Data Desembaraço', { type: 'date', title: 'Data do desembaraço aduaneiro (tag XML dDesemb)' })}
                                             </div>
                                             <div class="col-md-3">
-                                                <label class="form-label small mb-1">Via de Transporte</label>
-                                                <select class="form-select form-select-sm" id="m_item_tpViaTransp">
+                                                ${fSel('m_item_tpViaTransp', 'Via de Transporte', `
                                                     <option value="1">1 - Marítima</option>
                                                     <option value="2">2 - Fluvial</option>
                                                     <option value="3">3 - Lacustre</option>
@@ -429,36 +395,30 @@
                                                     <option value="8">8 - Conduto / Rede Transmissão</option>
                                                     <option value="9">9 - Meios Próprios</option>
                                                     <option value="10">10 - Entrada / Saída Ficta</option>
-                                                </select>
+                                                `, { title: 'Via de transporte internacional informada na DI (tag XML tpViaTransp)' })}
                                             </div>
                                             <div class="col-md-3">
-                                                <label class="form-label small mb-1">AFRMM (vAFRMM)</label>
-                                                <input type="number" step="0.01" class="form-control form-control-sm text-end font-monospace" id="m_item_vAFRMM" value="0.00">
+                                                ${fIn('m_item_vAFRMM', 'AFRMM (vAFRMM)', { mod: 'number', type: 'number', step: '0.01', val: '0.00', title: 'Valor da AFRMM — Adicional ao Frete para Renovação da Marinha Mercante (tag XML vAFRMM)' })}
                                             </div>
                                             <div class="col-md-3">
-                                                <label class="form-label small mb-1">Intermediação</label>
-                                                <select class="form-select form-select-sm" id="m_item_tpIntermedio">
+                                                ${fSel('m_item_tpIntermedio', 'Intermediação', `
                                                     <option value="1">1 - Importação Conta Própria</option>
                                                     <option value="2">2 - Importação Conta e Ordem</option>
                                                     <option value="3">3 - Importação por Encomenda</option>
-                                                </select>
+                                                `, { title: 'Forma de importação quanto à intermediação (tag XML tpIntermedio)' })}
                                             </div>
 
                                             <div class="col-md-2">
-                                                <label class="form-label small mb-1">Nº Adição</label>
-                                                <input type="text" class="form-control form-control-sm text-center font-monospace" id="m_item_nAdicao" value="1">
+                                                ${fIn('m_item_nAdicao', 'Nº Adição', { mod: 'sigla', val: '1', title: 'Número da adição dentro da DI (tag XML nAdicao)' })}
                                             </div>
                                             <div class="col-md-2">
-                                                <label class="form-label small mb-1">Seq. Adição</label>
-                                                <input type="text" class="form-control form-control-sm text-center font-monospace" id="m_item_nSeqAdic" value="1">
+                                                ${fIn('m_item_nSeqAdic', 'Seq. Adição', { mod: 'sigla', val: '1', title: 'Número sequencial do item dentro da adição (tag XML nSeqAdic)' })}
                                             </div>
                                             <div class="col-md-4">
-                                                <label class="form-label small mb-1">Cód. Fabricante (cFabricante)</label>
-                                                <input type="text" class="form-control form-control-sm font-monospace" id="m_item_cFabricante" placeholder="Fabricante estrangeiro">
+                                                ${fIn('m_item_cFabricante', 'Cód. Fabricante (cFabricante)', { mod: 'code', ph: 'Fabricante estrangeiro', title: 'Código do fabricante estrangeiro (tag XML cFabricante)' })}
                                             </div>
                                             <div class="col-md-4">
-                                                <label class="form-label small mb-1">Cód. Exportador (cExportador)</label>
-                                                <input type="text" class="form-control form-control-sm font-monospace" id="m_item_cExportador" placeholder="Exportador estrangeiro">
+                                                ${fIn('m_item_cExportador', 'Cód. Exportador (cExportador)', { mod: 'code', ph: 'Exportador estrangeiro', title: 'Código do exportador estrangeiro (tag XML cExportador)' })}
                                             </div>
                                         </div>
                                     </div>
@@ -466,18 +426,16 @@
 
                                 <!-- CÂMBIO & CONVERSÃO -->
                                 <div class="col-12">
-                                    <div class="card border p-3 bg-body-tertiary">
-                                        <h6 class="fw-bold mb-2 text-secondary border-bottom pb-1">Câmbio & Conversão de Moeda Estrangeira</h6>
+                                    <div class="card p-3">
+                                        <h6 class="nft-section-title">Câmbio &amp; Conversão de Moeda Estrangeira</h6>
                                         <div class="row g-2">
                                             <div class="col-md-3">
-                                                <label class="form-label small mb-1">Moeda Utilizada</label>
-                                                <input type="text" class="form-control form-control-sm text-uppercase text-center font-monospace" id="m_item_moeda_conversao" placeholder="USD / EUR">
+                                                ${fIn('m_item_moeda_conversao', 'Moeda Utilizada', { mod: 'sigla', ph: 'USD / EUR', title: 'Sigla da moeda estrangeira utilizada na DI/DUIMP' })}
                                             </div>
                                             <div class="col-md-3">
-                                                <label class="form-label small mb-1">Taxa Câmbio (PTAX)</label>
-                                                <input type="number" step="0.0001" class="form-control form-control-sm text-end font-monospace" id="m_item_taxa_conversao" placeholder="Ex: 5.4321">
+                                                ${fIn('m_item_taxa_conversao', 'Taxa Câmbio (PTAX)', { mod: 'number', type: 'number', step: '0.0001', ph: 'Ex: 5.4321', title: 'Taxa de câmbio utilizada na conversão para Reais' })}
                                             </div>
-                                            <div class="col-md-6 d-flex align-items-end">
+                                            <div class="col-md-6 d-flex align-items-center">
                                                 <small class="text-muted">Esses valores são registrados como referência de conversão da DI/DUIMP para a moeda nacional.</small>
                                             </div>
                                         </div>
@@ -490,17 +448,17 @@
                 </div>
 
                 <!-- RODAPÉ DO POPUP -->
-                <div class="modal-footer border-top bg-body-tertiary py-2 px-3 d-flex justify-content-between">
+                <div class="modal-footer d-flex justify-content-between" data-ui="modal.item.footer">
                     <div>
-                        <button type="button" class="btn-nft d-inline-flex align-items-center gap-1" id="btn-recalcular-impostos-modal" title="Recalcular automaticamente ICMS, IPI, PIS e COFINS com base no Total do Produto">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                        <button type="button" class="nft-btn nft-btn--secondary" id="btn-recalcular-impostos-modal" title="Recalcular automaticamente ICMS, IPI, PIS e COFINS com base no Total do Produto" data-ui="modal.item.btn-recalcular">
+                            <i data-lucide="refresh-cw"></i>
                             <span>Recalcular Impostos</span>
                         </button>
                     </div>
                     <div class="d-flex align-items-center gap-2">
-                        <button type="button" class="btn-nft" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn-nft fw-bold px-3 d-inline-flex align-items-center gap-2 shadow-sm" id="btn-salvar-item-modal">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                        <button type="button" class="nft-btn nft-btn--ghost" data-bs-dismiss="modal" title="Fechar sem salvar alterações do item" data-ui="modal.item.btn-cancelar">Cancelar</button>
+                        <button type="button" class="nft-btn nft-btn--primary" id="btn-salvar-item-modal" title="Confirmar e salvar dados do item na grade da NF-e" data-ui="modal.item.btn-salvar">
+                            <i data-lucide="check"></i>
                             <span id="btn-salvar-item-modal-texto">Salvar Item</span>
                         </button>
                     </div>
@@ -510,6 +468,9 @@
         `;
 
         document.body.appendChild(modalDiv);
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons({ root: modalDiv });
+        }
         vincularEventosCalculosModal();
         carregarCSTsParaModal();
     }

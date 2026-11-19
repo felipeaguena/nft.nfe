@@ -436,35 +436,35 @@ async function enviarNfeSefaz(ambiente = 2) {
 
 function renderArquivosIcons(chave, isAutorizado) {
     if (!chave || chave === 'N/A' || chave === '-' || chave.trim() === '') {
-        return `<span class="text-muted" style="font-size: 11px;">-</span>`;
+        return `<span class="text-muted small">-</span>`;
     }
     
     const chaveLimpa = chave.trim();
     if (isAutorizado) {
         return `
             <div class="d-inline-flex align-items-center justify-content-center gap-1">
-                <a href="/api/sefaz/download/pdf/${chaveLimpa}" target="_blank" class="btn btn-sm btn-outline-danger p-1 d-inline-flex align-items-center justify-content-center" title="Baixar DANFE (PDF)" style="width: 26px; height: 26px; border-radius: 4px;" onclick="event.stopPropagation();">
-                    <i data-lucide="file-text" style="width: 14px; height: 14px;"></i>
+                <a href="/api/sefaz/download/pdf/${chaveLimpa}" target="_blank" class="nft-btn-icon nft-btn-icon--danger nft-btn-icon--sm" title="Baixar DANFE (PDF)" aria-label="Baixar PDF" onclick="event.stopPropagation();" data-ui="sefaz.historico.btn-pdf">
+                    <i data-lucide="file-text"></i>
                 </a>
-                <a href="/api/sefaz/download/xml/${chaveLimpa}" target="_blank" class="btn btn-sm btn-outline-primary p-1 d-inline-flex align-items-center justify-content-center" title="Baixar XML Autorizado" style="width: 26px; height: 26px; border-radius: 4px;" onclick="event.stopPropagation();">
-                    <i data-lucide="file-code" style="width: 14px; height: 14px;"></i>
+                <a href="/api/sefaz/download/xml/${chaveLimpa}" target="_blank" class="nft-btn-icon nft-btn-icon--primary nft-btn-icon--sm" title="Baixar XML Autorizado" aria-label="Baixar XML" onclick="event.stopPropagation();" data-ui="sefaz.historico.btn-xml">
+                    <i data-lucide="file-code"></i>
                 </a>
-                <a href="/api/sefaz/download/zip/${chaveLimpa}" target="_blank" class="btn btn-sm btn-outline-warning p-1 d-inline-flex align-items-center justify-content-center" title="Baixar Pacote Completo (ZIP)" style="width: 26px; height: 26px; border-radius: 4px;" onclick="event.stopPropagation();">
-                    <i data-lucide="archive" style="width: 14px; height: 14px;"></i>
+                <a href="/api/sefaz/download/zip/${chaveLimpa}" target="_blank" class="nft-btn-icon nft-btn-icon--warning nft-btn-icon--sm" title="Baixar Pacote Completo (ZIP)" aria-label="Baixar ZIP" onclick="event.stopPropagation();" data-ui="sefaz.historico.btn-zip">
+                    <i data-lucide="archive"></i>
                 </a>
             </div>
         `;
     } else {
         return `
             <div class="d-inline-flex align-items-center justify-content-center gap-1 opacity-50" title="Disponível após autorização da NF-e na SEFAZ">
-                <span class="btn btn-sm btn-outline-secondary p-1 d-inline-flex align-items-center justify-content-center disabled" style="width: 26px; height: 26px; border-radius: 4px; cursor: not-allowed; pointer-events: none;">
-                    <i data-lucide="file-text" style="width: 14px; height: 14px;"></i>
+                <span class="nft-btn-icon nft-btn-icon--ghost nft-btn-icon--sm" style="cursor: not-allowed; pointer-events: none;">
+                    <i data-lucide="file-text"></i>
                 </span>
-                <span class="btn btn-sm btn-outline-secondary p-1 d-inline-flex align-items-center justify-content-center disabled" style="width: 26px; height: 26px; border-radius: 4px; cursor: not-allowed; pointer-events: none;">
-                    <i data-lucide="file-code" style="width: 14px; height: 14px;"></i>
+                <span class="nft-btn-icon nft-btn-icon--ghost nft-btn-icon--sm" style="cursor: not-allowed; pointer-events: none;">
+                    <i data-lucide="file-code"></i>
                 </span>
-                <span class="btn btn-sm btn-outline-secondary p-1 d-inline-flex align-items-center justify-content-center disabled" style="width: 26px; height: 26px; border-radius: 4px; cursor: not-allowed; pointer-events: none;">
-                    <i data-lucide="archive" style="width: 14px; height: 14px;"></i>
+                <span class="nft-btn-icon nft-btn-icon--ghost nft-btn-icon--sm" style="cursor: not-allowed; pointer-events: none;">
+                    <i data-lucide="archive"></i>
                 </span>
             </div>
         `;
@@ -618,14 +618,14 @@ window.extrairNumeroNfeDeChaveOuRetorno = extrairNumeroNfeDeChaveOuRetorno;
 function renderChaveComBotaoCopiar(chave) {
     const chaveLimpa = String(chave || '').replace(/\D/g, '').trim();
     if (!chaveLimpa || chaveLimpa.length < 20) {
-        return `<span class="text-muted font-monospace" style="font-size: 11px;">${chave || '-'}</span>`;
+        return `<span class="text-muted font-monospace small">${chave || '-'}</span>`;
     }
     const chaveFmt = chaveLimpa.length === 44 ? chaveLimpa.replace(/(\d{4})/g, '$1 ').trim() : chaveLimpa;
     return `
-        <div class="d-inline-flex align-items-center justify-content-center gap-1 font-monospace text-center" style="font-size: 11px; max-width: 100%;">
+        <div class="d-inline-flex align-items-center justify-content-center gap-1 font-monospace text-center small" style="max-width: 100%;">
             <span class="user-select-all" title="Chave de Acesso: ${chaveLimpa}">${chaveFmt}</span>
-            <button type="button" class="btn btn-sm btn-link p-0 text-secondary border-0 ms-1 d-inline-flex align-items-center" onclick="copiarChaveAcesso('${chaveLimpa}', this)" title="Copiar Chave de Acesso" style="line-height: 1; text-decoration: none;">
-                <i data-lucide="copy" style="width: 13px; height: 13px;"></i>
+            <button type="button" class="chave-copy-btn ms-1" onclick="copiarChaveAcesso('${chaveLimpa}', this)" title="Copiar Chave de Acesso" aria-label="Copiar Chave" data-ui="sefaz.historico.btn-copiar-chave">
+                <i data-lucide="copy" class="nft-icon--sm"></i>
             </button>
         </div>
     `;
@@ -793,19 +793,20 @@ function atualizarTabelaHistorico(retorno, chave, ambiente = 2, acaoOrigem = '')
     const motivoRaw = retorno.xmotivo || retorno.message || retorno.error || '';
     const motivoComAcao = formatarMotivoComAcao(motivoRaw, acaoOrigem, retorno);
     
+    tr.setAttribute('data-ui', 'sefaz.historico.row');
     tr.innerHTML = `
-        <td class="align-middle text-nowrap">${now}</td>
-        <td class="align-middle text-center">
-            <span class="badge bg-light text-dark border font-monospace px-2 py-1 fw-bold" style="font-size: 11px;">${nnf}</span>
+        <td data-label="Data/Hora" class="align-middle text-nowrap">${now}</td>
+        <td data-card-title="true" data-label="Nº NF-e" class="align-middle text-center">
+            <span class="nft-badge nft-badge--mono" data-tone="neutral">${nnf}</span>
         </td>
-        <td class="align-middle text-center">${obterTagAmbiente(ambiente)}</td>
-        <td class="text-center align-middle">${renderArquivosIcons(chave, isAutorizado)}</td>
-        <td class="text-center align-middle">${renderChaveComBotaoCopiar(chave)}</td>
-        <td class="align-middle text-center">${obterTagCStat(retorno.cstat, retorno)}</td>
-        <td class="text-start align-middle" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${motivoComAcao}">
+        <td data-label="Ambiente" class="align-middle text-center">${obterTagAmbiente(ambiente)}</td>
+        <td data-label="Arquivos" class="text-center align-middle">${renderArquivosIcons(chave, isAutorizado)}</td>
+        <td data-label="Chave da NF-e" class="text-center align-middle">${renderChaveComBotaoCopiar(chave)}</td>
+        <td data-label="cStat" class="align-middle text-center">${obterTagCStat(retorno.cstat, retorno)}</td>
+        <td data-label="Motivo / Retorno" class="text-start align-middle text-truncate" style="max-width: 250px;" title="${motivoComAcao}">
             ${motivoComAcao}
         </td>
-        <td class="align-middle text-center" style="font-size: 11px;">
+        <td data-label="Protocolo" class="align-middle text-center small font-monospace">
             ${retorno.recibo ? 'R: '+retorno.recibo+'<br>' : ''}
             ${retorno.protocolo ? 'P: '+retorno.protocolo : ''}
         </td>
@@ -971,24 +972,24 @@ function solicitarConfirmacaoComReciboEResumoSefaz(acao, ambiente = 2, notaConte
                 titulo: `Consultar SEFAZ (${ctx.ambNome})`,
                 subtitulo: 'Verifique os dados resumidos da NF-e e, se desejar, informe um recibo/protocolo específico.',
                 btnTexto: 'Consultar SEFAZ',
-                btnClass: 'btn-info text-white',
-                headerBg: 'bg-info text-white',
+                btnClass: 'nft-btn--primary',
+                headerTone: '',
                 icone: 'search'
             },
             cce: {
                 titulo: `Carta de Correção - CC-e (${ctx.ambNome})`,
                 subtitulo: 'Confirme os dados da NF-e e informe opcionalmente o número do recibo/protocolo vinculado.',
                 btnTexto: 'Continuar para CC-e',
-                btnClass: 'btn-warning text-dark fw-bold',
-                headerBg: 'bg-warning text-dark',
+                btnClass: 'nft-btn--warning-solid',
+                headerTone: 'warning',
                 icone: 'file-edit'
             },
             cancelar: {
                 titulo: `Cancelar NF-e (${ctx.ambNome})`,
                 subtitulo: 'Confirme os dados da NF-e e informe opcionalmente o número do recibo/protocolo vinculado.',
                 btnTexto: 'Continuar para Cancelamento',
-                btnClass: 'btn-danger text-white fw-bold',
-                headerBg: 'bg-danger text-white',
+                btnClass: 'nft-btn--danger-solid',
+                headerTone: 'danger',
                 icone: 'x-circle'
             }
         };
@@ -1001,32 +1002,33 @@ function solicitarConfirmacaoComReciboEResumoSefaz(acao, ambiente = 2, notaConte
             modalEl.className = 'modal fade';
             modalEl.tabIndex = -1;
             modalEl.setAttribute('aria-hidden', 'true');
+            modalEl.setAttribute('data-ui', 'modal.sefaz-acao');
             document.body.appendChild(modalEl);
         }
 
         const ambBadge = isHomolog
-            ? `<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Homologação (2)</span>`
-            : `<span class="badge bg-primary-subtle text-primary border border-primary-subtle">Produção (1)</span>`;
+            ? `<span class="nft-badge" data-tone="neutral">Homologação (2)</span>`
+            : `<span class="nft-badge" data-tone="primary">Produção (1)</span>`;
 
         const statusInfo = ctx.status ? `<div class="col-6"><span class="text-muted">Status Atual:</span> <strong>${ctx.status}</strong></div>` : '';
-        const valorInfo = ctx.valorFmt ? `<div class="col-6"><span class="text-muted">Valor Total:</span> <strong class="text-success">${ctx.valorFmt}</strong></div>` : '';
+        const valorInfo = ctx.valorFmt ? `<div class="col-6"><span class="text-muted">Valor Total:</span> <strong class="text-success font-monospace">${ctx.valorFmt}</strong></div>` : '';
 
         modalEl.innerHTML = `
             <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content border-0 shadow-lg">
-                    <div class="modal-header ${cfg.headerBg} py-3">
-                        <div class="d-flex align-items-center gap-2">
-                            <i data-lucide="${cfg.icone}" style="width: 18px; height: 18px;"></i>
-                            <h5 class="modal-title fw-bold mb-0" style="font-size: 1rem;">${cfg.titulo}</h5>
-                        </div>
-                        <button type="button" class="btn-close ${isHomolog || acao === 'cce' ? '' : 'btn-close-white'}" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                <div class="modal-content">
+                    <div class="modal-header"${cfg.headerTone ? ' data-tone="' + cfg.headerTone + '"' : ''} data-ui="modal.sefaz-acao.header">
+                        <h5 class="modal-title mb-0">
+                            <i data-lucide="${cfg.icone}" class="nft-icon--md"></i>
+                            <span>${cfg.titulo}</span>
+                        </h5>
+                        <button type="button" class="btn-close ${cfg.headerTone === 'danger' ? 'btn-close-white' : ''}" data-bs-dismiss="modal" aria-label="Fechar janela" title="Fechar janela" data-ui="modal.sefaz-acao.btn-close"></button>
                     </div>
-                    <div class="modal-body p-3">
+                    <div class="modal-body" data-ui="modal.sefaz-acao.body">
                         <p class="small text-muted mb-3">${cfg.subtitulo}</p>
 
-                        <div class="p-3 rounded border bg-light mb-3" style="font-size: 0.8rem;">
+                        <div class="card p-3 mb-3 small" data-ui="modal.sefaz-acao.resumo">
                             <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
-                                <span class="fw-bold text-uppercase text-secondary" style="font-size: 0.72rem;">Resumo da NF-e</span>
+                                <span class="fw-bold text-uppercase text-muted">Resumo da NF-e</span>
                                 ${ambBadge}
                             </div>
                             <div class="row g-1">
@@ -1037,33 +1039,35 @@ function solicitarConfirmacaoComReciboEResumoSefaz(acao, ambiente = 2, notaConte
                                 ${valorInfo}
                                 <div class="col-12 mt-1 pt-1 border-top">
                                     <span class="text-muted">Último Protocolo/Recibo padrão:</span>
-                                    <span class="badge bg-white text-dark border font-monospace ms-1">${ctx.ultimoProtocoloPadrao || 'Não identificado'}</span>
+                                    <span class="nft-badge nft-badge--mono ms-1" data-tone="neutral">${ctx.ultimoProtocoloPadrao || 'Não identificado'}</span>
                                 </div>
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label for="sefaz-modal-chave-input" class="form-label small fw-bold mb-1">Chave de Acesso (44 dígitos) <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-sm font-monospace" id="sefaz-modal-chave-input" maxlength="54" placeholder="Digite os 44 dígitos da chave de acesso" value="${ctx.chave}">
+                            <div class="nft-field nft-field--code nft-field--flush" data-ui="modal.sefaz-acao.field-chave">
+                                <label for="sefaz-modal-chave-input" class="nft-field__label">Chave de Acesso (44 dígitos) <span class="nft-field__req">*</span></label>
+                                <input type="text" class="nft-control" id="sefaz-modal-chave-input" maxlength="54" placeholder="Digite os 44 dígitos da chave de acesso" value="${ctx.chave}" title="Chave de acesso de 44 dígitos da NF-e" data-ui="modal.sefaz-acao.input-chave">
+                            </div>
                             <div class="d-flex justify-content-between mt-1">
-                                <small class="text-muted" id="sefaz-modal-chave-erro" style="font-size: 0.72rem;">Obrigatório: 44 dígitos numéricos.</small>
-                                <small class="text-muted font-monospace" id="sefaz-modal-chave-count" style="font-size: 0.72rem;">${ctx.chave.length}/44</small>
+                                <small class="text-muted" id="sefaz-modal-chave-erro">Obrigatório: 44 dígitos numéricos.</small>
+                                <small class="text-muted font-monospace" id="sefaz-modal-chave-count">${ctx.chave.length}/44</small>
                             </div>
                         </div>
 
                         <div class="mb-1">
-                            <label for="sefaz-modal-recibo-input" class="form-label small fw-bold mb-1">
-                                Nº do Recibo / Protocolo vinculado <span class="text-muted fw-normal">(Opcional)</span>
-                            </label>
-                            <input type="text" class="form-control form-control-sm font-monospace" id="sefaz-modal-recibo-input" maxlength="30" placeholder="Opcional — deixe em branco para usar o último protocolo padrão">
-                            <small class="text-muted d-block mt-1" style="font-size: 0.72rem;">
+                            <div class="nft-field nft-field--code nft-field--flush" data-ui="modal.sefaz-acao.field-recibo">
+                                <label for="sefaz-modal-recibo-input" class="nft-field__label">Nº do Recibo / Protocolo Vinculado (Opcional)</label>
+                                <input type="text" class="nft-control" id="sefaz-modal-recibo-input" maxlength="30" placeholder="Deixe em branco para usar o último protocolo padrão" title="Número do protocolo ou recibo específico para vincular à ação SEFAZ" data-ui="modal.sefaz-acao.input-recibo">
+                            </div>
+                            <small class="text-muted d-block mt-1">
                                 Informe se desejar direcionar a ação para um recibo/protocolo específico. Se ficar em branco, será usado o último protocolo padrão${ctx.ultimoProtocoloPadrao ? ` (<strong>${ctx.ultimoProtocoloPadrao}</strong>)` : ''}.
                             </small>
                         </div>
                     </div>
-                    <div class="modal-footer bg-light py-2">
-                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-sm ${cfg.btnClass}" id="sefaz-modal-btn-confirmar">${cfg.btnTexto}</button>
+                    <div class="modal-footer" data-ui="modal.sefaz-acao.footer">
+                        <button type="button" class="nft-btn nft-btn--ghost" data-bs-dismiss="modal" title="Cancelar ação SEFAZ" data-ui="modal.sefaz-acao.btn-cancelar">Cancelar</button>
+                        <button type="button" class="nft-btn ${cfg.btnClass}" id="sefaz-modal-btn-confirmar" title="Confirmar chave e continuar ação na SEFAZ" data-ui="modal.sefaz-acao.btn-confirmar">${cfg.btnTexto}</button>
                     </div>
                 </div>
             </div>
@@ -1536,6 +1540,7 @@ function exibirModalDetalhesConsultaSefaz(data) {
         modalEl.className = 'modal fade';
         modalEl.tabIndex = -1;
         modalEl.setAttribute('aria-hidden', 'true');
+        modalEl.setAttribute('data-ui', 'modal.sefaz-detalhes');
         document.body.appendChild(modalEl);
     }
 
@@ -1543,14 +1548,14 @@ function exibirModalDetalhesConsultaSefaz(data) {
     const situacaoTexto = String(data.situacao || '').toUpperCase();
     const isCancelada = Boolean(data.is_cancelada || situacaoTexto.includes('CANCELADA') || data.cstat === '101');
     const isAutorizada = (data.cstat === '100' && !isCancelada);
-    
+
     let statusBadgeHtml = '';
     if (isCancelada) {
-        statusBadgeHtml = `<span class="badge bg-danger text-white fs-6 px-3 py-2 d-inline-flex align-items-center gap-1 shadow-sm" style="background-color: #dc2626 !important; color: #ffffff !important; border-color: #dc2626 !important;"><i data-lucide="x-circle" style="width: 16px; height: 16px; stroke: #ffffff;"></i> CANCELADA</span>`;
+        statusBadgeHtml = `<span class="nft-badge" data-tone="danger"><i data-lucide="x-circle" class="nft-icon--sm"></i> CANCELADA</span>`;
     } else if (isAutorizada) {
-        statusBadgeHtml = `<span class="badge bg-success text-white fs-6 px-3 py-2 d-inline-flex align-items-center gap-1 shadow-sm" style="color: #ffffff !important;"><i data-lucide="check-circle" style="width: 16px; height: 16px; stroke: #ffffff;"></i> AUTORIZADA (EM USO)</span>`;
+        statusBadgeHtml = `<span class="nft-badge" data-tone="success"><i data-lucide="check-circle" class="nft-icon--sm"></i> AUTORIZADA (EM USO)</span>`;
     } else {
-        statusBadgeHtml = `<span class="badge bg-secondary text-white fs-6 px-3 py-2 d-inline-flex align-items-center gap-1 shadow-sm" style="color: #ffffff !important;">${data.cstat} - ${data.xmotivo}</span>`;
+        statusBadgeHtml = `<span class="nft-badge" data-tone="neutral">${data.cstat} - ${data.xmotivo}</span>`;
     }
 
     // Renderiza lista de eventos (se houver)
@@ -1558,13 +1563,13 @@ function exibirModalDetalhesConsultaSefaz(data) {
     if (data.eventos && data.eventos.length > 0) {
         eventosHtml = `
             <div class="mt-3">
-                <h6 class="fw-bold d-flex align-items-center gap-2 mb-2 text-secondary">
-                    <i data-lucide="calendar-check" style="width: 16px; height: 16px;"></i>
-                    Eventos Fiscais Vinculados (${data.eventos.length})
+                <h6 class="nft-section-title">
+                    <i data-lucide="calendar-check" class="nft-icon--sm"></i>
+                    <span>Eventos Fiscais Vinculados (${data.eventos.length})</span>
                 </h6>
-                <div class="table-responsive border rounded bg-white">
-                    <table class="table table-sm table-striped mb-0" style="font-size: 12px;">
-                        <thead class="table-light">
+                <div class="nft-table-wrap table-responsive">
+                    <table class="table table-hover mb-0 nft-table-cards" data-ui="modal.sefaz-detalhes.table-eventos">
+                        <thead>
                             <tr>
                                 <th>Tipo / Evento</th>
                                 <th>Seq</th>
@@ -1576,15 +1581,15 @@ function exibirModalDetalhesConsultaSefaz(data) {
                         <tbody>
                             ${data.eventos.map(ev => `
                                 <tr>
-                                    <td><strong class="text-primary">${ev.descricao}</strong></td>
-                                    <td>${ev.sequencia || '1'}</td>
-                                    <td class="text-nowrap">${ev.data || '-'}</td>
-                                    <td class="font-monospace fw-bold">${ev.protocolo || '-'}</td>
-                                    <td><span class="badge bg-success-subtle text-success">${ev.cstat || '135'} - ${ev.motivo || 'Vinculado'}</span></td>
+                                    <td data-card-title="true"><strong class="text-primary">${ev.descricao}</strong></td>
+                                    <td data-label="Seq" class="font-monospace">${ev.sequencia || '1'}</td>
+                                    <td data-label="Data/Hora" class="text-nowrap">${ev.data || '-'}</td>
+                                    <td data-label="Protocolo" class="font-monospace fw-bold">${ev.protocolo || '-'}</td>
+                                    <td data-label="Status"><span class="nft-badge" data-tone="success">${ev.cstat || '135'} - ${ev.motivo || 'Vinculado'}</span></td>
                                 </tr>
                                 ${ev.detalhe ? `
                                 <tr>
-                                    <td colspan="5" class="bg-light ps-4 small text-muted">
+                                    <td colspan="5" class="ps-4 small text-muted">
                                         <em>Detalhe / Justificativa:</em> ${ev.detalhe}
                                     </td>
                                 </tr>` : ''}
@@ -1597,39 +1602,39 @@ function exibirModalDetalhesConsultaSefaz(data) {
     }
 
     modalEl.innerHTML = `
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content shadow-lg border-0" style="border-radius: 16px; overflow: hidden;">
-                <div class="modal-header ${isCancelada ? 'bg-danger text-white' : (isAutorizada ? 'bg-success-subtle text-success' : 'bg-body-secondary')} py-3 border-bottom" style="${isCancelada ? 'background-color: #dc2626 !important; color: #fff !important;' : ''}">
-                    <h5 class="modal-title fw-bold d-flex align-items-center gap-2">
-                        <i data-lucide="${isCancelada ? 'alert-triangle' : 'shield-check'}" style="width: 22px; height: 22px;"></i>
-                        Situação da NF-e na SEFAZ (${data.ambiente_nome})
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header"${isCancelada ? ' data-tone="danger"' : ''} data-ui="modal.sefaz-detalhes.header">
+                    <h5 class="modal-title mb-0">
+                        <i data-lucide="${isCancelada ? 'alert-triangle' : 'shield-check'}" class="nft-icon--md"></i>
+                        <span>Situação da NF-e na SEFAZ (${data.ambiente_nome})</span>
                     </h5>
-                    <button type="button" class="btn-close ${isCancelada ? 'btn-close-white' : ''}" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    <button type="button" class="btn-close ${isCancelada ? 'btn-close-white' : ''}" data-bs-dismiss="modal" aria-label="Fechar janela" title="Fechar janela" data-ui="modal.sefaz-detalhes.btn-close"></button>
                 </div>
-                <div class="modal-body p-4" style="background-color: var(--surface, #f8fafc);">
-                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 p-3 bg-white border rounded shadow-sm mb-3">
+                <div class="modal-body" data-ui="modal.sefaz-detalhes.body">
+                    <div class="card p-3 mb-3 d-flex flex-row flex-wrap justify-content-between align-items-center gap-3">
                         <div>
                             <span class="text-muted small text-uppercase fw-bold d-block mb-1">Status Oficial SEFAZ</span>
                             <div class="d-flex align-items-center gap-2">
                                 ${statusBadgeHtml}
-                                <span class="badge bg-light text-dark border font-monospace">cStat: ${data.cstat}</span>
+                                <span class="nft-badge nft-badge--mono" data-tone="neutral">cStat: ${data.cstat}</span>
                             </div>
                         </div>
                         <div class="text-end">
                             <span class="text-muted small text-uppercase fw-bold d-block mb-1">Data / Hora Consulta</span>
-                            <span class="small font-monospace text-secondary">${data.dh_recbto || new Date().toLocaleString('pt-BR')}</span>
+                            <span class="small font-monospace text-muted">${data.dh_recbto || new Date().toLocaleString('pt-BR')}</span>
                         </div>
                     </div>
 
                     <!-- Dados da Nota -->
-                    <div class="p-3 bg-white border rounded shadow-sm mb-3">
+                    <div class="card p-3 mb-3">
                         <div class="mb-2">
                             <span class="text-muted small text-uppercase fw-bold d-block">Chave de Acesso (44 Dígitos)</span>
-                            <span class="font-monospace fw-bold text-dark text-break fs-6">${chaveFmt}</span>
+                            <span class="font-monospace fw-bold text-heading text-break">${chaveFmt}</span>
                         </div>
                         <div class="mb-2">
                             <span class="text-muted small text-uppercase fw-bold d-block">Mensagem da SEFAZ</span>
-                            <span class="fw-semibold text-secondary">${data.xmotivo || 'Processamento concluído'}</span>
+                            <span class="fw-semibold">${data.xmotivo || 'Processamento concluído'}</span>
                         </div>
                         <hr class="my-2">
                         <div class="row g-2 pt-1">
@@ -1649,20 +1654,20 @@ function exibirModalDetalhesConsultaSefaz(data) {
                     ${eventosHtml}
 
                     <!-- Links Rápidos -->
-                    <div class="d-flex justify-content-center gap-2 pt-2 mt-3 border-top">
-                        <a href="/api/sefaz/download/pdf/${data.chave}" target="_blank" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1 shadow-sm">
-                            <i data-lucide="file-text" style="width: 14px; height: 14px;"></i> Baixar DANFE (PDF)
+                    <div class="d-flex flex-wrap justify-content-center gap-2 pt-2 mt-3 border-top">
+                        <a href="/api/sefaz/download/pdf/${data.chave}" target="_blank" class="nft-btn nft-btn--danger nft-btn--sm" title="Baixar DANFE em PDF" data-ui="modal.sefaz-detalhes.btn-pdf">
+                            <i data-lucide="file-text"></i> <span>Baixar DANFE (PDF)</span>
                         </a>
-                        <a href="/api/sefaz/download/xml/${data.chave}" target="_blank" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 shadow-sm">
-                            <i data-lucide="file-code" style="width: 14px; height: 14px;"></i> Baixar XML
+                        <a href="/api/sefaz/download/xml/${data.chave}" target="_blank" class="nft-btn nft-btn--secondary nft-btn--sm" title="Baixar XML oficial da NF-e" data-ui="modal.sefaz-detalhes.btn-xml">
+                            <i data-lucide="file-code"></i> <span>Baixar XML</span>
                         </a>
-                        <a href="/api/sefaz/download/zip/${data.chave}" target="_blank" class="btn btn-sm btn-outline-warning d-inline-flex align-items-center gap-1 shadow-sm">
-                            <i data-lucide="archive" style="width: 14px; height: 14px;"></i> Pacote ZIP
+                        <a href="/api/sefaz/download/zip/${data.chave}" target="_blank" class="nft-btn nft-btn--warning nft-btn--sm" title="Baixar Pacote ZIP (PDF + XML)" data-ui="modal.sefaz-detalhes.btn-zip">
+                            <i data-lucide="archive"></i> <span>Pacote ZIP</span>
                         </a>
                     </div>
                 </div>
-                <div class="modal-footer bg-light py-2">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
+                <div class="modal-footer" data-ui="modal.sefaz-detalhes.footer">
+                    <button type="button" class="nft-btn nft-btn--ghost" data-bs-dismiss="modal" title="Fechar janela de detalhes SEFAZ" data-ui="modal.sefaz-detalhes.btn-fechar">Fechar</button>
                 </div>
             </div>
         </div>
@@ -1699,7 +1704,8 @@ function sanitizarTabelaHistoricoSefaz() {
             const nnf = extrairNumeroNfeDeChaveOuRetorno(null, rawChave);
             const tdNnf = document.createElement('td');
             tdNnf.className = "align-middle text-center";
-            tdNnf.innerHTML = `<span class="badge bg-light text-dark border font-monospace px-2 py-1 fw-bold" style="font-size: 11px;">${nnf}</span>`;
+            tdNnf.setAttribute('data-label', 'Nº NF-e');
+            tdNnf.innerHTML = `<span class="nft-badge nft-badge--mono" data-tone="neutral">${nnf}</span>`;
             tr.insertBefore(tdNnf, cells[1]);
         }
 

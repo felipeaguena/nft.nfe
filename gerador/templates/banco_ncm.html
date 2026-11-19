@@ -1,191 +1,117 @@
-<!DOCTYPE html>
+{% extends 'layouts/base.html' %}
+{% import 'macros/ui.html' as ui %}
 
-<html lang="pt-BR">
-<head>
-    <!-- Favicon -->
-    <link href="/static/img/brand/nftlogo.webp" rel="icon" type="image/webp"/>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Grande Tabela NCM - Banco de Dados Unificado (NFT Logistics)</title>
-<!-- Bootstrap 5 CSS -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-<!-- NFT Logistics Theme (Light & Dark) -->
-<link href="/static/css/nft-theme.css?v=4.1" rel="stylesheet"/>
-<link href="/static/css/nft-sidebar.css?v=4.3" rel="stylesheet"/>
-<script src="/static/js/theme.js"></script>
-<!-- Lucide Icons (Minimalist Line SVGs) -->
-<script src="/static/js/lucide.min.js"></script>
-<script src="/static/js/nft-dialogs.js"></script>
-<script defer src="/static/js/nft-sidebar.js?v=3.5"></script>
-<script defer src="/static/js/nft-shortcuts.js?v=1.0"></script>
-</head>
-<body class="has-sidebar">
 {% set sidebar_active = 'banco_ncm' %}
-{% include 'partials/sidebar.html' %}
-<!-- ÁREA PRINCIPAL DE CONTEÚDO (DESLOCADA PELA SIDEBAR) -->
-<div class="nft-main-wrapper">
-  {% set topbar_modulo = 'Banco NCM & Tributação' %}
-  {% set topbar_tag = 'Tabela Fiscal' %}
-  {% include 'partials/topbar.html' %}
-<div class="container-fluid px-4 py-3">
-<!-- Cabeçalho da Página -->
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3 pb-2 border-bottom">
-<div class="d-flex align-items-center gap-3">
+{% set topbar_modulo = 'Banco NCM & Tributação' %}
+{% set topbar_tag = 'Tabela Fiscal' %}
 
-<div>
-<h4 class="mb-0 fw-bold">Grande Tabela NCM &amp; Impostos</h4>
-<small class="text-muted">15.156 registros unificados com Unidades Tributáveis (uTrib) e Alíquotas Oficiais de Importação (II, IPI, PIS, COFINS)</small>
-</div>
-</div>
-<!-- Botões de Ação à Direita -->
-<div class="d-flex align-items-center gap-2">
-<a class="btn-nft btn-header-round shadow-sm text-decoration-none" href="/download_ncm_excel" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Baixar Planilha Excel Oficial (.xlsx)" aria-label="Baixar Planilha Excel Oficial (.xlsx)">
-<i data-lucide="file-spreadsheet"></i>
-</a>
-<a class="btn-nft btn-header-round shadow-sm text-decoration-none" href="/download_ncm_json" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Baixar Dados em JSON" aria-label="Baixar Dados em JSON">
-<i data-lucide="file-code"></i>
-</a>
-</div>
-</div>
-<!-- Cards de Estatisticas -->
-<div class="row g-3 mb-3">
-<div class="col-md-3">
-<div class="card shadow-sm border card-stat py-2 px-3">
-<div class="d-flex justify-content-between align-items-center">
-<div>
-<small class="text-muted fw-bold">TOTAL DE REGISTROS NCM</small>
-<h4 class="mb-0 fw-bold" id="stat-total">15.156</h4>
-</div>
-<i class="text-muted" data-lucide="book-open" style="width: 32px; height: 32px;"></i>
-</div>
-</div>
-</div>
-<div class="col-md-3">
-<div class="card shadow-sm border card-stat py-2 px-3">
-<div class="d-flex justify-content-between align-items-center">
-<div>
-<small class="text-muted fw-bold">uTRIB EXPORTAÇÃO</small>
-<h4 class="mb-0 fw-bold">10.515</h4>
-<small class="text-muted">100% dos 8 dígitos</small>
-</div>
-<i class="text-muted" data-lucide="tag" style="width: 32px; height: 32px;"></i>
-</div>
-</div>
-</div>
-<div class="col-md-3">
-<div class="card shadow-sm border card-stat py-2 px-3">
-<div class="d-flex justify-content-between align-items-center">
-<div>
-<small class="text-muted fw-bold">ALÍQUOTAS II &amp; IPI</small>
-<h4 class="mb-0 fw-bold">100% Mapeadas</h4>
-<small class="text-muted">Camex TEC + Receita TIPI</small>
-</div>
-<i class="text-muted" data-lucide="scale" style="width: 32px; height: 32px;"></i>
-</div>
-</div>
-</div>
-<div class="col-md-3">
-<div class="card shadow-sm border card-stat py-2 px-3">
-<div class="d-flex justify-content-between align-items-center">
-<div>
-<small class="text-muted fw-bold">PIS &amp; COFINS IMPORTAÇÃO</small>
-<h4 class="mb-0 fw-bold">2,10% / 9,65%</h4>
-<small class="text-muted">Lei 10.865/04 (Bens) c/ Desonerações</small>
-</div>
-<i class="text-muted" data-lucide="calculator" style="width: 32px; height: 32px;"></i>
-</div>
-</div>
-</div>
-</div>
-<!-- Filtros de Pesquisa -->
-<div class="card shadow-sm border mb-3 p-3">
-<div class="row g-2 align-items-end">
-<div class="col-md-6">
-<label class="form-label small fw-bold mb-1">Buscar por Código NCM ou Descrição Oficial:</label>
-<div class="input-group input-group-sm">
-<span class="input-group-text bg-light"><i data-lucide="search" style="width: 14px; height: 14px;"></i></span>
-<input class="form-control form-control-sm" id="input-busca" onkeydown="if(event.key==='Enter') pesquisarNcm(1)" placeholder="Ex: 90189099, 4202, bolsas, instrumentos, catalogo..." type="text"/>
-</div>
-</div>
-<div class="col-md-3">
-<label class="form-label small fw-bold mb-1">Filtrar por Unidade Tributável (uTrib):</label>
-<select class="form-select form-select-sm" id="select-utrib" onchange="pesquisarNcm(1)">
-<option value="">Todas as Unidades</option>
-<option value="UN">UN - Unidade</option>
-<option value="KG">KG - Quilograma</option>
-<option value="PC">PC - Peça</option>
-<option value="M">M - Metro</option>
-<option value="M2">M2 - Metro Quadrado</option>
-<option value="M3">M3 - Metro Cúbico</option>
-<option value="PAR">PAR - Par</option>
-<option value="L">L - Litro</option>
-<option value="MIL">MIL - Milheiro</option>
-</select>
-</div>
-<div class="col-md-3 d-flex gap-2">
-<button class="btn-nft w-100 fw-bold" onclick="pesquisarNcm(1)">
-                        Filtrar
-                    </button>
-<button class="btn-nft" onclick="limparFiltros()">
-                        Limpar
-                    </button>
-</div>
-</div>
-</div>
-<!-- Tabela de Resultados -->
-<div class="card shadow-sm border mb-4">
-<div class="card-header d-flex justify-content-between align-items-center py-2 text-secondary">
-            <span class="fw-bold small text-secondary">
-                Mostrando <span class="text-heading fw-bold" id="lbl-contagem">0</span> registros
-            </span>
-<div class="d-flex align-items-center gap-2">
-<small class="text-muted">Por página:</small>
-<select class="form-select form-select-sm" id="select-per-page" onchange="pesquisarNcm(1)" style="width: 80px;">
-<option value="25">25</option>
-<option selected="" value="50">50</option>
-<option value="100">100</option>
-</select>
-</div>
-</div>
-<div class="card-body p-0">
-<div class="table-responsive" style="max-height: 560px;">
-<table class="table table-hover table-striped table-bordered align-middle mb-0 table-ncm">
-<thead class="sticky-top">
-<tr>
-<th style="width: 120px;">Código NCM</th>
-<th class="text-center" style="width: 80px;">uTrib</th>
-<th>Descrição Oficial do NCM</th>
-<th class="text-center" style="width: 85px;">II (%)</th>
-<th class="text-center" style="width: 90px;">IPI (%)</th>
-<th class="text-center" style="width: 85px;">PIS (%)</th>
-<th class="text-center" style="width: 95px;">COFINS (%)</th>
-<th class="text-center" style="width: 95px;">Início</th>
-<th style="width: 130px;">Ato Legal</th>
-</tr>
-</thead>
-<tbody id="tabela-ncm-corpo">
-<tr>
-<td class="text-center py-4 text-muted" colspan="9">Carregando dados da tabela NCM...</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<div class="card-footer bg-white d-flex justify-content-between align-items-center py-2">
-<small class="text-muted" id="lbl-paginacao-info">Página 1 de 1</small>
-<nav>
-<ul class="pagination pagination-sm mb-0" id="paginacao-botoes">
-<!-- Gerado dinamicamente -->
-</ul>
-</nav>
-</div>
-</div>
-</div>
+{% block title %}Grande Tabela NCM — Banco de Dados Unificado (NFT Logistics){% endblock %}
+{% block page_ui_id %}ncm.page.main{% endblock %}
+
+{% block content %}
+  {% call ui.page_header('Grande Tabela NCM & Impostos', subtitle='15.156 registros unificados com Unidades Tributáveis (uTrib) e Alíquotas Oficiais de Importação (II, IPI, PIS, COFINS).', icon='book-open', ui_id='ncm.header') %}
+    {{ ui.btn_icon('file-spreadsheet', 'Baixar Planilha Excel Oficial (.xlsx)', variant='secondary', href='/download_ncm_excel', ui_id='ncm.header.btn-excel') }}
+    {{ ui.btn_icon('file-code', 'Baixar Dados em JSON', variant='ghost', href='/download_ncm_json', ui_id='ncm.header.btn-json') }}
+  {% endcall %}
+
+  <!-- Cards KPI -->
+  <div class="row g-3 mb-3" data-ui="ncm.kpis.grid">
+    <div class="col-lg-3 col-sm-6">
+      {{ ui.kpi_card('Total de Registros NCM', '15.156', id='stat-total', icon='book-open', tone='primary', ui_id='ncm.kpis.total', title='Total de códigos NCM carregados na base oficial') }}
+    </div>
+    <div class="col-lg-3 col-sm-6">
+      {{ ui.kpi_card('uTrib Exportação (8 dígitos)', '10.515', icon='tag', tone='info', ui_id='ncm.kpis.utrib', title='Códigos com unidade tributável de exportação mapeada') }}
+    </div>
+    <div class="col-lg-3 col-sm-6">
+      {{ ui.kpi_card('Alíquotas II & IPI (TEC/TIPI)', '100% Mapeadas', icon='scale', tone='success', ui_id='ncm.kpis.aliquotas', title='Cobertura das alíquotas Camex TEC e Receita TIPI') }}
+    </div>
+    <div class="col-lg-3 col-sm-6">
+      {{ ui.kpi_card('PIS & COFINS Importação', '2,10% / 9,65%', icon='calculator', tone='warning', ui_id='ncm.kpis.piscofins', title='Alíquotas padrão Lei 10.865/04 com desonerações') }}
+    </div>
+  </div>
+
+  <!-- Filtros de Pesquisa -->
+  <div class="card mb-3" data-ui="ncm.filtros.card">
+    <div class="card-body">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-6">
+          {{ ui.field_input('input-busca', 'Buscar por Código NCM ou Descrição Oficial', icon='search', placeholder='Ex: 90189099, 4202, bolsas, instrumentos...', title='Digite código NCM ou palavra-chave e pressione Enter para filtrar', ui_id='ncm.filtros.field-busca', extra_class='nft-field--flush', attrs='onkeydown="if(event.key===\'Enter\') pesquisarNcm(1)"') }}
+        </div>
+        <div class="col-md-3">
+          {% call ui.field_select('select-utrib', 'Unidade Tributável (uTrib)', title='Filtrar NCMs pela unidade tributável oficial', ui_id='ncm.filtros.field-utrib', extra_class='nft-field--flush', attrs='onchange="pesquisarNcm(1)"') %}
+            <option value="">Todas as Unidades</option>
+            <option value="UN">UN - Unidade</option>
+            <option value="KG">KG - Quilograma</option>
+            <option value="PC">PC - Peça</option>
+            <option value="M">M - Metro</option>
+            <option value="M2">M2 - Metro Quadrado</option>
+            <option value="M3">M3 - Metro Cúbico</option>
+            <option value="PAR">PAR - Par</option>
+            <option value="L">L - Litro</option>
+            <option value="MIL">MIL - Milheiro</option>
+          {% endcall %}
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+          {{ ui.btn('Filtrar', variant='primary', icon='search', onclick='pesquisarNcm(1)', title='Aplicar filtros na tabela NCM', ui_id='ncm.filtros.btn-filtrar', extra_class='flex-grow-1') }}
+          {{ ui.btn('Limpar', variant='ghost', icon='x', onclick='limparFiltros()', title='Limpar filtros de pesquisa', ui_id='ncm.filtros.btn-limpar') }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabela de Resultados -->
+  <div class="card mb-4" data-ui="ncm.tabela.card">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <span class="small fw-semibold text-muted">
+        Mostrando <strong class="text-heading" id="lbl-contagem" data-ui="ncm.tabela.contagem">0</strong> registros
+      </span>
+      <div class="d-flex align-items-center gap-2">
+        <label class="small text-muted mb-0" for="select-per-page">Por página:</label>
+        <select class="nft-control form-select" id="select-per-page" onchange="pesquisarNcm(1)" style="width: 84px;" title="Quantidade de registros exibidos por página" data-ui="ncm.tabela.select-per-page">
+          <option value="25">25</option>
+          <option selected value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive" style="max-height: 560px;">
+        <table class="table table-hover table-striped align-middle nft-table-cards" data-ui="ncm.tabela.table">
+          <thead class="sticky-top">
+            <tr>
+              <th>Código NCM</th>
+              <th class="text-center">uTrib</th>
+              <th>Descrição Oficial do NCM</th>
+              <th class="text-center">II (%)</th>
+              <th class="text-center">IPI (%)</th>
+              <th class="text-center">PIS (%)</th>
+              <th class="text-center">COFINS (%)</th>
+              <th class="text-center">Início</th>
+              <th>Ato Legal</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-ncm-corpo" data-ui="ncm.tabela.tbody">
+            <tr><td class="text-center py-4 text-muted" colspan="9">Carregando dados da tabela NCM...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <small class="text-muted" id="lbl-paginacao-info" data-ui="ncm.tabela.paginacao-info">Página 1 de 1</small>
+      <nav aria-label="Paginação NCM">
+        <ul class="pagination pagination-sm mb-0" id="paginacao-botoes" data-ui="ncm.tabela.paginacao"></ul>
+      </nav>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
 <script>
     let paginaAtual = 1;
 
     document.addEventListener('DOMContentLoaded', function() {
         pesquisarNcm(1);
+        if (window.lucide) lucide.createIcons();
     });
 
     function limparFiltros() {
@@ -219,51 +145,46 @@
 
                 let html = '';
                 data.items.forEach(it => {
-                    const utribBadge = it.utrib 
-                        ? `<span class="badge badge-utrib bg-info-subtle text-info fw-bold" title="${it.descricao_utrib || ''}">${it.utrib}</span>` 
-                        : `<span class="text-muted small">-</span>`;
-                    
-                    let iiBadge = '<span class="text-muted small">-</span>';
-                    if (it.aliquota_ii !== null && it.aliquota_ii !== undefined) {
-                        iiBadge = `<span class="badge bg-info-subtle text-info fw-bold">${Number(it.aliquota_ii).toFixed(2)}%</span>`;
-                    }
+                    const utribBadge = it.utrib
+                        ? `<span class="nft-badge nft-badge--mono" data-tone="info" title="${it.descricao_utrib || 'Unidade tributável oficial'}">${it.utrib}</span>`
+                        : `<span class="text-muted">-</span>`;
 
-                    let ipiBadge = '<span class="text-muted small">-</span>';
+                    const iiBadge = (it.aliquota_ii !== null && it.aliquota_ii !== undefined)
+                        ? `<span class="nft-badge nft-badge--mono" data-tone="info" title="Alíquota Imposto de Importação">${Number(it.aliquota_ii).toFixed(2)}%</span>`
+                        : `<span class="text-muted">-</span>`;
+
+                    let ipiBadge = '<span class="text-muted">-</span>';
                     if (it.aliquota_ipi !== null && it.aliquota_ipi !== undefined) {
-                        if (it.aliquota_ipi === 'NT') {
-                            ipiBadge = `<span class="badge bg-info-subtle text-info fw-bold" title="Não Tributado">NT (0%)</span>`;
-                        } else {
-                            ipiBadge = `<span class="badge bg-info-subtle text-info fw-bold">${it.aliquota_ipi}%</span>`;
-                        }
+                        ipiBadge = it.aliquota_ipi === 'NT'
+                            ? `<span class="nft-badge nft-badge--mono" data-tone="neutral" title="Não Tributado">NT (0%)</span>`
+                            : `<span class="nft-badge nft-badge--mono" data-tone="info" title="Alíquota IPI">${it.aliquota_ipi}%</span>`;
                     }
 
-                    let pisBadge = '<span class="text-muted small">-</span>';
-                    if (it.aliquota_pis !== null && it.aliquota_pis !== undefined) {
-                        const isZero = Number(it.aliquota_pis) === 0;
-                        pisBadge = `<span class="badge bg-info-subtle text-info fw-bold" title="${it.regime_pis_cofins || ''}">${Number(it.aliquota_pis).toFixed(2)}%</span>`;
-                    }
+                    const pisBadge = (it.aliquota_pis !== null && it.aliquota_pis !== undefined)
+                        ? `<span class="nft-badge nft-badge--mono" data-tone="info" title="${it.regime_pis_cofins || 'Alíquota PIS Importação'}">${Number(it.aliquota_pis).toFixed(2)}%</span>`
+                        : `<span class="text-muted">-</span>`;
 
-                    let cofinsBadge = '<span class="text-muted small">-</span>';
+                    let cofinsBadge = '<span class="text-muted">-</span>';
                     if (it.aliquota_cofins !== null && it.aliquota_cofins !== undefined) {
                         const isZero = Number(it.aliquota_cofins) === 0;
-                        cofinsBadge = `<span class="badge bg-info-subtle text-info fw-bold" style="${isZero ? '' : 'background-color: #f3e8fd; color: #6f42c1; border-color: #d8b4fe !important;'}" title="${it.regime_pis_cofins || ''}">${Number(it.aliquota_cofins).toFixed(2)}%</span>`;
+                        cofinsBadge = `<span class="nft-badge nft-badge--mono" data-tone="${isZero ? 'info' : 'indigo'}" title="${it.regime_pis_cofins || 'Alíquota COFINS Importação'}">${Number(it.aliquota_cofins).toFixed(2)}%</span>`;
                     }
 
                     const ato = (it.tipo_ato && it.numero_ato) ? `${it.tipo_ato} ${it.numero_ato}/${it.ano_ato}` : '-';
 
                     html += `<tr>
-                        <td class="fw-bold font-monospace">${it.codigo || it.codigo_limpo}</td>
-                        <td class="text-center">${utribBadge}</td>
-                        <td>
+                        <td data-card-title="true" class="fw-bold font-monospace">${it.codigo || it.codigo_limpo}</td>
+                        <td data-label="uTrib" class="text-center">${utribBadge}</td>
+                        <td data-label="Descrição">
                             <div>${it.descricao || '-'}</div>
-                            ${it.descricao_utrib ? `<div class="text-muted" style="font-size: 11px;">uTrib Oficial: <strong>${it.descricao_utrib}</strong></div>` : ''}
+                            ${it.descricao_utrib ? `<small class="text-muted">uTrib Oficial: <strong>${it.descricao_utrib}</strong></small>` : ''}
                         </td>
-                        <td class="text-center">${iiBadge}</td>
-                        <td class="text-center">${ipiBadge}</td>
-                        <td class="text-center">${pisBadge}</td>
-                        <td class="text-center">${cofinsBadge}</td>
-                        <td class="text-center small">${it.data_inicio || '-'}</td>
-                        <td class="small text-muted">${ato}</td>
+                        <td data-label="II (%)" class="text-center">${iiBadge}</td>
+                        <td data-label="IPI (%)" class="text-center">${ipiBadge}</td>
+                        <td data-label="PIS (%)" class="text-center">${pisBadge}</td>
+                        <td data-label="COFINS (%)" class="text-center">${cofinsBadge}</td>
+                        <td data-label="Início" class="text-center">${it.data_inicio || '-'}</td>
+                        <td data-label="Ato Legal" class="text-muted">${ato}</td>
                     </tr>`;
                 });
 
@@ -278,36 +199,27 @@
     function renderPaginacao(page, totalPages) {
         const pag = document.getElementById('paginacao-botoes');
         pag.innerHTML = '';
-
         if (totalPages <= 1) return;
 
         const prevLi = document.createElement('li');
         prevLi.className = `page-item ${page === 1 ? 'disabled' : ''}`;
-        prevLi.innerHTML = `<a class="page-link" href="#" onclick="pesquisarNcm(${page - 1}); return false;">&laquo;</a>`;
+        prevLi.innerHTML = `<a class="page-link" href="#" onclick="pesquisarNcm(${page - 1}); return false;" title="Página anterior" data-ui="ncm.paginacao.prev">&laquo;</a>`;
         pag.appendChild(prevLi);
 
-        let startPage = Math.max(1, page - 2);
-        let endPage = Math.min(totalPages, page + 2);
+        const startPage = Math.max(1, page - 2);
+        const endPage = Math.min(totalPages, page + 2);
 
         for (let p = startPage; p <= endPage; p++) {
             const li = document.createElement('li');
             li.className = `page-item ${p === page ? 'active' : ''}`;
-            li.innerHTML = `<a class="page-link" href="#" onclick="pesquisarNcm(${p}); return false;">${p}</a>`;
+            li.innerHTML = `<a class="page-link" href="#" onclick="pesquisarNcm(${p}); return false;" title="Ir para página ${p}" data-ui="ncm.paginacao.page-${p}">${p}</a>`;
             pag.appendChild(li);
         }
 
         const nextLi = document.createElement('li');
         nextLi.className = `page-item ${page === totalPages ? 'disabled' : ''}`;
-        nextLi.innerHTML = `<a class="page-link" href="#" onclick="pesquisarNcm(${page + 1}); return false;">&raquo;</a>`;
+        nextLi.innerHTML = `<a class="page-link" href="#" onclick="pesquisarNcm(${page + 1}); return false;" title="Próxima página" data-ui="ncm.paginacao.next">&raquo;</a>`;
         pag.appendChild(nextLi);
     }
 </script>
-</div><!-- /container-fluid -->
-<!-- /nft-main-wrapper -->
-<script>
-        document.addEventListener("DOMContentLoaded", function() {
-            if (window.lucide) lucide.createIcons();
-        });
-    </script>
-</body>
-</html>
+{% endblock %}

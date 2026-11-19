@@ -1,336 +1,276 @@
-<!DOCTYPE html>
+{% extends 'layouts/base.html' %}
+{% import 'macros/ui.html' as ui %}
 
-<html lang="pt-BR">
-<head>
-    <!-- Favicon -->
-    <link href="/static/img/brand/nftlogo.webp" rel="icon" type="image/webp"/>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Localidades Oficiais - Países (BACEN), Municípios (IBGE) e CEPs - NFT Logistics</title>
-<!-- Bootstrap 5 CSS -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-<!-- NFT Logistics Theme (Light & Dark) -->
-<link href="/static/css/nft-theme.css?v=4.1" rel="stylesheet"/>
-<link href="/static/css/nft-sidebar.css?v=4.3" rel="stylesheet"/>
-<script src="/static/js/theme.js"></script>
-<!-- Lucide Icons -->
-<script src="/static/js/lucide.min.js"></script>
-<script src="/static/js/nft-dialogs.js"></script>
-<script defer src="/static/js/nft-sidebar.js?v=3.5"></script>
-<script defer src="/static/js/nft-shortcuts.js?v=1.0"></script>
-<script defer src="/static/js/nft-regex-visual.js?v=1.0"></script>
-</head>
-<body class="has-sidebar">
 {% set sidebar_active = 'localidades' %}
-{% include 'partials/sidebar.html' %}
-<!-- ÁREA PRINCIPAL DE CONTEÚDO (DESLOCADA PELA SIDEBAR) -->
-<div class="nft-main-wrapper">
-  {% set topbar_modulo = 'Localidades Oficiais' %}
-  {% set topbar_tag = 'BACEN / IBGE' %}
-  {% include 'partials/topbar.html' %}
-<div class="container-fluid px-4 py-3">
-<!-- Cabeçalho da Página -->
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom gap-2">
-<div class="d-flex align-items-center gap-3">
+{% set topbar_modulo = 'Localidades Oficiais' %}
+{% set topbar_tag = 'BACEN / IBGE' %}
 
-<div>
-<h4 class="mb-0 fw-bold d-flex align-items-center gap-2">
-<i class="text-primary" data-lucide="map-pin"></i>
-<span>Localidades &amp; Códigos Oficiais SEFAZ</span>
-</h4>
-<small class="text-muted">Banco de Dados de Países (BACEN / &lt;cPais&gt;), Municípios (IBGE / &lt;cMun&gt;) e Consulta Inteligente de CEPs</small>
-</div>
-</div>
-</div>
-<!-- Cards de Estatísticas -->
-<div class="row g-3 mb-3">
-<div class="col-md-4">
-<div class="card shadow-sm border card-stat py-2 px-3">
-<div class="d-flex justify-content-between align-items-center">
-<div>
-<small class="text-muted fw-bold">PAÍSES BACEN OFICIAIS</small>
-<h4 class="mb-0 fw-bold" id="stat-paises">255</h4>
-<small class="text-muted">Códigos oficiais SEFAZ (&lt;cPais&gt;)</small>
-</div>
-<i class="text-primary" data-lucide="globe" style="width: 32px; height: 32px;"></i>
-</div>
-</div>
-</div>
-<div class="col-md-4">
-<div class="card shadow-sm border card-stat py-2 px-3">
-<div class="d-flex justify-content-between align-items-center">
-<div>
-<small class="text-muted fw-bold">MUNICÍPIOS DO BRASIL (IBGE)</small>
-<h4 class="mb-0 fw-bold" id="stat-municipios">5.571</h4>
-<small class="text-muted">Todas as 27 Unidades Federativas</small>
-</div>
-<i class="text-success" data-lucide="building" style="width: 32px; height: 32px;"></i>
-</div>
-</div>
-</div>
-<div class="col-md-4">
-<div class="card shadow-sm border card-stat py-2 px-3">
-<div class="d-flex justify-content-between align-items-center">
-<div>
-<small class="text-muted fw-bold">CONSULTA NACIONAL DE CEP</small>
-<h4 class="mb-0 fw-bold">ViaCEP + Cache</h4>
-<small class="text-muted">Preenchimento automático instantâneo</small>
-</div>
-<i class="text-warning" data-lucide="navigation" style="width: 32px; height: 32px;"></i>
-</div>
-</div>
-</div>
-</div>
-<!-- Abas de Navegação -->
-<ul class="nav nav-tabs mb-3" id="localidadesTabs" role="tablist">
-<li class="nav-item" role="presentation">
-<button class="nav-link active fw-bold d-flex align-items-center gap-2" data-bs-target="#tab-paises" data-bs-toggle="tab" id="tab-paises-btn" role="tab" type="button">
-<i data-lucide="globe" style="width: 16px; height: 16px;"></i>
-<span>Países Oficiais (BACEN)</span>
-</button>
-</li>
-<li class="nav-item" role="presentation">
-<button class="nav-link fw-bold d-flex align-items-center gap-2" data-bs-target="#tab-municipios" data-bs-toggle="tab" id="tab-municipios-btn" role="tab" type="button">
-<i data-lucide="map" style="width: 16px; height: 16px;"></i>
-<span>Municípios (IBGE)</span>
-</button>
-</li>
-<li class="nav-item" role="presentation">
-<button class="nav-link fw-bold d-flex align-items-center gap-2" data-bs-target="#tab-cep" data-bs-toggle="tab" id="tab-cep-btn" role="tab" type="button">
-<i data-lucide="search" style="width: 16px; height: 16px;"></i>
-<span>Consulta e Validação de CEP</span>
-</button>
-</li>
-</ul>
-<!-- Conteúdo das Abas -->
-<div class="tab-content">
-<!-- ABA 1: PAÍSES (BACEN) -->
-<div class="tab-pane fade show active card shadow-sm border mb-3 mt-3 p-3" id="tab-paises" role="tabpanel">
-<div class="row g-2 align-items-center mb-3">
-<div class="col-md-6">
-<div class="input-group input-group-sm">
-<span class="input-group-text"><i data-lucide="search" style="width: 14px; height: 14px;"></i></span>
-<input class="form-control form-control-sm" id="search-paises" oninput="filtrarPaises()" placeholder="Buscar país por nome ou código BACEN (ex: Brasil, China, 1058, 160)..." type="text"/>
-<button class="btn-nft" onclick="document.getElementById('search-paises').value=''; filtrarPaises();" type="button">Limpar</button>
-</div>
-</div>
-<div class="col-md-6 text-md-end text-muted small">
-                                    Exibindo <span class="fw-bold text-heading" id="lbl-qtd-paises">0</span> países cadastrados.
-                                </div>
-</div>
-<div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
-<table class="table table-hover table-sm align-middle mb-0" id="tabela-paises-list">
-<thead class="table-light sticky-top">
-<tr>
-<th style="width: 120px;">Código BACEN</th>
-<th>Nome do País (Oficial SEFAZ)</th>
-<th class="text-center" style="width: 140px;">Tipo</th>
-<th class="text-end" style="width: 140px;">Ações</th>
-</tr>
-</thead>
-<tbody id="tbody-paises">
-<tr>
-<td class="text-center py-4 text-muted" colspan="4">Carregando países...</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<!-- ABA 2: MUNICÍPIOS (IBGE) -->
-<div class="tab-pane fade card shadow-sm border mb-3 mt-3 p-3" id="tab-municipios" role="tabpanel">
-<div class="row g-2 align-items-center mb-3">
-<div class="col-md-3">
-<select class="form-select form-select-sm" id="select-uf-filtro" onchange="carregarMunicipios(1)">
-<option value="">Todas as UFs (Brasil inteiro)</option>
-<option value="AC">AC - Acre</option>
-<option value="AL">AL - Alagoas</option>
-<option value="AP">AP - Amapa</option>
-<option value="AM">AM - Amazonas</option>
-<option value="BA">BA - Bahia</option>
-<option value="CE">CE - Ceara</option>
-<option value="DF">DF - Distrito Federal</option>
-<option value="ES">ES - Espirito Santo</option>
-<option value="GO">GO - Goias</option>
-<option value="MA">MA - Maranhao</option>
-<option value="MT">MT - Mato Grosso</option>
-<option value="MS">MS - Mato Grosso do Sul</option>
-<option value="MG">MG - Minas Gerais</option>
-<option value="PA">PA - Para</option>
-<option value="PB">PB - Paraiba</option>
-<option value="PR">PR - Parana</option>
-<option value="PE">PE - Pernambuco</option>
-<option value="PI">PI - Piaui</option>
-<option value="RJ">RJ - Rio de Janeiro</option>
-<option value="RN">RN - Rio Grande do Norte</option>
-<option value="RS">RS - Rio Grande do Sul</option>
-<option value="RO">RO - Rondonia</option>
-<option value="RR">RR - Roraima</option>
-<option value="SC">SC - Santa Catarina</option>
-<option selected="" value="SP">SP - Sao Paulo</option>
-<option value="SE">SE - Sergipe</option>
-<option value="TO">TO - Tocantins</option>
-</select>
-</div>
-<div class="col-md-5">
-<div class="input-group input-group-sm">
-<span class="input-group-text"><i data-lucide="search" style="width: 14px; height: 14px;"></i></span>
-<input class="form-control form-control-sm" id="search-municipios" onkeydown="if(event.key==='Enter') carregarMunicipios(1)" placeholder="Buscar municipio ou codigo IBGE (ex: Sao Paulo, 3550308)..." type="text"/>
-<button class="btn-nft" onclick="carregarMunicipios(1)" type="button">Buscar</button>
-</div>
-</div>
-<div class="col-md-4 text-md-end text-muted small">
-                                    Total: <span class="fw-bold text-heading" id="lbl-total-municipios">0</span> municípios encontrados.
-                                </div>
-</div>
-<div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
-<table class="table table-hover table-sm align-middle mb-0">
-<thead class="table-light sticky-top">
-<tr>
-<th style="width: 140px;">Cód. IBGE (&lt;cMun&gt;)</th>
-<th>Nome do Município (&lt;xMun&gt;)</th>
-<th class="text-center" style="width: 80px;">UF</th>
-<th class="text-center" style="width: 100px;">Cód. UF</th>
-<th class="text-end" style="width: 120px;">Ações</th>
-</tr>
-</thead>
-<tbody id="tbody-municipios">
-<tr>
-<td class="text-center py-4 text-muted" colspan="5">Carregando municípios...</td>
-</tr>
-</tbody>
-</table>
-</div>
-<!-- Paginação -->
-<div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
-<span class="small text-muted" id="lbl-paginacao-mun">Página 1</span>
-<div class="btn-group btn-group-sm">
-<button class="btn-nft" disabled="" id="btn-mun-prev" onclick="mudarPaginaMun(-1)" type="button">Anterior</button>
-<button class="btn-nft" id="btn-mun-next" onclick="mudarPaginaMun(1)" type="button">Próxima</button>
-</div>
-</div>
-</div>
-<!-- ABA 3: CONSULTA DE CEP -->
-<div class="tab-pane fade" id="tab-cep" role="tabpanel">
-<div class="row g-3 mt-3">
-<div class="col-lg-5">
-<div class="card shadow-sm border h-100">
-<div class="card-header py-2 fw-bold d-flex align-items-center gap-2 text-secondary">
-<i data-lucide="search" style="width: 16px; height: 16px;"></i>
-<span>Consulta Direta de CEP</span>
-</div>
-<div class="card-body p-3">
-<label class="form-label small fw-bold mb-1" for="input-teste-cep">Informe o CEP</label>
-<div class="input-group input-group-sm mb-2">
-<input class="form-control form-control-sm font-monospace fw-bold" id="input-teste-cep" maxlength="9" placeholder="00000-000 ou 99999-999" type="text"/>
-<button class="btn-nft fw-bold d-flex align-items-center gap-1" id="btn-consultar-cep" onclick="executarConsultaCep()" type="button">
-<i data-lucide="search" style="width: 14px; height: 14px;"></i>
-<span>Consultar</span>
-</button>
-</div>
-<small class="text-muted d-block mb-3">
-                                        Consulte qualquer CEP brasileiro para obter logradouro, bairro, cidade, UF e código IBGE. Para destinatários estrangeiros, digite <code>99999-999</code>.
-                                    </small>
-<div class="border rounded p-2 bg-light mb-3">
-<div class="small fw-bold text-muted mb-2">Consultas Rápidas de Teste:</div>
-<div class="d-flex flex-wrap gap-2">
-<button class="btn-nft" onclick="testarCepPredefinido('99999-999')" type="button">
-                                                Exterior (99999-999)
-                                            </button>
-<button class="btn-nft" onclick="testarCepPredefinido('01001-000')" type="button">
-                                                Praça da Sé (SP)
-                                            </button>
-<button class="btn-nft" onclick="testarCepPredefinido('05314-000')" type="button">
-                                                Vila Leopoldina (SP)
-                                            </button>
-<button class="btn-nft" onclick="testarCepPredefinido('20040-002')" type="button">
-                                                Rio de Janeiro (RJ)
-                                            </button>
-<button class="btn-nft" onclick="testarCepPredefinido('70150-900')" type="button">
-                                                Brasília (DF)
-                                            </button>
-</div>
-</div>
-<div class="alert alert-info py-2 px-3 small mb-0">
-<div class="fw-bold mb-1"><i data-lucide="info" style="width: 14px; height: 14px;"></i> Como Funciona o Preenchimento Automático:</div>
-                                        Ao preencher o CEP no Emitente, Destinatário ou Transporte das telas de emissão, o sistema busca na base local e no ViaCEP e autopreenche todas as tags do XML.
-                                    </div>
-</div>
-</div>
-</div>
-<div class="col-lg-7">
-<div class="card shadow-sm border h-100">
-<div class="card-header py-2 fw-bold d-flex align-items-center justify-content-between text-secondary">
-<div class="d-flex align-items-center gap-2">
-<i class="text-success" data-lucide="check-circle" style="width: 16px; height: 16px;"></i>
-<span>Resultado da Consulta</span>
-</div>
-<span class="badge font-monospace bg-info-subtle text-info fw-bold" id="badge-cep-status">Aguardando consulta</span>
-</div>
-<div class="card-body p-3">
-<div class="text-center py-5 text-muted" id="resultado-cep-vazio">
-<i class="mb-2 text-secondary opacity-50" data-lucide="map-pin" style="width: 48px; height: 48px;"></i>
-<p class="mb-0">Digite um CEP ao lado e clique em "Consultar" para visualizar os dados retornados.</p>
-</div>
-<div id="resultado-cep-detalhes" style="display: none;">
-<div class="row g-2">
-<div class="col-sm-4">
-<label class="form-label small text-muted mb-0">CEP Formatado</label>
-<div class="fw-bold font-monospace fs-5 text-primary" id="res-cep">-</div>
-</div>
-<div class="col-sm-4">
-<label class="form-label small text-muted mb-0">CEP Limpo (XML)</label>
-<div class="fw-bold font-monospace fs-5" id="res-cep-limpo">-</div>
-</div>
-<div class="col-sm-4">
-<label class="form-label small text-muted mb-0">Origem da Resposta</label>
-<div class="pt-1" id="res-origem"><span class="badge bg-info-subtle text-info fw-bold">Cache SQLite</span></div>
-</div>
-<div class="col-12"><hr class="my-2"/></div>
-<div class="col-sm-8">
-<label class="form-label small text-muted mb-0">Logradouro (xLgr)</label>
-<div class="fw-bold" id="res-logradouro">-</div>
-</div>
-<div class="col-sm-4">
-<label class="form-label small text-muted mb-0">Bairro (xBairro)</label>
-<div class="fw-bold" id="res-bairro">-</div>
-</div>
-<div class="col-sm-6">
-<label class="form-label small text-muted mb-0">Município (xMun)</label>
-<div class="fw-bold" id="res-municipio">-</div>
-</div>
-<div class="col-sm-2">
-<label class="form-label small text-muted mb-0">UF</label>
-<div class="fw-bold" id="res-uf">-</div>
-</div>
-<div class="col-sm-4">
-<label class="form-label small text-muted mb-0">Código IBGE (cMun)</label>
-<div class="fw-bold font-monospace text-success" id="res-ibge">-</div>
-</div>
-</div>
-<div class="mt-4 p-2 bg-light border rounded">
-<small class="text-muted fw-bold d-block mb-1">Tags XML Geradas Automaticamente:</small>
-<pre class="mb-0 font-monospace small bg-dark text-white p-2 rounded" id="res-xml-tags">&lt;enderDest&gt;...&lt;/enderDest&gt;</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-<!-- Scripts Bootstrap e Funções -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% block title %}Localidades Oficiais (BACEN, IBGE, CEPs) — NFT Logistics{% endblock %}
+{% block page_ui_id %}localidades.page.main{% endblock %}
+
+{% block content %}
+  {{ ui.page_header('Localidades & Códigos Oficiais SEFAZ', subtitle='Banco de Dados de Países (BACEN / <cPais>), Municípios (IBGE / <cMun>) e Consulta Inteligente de CEPs.', icon='map-pin', ui_id='localidades.header') }}
+
+  <!-- Cards KPI -->
+  <div class="row g-3 mb-3" data-ui="localidades.kpis.grid">
+    <div class="col-md-4">
+      {{ ui.kpi_card('Países BACEN Oficiais (<cPais>)', '255', id='stat-paises', icon='globe', tone='primary', ui_id='localidades.kpis.paises', title='Total de países oficiais da tabela BACEN') }}
+    </div>
+    <div class="col-md-4">
+      {{ ui.kpi_card('Municípios do Brasil (IBGE)', '5.571', id='stat-municipios', icon='building', tone='success', ui_id='localidades.kpis.municipios', title='Total de municípios brasileiros nas 27 UFs') }}
+    </div>
+    <div class="col-md-4">
+      {{ ui.kpi_card('Consulta Nacional de CEP', 'ViaCEP + Cache', icon='navigation', tone='warning', ui_id='localidades.kpis.cep', title='Consulta integrada ViaCEP com cache local SQLite') }}
+    </div>
+  </div>
+
+  <!-- Abas de Navegação -->
+  <ul class="nav nav-tabs mb-3" id="localidadesTabs" role="tablist" data-ui="localidades.tabs.nav">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" data-bs-target="#tab-paises" data-bs-toggle="tab" id="tab-paises-btn" role="tab" type="button" title="Consultar tabela oficial de países BACEN" data-ui="localidades.tabs.btn-paises">
+        <i data-lucide="globe" class="nft-icon--sm"></i>
+        <span>Países Oficiais (BACEN)</span>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-target="#tab-municipios" data-bs-toggle="tab" id="tab-municipios-btn" role="tab" type="button" title="Consultar tabela oficial de municípios IBGE" data-ui="localidades.tabs.btn-municipios">
+        <i data-lucide="map" class="nft-icon--sm"></i>
+        <span>Municípios (IBGE)</span>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-target="#tab-cep" data-bs-toggle="tab" id="tab-cep-btn" role="tab" type="button" title="Testar consulta e validação de CEP brasileiro ou exterior" data-ui="localidades.tabs.btn-cep">
+        <i data-lucide="search" class="nft-icon--sm"></i>
+        <span>Consulta e Validação de CEP</span>
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content" data-ui="localidades.tabs.content">
+    <!-- ABA 1: PAÍSES (BACEN) -->
+    <div class="tab-pane fade show active" id="tab-paises" role="tabpanel" data-ui="localidades.paises.pane">
+      <div class="row g-2 align-items-end mb-3">
+        <div class="col-md-6">
+          {% call ui.field_wrap('search-paises', 'Buscar país por nome ou código BACEN', ui_id='localidades.paises.field-busca', extra_class='nft-field--flush') %}
+            <div class="input-group">
+              <span class="input-group-text"><i data-lucide="search" class="nft-icon--sm"></i></span>
+              <input class="nft-control" id="search-paises" oninput="filtrarPaises()" placeholder="Ex: Brasil, China, 1058, 160..." title="Filtrar países por nome ou código BACEN" type="text" data-ui="localidades.paises.input-busca"/>
+              <button class="nft-btn nft-btn--ghost" onclick="document.getElementById('search-paises').value=''; filtrarPaises();" title="Limpar filtro de países" type="button" data-ui="localidades.paises.btn-limpar">Limpar</button>
+            </div>
+          {% endcall %}
+        </div>
+        <div class="col-md-6 text-md-end text-muted small">
+          Exibindo <strong class="text-heading" id="lbl-qtd-paises" data-ui="localidades.paises.total">0</strong> países cadastrados.
+        </div>
+      </div>
+
+      <div class="nft-table-wrap table-responsive" style="max-height: 520px;">
+        <table class="table table-hover align-middle nft-table-cards" id="tabela-paises-list" data-ui="localidades.paises.table">
+          <thead class="sticky-top">
+            <tr>
+              <th>Código BACEN</th>
+              <th>Nome do País (Oficial SEFAZ)</th>
+              <th class="text-center">Tipo</th>
+              <th class="text-end">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-paises" data-ui="localidades.paises.tbody">
+            <tr><td class="text-center py-4 text-muted" colspan="4">Carregando países...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ABA 2: MUNICÍPIOS (IBGE) -->
+    <div class="tab-pane fade" id="tab-municipios" role="tabpanel" data-ui="localidades.municipios.pane">
+      <div class="row g-2 align-items-end mb-3">
+        <div class="col-md-3">
+          {% call ui.field_select('select-uf-filtro', 'Estado (UF)', title='Filtrar municípios por Unidade Federativa', ui_id='localidades.municipios.field-uf', extra_class='nft-field--flush', attrs='onchange="carregarMunicipios(1)"') %}
+            <option value="">Todas as UFs (Brasil inteiro)</option>
+            <option value="AC">AC - Acre</option><option value="AL">AL - Alagoas</option>
+            <option value="AP">AP - Amapá</option><option value="AM">AM - Amazonas</option>
+            <option value="BA">BA - Bahia</option><option value="CE">CE - Ceará</option>
+            <option value="DF">DF - Distrito Federal</option><option value="ES">ES - Espírito Santo</option>
+            <option value="GO">GO - Goiás</option><option value="MA">MA - Maranhão</option>
+            <option value="MT">MT - Mato Grosso</option><option value="MS">MS - Mato Grosso do Sul</option>
+            <option value="MG">MG - Minas Gerais</option><option value="PA">PA - Pará</option>
+            <option value="PB">PB - Paraíba</option><option value="PR">PR - Paraná</option>
+            <option value="PE">PE - Pernambuco</option><option value="PI">PI - Piauí</option>
+            <option value="RJ">RJ - Rio de Janeiro</option><option value="RN">RN - Rio Grande do Norte</option>
+            <option value="RS">RS - Rio Grande do Sul</option><option value="RO">RO - Rondônia</option>
+            <option value="RR">RR - Roraima</option><option value="SC">SC - Santa Catarina</option>
+            <option selected value="SP">SP - São Paulo</option>
+            <option value="SE">SE - Sergipe</option><option value="TO">TO - Tocantins</option>
+          {% endcall %}
+        </div>
+        <div class="col-md-5">
+          {% call ui.field_wrap('search-municipios', 'Buscar município ou código IBGE', ui_id='localidades.municipios.field-busca', extra_class='nft-field--flush') %}
+            <div class="input-group">
+              <span class="input-group-text"><i data-lucide="search" class="nft-icon--sm"></i></span>
+              <input class="nft-control" id="search-municipios" onkeydown="if(event.key==='Enter') carregarMunicipios(1)" placeholder="Ex: São Paulo, 3550308..." title="Digite o nome do município ou código IBGE e pressione Enter" type="text" data-ui="localidades.municipios.input-busca"/>
+              <button class="nft-btn nft-btn--primary" onclick="carregarMunicipios(1)" title="Executar busca de municípios" type="button" data-ui="localidades.municipios.btn-buscar">Buscar</button>
+            </div>
+          {% endcall %}
+        </div>
+        <div class="col-md-4 text-md-end text-muted small">
+          Total: <strong class="text-heading" id="lbl-total-municipios" data-ui="localidades.municipios.total">0</strong> municípios encontrados.
+        </div>
+      </div>
+
+      <div class="nft-table-wrap table-responsive" style="max-height: 520px;">
+        <table class="table table-hover align-middle nft-table-cards" data-ui="localidades.municipios.table">
+          <thead class="sticky-top">
+            <tr>
+              <th>Cód. IBGE (&lt;cMun&gt;)</th>
+              <th>Nome do Município (&lt;xMun&gt;)</th>
+              <th class="text-center">UF</th>
+              <th class="text-center">Cód. UF</th>
+              <th class="text-end">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-municipios" data-ui="localidades.municipios.tbody">
+            <tr><td class="text-center py-4 text-muted" colspan="5">Carregando municípios...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top flex-wrap gap-2" data-ui="localidades.municipios.paginacao">
+        <small class="text-muted" id="lbl-paginacao-mun">Página 1</small>
+        <div class="d-flex gap-2">
+          {{ ui.btn('Anterior', variant='ghost', size='sm', icon='chevron-left', id='btn-mun-prev', onclick='mudarPaginaMun(-1)', title='Voltar para página anterior de municípios', ui_id='localidades.municipios.btn-prev', attrs='disabled') }}
+          {{ ui.btn('Próxima', variant='secondary', size='sm', icon='chevron-right', id='btn-mun-next', onclick='mudarPaginaMun(1)', title='Avançar para próxima página de municípios', ui_id='localidades.municipios.btn-next') }}
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA 3: CONSULTA DE CEP -->
+    <div class="tab-pane fade" id="tab-cep" role="tabpanel" data-ui="localidades.cep.pane">
+      <div class="row g-3">
+        <div class="col-lg-5">
+          <div class="card h-100" data-ui="localidades.cep.card-consulta">
+            <div class="card-header fw-bold d-flex align-items-center gap-2">
+              <i data-lucide="search" class="nft-icon--md text-primary"></i>
+              <span>Consulta Direta de CEP</span>
+            </div>
+            <div class="card-body d-flex flex-column gap-3">
+              {% call ui.field_wrap('input-teste-cep', 'Informe o CEP', modifier='code', help='Consulte qualquer CEP brasileiro ou digite 99999-999 para destinatários estrangeiros.', ui_id='localidades.cep.field-input', extra_class='nft-field--flush') %}
+                <div class="input-group">
+                  <input class="nft-control fw-bold" id="input-teste-cep" maxlength="9" onkeydown="if(event.key==='Enter') executarConsultaCep()" placeholder="00000-000 ou 99999-999" title="Digite o CEP para consulta no cache SQLite ou ViaCEP" type="text" data-ui="localidades.cep.input"/>
+                  <button class="nft-btn nft-btn--primary" id="btn-consultar-cep" onclick="executarConsultaCep()" title="Consultar dados oficiais do CEP informado" type="button" data-ui="localidades.cep.btn-consultar">
+                    <i data-lucide="search"></i>
+                    <span>Consultar</span>
+                  </button>
+                </div>
+              {% endcall %}
+
+              <div class="nft-section-box" data-ui="localidades.cep.atalhos">
+                <span class="nft-kv__label d-block mb-2">Consultas Rápidas de Teste</span>
+                <div class="d-flex flex-wrap gap-2">
+                  {{ ui.btn('Exterior (99999-999)', variant='secondary', size='sm', onclick="testarCepPredefinido('99999-999')", title='Testar CEP padrão para exterior', ui_id='localidades.cep.btn-teste-ex') }}
+                  {{ ui.btn('Praça da Sé (SP)', variant='secondary', size='sm', onclick="testarCepPredefinido('01001-000')", title='Testar CEP 01001-000 (São Paulo)', ui_id='localidades.cep.btn-teste-sp1') }}
+                  {{ ui.btn('Vila Leopoldina (SP)', variant='secondary', size='sm', onclick="testarCepPredefinido('05314-000')", title='Testar CEP 05314-000 (São Paulo)', ui_id='localidades.cep.btn-teste-sp2') }}
+                  {{ ui.btn('Rio de Janeiro (RJ)', variant='secondary', size='sm', onclick="testarCepPredefinido('20040-002')", title='Testar CEP 20040-002 (Rio de Janeiro)', ui_id='localidades.cep.btn-teste-rj') }}
+                  {{ ui.btn('Brasília (DF)', variant='secondary', size='sm', onclick="testarCepPredefinido('70150-900')", title='Testar CEP 70150-900 (Brasília)', ui_id='localidades.cep.btn-teste-df') }}
+                </div>
+              </div>
+
+              <div class="alert alert-info mb-0">
+                <div class="fw-bold mb-1 d-flex align-items-center gap-1"><i data-lucide="info" class="nft-icon--sm"></i> Preenchimento Automático</div>
+                Ao informar o CEP no Emitente, Destinatário ou Transporte, o sistema consulta a base local e o ViaCEP para preencher automaticamente as tags do XML.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-7">
+          <div class="card h-100" data-ui="localidades.cep.card-resultado">
+            <div class="card-header d-flex align-items-center justify-content-between gap-2">
+              <span class="fw-bold d-inline-flex align-items-center gap-2">
+                <i class="text-success nft-icon--md" data-lucide="check-circle"></i>
+                <span>Resultado da Consulta</span>
+              </span>
+              {{ ui.badge('Aguardando consulta', tone='info', mono=True, id='badge-cep-status', title='Status da última consulta de CEP', ui_id='localidades.cep.badge-status') }}
+            </div>
+            <div class="card-body">
+              <div class="text-center py-5 text-muted" id="resultado-cep-vazio">
+                <i class="mb-2 opacity-50 nft-icon--lg" data-lucide="map-pin"></i>
+                <p class="mb-0">Digite um CEP ao lado e clique em "Consultar" para visualizar os dados retornados.</p>
+              </div>
+
+              <div id="resultado-cep-detalhes" style="display: none;" data-ui="localidades.cep.detalhes">
+                <div class="row g-3">
+                  <div class="col-sm-4">
+                    <div class="nft-kv">
+                      <span class="nft-kv__label">CEP Formatado</span>
+                      <div class="nft-kv__value font-monospace text-primary" id="res-cep">-</div>
+                    </div>
+                  </div>
+                  <div class="col-sm-4">
+                    <div class="nft-kv">
+                      <span class="nft-kv__label">CEP Limpo (XML)</span>
+                      <div class="nft-kv__value font-monospace" id="res-cep-limpo">-</div>
+                    </div>
+                  </div>
+                  <div class="col-sm-4">
+                    <div class="nft-kv">
+                      <span class="nft-kv__label">Origem da Resposta</span>
+                      <div class="pt-1" id="res-origem"><span class="nft-badge" data-tone="info">Cache SQLite</span></div>
+                    </div>
+                  </div>
+                  <div class="col-12"><hr class="my-1"/></div>
+                  <div class="col-sm-8">
+                    <div class="nft-kv">
+                      <span class="nft-kv__label">Logradouro (xLgr)</span>
+                      <div class="nft-kv__value" id="res-logradouro">-</div>
+                    </div>
+                  </div>
+                  <div class="col-sm-4">
+                    <div class="nft-kv">
+                      <span class="nft-kv__label">Bairro (xBairro)</span>
+                      <div class="nft-kv__value" id="res-bairro">-</div>
+                    </div>
+                  </div>
+                  <div class="col-sm-6">
+                    <div class="nft-kv">
+                      <span class="nft-kv__label">Município (xMun)</span>
+                      <div class="nft-kv__value" id="res-municipio">-</div>
+                    </div>
+                  </div>
+                  <div class="col-sm-2">
+                    <div class="nft-kv">
+                      <span class="nft-kv__label">UF</span>
+                      <div class="nft-kv__value" id="res-uf">-</div>
+                    </div>
+                  </div>
+                  <div class="col-sm-4">
+                    <div class="nft-kv">
+                      <span class="nft-kv__label">Código IBGE (cMun)</span>
+                      <div class="nft-kv__value font-monospace text-success" id="res-ibge">-</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="nft-section-box mt-3">
+                  <span class="nft-kv__label d-block mb-1">Tags XML Geradas Automaticamente</span>
+                  <pre class="mb-0 font-monospace small bg-dark text-white p-2 rounded" id="res-xml-tags" data-ui="localidades.cep.xml-preview">&lt;enderDest&gt;...&lt;/enderDest&gt;</pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
 <script>
-        // Inicialização de Ícones
         document.addEventListener('DOMContentLoaded', () => {
             if (window.lucide) lucide.createIcons();
             carregarPaises();
             carregarMunicipios(1);
         });
 
-        // ------------------ PAÍSES (BACEN) ------------------
         let paisesCache = [];
 
         function carregarPaises() {
@@ -357,40 +297,35 @@
             let html = '';
             lista.forEach(p => {
                 const isBrasil = (p.codigo === '1058');
-                const badgeTipo = isBrasil 
-                    ? `<span class="badge bg-info-subtle text-info fw-bold">Nacional</span>` 
-                    : `<span class="badge bg-info-subtle text-info fw-bold">Exterior</span>`;
-                
+                const badgeTipo = isBrasil
+                    ? `<span class="nft-badge" data-tone="success">Nacional</span>`
+                    : `<span class="nft-badge" data-tone="info">Exterior</span>`;
+
                 html += `
                     <tr>
-                        <td><span class="badge font-monospace px-2 py-1 bg-info-subtle text-info fw-bold">${p.codigo}</span></td>
-                        <td class="fw-bold">${p.nome}</td>
-                        <td class="text-center">${badgeTipo}</td>
-                        <td class="text-end">
-                            <button class="btn-nft py-0 px-2" onclick="copiarTexto('${p.codigo}')" title="Copiar Código BACEN">
-                                <i data-lucide="copy" style="width: 12px; height: 12px;"></i> Copiar
+                        <td data-label="Código BACEN"><span class="nft-badge nft-badge--mono" data-tone="primary">${p.codigo}</span></td>
+                        <td data-card-title="true" class="fw-bold">${p.nome}</td>
+                        <td data-label="Tipo" class="text-center">${badgeTipo}</td>
+                        <td data-card-actions="true" class="text-end">
+                            <button class="nft-btn nft-btn--secondary nft-btn--sm" onclick="copiarTexto('${p.codigo}')" title="Copiar código BACEN ${p.codigo}" type="button" data-ui="localidades.paises.btn-copiar">
+                                <i data-lucide="copy"></i>
+                                <span>Copiar</span>
                             </button>
                         </td>
                     </tr>
                 `;
             });
             tbody.innerHTML = html;
-            if (window.lucide) lucide.createIcons();
+            if (window.lucide) lucide.createIcons({ root: tbody });
         }
 
         function filtrarPaises() {
             const q = (document.getElementById('search-paises').value || '').trim().toLowerCase();
-            if (!q) {
-                renderizarPaises(paisesCache);
-                return;
-            }
-            const filtrados = paisesCache.filter(p => 
-                p.codigo.toLowerCase().includes(q) || p.nome.toLowerCase().includes(q)
-            );
+            if (!q) { renderizarPaises(paisesCache); return; }
+            const filtrados = paisesCache.filter(p => p.codigo.toLowerCase().includes(q) || p.nome.toLowerCase().includes(q));
             renderizarPaises(filtrados);
         }
 
-        // ------------------ MUNICÍPIOS (IBGE) ------------------
         let paginaAtualMun = 1;
         let totalPaginasMun = 1;
 
@@ -409,11 +344,9 @@
                     const total = data.total || 0;
                     document.getElementById('lbl-total-municipios').innerText = total.toLocaleString('pt-BR');
                     totalPaginasMun = Math.max(1, Math.ceil(total / data.limit));
-                    
                     document.getElementById('lbl-paginacao-mun').innerText = `Página ${paginaAtualMun} de ${totalPaginasMun} (${total.toLocaleString('pt-BR')} municípios)`;
                     document.getElementById('btn-mun-prev').disabled = (paginaAtualMun <= 1);
                     document.getElementById('btn-mun-next').disabled = (paginaAtualMun >= totalPaginasMun);
-
                     renderizarMunicipios(data.items || []);
                 })
                 .catch(err => {
@@ -432,30 +365,28 @@
             items.forEach(m => {
                 html += `
                     <tr>
-                        <td><span class="badge font-monospace px-2 py-1 bg-info-subtle text-info fw-bold">${m.codigo_ibge}</span></td>
-                        <td class="fw-bold">${m.nome}</td>
-                        <td class="text-center"><span class="badge bg-info-subtle text-info fw-bold">${m.uf}</span></td>
-                        <td class="text-center text-muted font-monospace">${m.c_uf || '-'}</td>
-                        <td class="text-end">
-                            <button class="btn-nft py-0 px-2" onclick="copiarTexto('${m.codigo_ibge}')" title="Copiar Código IBGE">
-                                <i data-lucide="copy" style="width: 12px; height: 12px;"></i> Copiar
+                        <td data-label="Cód. IBGE"><span class="nft-badge nft-badge--mono" data-tone="primary">${m.codigo_ibge}</span></td>
+                        <td data-card-title="true" class="fw-bold">${m.nome}</td>
+                        <td data-label="UF" class="text-center"><span class="nft-badge nft-badge--mono" data-tone="info">${m.uf}</span></td>
+                        <td data-label="Cód. UF" class="text-center text-muted font-monospace">${m.c_uf || '-'}</td>
+                        <td data-card-actions="true" class="text-end">
+                            <button class="nft-btn nft-btn--secondary nft-btn--sm" onclick="copiarTexto('${m.codigo_ibge}')" title="Copiar código IBGE ${m.codigo_ibge}" type="button" data-ui="localidades.municipios.btn-copiar">
+                                <i data-lucide="copy"></i>
+                                <span>Copiar</span>
                             </button>
                         </td>
                     </tr>
                 `;
             });
             tbody.innerHTML = html;
-            if (window.lucide) lucide.createIcons();
+            if (window.lucide) lucide.createIcons({ root: tbody });
         }
 
         function mudarPaginaMun(delta) {
             const nova = paginaAtualMun + delta;
-            if (nova >= 1 && nova <= totalPaginasMun) {
-                carregarMunicipios(nova);
-            }
+            if (nova >= 1 && nova <= totalPaginasMun) carregarMunicipios(nova);
         }
 
-        // ------------------ CONSULTA DE CEP ------------------
         function testarCepPredefinido(cep) {
             document.getElementById('input-teste-cep').value = cep;
             executarConsultaCep();
@@ -465,7 +396,8 @@
             const cepInput = document.getElementById('input-teste-cep');
             const cepVal = (cepInput.value || '').trim();
             if (!cepVal) {
-                alert("Por favor, digite um CEP para consultar.");
+                if (window.nftAlert) window.nftAlert("Por favor, digite um CEP para consultar.", { type: 'warning', title: 'CEP Obrigatório' });
+                else alert("Por favor, digite um CEP para consultar.");
                 return;
             }
 
@@ -476,10 +408,7 @@
                 .then(r => r.json())
                 .then(data => {
                     btn.disabled = false;
-                    if (data.error) {
-                        alert(data.error);
-                        return;
-                    }
+                    if (data.error) { alert(data.error); return; }
                     exibirResultadoCep(data);
                 })
                 .catch(err => {
@@ -499,17 +428,17 @@
             const resOrigem = document.getElementById('res-origem');
 
             if (data.exterior) {
-                badgeStatus.className = 'badge bg-warning text-dark font-monospace';
+                badgeStatus.setAttribute('data-tone', 'warning');
                 badgeStatus.innerText = 'Exterior (99999-999)';
-                resOrigem.innerHTML = `<span class="badge bg-info-subtle text-info fw-bold">Destinatário Exterior</span>`;
+                resOrigem.innerHTML = `<span class="nft-badge" data-tone="warning">Destinatário Exterior</span>`;
             } else if (data.cached) {
-                badgeStatus.className = 'badge bg-success font-monospace';
+                badgeStatus.setAttribute('data-tone', 'success');
                 badgeStatus.innerText = 'Sucesso (Base Local SQLite)';
-                resOrigem.innerHTML = `<span class="badge bg-info-subtle text-info fw-bold">Cache SQLite Local</span>`;
+                resOrigem.innerHTML = `<span class="nft-badge" data-tone="success">Cache SQLite Local</span>`;
             } else {
-                badgeStatus.className = 'badge bg-primary font-monospace';
+                badgeStatus.setAttribute('data-tone', 'primary');
                 badgeStatus.innerText = 'Sucesso (ViaCEP Online)';
-                resOrigem.innerHTML = `<span class="badge bg-info-subtle text-info fw-bold">ViaCEP (Armazenado no Cache)</span>`;
+                resOrigem.innerHTML = `<span class="nft-badge" data-tone="primary">ViaCEP (Armazenado no Cache)</span>`;
             }
 
             document.getElementById('res-logradouro').innerText = data.logradouro || (data.exterior ? 'EXTERIOR' : 'Não informado');
@@ -518,7 +447,7 @@
             document.getElementById('res-uf').innerText = data.uf || '-';
             document.getElementById('res-ibge').innerText = data.ibge || '-';
 
-            const xmlExemplo = 
+            const xmlExemplo =
 `&lt;enderDest&gt;
   &lt;xLgr&gt;${data.logradouro || (data.exterior ? 'EXTERIOR' : 'LOGRADOURO')}&lt;/xLgr&gt;
   &lt;nro&gt;SN&lt;/nro&gt;
@@ -532,14 +461,13 @@
 &lt;/enderDest&gt;`;
 
             document.getElementById('res-xml-tags').innerHTML = xmlExemplo;
-            if (window.lucide) lucide.createIcons();
         }
 
         function copiarTexto(txt) {
             navigator.clipboard.writeText(txt).then(() => {
-                alert(`Copiado: ${txt}`);
+                if (window.nftAlert) window.nftAlert(`Código copiado: ${txt}`, { type: 'success', title: 'Copiado' });
+                else alert(`Copiado: ${txt}`);
             });
         }
-    </script>
-</body>
-</html>
+</script>
+{% endblock %}

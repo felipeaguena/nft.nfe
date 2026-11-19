@@ -1,0 +1,66 @@
+/* ==========================================================================
+   NFT LOGISTICS — LAYOUT 1: DESKTOP (>= 1200px — Padrão Bootstrap XL+)
+   Tokens padrão: controles 40px, compact 32px, fonte 14px, título 22px.
+   ========================================================================== */
+
+@media (min-width: 992px) {
+  body.sidebar-collapsed .nft-sidebar {
+    width: var(--sidebar-w-collapsed);
+  }
+
+  body.sidebar-collapsed .nft-main-wrapper {
+    margin-left: var(--sidebar-w-collapsed);
+  }
+
+  body.sidebar-collapsed .nft-sidebar:hover {
+    width: var(--sidebar-w);
+    box-shadow: var(--card-shadow-hover);
+  }
+
+  body.sidebar-collapsed .nft-sidebar:not(:hover) .nft-sidebar-search-wrap,
+  body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-section-title,
+  body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-label,
+  body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-badge,
+  body.sidebar-collapsed .nft-sidebar:not(:hover) .sidebar-footer-info,
+  body.sidebar-collapsed .nft-sidebar:not(:hover) #nftSidebarCertCard,
+  body.sidebar-collapsed .nft-sidebar:not(:hover) .nft-sidebar-card {
+    display: none;
+  }
+
+  body.sidebar-collapsed .nft-sidebar:not(:hover) .nft-sidebar-btn {
+    justify-content: center;
+    padding: 8px 0;
+  }
+
+  body.sidebar-collapsed .nft-sidebar:hover #nftSidebarCertCard,
+  body.sidebar-collapsed .nft-sidebar:hover .nft-sidebar-card {
+    display: block;
+  }
+
+  body.sidebar-collapsed .nft-sidebar:hover .nft-sidebar-search-wrap,
+  body.sidebar-collapsed .nft-sidebar:hover .sidebar-section-title,
+  body.sidebar-collapsed .nft-sidebar:hover .sidebar-label,
+  body.sidebar-collapsed .nft-sidebar:hover .sidebar-badge {
+    display: flex;
+  }
+}
+
+@media (min-width: 768px) {
+  .col-acoes-usuarios {
+    width: 175px;
+    min-width: 175px;
+    max-width: 185px;
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 1200px) {
+  /* Hover em linhas <tr> exclusivo do Desktop */
+  .table-hover tbody tr:hover {
+    background-color: var(--primary-subtle);
+  }
+
+  .nft-paper-table tbody tr:hover {
+    background-color: #f8fafc;
+  }
+}

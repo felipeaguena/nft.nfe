@@ -1,0 +1,209 @@
+/* ==========================================================================
+   NFT LOGISTICS — CORE DESIGN TOKENS (Single Source of Truth)
+   Escala tipográfica (6 papéis), controles, cores Light/Dark e espaçamentos.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+:root {
+  /* --- Identidade & Ação --- */
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-subtle: #eff6ff;
+  --primary-border: #bfdbfe;
+
+  /* --- Superfícies & Neutros (Light) --- */
+  --background: #edf1f5;
+  --surface: #ffffff;
+  --surface-secondary: #f8fafc;
+  --surface-tertiary: #f1f5f9;
+  --surface-inset: #ffffff;
+  --surface-alt: #f8fafc;
+
+  --foreground: #0f172a;
+  --heading: #0f172a;
+  --muted-foreground: #64748b;
+  --text-muted: #64748b;
+  --placeholder: #94a3b8;
+
+  /* --- Bordas --- */
+  --border: #e2e8f0;
+  --border-subtle: #f1f5f9;
+  --border-input: #cbd5e1;
+  --border-hover: #94a3b8;
+  --border-focus: #2563eb;
+  --border-focus-ring: rgba(37, 99, 235, 0.18);
+
+  /* --- Estados Semânticos (Light) --- */
+  --success: #16a34a;
+  --success-hover: #15803d;
+  --success-subtle: #dcfce7;
+  --success-border: #86efac;
+
+  --warning: #d97706;
+  --warning-hover: #b45309;
+  --warning-subtle: #fef3c7;
+  --warning-border: #fcd34d;
+
+  --danger: #dc2626;
+  --danger-hover: #b91c1c;
+  --danger-subtle: #fee2e2;
+  --danger-border: #fca5a5;
+
+  --info: #0284c7;
+  --info-hover: #0369a1;
+  --info-subtle: #e0f2fe;
+  --info-border: #7dd3fc;
+
+  --cyan: #0891b2;
+  --cyan-subtle: rgba(6, 182, 212, 0.14);
+  --cyan-border: rgba(6, 182, 212, 0.35);
+
+  --indigo: #4f46e5;
+  --indigo-subtle: rgba(99, 102, 241, 0.12);
+  --indigo-border: rgba(99, 102, 241, 0.32);
+
+  --neutral-badge-bg: #f1f5f9;
+  --neutral-badge-color: #475569;
+  --neutral-badge-border: #cbd5e1;
+
+  /* --- Topbar / Pills --- */
+  --pill-tag-bg: #e2e8f0;
+  --pill-tag-color: #0f172a;
+  --pill-tag-border: #cbd5e1;
+
+  /* --- Botão Base NFT --- */
+  --btn-nft-bg: var(--primary-subtle);
+  --btn-nft-color: var(--primary);
+  --btn-nft-border: var(--primary-border);
+
+  /* --- Tipografia: Famílias --- */
+  --font-sans: 'Plus Jakarta Sans', 'Inter', 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', Consolas, monospace;
+
+  /* --- Tipografia: 6 Papéis Fixos (Piso mínimo 11px) --- */
+  --fs-page-title: 22px;
+  --fs-modal-title: 16px;
+  --fs-section-title: 14px;
+  --fs-control: 14px;
+  --fs-compact: 13px;
+  --fs-label: 11px;
+
+  /* --- Dimensões de Controle (Desktop >= 1200px) --- */
+  --ctl-h: 40px;
+  --ctl-h-sm: 32px;
+  --ctl-icon-md: 36px;
+  --ctl-icon-sm: 28px;
+  --ctl-px: 14px;
+  --ctl-radius: 12px;
+  --btn-radius: 9999px;
+
+  /* --- Raios & Espaçamentos --- */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  --space-container: 24px;
+  --space-card: 18px;
+  --space-gap: 14px;
+
+  /* --- Estrutura Sidebar & Topbar --- */
+  --topbar-h: 53px;
+  --sidebar-w: 236px;
+  --sidebar-w-collapsed: 54px;
+  --sidebar-transition: 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* --- Sombras --- */
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.06);
+  --modal-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.35);
+
+  /* --- Z-index --- */
+  --z-topbar: 1040;
+  --z-sidebar: 1050;
+  --z-dropdown: 1060;
+  --z-espelho: 10850;
+  --z-dialog: 10999;
+  --z-inspector: 11500;
+
+  color-scheme: light;
+}
+
+/* ==========================================================================
+   MODO ESCURO (Seletor único: theme.js sempre aplica data-theme="dark")
+   ========================================================================== */
+:root[data-theme="dark"] {
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --primary-subtle: rgba(59, 130, 246, 0.16);
+  --primary-border: rgba(59, 130, 246, 0.38);
+
+  --background: #0b0f17;
+  --surface: #161b26;
+  --surface-secondary: #0f1420;
+  --surface-tertiary: #1e273a;
+  --surface-inset: #121620;
+  --surface-alt: #121620;
+
+  --foreground: #e2e8f0;
+  --heading: #ffffff;
+  --muted-foreground: #94a3b8;
+  --text-muted: #94a3b8;
+  --placeholder: #525d73;
+
+  --border: #242d40;
+  --border-subtle: #1c2332;
+  --border-input: #283246;
+  --border-hover: #3b4761;
+  --border-focus: #3b82f6;
+  --border-focus-ring: rgba(59, 130, 246, 0.25);
+
+  --success: #34d399;
+  --success-hover: #10b981;
+  --success-subtle: rgba(16, 185, 129, 0.18);
+  --success-border: rgba(16, 185, 129, 0.42);
+
+  --warning: #fbbf24;
+  --warning-hover: #f59e0b;
+  --warning-subtle: rgba(245, 158, 11, 0.18);
+  --warning-border: rgba(245, 158, 11, 0.42);
+
+  --danger: #f87171;
+  --danger-hover: #ef4444;
+  --danger-subtle: rgba(239, 68, 68, 0.18);
+  --danger-border: rgba(239, 68, 68, 0.42);
+
+  --info: #38bdf8;
+  --info-hover: #0ea5e9;
+  --info-subtle: rgba(14, 165, 233, 0.18);
+  --info-border: rgba(14, 165, 233, 0.42);
+
+  --cyan: #22d3ee;
+  --cyan-subtle: rgba(6, 182, 212, 0.2);
+  --cyan-border: rgba(6, 182, 212, 0.42);
+
+  --indigo: #818cf8;
+  --indigo-subtle: rgba(99, 102, 241, 0.2);
+  --indigo-border: rgba(99, 102, 241, 0.42);
+
+  --neutral-badge-bg: rgba(148, 163, 184, 0.16);
+  --neutral-badge-color: #cbd5e1;
+  --neutral-badge-border: rgba(148, 163, 184, 0.35);
+
+  --pill-tag-bg: #0b0f17;
+  --pill-tag-color: #e2e8f0;
+  --pill-tag-border: #242d40;
+
+  --btn-nft-bg: var(--primary-subtle);
+  --btn-nft-color: #60a5fa;
+  --btn-nft-border: var(--primary-border);
+
+  --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  --card-shadow-hover: 0 12px 28px rgba(0, 0, 0, 0.6);
+  --modal-shadow: 0 20px 30px -5px rgba(0, 0, 0, 0.7), 0 8px 12px -6px rgba(0, 0, 0, 0.55);
+
+  color-scheme: dark;
+}

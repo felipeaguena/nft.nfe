@@ -1,0 +1,524 @@
+/* ==========================================================================
+   NFT LOGISTICS — COMPONENT: FORMS (.nft-field, inputs, selects, labels)
+   1 componente canônico de campo + 4 modificadores semânticos.
+   Todas as dimensões vêm dos tokens de layout (Desktop / Tablet / Mobile).
+   ========================================================================== */
+
+/* --- Container do Campo (Notch Floating Label) --- */
+.nft-field,
+.nft-notch-field {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+  margin-bottom: 4px;
+}
+
+.nft-field.nft-field--flush,
+.nft-notch-field.mb-0 {
+  margin-bottom: 0;
+}
+
+/* Rótulo flutuante sobre a borda superior */
+.nft-field__label,
+.nft-notch-label {
+  position: absolute;
+  top: -8px;
+  left: 12px;
+  background-color: var(--surface);
+  padding: 0 6px;
+  font-size: var(--fs-label);
+  font-weight: 600;
+  color: var(--muted-foreground);
+  line-height: 1.15;
+  z-index: 15;
+  border-radius: 4px;
+  margin: 0;
+  white-space: nowrap;
+  max-width: calc(100% - 24px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+  transition: color 0.15s ease;
+}
+
+.nft-field:focus-within > .nft-field__label,
+.nft-notch-field:focus-within > .nft-notch-label {
+  color: var(--border-focus);
+}
+
+/* Asterisco obrigatório */
+.nft-field__req {
+  color: var(--danger);
+  font-weight: 700;
+  margin-left: 1px;
+}
+
+/* Ícone interno à esquerda do campo */
+.nft-field__icon,
+.nft-notch-icon {
+  position: absolute;
+  top: calc(var(--ctl-h) / 2);
+  transform: translateY(-50%);
+  left: 13px;
+  color: var(--muted-foreground);
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  z-index: 5;
+}
+
+/* Slot opcional de ações rápidas no topo direito (ex.: "Agora", "Igual Emissão") */
+.nft-field__header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.nft-field__action {
+  position: absolute;
+  top: -11px;
+  right: 10px;
+  z-index: 16;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: var(--surface);
+  padding: 0 4px;
+  border-radius: var(--radius-full);
+}
+
+.nft-field__action .nft-btn {
+  height: 22px;
+  min-height: 22px;
+  padding: 0 8px;
+  font-size: var(--fs-label);
+  line-height: 1;
+}
+
+/* Texto de ajuda abaixo do campo */
+.nft-field__help,
+.form-text {
+  display: block;
+  margin-top: 4px;
+  padding-left: 4px;
+  font-size: var(--fs-label);
+  color: var(--muted-foreground);
+  line-height: 1.35;
+}
+
+/* ==========================================================================
+   CONTROLE BASE (INPUT, SELECT, TEXTAREA)
+   ========================================================================== */
+.nft-control,
+.nft-field > .form-control,
+.nft-field > .form-select,
+.nft-notch-input,
+.nft-notch-select,
+.form-control,
+.form-select {
+  width: 100%;
+  height: var(--ctl-h);
+  min-height: var(--ctl-h);
+  padding: 0 var(--ctl-px);
+  background-color: var(--surface-inset);
+  color: var(--foreground);
+  border: 1px solid var(--border-input);
+  border-radius: var(--ctl-radius);
+  font-family: var(--font-sans);
+  font-size: var(--fs-control);
+  font-weight: 500;
+  line-height: 1.4;
+  outline: none;
+  box-shadow: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.nft-field--has-icon > .nft-control,
+.nft-field--has-icon > .form-control,
+.nft-field--has-icon > .form-select,
+.nft-notch-input:not(.no-icon),
+.nft-notch-select:not(.no-icon) {
+  padding-left: 38px;
+}
+
+select.nft-control,
+.form-select {
+  padding-right: 34px;
+  cursor: pointer;
+}
+
+textarea.nft-control,
+textarea.form-control {
+  height: auto;
+  min-height: 84px;
+  padding: 10px var(--ctl-px);
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.nft-control::placeholder,
+.form-control::placeholder,
+.nft-notch-input::placeholder {
+  color: var(--placeholder);
+  opacity: 0.9;
+}
+
+/* Foco unificado azul em todos os controles */
+.nft-control:focus,
+.form-control:focus,
+.form-select:focus,
+.nft-notch-input:focus,
+.nft-notch-select:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--border-focus-ring);
+  background-color: var(--surface);
+  color: var(--foreground);
+}
+
+/* Estados Readonly e Disabled automáticos */
+.nft-control[readonly],
+.form-control[readonly],
+.nft-control:disabled,
+.form-control:disabled,
+.form-select:disabled {
+  background-color: var(--surface-secondary);
+  color: var(--muted-foreground);
+  cursor: default;
+}
+
+/* File Input padronizado na mesma altura */
+input[type="file"].nft-control,
+input[type="file"].form-control {
+  padding: 0 12px 0 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  font-size: var(--fs-compact);
+  line-height: var(--ctl-h);
+}
+
+input[type="file"].nft-control::file-selector-button,
+input[type="file"].form-control::file-selector-button {
+  height: 100%;
+  margin: 0 10px 0 0;
+  padding: 0 12px;
+  border: none;
+  border-right: 1px solid var(--border);
+  background-color: var(--surface-tertiary);
+  color: var(--foreground);
+  font-size: var(--fs-compact);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+input[type="file"].nft-control::file-selector-button:hover,
+input[type="file"].form-control::file-selector-button:hover {
+  background-color: var(--primary-subtle);
+  color: var(--primary);
+}
+
+/* ==========================================================================
+   4 MODIFICADORES SEMÂNTICOS DE CAMPO
+   ========================================================================== */
+.nft-field--code .nft-control,
+.nft-field--code .form-control,
+.nft-field--code .form-select {
+  font-family: var(--font-mono);
+}
+
+.nft-field--number .nft-control,
+.nft-field--number .form-control {
+  font-family: var(--font-mono);
+  text-align: right;
+}
+
+.nft-field--sigla .nft-control,
+.nft-field--sigla .form-control {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  text-align: center;
+  font-weight: 600;
+}
+
+.nft-field--highlight .nft-control,
+.nft-field--highlight .form-control {
+  font-weight: 700;
+}
+
+.nft-field--highlight[data-tone="primary"] .nft-control,
+.nft-field--highlight[data-tone="primary"] .form-control {
+  color: var(--primary);
+  border-color: var(--primary-border);
+}
+
+.nft-field--highlight[data-tone="success"] .nft-control,
+.nft-field--highlight[data-tone="success"] .form-control {
+  color: var(--success);
+  border-color: var(--success-border);
+  background-color: var(--success-subtle);
+}
+
+.nft-field--highlight[data-tone="danger"] .nft-control,
+.nft-field--highlight[data-tone="danger"] .form-control {
+  color: var(--danger);
+  border-color: var(--danger-border);
+}
+
+/* ==========================================================================
+   INPUT-GROUP UNIFICADO (Borda única externa, sem serrilhado)
+   ========================================================================== */
+.input-group {
+  height: var(--ctl-h);
+  min-height: var(--ctl-h);
+  border: 1px solid var(--border-input);
+  border-radius: var(--ctl-radius);
+  background-color: var(--surface-inset);
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.input-group:focus-within {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--border-focus-ring);
+}
+
+.input-group > .nft-control,
+.input-group > .form-control,
+.input-group > .form-select {
+  border: none;
+  border-radius: 0;
+  height: 100%;
+  min-height: 100%;
+  box-shadow: none;
+  background-color: transparent;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.input-group > .nft-control:focus,
+.input-group > .form-control:focus,
+.input-group > .form-select:focus {
+  border: none;
+  box-shadow: none;
+  background-color: transparent;
+}
+
+.input-group > .input-group-text {
+  border: none;
+  border-radius: 0;
+  height: 100%;
+  min-height: 100%;
+  padding: 0 11px;
+  background-color: var(--surface-secondary);
+  color: var(--muted-foreground);
+  font-size: var(--fs-compact);
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.input-group > .input-group-text:first-child {
+  border-right: 1px solid var(--border);
+}
+
+.input-group > .input-group-text:last-child {
+  border-left: 1px solid var(--border);
+}
+
+.input-group > .nft-btn,
+.input-group > .btn,
+.input-group > .btn-nft {
+  border: none;
+  border-left: 1px solid var(--border);
+  border-radius: 0;
+  height: 100%;
+  min-height: 100%;
+  padding: 0 14px;
+  margin: 0;
+  box-shadow: none;
+}
+
+.input-group > .nft-btn:last-child,
+.input-group > .btn:last-child,
+.input-group > .btn-nft:last-child {
+  border-top-right-radius: calc(var(--ctl-radius) - 1px);
+  border-bottom-right-radius: calc(var(--ctl-radius) - 1px);
+}
+
+/* ==========================================================================
+   CHECKBOXES, RADIOS, SWITCHES E LEITURA CHAVE-VALOR (.nft-kv)
+   ========================================================================== */
+.form-check-input {
+  cursor: pointer;
+  border-color: var(--border-input);
+  background-color: var(--surface-inset);
+}
+
+.form-check-input:checked {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.nft-check__label,
+.form-check-label {
+  font-size: var(--fs-compact);
+  color: var(--foreground);
+  cursor: pointer;
+  user-select: none;
+}
+
+.nft-kv {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nft-kv__label {
+  font-size: var(--fs-label);
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.nft-kv__value {
+  font-size: var(--fs-control);
+  font-weight: 600;
+  color: var(--heading);
+}
+
+/* ==========================================================================
+   DROPZONE PFX & TAG INPUT
+   ========================================================================== */
+.dropzone-pfx {
+  border: 2px dashed var(--border-input);
+  border-radius: var(--radius-md);
+  background-color: var(--surface-secondary);
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+  cursor: pointer;
+}
+
+.dropzone-pfx:hover,
+.dropzone-pfx.dragover {
+  border-color: var(--primary);
+  background-color: var(--primary-subtle);
+}
+
+.tag-input-container {
+  min-height: var(--ctl-h);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--ctl-radius);
+  background-color: var(--surface-inset);
+}
+
+/* ==========================================================================
+   VALIDAÇÃO VISUAL REGEX SEFAZ & DESTAQUE DE ERRO
+   ========================================================================== */
+.nft-regex-field {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.nft-regex-valid {
+  border-color: var(--success) !important;
+  box-shadow: 0 0 0 2px var(--success-subtle) !important;
+}
+
+.nft-regex-invalid {
+  border-color: var(--warning) !important;
+  box-shadow: 0 0 0 2px var(--warning-subtle) !important;
+}
+
+.nft-regex-error {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 2px var(--danger-subtle) !important;
+}
+
+label.has-regex-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nft-regex-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  font-weight: 600;
+  padding: 0 6px;
+  height: 18px;
+  line-height: 18px;
+  border-radius: 4px;
+  white-space: nowrap;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.nft-regex-tag-neutral {
+  background-color: var(--neutral-badge-bg);
+  color: var(--neutral-badge-color);
+  border: 1px solid var(--neutral-badge-border);
+}
+
+.nft-regex-tag-warning {
+  background-color: var(--warning-subtle);
+  color: var(--warning);
+  border: 1px solid var(--warning-border);
+}
+
+.nft-regex-tag-success {
+  background-color: var(--success-subtle);
+  color: var(--success);
+  border: 1px solid var(--success-border);
+}
+
+.nft-regex-tag-danger {
+  background-color: var(--danger-subtle);
+  color: var(--danger);
+  border: 1px solid var(--danger-border);
+}
+
+@keyframes nftFieldPulseHighlight {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    border-color: var(--danger);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0.3);
+    border-color: var(--danger);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    border-color: var(--danger);
+  }
+}
+
+.nft-field-error-highlight {
+  animation: nftFieldPulseHighlight 0.9s ease-in-out 3;
+  border-color: var(--danger) !important;
+  outline: 2px solid var(--danger-border);
+  outline-offset: 2px;
+  border-radius: var(--ctl-radius);
+}

@@ -18,28 +18,29 @@
         containerEl.className = 'nft-dialog-overlay';
         containerEl.setAttribute('role', 'dialog');
         containerEl.setAttribute('aria-modal', 'true');
+        containerEl.setAttribute('data-ui', 'global.dialog.overlay');
         containerEl.style.display = 'none';
 
         containerEl.innerHTML = `
-            <div class="nft-dialog-box" id="nft-dialog-box">
+            <div class="nft-dialog-box" id="nft-dialog-box" data-ui="global.dialog.box">
                 <div class="nft-dialog-icon-wrap" id="nft-dialog-icon-wrap">
                     <i id="nft-dialog-icon" data-lucide="info"></i>
                 </div>
-                <div class="nft-dialog-content" style="width: 100%;">
-                    <h5 class="nft-dialog-title" id="nft-dialog-title">Aviso</h5>
-                    <div class="nft-dialog-message" id="nft-dialog-message"></div>
+                <div class="nft-dialog-content w-100">
+                    <h5 class="nft-dialog-title" id="nft-dialog-title" data-ui="global.dialog.title">Aviso</h5>
+                    <div class="nft-dialog-message" id="nft-dialog-message" data-ui="global.dialog.message"></div>
                     <div class="nft-dialog-input-wrap" id="nft-dialog-input-wrap" style="display: none;">
-                        <input type="text" class="nft-dialog-input" id="nft-dialog-input" autocomplete="off" />
-                        <textarea class="nft-dialog-textarea" id="nft-dialog-textarea" rows="5"></textarea>
+                        <input type="text" class="nft-dialog-input" id="nft-dialog-input" autocomplete="off" title="Campo de entrada do diálogo" data-ui="global.dialog.input" />
+                        <textarea class="nft-dialog-textarea" id="nft-dialog-textarea" rows="5" title="Campo de texto multilinha do diálogo" data-ui="global.dialog.textarea"></textarea>
                         <div class="nft-dialog-input-footer">
-                            <span class="nft-dialog-hint" id="nft-dialog-hint"></span>
-                            <span class="nft-dialog-counter" id="nft-dialog-counter"></span>
+                            <span class="nft-dialog-hint" id="nft-dialog-hint" data-ui="global.dialog.hint"></span>
+                            <span class="nft-dialog-counter" id="nft-dialog-counter" title="Contador de caracteres" data-ui="global.dialog.counter"></span>
                         </div>
                     </div>
                 </div>
-                <div class="nft-dialog-actions" id="nft-dialog-actions">
-                    <button type="button" class="btn btn-secondary nft-dialog-btn-cancel" id="nft-dialog-btn-cancel">Cancelar</button>
-                    <button type="button" class="btn btn-primary nft-dialog-btn-confirm" id="nft-dialog-btn-confirm">OK</button>
+                <div class="nft-dialog-actions" id="nft-dialog-actions" data-ui="global.dialog.actions">
+                    <button type="button" class="nft-btn nft-btn--ghost nft-dialog-btn-cancel" id="nft-dialog-btn-cancel" title="Cancelar operação e fechar diálogo" data-ui="global.dialog.btn-cancelar">Cancelar</button>
+                    <button type="button" class="nft-btn nft-btn--primary nft-dialog-btn-confirm" id="nft-dialog-btn-confirm" title="Confirmar operação" data-ui="global.dialog.btn-confirmar">OK</button>
                 </div>
             </div>
         `;
@@ -142,7 +143,7 @@
             // Botões: no alert, esconde Cancelar
             btnCancel.style.display = 'none';
             btnConfirm.textContent = confirmText;
-            btnConfirm.className = `btn btn-${type === 'danger' ? 'danger' : (type === 'warning' ? 'warning' : 'primary')} nft-dialog-btn-confirm`;
+            btnConfirm.className = `nft-btn nft-btn--${type === 'danger' ? 'danger-solid' : (type === 'warning' ? 'warning-solid' : 'primary')} nft-dialog-btn-confirm`;
 
             function close() {
                 container.classList.remove('active');
@@ -222,7 +223,7 @@
             btnCancel.style.display = 'inline-flex';
             btnCancel.textContent = cancelText;
             btnConfirm.textContent = confirmText;
-            btnConfirm.className = `btn btn-${type === 'danger' ? 'danger' : (type === 'warning' ? 'warning' : 'primary')} nft-dialog-btn-confirm`;
+            btnConfirm.className = `nft-btn nft-btn--${type === 'danger' ? 'danger-solid' : (type === 'warning' ? 'warning-solid' : 'primary')} nft-dialog-btn-confirm`;
 
             function finish(result) {
                 container.classList.remove('active');
@@ -353,7 +354,7 @@
             btnCancel.style.display = 'inline-flex';
             btnCancel.textContent = cancelText;
             btnConfirm.textContent = confirmText;
-            btnConfirm.className = `btn btn-${type === 'danger' ? 'danger' : (type === 'warning' ? 'warning' : 'primary')} nft-dialog-btn-confirm`;
+            btnConfirm.className = `nft-btn nft-btn--${type === 'danger' ? 'danger-solid' : (type === 'warning' ? 'warning-solid' : 'primary')} nft-dialog-btn-confirm`;
 
             function finish(result) {
                 activeInput.removeEventListener('input', onInput);

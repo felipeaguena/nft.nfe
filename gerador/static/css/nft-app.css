@@ -1,0 +1,25 @@
+/* ==========================================================================
+   NFT LOGISTICS — ENTRYPOINT CSS UNIFICADO (nft-app.css)
+   Ordem determinística de cascata (carregado após Bootstrap 5.3):
+   1. Core (Tokens + Base)
+   2. Components (Forms, Buttons, Modals, Navigation, Data Display)
+   3. Pages (Login, Portal, Espelho/Print)
+   4. Layouts por 3 Tipos de Tela (Desktop >=1200 -> Tablet 768-1199 -> Mobile <=767)
+   ========================================================================== */
+
+@import url('./core/tokens.css?v=5.0');
+@import url('./core/base.css?v=5.0');
+
+@import url('./components/forms.css?v=5.0');
+@import url('./components/buttons.css?v=5.0');
+@import url('./components/modals.css?v=5.0');
+@import url('./components/navigation.css?v=5.0');
+@import url('./components/data-display.css?v=5.0');
+
+@import url('./pages/login.css?v=5.0');
+@import url('./pages/portal.css?v=5.0');
+@import url('./pages/espelho-print.css?v=5.0');
+
+@import url('./layouts/layout-desktop.css?v=5.0');
+@import url('./layouts/layout-tablet.css?v=5.0');
+@import url('./layouts/layout-mobile.css?v=5.0');

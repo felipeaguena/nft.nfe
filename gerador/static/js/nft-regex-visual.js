@@ -676,7 +676,7 @@
         let label = document.querySelector(`label[for="${id}"]`);
         if (!label) {
             // Se o input estiver dentro de um input-group ou coluna, busca a label na coluna ou container pai
-            const colParent = inputEl.closest('.col, [class*="col-"], .form-group, .mb-3');
+            const colParent = inputEl.closest('.nft-field, .nft-notch-field, .col, [class*="col-"], .form-group, .mb-3');
             if (colParent) {
                 label = colParent.querySelector('label');
             }

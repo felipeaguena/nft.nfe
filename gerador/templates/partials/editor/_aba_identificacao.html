@@ -1,269 +1,281 @@
-<div class="tab-pane fade" id="identificacao" role="tabpanel"><form id="form-identificacao"><div class="row mt-3">
+{% import 'macros/ui.html' as ui %}
 
-<div class="col-12 mt-2 mb-3">
-    <div class="card border border-success shadow-sm">
-        <div class="card-header py-2 d-flex justify-content-between align-items-center text-secondary">
-            <span class="fw-bold text-success d-flex align-items-center gap-1">
-                <i data-lucide="shield-check"></i> Certificado Digital (A1)
+<!-- ABA 2: IDENTIFICAÇÃO (CERTIFICADO, EMITENTE, DESTINATÁRIO, TRANSPORTE) -->
+<div class="tab-pane fade" id="identificacao" role="tabpanel" data-ui="editor.identificacao.pane">
+  <form id="form-identificacao" data-ui="editor.identificacao.form">
+    <div class="row g-3">
+
+      <!-- Card: Certificado Digital A1 -->
+      <div class="col-12">
+        <div class="card border-success" data-ui="editor.identificacao.card-certificado">
+          <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="fw-bold text-success d-inline-flex align-items-center gap-2">
+              <i data-lucide="shield-check" class="nft-icon--md"></i>
+              <span>Certificado Digital (A1)</span>
             </span>
             <div class="d-flex align-items-center gap-2">
-                <button type="button" class="btn-nft py-0 px-2 d-flex align-items-center gap-1" onclick="abrirModalGerenciarCertificados()" title="Gerenciar Certificados Digitais">
-<i data-lucide="key-round" style="width: 13px; height: 13px;"></i> Gerenciar Certificados
-</button>
-                <button type="button" class="btn-nft py-0 px-2 d-flex align-items-center gap-1" onclick="verificarStatusCertificado()" title="Verificar status e validade do certificado ativo">
-                    <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> Verificar
-                </button>
+              {{ ui.btn('Gerenciar Certificados', variant='secondary', size='sm', icon='key-round', onclick='abrirModalGerenciarCertificados()', title='Abrir gerenciamento de Certificados Digitais A1', ui_id='editor.identificacao.btn-gerenciar-cert') }}
+              {{ ui.btn('Verificar', variant='ghost', size='sm', icon='refresh-cw', onclick='verificarStatusCertificado()', title='Verificar status e validade do certificado A1 ativo', ui_id='editor.identificacao.btn-verificar-cert') }}
             </div>
-        </div>
-        <div class="card-body py-2">
-            <div class="row g-2" id="cert-info-container">
-                <div class="col-12 text-muted small">
-                    Clique em "Verificar" para carregar as informações do certificado.
-                </div>
+          </div>
+          <div class="card-body py-2">
+            <div class="row g-2" id="cert-info-container" data-ui="editor.identificacao.cert-info">
+              <div class="col-12 text-muted small">Clique em "Verificar" para carregar as informações do certificado.</div>
             </div>
+          </div>
         </div>
-    </div>
-</div>
+      </div>
 
-<div class="col-md-6 mt-3">
-<div class="card h-100 border mb-3">
-<div class="card-header py-2 d-flex align-items-center gap-2 fw-bold text-secondary"><i data-lucide="building-2" style="width: 15px; height: 15px;"></i> Dados do Emitente</div>
-<div class="card-body py-2">
-<div class="row g-2"><div class="col-12 mb-3 position-relative">
-<label class="form-label small mb-1 fw-bold" for="input_busca_emitente">Preencher Dados do Emitente a partir do Cadastro de Empresas</label>
-<input autocomplete="off" class="form-control form-control-sm" id="input_busca_emitente" onblur="aoPerderFocoEmpresa('emit')" onfocus="aoDigitarEmpresaAutocomplete('emit')" oninput="aoDigitarEmpresaAutocomplete('emit')" placeholder="Digite nome, apelido ou CNPJ/CPF para buscar e selecionar..." type="text"/>
-<div class="dropdown-menu shadow w-100 overflow-auto p-1" id="dropdown_menu_busca_emitente" style="max-height: 250px; display: none; position: absolute; z-index: 1060; top: 100%; left: 0;"></div>
-<select id="select_emitente" style="display: none;"><option value="">Selecione...</option></select>
+      <!-- Card: Dados do Emitente -->
+      <div class="col-lg-6 col-12">
+        <div class="card h-100" data-ui="editor.emitente.card">
+          <div class="card-header d-flex align-items-center gap-2 fw-bold">
+            <i data-lucide="building-2" class="nft-icon--md text-primary"></i>
+            <span>Dados do Emitente</span>
+          </div>
+          <div class="card-body">
+            <div class="row g-2">
+              <div class="col-12 position-relative">
+                {{ ui.field_input('input_busca_emitente', 'Preencher Emitente pelo Cadastro de Empresas', icon='search', placeholder='Digite nome, apelido ou CNPJ/CPF para buscar...', title='Buscar empresa emitente cadastrada para preenchimento automático', ui_id='editor.emitente.field-busca', attrs='autocomplete="off" onblur="aoPerderFocoEmpresa(\'emit\')" onfocus="aoDigitarEmpresaAutocomplete(\'emit\')" oninput="aoDigitarEmpresaAutocomplete(\'emit\')"') }}
+                <div class="dropdown-menu w-100 overflow-auto p-1 nft-topbar-dropdown-menu" id="dropdown_menu_busca_emitente" style="display: none; position: absolute; top: 100%; left: 0;" data-ui="editor.emitente.dropdown-busca"></div>
+                <select id="select_emitente" style="display: none;" title="Lista interna de empresas emitentes" data-ui="editor.emitente.select-hidden"><option value="">Selecione...</option></select>
+              </div>
+
+              <div class="col-md-7 position-relative">
+                {{ ui.field_input('emit_xPais', 'País do Emitente (Nome)', value='Brasil', placeholder='Digite para filtrar o País...', title='País de origem do emitente (preenche código BACEN)', ui_id='editor.emitente.field-xPais', input_class='fw-bold', attrs='autocomplete="off" onblur="aoPerderFocoPais(\'emit\')" onfocus="aoDigitarPaisAutocomplete(\'emit\')" oninput="aoDigitarPaisAutocomplete(\'emit\')"') }}
+                <div class="dropdown-menu w-100 overflow-auto p-1 nft-topbar-dropdown-menu" id="dropdown_menu_emit_xPais" style="display: none; position: absolute; top: 100%; left: 0;" data-ui="editor.emitente.dropdown-pais"></div>
+              </div>
+              <div class="col-md-5">
+                {{ ui.field_input('emit_cPais', 'Cód. BACEN (<cPais>)', value='1058', modifier='code', readonly=True, title='Código BACEN do país do emitente (tag XML <cPais>)', ui_id='editor.emitente.field-cPais', input_class='fw-bold') }}
+              </div>
+
+              <div class="col-md-8">
+                {{ ui.field_input('emit_xNome', 'Razão Social (xNome)', title='Razão social do emitente (tag XML <emit><xNome>)', ui_id='editor.emitente.field-xNome') }}
+              </div>
+              <div class="col-md-4">
+                {{ ui.field_input('emit_CNPJ', 'CNPJ', modifier='code', input_class='mask-cnpj-cpf', placeholder='00.000.000/0000-00', title='CNPJ do emitente — atualiza automaticamente a Chave de Acesso', ui_id='editor.emitente.field-CNPJ', attrs='oninput="calcularChaveAcessoDinamica()"') }}
+              </div>
+
+              <div class="col-md-5">
+                {{ ui.field_input('emit_IE', 'Inscrição Estadual (IE)', modifier='code', title='Inscrição Estadual do emitente (tag XML <IE>)', ui_id='editor.emitente.field-IE') }}
+              </div>
+              <div class="col-md-7">
+                {% call ui.field_select('emit_CRT', 'Regime Tributário (CRT)', title='Código de Regime Tributário do emitente (tag XML <CRT>)', ui_id='editor.emitente.field-CRT') %}
+                  <option value="1" selected>1 - Simples Nacional</option>
+                  <option value="2">2 - Simples Nacional - excesso de sublimite de receita bruta</option>
+                  <option value="3">3 - Regime Normal</option>
+                  <option value="4">4 - Simples Nacional - Microempreendedor Individual - MEI</option>
+                {% endcall %}
+              </div>
+
+              <div class="col-md-5">
+                {{ ui.field_input('emit_xLgr', 'Logradouro (xLgr)', title='Rua, avenida ou logradouro do emitente', ui_id='editor.emitente.field-xLgr') }}
+              </div>
+              <div class="col-md-2">
+                {{ ui.field_input('emit_nro', 'Número', title='Número do endereço do emitente (tag XML <nro>)', ui_id='editor.emitente.field-nro') }}
+              </div>
+              <div class="col-md-5">
+                {{ ui.field_input('emit_xCpl', 'Complemento (xCpl)', placeholder='Sala, Bloco, Edifício...', title='Complemento do endereço do emitente', ui_id='editor.emitente.field-xCpl') }}
+              </div>
+
+              <div class="col-md-5">
+                {{ ui.field_input('emit_xBairro', 'Bairro', title='Bairro do emitente (tag XML <xBairro>)', ui_id='editor.emitente.field-xBairro') }}
+              </div>
+              <div class="col-md-5">
+                {{ ui.field_input('emit_xMun', 'Município (xMun)', title='Município do emitente (tag XML <xMun>)', ui_id='editor.emitente.field-xMun') }}
+              </div>
+              <div class="col-md-2">
+                {{ ui.field_input('emit_UF', 'UF', modifier='sigla', title='Sigla do estado do emitente — atualiza cUF na Chave de Acesso', ui_id='editor.emitente.field-UF', attrs='maxlength="2" oninput="calcularChaveAcessoDinamica()"') }}
+              </div>
+
+              <div class="col-md-6">
+                {% call ui.field_wrap('emit_CEP', 'CEP (Busca Automática)', modifier='code', ui_id='editor.emitente.field-CEP') %}
+                  <div class="input-group">
+                    <input class="nft-control" id="emit_CEP" onblur="buscarCepAuto(this.value, 'emit')" placeholder="00000-000" title="CEP do emitente — sai do campo para buscar endereço automaticamente" type="text" data-ui="editor.emitente.input-CEP"/>
+                    <button class="nft-btn nft-btn--secondary" onclick="buscarCepAuto(document.getElementById('emit_CEP').value, 'emit')" title="Consultar CEP e preencher endereço do emitente" type="button" data-ui="editor.emitente.btn-cep">
+                      <i data-lucide="search"></i>
+                    </button>
+                  </div>
+                {% endcall %}
+              </div>
+              <div class="col-md-6">
+                {{ ui.field_input('emit_cMun', 'Cód. Mun. IBGE', modifier='code', placeholder='Ex: 3550308', title='Código IBGE do município do emitente (7 dígitos)', ui_id='editor.emitente.field-cMun', attrs='oninput="calcularChaveAcessoDinamica()"') }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card: Dados do Destinatário -->
+      <div class="col-lg-6 col-12">
+        <div class="card h-100" data-ui="editor.destinatario.card">
+          <div class="card-header d-flex align-items-center justify-content-between gap-2">
+            <div class="d-flex align-items-center gap-2 fw-bold">
+              <i data-lucide="user" class="nft-icon--md text-primary"></i>
+              <span>Dados do Destinatário</span>
+            </div>
+            {{ ui.badge('Nacional (Brasil)', tone='info', mono=True, id='lbl-status-pais-dest', title='Indica se o destinatário é nacional ou estrangeiro', ui_id='editor.destinatario.badge-pais') }}
+          </div>
+          <div class="card-body">
+            <div class="row g-2">
+              <div class="col-12 position-relative">
+                {% call ui.field_wrap('input_busca_destinatario', 'Preencher Destinatário pelo Cadastro', ui_id='editor.destinatario.field-busca') %}
+                  <div class="input-group">
+                    <input autocomplete="off" class="nft-control" id="input_busca_destinatario" onblur="aoPerderFocoEmpresa('dest')" onfocus="aoDigitarEmpresaAutocomplete('dest')" oninput="aoDigitarEmpresaAutocomplete('dest')" placeholder="Digite nome, apelido ou CNPJ/CPF para buscar..." title="Buscar destinatário cadastrado para preenchimento automático" type="text" data-ui="editor.destinatario.input-busca"/>
+                    <button class="nft-btn nft-btn--secondary" onclick="abrirModalNovaEmpresaRapido('dest')" title="Cadastrar nova empresa e aplicar imediatamente como destinatário" type="button" data-ui="editor.destinatario.btn-nova-empresa">
+                      <i data-lucide="plus"></i>
+                      <span>Nova</span>
+                    </button>
+                  </div>
+                {% endcall %}
+                <div class="dropdown-menu w-100 overflow-auto p-1 nft-topbar-dropdown-menu" id="dropdown_menu_busca_destinatario" style="display: none; position: absolute; top: 100%; left: 0;" data-ui="editor.destinatario.dropdown-busca"></div>
+                <select id="select_destinatario" style="display: none;" title="Lista interna de destinatários" data-ui="editor.destinatario.select-hidden"><option value="">Selecione...</option></select>
+              </div>
+
+              <div class="col-md-7 position-relative">
+                {{ ui.field_input('dest_xPais', 'País do Destinatário (Nome)', value='Brasil', placeholder='Digite para filtrar o País...', title='País do destinatário (preenche código BACEN e modo Exterior)', ui_id='editor.destinatario.field-xPais', input_class='fw-bold', attrs='autocomplete="off" onblur="aoPerderFocoPais(\'dest\')" onfocus="aoDigitarPaisAutocomplete(\'dest\')" oninput="aoDigitarPaisAutocomplete(\'dest\')"') }}
+                <div class="dropdown-menu w-100 overflow-auto p-1 nft-topbar-dropdown-menu" id="dropdown_menu_dest_xPais" style="display: none; position: absolute; top: 100%; left: 0;" data-ui="editor.destinatario.dropdown-pais"></div>
+              </div>
+              <div class="col-md-5">
+                {{ ui.field_input('dest_cPais', 'Cód. BACEN (<cPais>)', value='1058', modifier='code', readonly=True, title='Código BACEN do país do destinatário (tag XML <cPais>)', ui_id='editor.destinatario.field-cPais', input_class='fw-bold') }}
+              </div>
+
+              <div class="col-md-5">
+                {{ ui.field_input('dest_xNome', 'Nome / Razão Social (xNome)', title='Nome ou razão social do destinatário (tag XML <dest><xNome>)', ui_id='editor.destinatario.field-xNome') }}
+              </div>
+              <div class="col-md-3">
+                {% call ui.field_select('dest_tpDoc', 'Tipo Doc.', title='Tipo de identificação fiscal do destinatário (CNPJ, CPF ou Estrangeiro)', ui_id='editor.destinatario.field-tpDoc', attrs='onchange="atualizarTipoDocumentoDestinatario()"') %}
+                  <option value="CNPJ" selected>CNPJ</option>
+                  <option value="CPF">CPF</option>
+                  <option value="Estrangeiro">Estrangeiro</option>
+                {% endcall %}
+              </div>
+              <div class="col-md-4">
+                <div class="nft-field nft-field--code" data-ui="editor.destinatario.field-doc">
+                  <label class="nft-field__label" for="dest_CNPJ_CPF" id="lbl_dest_CNPJ_CPF">CNPJ / CPF / IdEstrangeiro</label>
+                  <input class="nft-control mask-cnpj-cpf" id="dest_CNPJ_CPF" placeholder="00.000.000/0000-00" title="Documento fiscal do destinatário" type="text" data-ui="editor.destinatario.input-doc"/>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                {% call ui.field_select('dest_indIEDest', 'Tipo de Contribuinte (ICMS)', title='Indicador de IE do destinatário (tag XML <indIEDest>)', ui_id='editor.destinatario.field-indIEDest', attrs='onchange="atualizarEstadoInscricaoEstadual()"') %}
+                  <option selected value="1">Contribuinte</option>
+                  <option value="2">Isento de Contribuição</option>
+                  <option value="9">Não Contribuinte</option>
+                {% endcall %}
+              </div>
+              <div class="col-md-6">
+                {{ ui.field_input('dest_IE', 'Inscrição Estadual (IE)', modifier='code', placeholder='Inscrição Estadual', title='Inscrição Estadual do destinatário (tag XML <dest><IE>)', ui_id='editor.destinatario.field-IE') }}
+              </div>
+
+              <div class="col-md-5">
+                {{ ui.field_input('dest_xLgr', 'Logradouro (xLgr)', title='Logradouro do destinatário', ui_id='editor.destinatario.field-xLgr') }}
+              </div>
+              <div class="col-md-2">
+                {{ ui.field_input('dest_nro', 'Número', title='Número do endereço do destinatário', ui_id='editor.destinatario.field-nro') }}
+              </div>
+              <div class="col-md-5">
+                {{ ui.field_input('dest_xCpl', 'Complemento (xCpl)', placeholder='Sala, Bloco, Galpão...', title='Complemento do endereço do destinatário', ui_id='editor.destinatario.field-xCpl') }}
+              </div>
+
+              <div class="col-md-5">
+                {{ ui.field_input('dest_xBairro', 'Bairro', title='Bairro do destinatário', ui_id='editor.destinatario.field-xBairro') }}
+              </div>
+              <div class="col-md-5">
+                {{ ui.field_input('dest_xMun', 'Município (xMun)', title='Município do destinatário', ui_id='editor.destinatario.field-xMun') }}
+              </div>
+              <div class="col-md-2">
+                {{ ui.field_input('dest_UF', 'UF', modifier='sigla', title='Sigla da UF do destinatário (ou EX para exterior)', ui_id='editor.destinatario.field-UF', attrs='maxlength="2"') }}
+              </div>
+
+              <div class="col-md-6">
+                {% call ui.field_wrap('dest_CEP', 'CEP (Busca Automática)', modifier='code', ui_id='editor.destinatario.field-CEP') %}
+                  <div class="input-group">
+                    <input class="nft-control" id="dest_CEP" onblur="buscarCepAuto(this.value, 'dest')" placeholder="00000-000 ou 99999-999" title="CEP do destinatário — sai do campo para buscar endereço automaticamente" type="text" data-ui="editor.destinatario.input-CEP"/>
+                    <button class="nft-btn nft-btn--secondary" onclick="buscarCepAuto(document.getElementById('dest_CEP').value, 'dest')" title="Consultar CEP e preencher endereço do destinatário" type="button" data-ui="editor.destinatario.btn-cep">
+                      <i data-lucide="search"></i>
+                    </button>
+                  </div>
+                {% endcall %}
+              </div>
+              <div class="col-md-6">
+                {{ ui.field_input('dest_cMun', 'Cód. Mun. IBGE', modifier='code', placeholder='Ex: 9999999 ou IBGE', title='Código IBGE do município do destinatário (9999999 para exterior)', ui_id='editor.destinatario.field-cMun') }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card: Transporte e Transportadora -->
+      <div class="col-12">
+        <div class="card" data-ui="editor.transporte.card">
+          <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="fw-bold d-inline-flex align-items-center gap-2">
+              <i data-lucide="truck" class="nft-icon--md text-primary"></i>
+              <span>Dados do Transporte e Transportadora</span>
+            </span>
+            <small class="text-muted font-monospace">Grupo &lt;transp&gt; SEFAZ</small>
+          </div>
+          <div class="card-body">
+            <div class="row g-2">
+              <div class="col-12 pb-2 mb-2 border-bottom">
+                {% call ui.field_wrap('select_transportadora', 'Preencher Transportadora pelo Cadastro', ui_id='editor.transporte.field-select') %}
+                  <div class="input-group">
+                    <select class="nft-control form-select" id="select_transportadora" onchange="preencherDadosDeCadastro(this, 'transp')" title="Selecionar transportadora cadastrada para preencher dados" data-ui="editor.transporte.select-cadastro">
+                      <option value="">Selecione para preencher automaticamente...</option>
+                    </select>
+                    <button class="nft-btn nft-btn--secondary" onclick="abrirModalNovaEmpresaRapido('transp')" title="Cadastrar nova transportadora e aplicar imediatamente à nota" type="button" data-ui="editor.transporte.btn-nova">
+                      <i data-lucide="plus"></i>
+                      <span>Nova</span>
+                    </button>
+                  </div>
+                {% endcall %}
+              </div>
+
+              <div class="col-md-3">
+                {% call ui.field_select('transp_modFrete', 'Modalidade do Frete', title='Define quem arca com o frete (tag XML <modFrete>)', ui_id='editor.transporte.field-modFrete') %}
+                  <option value="0">0 - CIF (Por conta do Remetente)</option>
+                  <option value="1" selected>1 - FOB (Por conta do Destinatário)</option>
+                  <option value="2">2 - Terceiros</option>
+                  <option value="3">3 - Próprio Remetente</option>
+                  <option value="4">4 - Próprio Destinatário</option>
+                  <option value="9">9 - Sem Ocorrência de Transporte</option>
+                {% endcall %}
+              </div>
+              <div class="col-md-3">
+                {{ ui.field_input('transp_CNPJ_CPF', 'CNPJ / CPF Transportadora', modifier='code', input_class='mask-cnpj-cpf', placeholder='00.000.000/0000-00', title='Documento da transportadora', ui_id='editor.transporte.field-doc') }}
+              </div>
+              <div class="col-md-4">
+                {{ ui.field_input('transp_xNome', 'Razão Social / Nome (xNome)', placeholder='Nome da transportadora', title='Razão social ou nome da transportadora', ui_id='editor.transporte.field-xNome') }}
+              </div>
+              <div class="col-md-2">
+                {{ ui.field_input('transp_IE', 'Inscrição Estadual (IE)', modifier='code', title='Inscrição Estadual da transportadora', ui_id='editor.transporte.field-IE') }}
+              </div>
+
+              <div class="col-md-3">
+                {% call ui.field_wrap('transp_CEP', 'CEP Transportadora', modifier='code', ui_id='editor.transporte.field-CEP') %}
+                  <div class="input-group">
+                    <input class="nft-control" id="transp_CEP" onblur="buscarCepAuto(this.value, 'transp')" placeholder="00000-000" title="CEP da transportadora — busca automática ao sair do campo" type="text" data-ui="editor.transporte.input-CEP"/>
+                    <button class="nft-btn nft-btn--secondary" onclick="buscarCepAuto(document.getElementById('transp_CEP').value, 'transp')" title="Consultar CEP da transportadora" type="button" data-ui="editor.transporte.btn-cep">
+                      <i data-lucide="search"></i>
+                    </button>
+                  </div>
+                {% endcall %}
+              </div>
+              <div class="col-md-5">
+                {{ ui.field_input('transp_xEnder', 'Endereço Completo (xEnder)', title='Endereço completo da transportadora (tag XML <xEnder>)', ui_id='editor.transporte.field-xEnder') }}
+              </div>
+              <div class="col-md-3">
+                {{ ui.field_input('transp_xMun', 'Município (xMun)', title='Município da transportadora', ui_id='editor.transporte.field-xMun') }}
+              </div>
+              <div class="col-md-1">
+                {{ ui.field_input('transp_UF', 'UF', modifier='sigla', title='Sigla do estado da transportadora', ui_id='editor.transporte.field-UF', attrs='maxlength="2"') }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </form>
 </div>
-<!-- PAÍS DO EMITENTE -->
-<div class="col-md-7 position-relative">
-<label class="form-label small mb-1 fw-bold" for="emit_xPais">País do Emitente (Nome)</label>
-<input autocomplete="off" class="form-control form-control-sm fw-bold" id="emit_xPais" onblur="aoPerderFocoPais('emit')" onfocus="aoDigitarPaisAutocomplete('emit')" oninput="aoDigitarPaisAutocomplete('emit')" placeholder="Digite para filtrar e selecionar o País..." type="text" value="Brasil"/>
-<div class="dropdown-menu shadow w-100 overflow-auto p-1" id="dropdown_menu_emit_xPais" style="max-height: 250px; display: none; position: absolute; z-index: 1060; top: 100%; left: 0;"></div>
-</div>
-<div class="col-md-5">
-<label class="form-label small mb-1 fw-bold">Cód. BACEN (&lt;cPais&gt;)</label>
-<input class="form-control form-control-sm font-monospace fw-bold bg-light" id="emit_cPais" readonly="" type="text" value="1058"/>
-</div>
-<div class="col-md-8">
-<label class="form-label small mb-1">Razão Social (xNome)</label>
-<input class="form-control form-control-sm" id="emit_xNome" type="text"/>
-</div>
-<div class="col-md-4">
-<label class="form-label small mb-1">CNPJ</label>
-<input class="form-control form-control-sm mask-cnpj-cpf" id="emit_CNPJ" oninput="calcularChaveAcessoDinamica()" placeholder="00.000.000/0000-00" type="text"/>
-</div>
-<div class="col-md-5">
-<label class="form-label small mb-1">Inscrição Estadual (IE)</label>
-<input class="form-control form-control-sm" id="emit_IE" type="text"/>
-</div>
-<div class="col-md-7">
-<label class="form-label small mb-1 fw-bold">Regime Tributário (CRT)</label>
-<select class="form-select form-select-sm fw-semibold" id="emit_CRT">
-<option value="1" selected>1 - Simples Nacional</option>
-<option value="2">2 - Simples Nacional - excesso de sublimite de receita bruta</option>
-<option value="3">3 - Regime Normal</option>
-<option value="4">4 - Simples Nacional - Microempreendedor Individual - MEI</option>
-</select>
-</div>
-<div class="col-md-5">
-<label class="form-label small mb-1">Logradouro (xLgr)</label>
-<input class="form-control form-control-sm" id="emit_xLgr" type="text"/>
-</div>
-<div class="col-md-2">
-<label class="form-label small mb-1">Número (nro)</label>
-<input class="form-control form-control-sm" id="emit_nro" type="text"/>
-</div>
-<div class="col-md-5">
-<label class="form-label small mb-1">Complemento (xCpl)</label>
-<input class="form-control form-control-sm" id="emit_xCpl" placeholder="Sala, Bloco, Edifício..." type="text"/>
-</div>
-<div class="col-md-5">
-<label class="form-label small mb-1" for="emit_xBairro">Bairro</label>
-<input class="form-control form-control-sm" id="emit_xBairro" type="text"/>
-</div>
-<div class="col-md-5">
-<label class="form-label small mb-1" for="emit_xMun">Município (xMun)</label>
-<input class="form-control form-control-sm" id="emit_xMun" type="text"/>
-</div>
-<div class="col-md-2">
-<label class="form-label small mb-1" for="emit_UF">UF</label>
-<input class="form-control form-control-sm text-uppercase text-center font-monospace" id="emit_UF" maxlength="2" oninput="calcularChaveAcessoDinamica()" type="text"/>
-</div>
-<div class="col-md-6">
-<label class="form-label small mb-1 fw-bold" for="emit_CEP">CEP (Busca Automática)</label>
-<div class="input-group input-group-sm">
-<input class="form-control form-control-sm font-monospace" id="emit_CEP" onblur="buscarCepAuto(this.value, 'emit')" placeholder="00000-000" type="text"/>
-<button class="btn-nft" onclick="buscarCepAuto(document.getElementById('emit_CEP').value, 'emit')" title="Consultar CEP e preencher endereço" type="button"><i data-lucide="search" style="width: 13px; height: 13px;"></i></button>
-</div>
-</div>
-<div class="col-md-6">
-<label class="form-label small mb-1" for="emit_cMun">Cód. Mun. IBGE</label>
-<input class="form-control form-control-sm font-monospace" id="emit_cMun" oninput="calcularChaveAcessoDinamica()" placeholder="Ex: 3550308" type="text"/>
-</div>
-</div>
-</div>
-</div>
-</div><div class="col-md-6 mt-3">
-<div class="card h-100 border mb-3">
-<div class="card-header py-2 d-flex align-items-center justify-content-between text-secondary">
-<div class="d-flex align-items-center gap-2 fw-bold">
-<i data-lucide="user" style="width: 15px; height: 15px;"></i>
-<span>Dados do Destinatário</span>
-</div>
-<div class="d-flex align-items-center gap-2">
-<span class="badge font-monospace bg-info-subtle text-info fw-bold" id="lbl-status-pais-dest">Nacional (Brasil)</span>
-</div>
-</div>
-<div class="card-body py-2">
-<div class="row g-2"><div class="col-12 mb-3 position-relative">
-<label class="form-label small mb-1 fw-bold" for="input_busca_destinatario">Preencher Dados do Destinatário a partir do Cadastro</label>
-<div class="input-group input-group-sm">
-<input autocomplete="off" class="form-control form-control-sm" id="input_busca_destinatario" onblur="aoPerderFocoEmpresa('dest')" onfocus="aoDigitarEmpresaAutocomplete('dest')" oninput="aoDigitarEmpresaAutocomplete('dest')" placeholder="Digite nome, apelido ou CNPJ/CPF para buscar e selecionar..." type="text"/>
-<button class="btn-nft py-0 px-2 d-inline-flex align-items-center gap-1" onclick="abrirModalNovaEmpresaRapido('dest')" title="Cadastrar nova empresa e aplicar imediatamente à nota" type="button">
-<i data-lucide="plus" style="width: 14px; height: 14px;"></i>
-<span>Nova</span>
-</button>
-</div>
-<div class="dropdown-menu shadow w-100 overflow-auto p-1" id="dropdown_menu_busca_destinatario" style="max-height: 250px; display: none; position: absolute; z-index: 1060; top: 100%; left: 0;"></div>
-<select id="select_destinatario" style="display: none;"><option value="">Selecione...</option></select>
-</div>
-<!-- PAÍS DO DESTINATÁRIO -->
-<div class="col-md-7 position-relative">
-<label class="form-label small mb-1 fw-bold" for="dest_xPais">País do Destinatário (Nome)</label>
-<input autocomplete="off" class="form-control form-control-sm fw-bold" id="dest_xPais" onblur="aoPerderFocoPais('dest')" onfocus="aoDigitarPaisAutocomplete('dest')" oninput="aoDigitarPaisAutocomplete('dest')" placeholder="Digite para filtrar e selecionar o País..." type="text" value="Brasil"/>
-<div class="dropdown-menu shadow w-100 overflow-auto p-1" id="dropdown_menu_dest_xPais" style="max-height: 250px; display: none; position: absolute; z-index: 1060; top: 100%; left: 0;"></div>
-</div>
-<div class="col-md-5">
-<label class="form-label small mb-1 fw-bold">Cód. BACEN (&lt;cPais&gt;)</label>
-<input class="form-control form-control-sm font-monospace fw-bold bg-light" id="dest_cPais" readonly="" type="text" value="1058"/>
-</div>
-<div class="col-md-5">
-<label class="form-label small mb-1">Nome / Razão Social (xNome)</label>
-<input class="form-control form-control-sm" id="dest_xNome" type="text"/>
-</div>
-<div class="col-md-3">
-<label class="form-label small mb-1 fw-bold">Tipo de Documento</label>
-<select class="form-select form-select-sm" id="dest_tpDoc" onchange="atualizarTipoDocumentoDestinatario()">
-<option value="CNPJ" selected>CNPJ</option>
-<option value="CPF">CPF</option>
-<option value="Estrangeiro">Estrangeiro</option>
-</select>
-</div>
-<div class="col-md-4">
-<label class="form-label small mb-1" id="lbl_dest_CNPJ_CPF">CNPJ / CPF / IdEstrangeiro</label>
-<input class="form-control form-control-sm mask-cnpj-cpf" id="dest_CNPJ_CPF" placeholder="00.000.000/0000-00" type="text"/>
-</div>
-<div class="col-md-6">
-<label class="form-label small mb-1">Tipo de Contribuinte (ICMS)</label>
-<select class="form-select form-select-sm" id="dest_indIEDest" onchange="atualizarEstadoInscricaoEstadual()">
-<option selected="" value="1">Contribuinte</option>
-<option value="2">Isento de Contribuição</option>
-<option value="9">Não Contribuinte</option>
-</select>
-</div>
-<div class="col-md-6">
-<label class="form-label small mb-1">Inscrição Estadual (IE)</label>
-<input class="form-control form-control-sm" id="dest_IE" placeholder="Inscrição Estadual" type="text"/>
-</div>
-<div class="col-md-5">
-<label class="form-label small mb-1">Logradouro (xLgr)</label>
-<input class="form-control form-control-sm" id="dest_xLgr" type="text"/>
-</div>
-<div class="col-md-2">
-<label class="form-label small mb-1">Número (nro)</label>
-<input class="form-control form-control-sm" id="dest_nro" type="text"/>
-</div>
-<div class="col-md-5">
-<label class="form-label small mb-1">Complemento (xCpl)</label>
-<input class="form-control form-control-sm" id="dest_xCpl" placeholder="Sala, Bloco, Galpão..." type="text"/>
-</div>
-<div class="col-md-5">
-<label class="form-label small mb-1" for="dest_xBairro">Bairro</label>
-<input class="form-control form-control-sm" id="dest_xBairro" type="text"/>
-</div>
-<div class="col-md-5">
-<label class="form-label small mb-1" for="dest_xMun">Município (xMun)</label>
-<input class="form-control form-control-sm" id="dest_xMun" type="text"/>
-</div>
-<div class="col-md-2">
-<label class="form-label small mb-1" for="dest_UF">UF</label>
-<input class="form-control form-control-sm text-uppercase text-center font-monospace" id="dest_UF" maxlength="2" type="text"/>
-</div>
-<div class="col-md-6">
-<label class="form-label small mb-1 fw-bold" for="dest_CEP">CEP (Busca Automática)</label>
-<div class="input-group input-group-sm">
-<input class="form-control form-control-sm font-monospace" id="dest_CEP" onblur="buscarCepAuto(this.value, 'dest')" placeholder="00000-000 ou 99999-999" type="text"/>
-<button class="btn-nft" onclick="buscarCepAuto(document.getElementById('dest_CEP').value, 'dest')" title="Consultar CEP e preencher endereço" type="button"><i data-lucide="search" style="width: 13px; height: 13px;"></i></button>
-</div>
-</div>
-<div class="col-md-6">
-<label class="form-label small mb-1" for="dest_cMun">Cód. Mun. IBGE</label>
-<input class="form-control form-control-sm font-monospace" id="dest_cMun" placeholder="Ex: 9999999 ou IBGE" type="text"/>
-</div>
-</div>
-</div>
-</div>
-</div></div><div class="row mt-3"><div class="col-12"><div class="card border mb-3">
-<div class="card-header py-2 d-flex justify-content-between align-items-center text-secondary">
-<span class="fw-bold d-inline-flex align-items-center gap-2"><i data-lucide="truck" style="width: 16px; height: 16px;"></i> Dados do Transporte e Volumes</span>
-<small class="text-muted">Grupo &lt;transp&gt; SEFAZ</small>
-</div>
-<div class="card-body py-3">
-<div class="row g-2"><div class="col-12 mb-3 border-bottom pb-2"><label class="form-label small fw-bold mb-1">Preencher Dados da Transportadora a partir do Cadastro</label><div class="input-group input-group-sm">
-<select class="form-select form-select-sm" id="select_transportadora" onchange="preencherDadosDeCadastro(this, 'transp')"><option value="">Selecione para preencher automaticamente...</option></select>
-<button class="btn-nft py-0 px-2 d-inline-flex align-items-center gap-1" onclick="abrirModalNovaEmpresaRapido('transp')" title="Cadastrar nova transportadora e aplicar imediatamente à nota" type="button">
-<i data-lucide="plus" style="width: 14px; height: 14px;"></i>
-<span>Nova</span>
-</button>
-</div></div>
-<!-- Modalidade do Frete -->
-<div class="col-md-3">
-<label class="form-label small mb-1 fw-bold" for="transp_modFrete">Modalidade do Frete</label>
-<select class="form-select form-select-sm" id="transp_modFrete">
-<option value="0">0 - CIF (Por conta do Remetente)</option>
-<option value="1" selected>1 - FOB (Por conta do Destinatário)</option>
-<option value="2">2 - Terceiros</option>
-<option value="3">3 - Próprio Remetente</option>
-<option value="4">4 - Próprio Destinatário</option>
-<option value="9">9 - Sem Ocorrência de Transporte</option>
-</select>
-</div>
-<div class="col-md-3">
-<label class="form-label small mb-1 fw-bold" for="transp_CNPJ_CPF">CNPJ / CPF Transportadora</label>
-<input class="form-control form-control-sm mask-cnpj-cpf" id="transp_CNPJ_CPF" placeholder="00.000.000/0000-00" type="text"/>
-</div>
-<div class="col-md-4">
-<label class="form-label small mb-1 fw-bold" for="transp_xNome">Razão Social / Nome (xNome)</label>
-<input class="form-control form-control-sm" id="transp_xNome" placeholder="Nome da transportadora" type="text"/>
-</div>
-<div class="col-md-2">
-<label class="form-label small mb-1 fw-bold" for="transp_IE">Inscrição Estadual (IE)</label>
-<input class="form-control form-control-sm" id="transp_IE" type="text"/>
-</div>
-<div class="col-md-3">
-<label class="form-label small mb-1 fw-bold" for="transp_CEP">CEP Transportadora</label>
-<div class="input-group input-group-sm">
-<input class="form-control form-control-sm font-monospace" id="transp_CEP" onblur="buscarCepAuto(this.value, 'transp')" placeholder="00000-000" type="text"/>
-<button class="btn-nft" onclick="buscarCepAuto(document.getElementById('transp_CEP').value, 'transp')" title="Buscar CEP da transportadora" type="button"><i data-lucide="search" style="width: 13px; height: 13px;"></i></button>
-</div>
-</div>
-<div class="col-md-5">
-<label class="form-label small mb-1" for="transp_xEnder">Endereço Completo (xEnder)</label>
-<input class="form-control form-control-sm" id="transp_xEnder" type="text"/>
-</div>
-<div class="col-md-3">
-<label class="form-label small mb-1 fw-bold" for="transp_xMun">Município (xMun)</label>
-<input class="form-control form-control-sm" id="transp_xMun" type="text"/>
-</div>
-<div class="col-md-1">
-<label class="form-label small mb-1 fw-bold" for="transp_UF">UF</label>
-<input class="form-control form-control-sm text-uppercase text-center font-monospace" id="transp_UF" maxlength="2" type="text"/>
-</div>
-</div>
-<hr class="my-3 text-muted"/>
-<!-- Dados dos Volumes e Pesos -->
-<div class="row g-2 align-items-end">
-</div>
-</div>
-</div></div></div></form></div>

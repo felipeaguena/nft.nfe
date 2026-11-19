@@ -1735,7 +1735,7 @@
             }
         }
         if (val === 0) {
-            fb.innerHTML = '<span class="badge bg-info-subtle text-info fw-bold" style="font-size: 10px;">ℹ️ Zerado (0,00): Sem rateio</span>';
+            fb.innerHTML = '<span class="nft-badge" data-tone="info">ℹ️ Zerado (0,00): Sem rateio</span>';
         } else {
             fb.innerHTML = '';
         }
@@ -2109,7 +2109,7 @@
             headerHozAlign: "center",
             headerSort: false,
             formatter: function() {
-                return '<button type="button" class="btn-editar-item-grade" title="Editar este item no pop-up dedicado"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></button>';
+                return '<button type="button" class="btn-editar-item-grade" title="Editar este item no pop-up dedicado" aria-label="Editar item" data-ui="editor.itens.btn-editar-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></button>';
             },
             cellClick: function(e, cell) {
                 e.stopPropagation();
@@ -2144,12 +2144,12 @@
             headerHozAlign: "center",
             formatter: function(cell) {
                 const val = String(cell.getValue() || '').trim();
-                if (!val) return '<span class="text-muted" style="font-size:11px;">8 dígitos</span>';
+                if (!val) return '<span class="text-muted small">8 dígitos</span>';
                 const limpo = val.replace(/\D/g, '');
                 if (limpo.length === 8) {
                     return `<span class="text-success fw-semibold font-monospace" title="NCM válido (8 dígitos)">${val}</span>`;
                 }
-                return `<span class="text-warning fw-bold font-monospace" title="NCM deve ter 8 dígitos (atual: ${limpo.length})">${val} <small style="font-size:9.5px; opacity:0.85;">(${limpo.length}/8)</small></span>`;
+                return `<span class="text-warning fw-bold font-monospace" title="NCM deve ter 8 dígitos (atual: ${limpo.length})">${val} <small class="opacity-75">(${limpo.length}/8)</small></span>`;
             }
         },
         {
@@ -2161,12 +2161,12 @@
             cssClass: "font-monospace",
             formatter: function(cell) {
                 const val = String(cell.getValue() || '').trim();
-                if (!val) return '<span class="text-muted" style="font-size:11px;">4 dígitos</span>';
+                if (!val) return '<span class="text-muted small">4 dígitos</span>';
                 const limpo = val.replace(/\D/g, '');
                 if (limpo.length === 4 && /^[123567]/.test(limpo)) {
                     return `<span class="text-primary fw-semibold" title="CFOP válido (4 dígitos)">${val}</span>`;
                 }
-                return `<span class="text-warning fw-bold" title="CFOP deve ter 4 dígitos">${val} <small style="font-size:9.5px; opacity:0.85;">(${limpo.length}/4)</small></span>`;
+                return `<span class="text-warning fw-bold" title="CFOP deve ter 4 dígitos">${val} <small class="opacity-75">(${limpo.length}/4)</small></span>`;
             }
         },
         {title:"Un. Com.", field:"uCom", width:85, editor:"input"},
@@ -2238,7 +2238,7 @@
                 const cfopTxt = conf && conf.cfop_padrao ? `(${conf.cfop_padrao}) ` : '(----) ';
                 const apelido = conf ? (conf.apelido || conf.nome || val) : val;
                 const labelTxt = `${cfopTxt}${apelido}`;
-                return `<span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold" style="font-size:11px; max-width: 175px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; vertical-align: middle;" title="${labelTxt}">${labelTxt}</span>`;
+                return `<span class="nft-badge text-truncate d-inline-block align-middle" data-tone="primary" style="max-width: 175px;" title="${labelTxt}">${labelTxt}</span>`;
             }
         },
         {title:"Origem", field:"orig", width:80, editor:"input"},
@@ -4858,54 +4858,54 @@
             const valTotalFmt = formatarNumeroVisualBR(r.valor_total || 0, 2, 2);
 
             html += `
-            <tr id="tr-rascunho-${r.id}">
-                <td>
+            <tr id="tr-rascunho-${r.id}" data-ui="modal.lista-rascunhos.row-${r.id}">
+                <td data-card-title="true">
                     <div class="d-flex align-items-center gap-1">
-                        <i data-lucide="tag" style="width: 13px; height: 13px; color: var(--text-muted); flex-shrink: 0;"></i>
+                        <i data-lucide="tag" class="text-muted flex-shrink-0 nft-icon--sm"></i>
                         <strong class="text-truncate" style="max-width: 220px;" title="${r.referencia_interna || 'Sem referência'}">
                             ${r.referencia_interna || '<span class="text-muted fst-italic">Sem referência</span>'}
                         </strong>
                     </div>
-                    <small class="text-muted font-monospace d-block text-truncate" style="font-size: 10.5px; max-width: 220px;">#${r.id} ${r.nome_arquivo_original ? '• ' + r.nome_arquivo_original : ''}</small>
+                    <small class="text-muted font-monospace d-block text-truncate" style="max-width: 220px;">#${r.id} ${r.nome_arquivo_original ? '• ' + r.nome_arquivo_original : ''}</small>
                 </td>
-                <td>
+                <td data-label="Categoria / Origem">
                     <div class="d-flex flex-column align-items-start gap-1">
                         <span class="texto-categoria-rascunho text-truncate" style="max-width: 150px;" title="Categoria: ${r.categoria || 'Geral'}">
                             ${r.categoria || 'Geral'}
                         </span>
-                        <span class="badge badge-origem-base ${badgeOrigemClass}" title="Origem: ${r.origem || window.NOME_MODULO_ORIGEM}">
-                            <i data-lucide="${iconeOrigem}" style="width: 11px; height: 11px;"></i>
+                        <span class="nft-badge ${badgeOrigemClass}" title="Origem: ${r.origem || window.NOME_MODULO_ORIGEM}">
+                            <i data-lucide="${iconeOrigem}" class="nft-icon--sm"></i>
                             <span>${r.origem || window.NOME_MODULO_ORIGEM}</span>
                         </span>
                     </div>
                 </td>
-                <td>
-                    <span class="text-truncate d-inline-block text-secondary" style="max-width: 220px; font-size: 11.5px; vertical-align: middle;" title="${r.tipo_operacao || '-'}">
+                <td data-label="Tipo de Operação">
+                    <span class="text-truncate d-inline-block text-muted small" style="max-width: 220px;" title="${r.tipo_operacao || '-'}">
                         ${r.tipo_operacao || '<span class="text-muted">-</span>'}
                     </span>
                 </td>
-                <td class="text-center small text-muted font-monospace">
+                <td data-label="Itens" class="text-center small text-muted font-monospace">
                     ${r.qtd_itens !== undefined && r.qtd_itens !== null ? r.qtd_itens : 0}
                 </td>
-                <td class="text-end fw-bold text-success font-monospace" style="font-size: 12px; white-space: nowrap;">
+                <td data-label="Valor Total" class="text-end fw-bold text-success font-monospace text-nowrap">
                     R$ ${valTotalFmt}
                 </td>
-                <td class="small text-muted font-monospace" style="white-space: nowrap; font-size: 11.5px;">
+                <td data-label="Atualizado em" class="small text-muted font-monospace text-nowrap">
                     <span class="d-inline-flex align-items-center gap-1">
-                        <i data-lucide="clock" style="width: 12px; height: 12px;"></i>
+                        <i data-lucide="clock" class="nft-icon--sm"></i>
                         <span>${dataFmt}</span>
                     </span>
                 </td>
-                <td class="text-center">
+                <td data-card-actions="true" class="text-center">
                     <div class="d-flex justify-content-center align-items-center gap-1">
-                        <button type="button" class="btn-nft btn-nft-action-round" onclick="carregarRascunho(${r.id}, '${r.origem}')" title="Abrir e carregar este rascunho">
-                            <i data-lucide="folder-open" style="width: 13px; height: 13px;"></i>
+                        <button type="button" class="nft-btn-icon nft-btn-icon--primary nft-btn-icon--sm" data-bs-toggle="tooltip" onclick="carregarRascunho(${r.id}, '${r.origem}')" title="Abrir e carregar este rascunho" aria-label="Carregar rascunho" data-ui="modal.lista-rascunhos.btn-carregar">
+                            <i data-lucide="folder-open"></i>
                         </button>
-                        <button type="button" class="btn-nft btn-nft-action-round" onclick="duplicarRascunho(${r.id}, '${(r.referencia_interna || '').replace(/'/g, "\\'")}', this)" title="Duplicar Rascunho">
-                            <i data-lucide="copy" style="width: 13px; height: 13px;"></i>
+                        <button type="button" class="nft-btn-icon nft-btn-icon--secondary nft-btn-icon--sm" data-bs-toggle="tooltip" onclick="duplicarRascunho(${r.id}, '${(r.referencia_interna || '').replace(/'/g, "\\'")}', this)" title="Duplicar este rascunho" aria-label="Duplicar rascunho" data-ui="modal.lista-rascunhos.btn-duplicar">
+                            <i data-lucide="copy"></i>
                         </button>
-                        <button type="button" class="btn-nft btn-nft-danger btn-nft-action-round" onclick="excluirRascunho(${r.id}, '${(r.referencia_interna || '').replace(/'/g, "\\'")}')" title="Excluir este rascunho">
-                            <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
+                        <button type="button" class="nft-btn-icon nft-btn-icon--danger nft-btn-icon--sm" data-bs-toggle="tooltip" onclick="excluirRascunho(${r.id}, '${(r.referencia_interna || '').replace(/'/g, "\\'")}')" title="Excluir este rascunho permanentemente" aria-label="Excluir rascunho" data-ui="modal.lista-rascunhos.btn-excluir">
+                            <i data-lucide="trash-2"></i>
                         </button>
                     </div>
                 </td>
@@ -5095,32 +5095,34 @@
                             ? window.normalizarItemHistoricoSefaz(item)
                             : null;
                         if (norm) {
+                            tr.setAttribute('data-ui', 'sefaz.historico.row');
                             tr.innerHTML = `
-                                <td class="align-middle text-nowrap">${norm.data}</td>
-                                <td class="align-middle text-center"><span class="badge bg-light text-dark border font-monospace px-2 py-1 fw-bold" style="font-size: 11px;">${norm.nnf}</span></td>
-                                <td class="align-middle text-center">${norm.ambienteHtml}</td>
-                                <td class="text-center align-middle">${norm.arquivosHtml}</td>
-                                <td class="text-center align-middle">${norm.chaveHtml}</td>
-                                <td class="align-middle text-center">${norm.cstatHtml}</td>
-                                <td class="text-start align-middle" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${norm.motivoTitle}">
+                                <td data-label="Data/Hora" class="align-middle text-nowrap">${norm.data}</td>
+                                <td data-card-title="true" data-label="Nº NF-e" class="align-middle text-center"><span class="nft-badge nft-badge--mono" data-tone="neutral">${norm.nnf}</span></td>
+                                <td data-label="Ambiente" class="align-middle text-center">${norm.ambienteHtml}</td>
+                                <td data-label="Arquivos" class="text-center align-middle">${norm.arquivosHtml}</td>
+                                <td data-label="Chave da NF-e" class="text-center align-middle">${norm.chaveHtml}</td>
+                                <td data-label="cStat" class="align-middle text-center">${norm.cstatHtml}</td>
+                                <td data-label="Motivo / Retorno" class="text-start align-middle text-truncate" style="max-width: 250px;" title="${norm.motivoTitle}">
                                     ${norm.motivo}
                                 </td>
-                                <td class="align-middle text-center" style="font-size: 11px;">${norm.protocolo}</td>
+                                <td data-label="Protocolo" class="align-middle text-center small font-monospace">${norm.protocolo}</td>
                             `;
                         } else {
                             const rawCh = String(item.chave || '').replace(/<[^>]*>?/gm, '').trim();
                             const nnfVal = item.nnf || (rawCh.length >= 34 ? String(parseInt(rawCh.substring(25, 34), 10)) : '-');
+                            tr.setAttribute('data-ui', 'sefaz.historico.row');
                             tr.innerHTML = `
-                                <td class="align-middle text-nowrap">${item.data || ''}</td>
-                                <td class="align-middle text-center"><span class="badge bg-light text-dark border font-monospace px-2 py-1 fw-bold" style="font-size: 11px;">${nnfVal}</span></td>
-                                <td class="align-middle text-center">${item.ambiente || ''}</td>
-                                <td class="text-center align-middle">${item.arquivos || '-'}</td>
-                                <td class="text-center align-middle">${typeof window.renderChaveComBotaoCopiar === 'function' ? window.renderChaveComBotaoCopiar(rawCh) : rawCh}</td>
-                                <td class="align-middle text-center">${item.status || ''}</td>
-                                <td class="text-start align-middle" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.motivoTitle || ''}">
+                                <td data-label="Data/Hora" class="align-middle text-nowrap">${item.data || ''}</td>
+                                <td data-card-title="true" data-label="Nº NF-e" class="align-middle text-center"><span class="nft-badge nft-badge--mono" data-tone="neutral">${nnfVal}</span></td>
+                                <td data-label="Ambiente" class="align-middle text-center">${item.ambiente || ''}</td>
+                                <td data-label="Arquivos" class="text-center align-middle">${item.arquivos || '-'}</td>
+                                <td data-label="Chave da NF-e" class="text-center align-middle">${typeof window.renderChaveComBotaoCopiar === 'function' ? window.renderChaveComBotaoCopiar(rawCh) : rawCh}</td>
+                                <td data-label="cStat" class="align-middle text-center">${item.status || ''}</td>
+                                <td data-label="Motivo / Retorno" class="text-start align-middle text-truncate" style="max-width: 250px;" title="${item.motivoTitle || ''}">
                                     ${item.motivo || ''}
                                 </td>
-                                <td class="align-middle text-center" style="font-size: 11px;">${item.protocolo || ''}</td>
+                                <td data-label="Protocolo" class="align-middle text-center small font-monospace">${item.protocolo || ''}</td>
                             `;
                         }
                         tbody.appendChild(tr);
@@ -5678,13 +5680,13 @@
             dropdown.innerHTML = filtrados.map(emp => {
                 const apelidoStr = emp.apelido ? ` (${emp.apelido})` : '';
                 const docStr = emp.cnpj_cpf || 'Sem doc';
-                const tipoBadge = emp.tipo ? `<span class="badge bg-secondary-subtle text-secondary me-1" style="font-size: 10px;">${emp.tipo}</span>` : '';
-                return `<button type="button" class="dropdown-item small py-1 text-start" onmousedown="selecionarEmpresa('${tipo}', ${emp.id})">
+                const tipoBadge = emp.tipo ? `<span class="nft-badge me-1" data-tone="neutral">${emp.tipo}</span>` : '';
+                return `<button type="button" class="dropdown-item small py-1 text-start" onmousedown="selecionarEmpresa('${tipo}', ${emp.id})" title="Selecionar ${emp.nome}" data-ui="editor.identificacao.option-${tipo}-${emp.id}">
                     <div class="d-flex justify-content-between align-items-center">
                         <span class="fw-semibold text-truncate me-2" style="max-width: 70%;">${emp.nome}${apelidoStr}</span>
                         <div class="text-end text-nowrap">
                             ${tipoBadge}
-                            <span class="badge bg-light text-dark font-monospace border" style="font-size: 11px;">${docStr}</span>
+                            <span class="nft-badge nft-badge--mono" data-tone="neutral">${docStr}</span>
                         </div>
                     </div>
                 </button>`;

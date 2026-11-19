@@ -131,6 +131,9 @@
         window.REGIMES_FALLBACK = REGIMES_FALLBACK;
 
         atualizarTodosSelectsEnquadramento(regimesConfigCache);
+        if (typeof window.renderizarListaOperacoesCadastradas === 'function' && Array.isArray(window.operacoesCache) && window.operacoesCache.length > 0) {
+            window.renderizarListaOperacoesCadastradas(window.operacoesCache);
+        }
         return regimesConfigCache;
     }
 
@@ -230,7 +233,8 @@
             btn.type = 'button';
             btn.className = `list-group-item list-group-item-action py-2 px-2 border rounded mb-1 d-flex align-items-center justify-content-between text-start cfg-enq-item ${isThis ? 'active fw-bold' : ''}`;
             btn.setAttribute('data-codigo', k);
-            btn.setAttribute('title', conf.apelido || conf.nome || k);
+            btn.setAttribute('title', `Selecionar enquadramento: ${conf.apelido || conf.nome || k}`);
+            btn.setAttribute('data-ui', `modal.config-regimes.item-${k}`);
             btn.innerHTML = `
                 <div class="d-flex align-items-center gap-2 text-truncate" style="min-width: 0;">
                     <span class="fw-bold font-monospace cfg-enq-cfop flex-shrink-0 text-primary">(${conf.cfop_padrao || '----'})</span>
@@ -327,42 +331,43 @@
             }
         });
 
+        modalDiv.setAttribute('data-ui', 'modal.config-regimes');
         modalDiv.innerHTML = `
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-dark text-white py-3">
+            <div class="modal-content">
+                <div class="modal-header" data-tone="dark" data-ui="modal.config-regimes.header">
                     <div class="d-flex align-items-center gap-2">
-                        <i data-lucide="sliders" class="text-primary"></i>
+                        <i data-lucide="sliders" class="nft-icon--md"></i>
                         <div>
-                            <h5 class="modal-title fw-bold mb-0 text-white">Configurações dos Enquadramentos Fiscais</h5>
-                            <small class="text-white-50" style="font-size: 11px;">
+                            <h5 class="modal-title mb-0">Configurações dos Enquadramentos Fiscais</h5>
+                            <small class="opacity-75">
                                 Crie e edite enquadramentos fiscais personalizados com apelidos para seleção e aplicação direta.
                             </small>
                         </div>
                     </div>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar janela" title="Fechar janela" data-ui="modal.config-regimes.btn-close"></button>
                 </div>
-                <div class="modal-body p-3 p-md-4">
+                <div class="modal-body" data-ui="modal.config-regimes.body">
                     <div class="row g-3">
                         <!-- Coluna Esquerda: Lista de Opções Existentes -->
                         <div class="col-lg-4 col-md-5">
-                            <div class="card border shadow-sm h-100 d-flex flex-column" style="min-height: 480px;">
-                                <div class="card-header py-2 px-3 bg-body-tertiary d-flex justify-content-between align-items-center">
-                                    <div class="d-flex align-items-center gap-1">
-                                        <i data-lucide="layers" style="width: 15px; height: 15px;" class="text-primary"></i>
+                            <div class="card h-100 d-flex flex-column" style="min-height: 480px;">
+                                <div class="card-header py-2 px-3 d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i data-lucide="layers" class="text-primary nft-icon--sm"></i>
                                         <span class="fw-bold small">Enquadramentos</span>
                                     </div>
                                     <div class="d-flex align-items-center gap-1">
-                                        <button type="button" class="btn btn-sm btn-success d-inline-flex align-items-center justify-content-center p-1 px-2 shadow-sm" onclick="window.criarNovoEnquadramento()" title="Novo Enquadramento">
-                                            <i data-lucide="plus" style="width: 15px; height: 15px;"></i>
+                                        <button type="button" class="nft-btn-icon nft-btn-icon--success nft-btn-icon--sm" onclick="window.criarNovoEnquadramento()" title="Criar novo enquadramento fiscal" aria-label="Novo Enquadramento" data-ui="modal.config-regimes.btn-novo">
+                                            <i data-lucide="plus"></i>
                                         </button>
-                                        <button type="button" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center justify-content-center p-1 px-2 shadow-sm" id="btn-excluir-enq" onclick="window.excluirEnquadramentoAtual()" title="Excluir Enquadramento">
-                                            <i data-lucide="trash-2" style="width: 15px; height: 15px;"></i>
+                                        <button type="button" class="nft-btn-icon nft-btn-icon--danger nft-btn-icon--sm" id="btn-excluir-enq" onclick="window.excluirEnquadramentoAtual()" title="Excluir enquadramento selecionado" aria-label="Excluir Enquadramento" data-ui="modal.config-regimes.btn-excluir">
+                                            <i data-lucide="trash-2"></i>
                                         </button>
                                     </div>
                                 </div>
-                                <div class="card-body p-2 flex-grow-1" style="overflow-y: auto; max-height: 480px;">
-                                    <div class="list-group list-group-flush" id="cfg_enquadramentos_lista">
+                                <div class="card-body p-2 flex-grow-1 overflow-auto" style="max-height: 480px;">
+                                    <div class="list-group list-group-flush" id="cfg_enquadramentos_lista" data-ui="modal.config-regimes.lista">
                                         <!-- Preenchido dinamicamente via JS -->
                                     </div>
                                 </div>
@@ -371,90 +376,111 @@
 
                         <!-- Coluna Direita: Formulário de Configuração -->
                         <div class="col-lg-8 col-md-7">
-                            <div class="card border shadow-sm h-100 d-flex flex-column">
-                                <div class="card-header py-2 px-3 bg-body-tertiary d-flex align-items-center gap-2">
-                                    <span class="fw-bold font-monospace text-primary fs-6" id="cfg_header_cfop">(3930)</span>
-                                    <h6 class="mb-0 fw-bold text-heading text-truncate" id="cfg_header_apelido">Suspensão de Impostos</h6>
+                            <div class="card h-100 d-flex flex-column">
+                                <div class="card-header py-2 px-3 d-flex align-items-center gap-2">
+                                    <span class="fw-bold font-monospace text-primary" id="cfg_header_cfop" title="CFOP sugerido do enquadramento" data-ui="modal.config-regimes.header-cfop">(3930)</span>
+                                    <h6 class="mb-0 fw-bold text-heading text-truncate" id="cfg_header_apelido" title="Apelido do enquadramento em edição" data-ui="modal.config-regimes.header-apelido">Suspensão de Impostos</h6>
                                 </div>
-                                <div class="card-body p-3 flex-grow-1" style="overflow-y: auto; max-height: 480px;">
+                                <div class="card-body p-3 flex-grow-1 overflow-auto" style="max-height: 480px;">
                                     <input type="hidden" id="cfg_enq_codigo" value="">
                                     <input type="hidden" id="cfg_enquadramento_select" value="">
-                                    <div class="row g-3">
+                                    <div class="row g-2">
                                         <!-- Campo para Apelido do Enquadramento -->
                                         <div class="col-md-6">
-                                            <label class="form-label small fw-bold text-primary mb-1">
-                                                <i data-lucide="bookmark" style="width: 13px; height: 13px;"></i>
-                                                Apelido do Enquadramento *
-                                            </label>
-                                            <input type="text" class="form-control form-control-sm fw-bold border-primary" id="cfg_enq_apelido" placeholder="Ex: Suspensão Art. 43, Admissão Temporária, Isenção Feira..." required>
-                                            <small class="text-muted" style="font-size: 11px;">Nome amigável exibido nas abas de Operação e Itens</small>
+                                            <div class="nft-field nft-field--highlight" data-tone="primary" data-ui="modal.config-regimes.field-apelido">
+                                                <label class="nft-field__label" for="cfg_enq_apelido">Apelido do Enquadramento <span class="nft-field__req">*</span></label>
+                                                <input type="text" class="nft-control fw-bold" id="cfg_enq_apelido" placeholder="Ex: Suspensão Art. 43, Admissão Temporária, Isenção Feira..." title="Nome amigável exibido nas abas de Operação e Itens" required data-ui="modal.config-regimes.input-apelido">
+                                                <small class="nft-field__help">Nome amigável exibido nas abas de Operação e Itens</small>
+                                            </div>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label small fw-bold mb-1">Descrição / Finalidade</label>
-                                            <input type="text" class="form-control form-control-sm" id="cfg_enq_descricao" placeholder="Finalidade ou fundamentação resumida desta operação...">
-                                            <small class="text-muted" style="font-size: 11px;">Ex: Amparo legal da IN RFB 1600/2016 ou Decreto 7.212/2010</small>
+                                            <div class="nft-field" data-ui="modal.config-regimes.field-descricao">
+                                                <label class="nft-field__label" for="cfg_enq_descricao">Descrição / Finalidade</label>
+                                                <input type="text" class="nft-control" id="cfg_enq_descricao" placeholder="Finalidade ou fundamentação resumida desta operação..." title="Descrição resumida ou amparo legal do enquadramento" data-ui="modal.config-regimes.input-descricao">
+                                                <small class="nft-field__help">Ex: Amparo legal da IN RFB 1600/2016 ou Decreto 7.212/2010</small>
+                                            </div>
                                         </div>
 
                                         <!-- Parâmetros da NF -->
                                         <div class="col-md-3">
-                                            <label class="form-label small fw-bold">CFOP Sugerido</label>
-                                            <input type="text" class="form-control form-control-sm font-monospace fw-bold" id="cfg_enq_cfop" placeholder="Ex: 3930, 3949, 7930">
+                                            <div class="nft-field nft-field--code" data-ui="modal.config-regimes.field-cfop">
+                                                <label class="nft-field__label" for="cfg_enq_cfop">CFOP Sugerido</label>
+                                                <input type="text" class="nft-control fw-bold" id="cfg_enq_cfop" placeholder="Ex: 3930, 3949, 7930" title="Código CFOP de 4 dígitos sugerido para este enquadramento" data-ui="modal.config-regimes.input-cfop">
+                                            </div>
                                         </div>
                                         <div class="col-md-3">
-                                            <label class="form-label small fw-bold">Tipo da NF (tpNF)</label>
-                                            <select class="form-select form-select-sm" id="cfg_enq_tp_nf">
-                                                <option value="0">0 - Entrada</option>
-                                                <option value="1">1 - Saída</option>
-                                            </select>
+                                            <div class="nft-field" data-ui="modal.config-regimes.field-tp-nf">
+                                                <label class="nft-field__label" for="cfg_enq_tp_nf">Tipo da NF (tpNF)</label>
+                                                <select class="nft-control form-select" id="cfg_enq_tp_nf" title="Tipo de movimento da NF-e (0=Entrada, 1=Saída)" data-ui="modal.config-regimes.select-tp-nf">
+                                                    <option value="0">0 - Entrada</option>
+                                                    <option value="1">1 - Saída</option>
+                                                </select>
+                                            </div>
                                         </div>
                                         <div class="col-md-3">
-                                            <label class="form-label small fw-bold">Destino (idDest)</label>
-                                            <select class="form-select form-select-sm" id="cfg_enq_id_dest">
-                                                <option value="1">1 - Interna</option>
-                                                <option value="2">2 - Interestadual</option>
-                                                <option value="3" selected>3 - Exterior</option>
-                                            </select>
+                                            <div class="nft-field" data-ui="modal.config-regimes.field-id-dest">
+                                                <label class="nft-field__label" for="cfg_enq_id_dest">Destino (idDest)</label>
+                                                <select class="nft-control form-select" id="cfg_enq_id_dest" title="Identificador de destino da operação" data-ui="modal.config-regimes.select-id-dest">
+                                                    <option value="1">1 - Interna</option>
+                                                    <option value="2">2 - Interestadual</option>
+                                                    <option value="3" selected>3 - Exterior</option>
+                                                </select>
+                                            </div>
                                         </div>
                                         <div class="col-md-3">
-                                            <label class="form-label small fw-bold">Pagamento</label>
-                                            <select class="form-select form-select-sm fw-bold" id="cfg_enq_t_pag">
-                                                <option value="90">90 - Sem Pagamento (SEFAZ vPag=0)</option>
-                                                <option value="99">99 - Outros (Câmbio / Exterior)</option>
-                                                <option value="01">01 - Dinheiro</option>
-                                                <option value="15">15 - Boleto Bancário</option>
-                                                <option value="17">17 - PIX</option>
-                                            </select>
+                                            <div class="nft-field" data-ui="modal.config-regimes.field-t-pag">
+                                                <label class="nft-field__label" for="cfg_enq_t_pag">Pagamento</label>
+                                                <select class="nft-control form-select fw-bold" id="cfg_enq_t_pag" title="Meio de pagamento padrão sugerido para a nota" data-ui="modal.config-regimes.select-t-pag">
+                                                    <option value="90">90 - Sem Pagamento (SEFAZ vPag=0)</option>
+                                                    <option value="99">99 - Outros (Câmbio / Exterior)</option>
+                                                    <option value="01">01 - Dinheiro</option>
+                                                    <option value="15">15 - Boleto Bancário</option>
+                                                    <option value="17">17 - PIX</option>
+                                                </select>
+                                            </div>
                                         </div>
 
                                         <!-- Tributos Federais e Estaduais Padrão -->
-                                        <div class="col-12"><h6 class="border-bottom pb-1 mb-1 mt-2 fw-bold text-heading">Tributos Federais e Estaduais Padrão</h6></div>
+                                        <div class="col-12"><h6 class="nft-section-title mt-2">Tributos Federais e Estaduais Padrão</h6></div>
                                         <div class="col-md-4">
-                                            <label class="form-label small fw-bold">CSOSN / CST ICMS</label>
-                                            <select class="form-select form-select-sm font-monospace" id="cfg_enq_csosn"></select>
+                                            <div class="nft-field nft-field--code" data-ui="modal.config-regimes.field-csosn">
+                                                <label class="nft-field__label" for="cfg_enq_csosn">CSOSN / CST ICMS</label>
+                                                <select class="nft-control form-select" id="cfg_enq_csosn" title="Situação tributária padrão do ICMS" data-ui="modal.config-regimes.select-csosn"></select>
+                                            </div>
                                         </div>
                                         <div class="col-md-4">
-                                            <label class="form-label small fw-bold">IPI - cEnq</label>
-                                            <select class="form-select form-select-sm font-monospace fw-bold" id="cfg_enq_c_enq"></select>
+                                            <div class="nft-field nft-field--code" data-ui="modal.config-regimes.field-c-enq">
+                                                <label class="nft-field__label" for="cfg_enq_c_enq">IPI - cEnq</label>
+                                                <select class="nft-control form-select fw-bold" id="cfg_enq_c_enq" title="Código de enquadramento legal do IPI" data-ui="modal.config-regimes.select-c-enq"></select>
+                                            </div>
                                         </div>
                                         <div class="col-md-4">
-                                            <label class="form-label small fw-bold">CST IPI</label>
-                                            <select class="form-select form-select-sm font-monospace" id="cfg_enq_cst_ipi"></select>
+                                            <div class="nft-field nft-field--code" data-ui="modal.config-regimes.field-cst-ipi">
+                                                <label class="nft-field__label" for="cfg_enq_cst_ipi">CST IPI</label>
+                                                <select class="nft-control form-select" id="cfg_enq_cst_ipi" title="Código de situação tributária do IPI" data-ui="modal.config-regimes.select-cst-ipi"></select>
+                                            </div>
                                         </div>
 
                                         <!-- PIS & COFINS -->
                                         <div class="col-md-6">
-                                            <label class="form-label small fw-bold">CST PIS</label>
-                                            <select class="form-select form-select-sm font-monospace" id="cfg_enq_cst_pis"></select>
+                                            <div class="nft-field nft-field--code" data-ui="modal.config-regimes.field-cst-pis">
+                                                <label class="nft-field__label" for="cfg_enq_cst_pis">CST PIS</label>
+                                                <select class="nft-control form-select" id="cfg_enq_cst_pis" title="Código de situação tributária do PIS" data-ui="modal.config-regimes.select-cst-pis"></select>
+                                            </div>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label small fw-bold">CST COFINS</label>
-                                            <select class="form-select form-select-sm font-monospace" id="cfg_enq_cst_cofins"></select>
+                                            <div class="nft-field nft-field--code" data-ui="modal.config-regimes.field-cst-cofins">
+                                                <label class="nft-field__label" for="cfg_enq_cst_cofins">CST COFINS</label>
+                                                <select class="nft-control form-select" id="cfg_enq_cst_cofins" title="Código de situação tributária da COFINS" data-ui="modal.config-regimes.select-cst-cofins"></select>
+                                            </div>
                                         </div>
 
                                         <!-- Fundamentação Legal infCpl -->
                                         <div class="col-12">
-                                            <label class="form-label small fw-bold">Texto Padrão de Fundamentação Legal (infCpl sugerido no rodapé)</label>
-                                            <textarea class="form-control form-control-sm" id="cfg_enq_inf_cpl" rows="2" placeholder="Fundamentação legal sugerida para esta nota..."></textarea>
+                                            <div class="nft-field nft-field--flush" data-ui="modal.config-regimes.field-inf-cpl">
+                                                <label class="nft-field__label" for="cfg_enq_inf_cpl">Texto Padrão de Fundamentação Legal (infCpl sugerido no rodapé)</label>
+                                                <textarea class="nft-control" id="cfg_enq_inf_cpl" rows="2" placeholder="Fundamentação legal sugerida para esta nota..." title="Texto padrão de informações complementares (tag XML infCpl)" data-ui="modal.config-regimes.textarea-inf-cpl"></textarea>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -462,14 +488,14 @@
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer d-flex justify-content-between py-2 bg-body-tertiary">
-                    <button type="button" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1" onclick="restaurarConfigRegimesPadrao()">
+                <div class="modal-footer d-flex justify-content-between" data-ui="modal.config-regimes.footer">
+                    <button type="button" class="nft-btn nft-btn--danger" onclick="restaurarConfigRegimesPadrao()" title="Restaurar enquadramentos fiscais para os padrões oficiais de fábrica" data-ui="modal.config-regimes.btn-restaurar">
                         <i data-lucide="rotate-ccw"></i>
                         <span>Restaurar Padrões Fiscais</span>
                     </button>
                     <div class="d-flex align-items-center gap-2">
-                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
-                        <button type="button" class="btn btn-primary btn-sm fw-bold d-flex align-items-center gap-1 shadow-sm" onclick="salvarConfigRegimesTributarios()">
+                        <button type="button" class="nft-btn nft-btn--ghost" data-bs-dismiss="modal" title="Fechar janela de enquadramentos" data-ui="modal.config-regimes.btn-fechar">Fechar</button>
+                        <button type="button" class="nft-btn nft-btn--primary" onclick="salvarConfigRegimesTributarios()" title="Salvar configurações do enquadramento fiscal atual" data-ui="modal.config-regimes.btn-salvar">
                             <i data-lucide="save"></i>
                             <span>Salvar Enquadramento</span>
                         </button>
@@ -1171,92 +1197,95 @@
         modalDiv.setAttribute('aria-hidden', 'true');
         modalDiv.setAttribute('data-bs-backdrop', 'static');
 
+        modalDiv.setAttribute('data-ui', 'modal.aplicar-enquadramento');
         modalDiv.innerHTML = `
         <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-dark text-white py-3">
+            <div class="modal-content">
+                <div class="modal-header" data-tone="dark" data-ui="modal.aplicar-enquadramento.header">
                     <div class="d-flex align-items-center gap-2">
-                        <i data-lucide="shield-check" class="text-primary"></i>
+                        <i data-lucide="shield-check" class="nft-icon--md"></i>
                         <div>
-                            <h5 class="modal-title fw-bold mb-0 text-white">Aplicar Enquadramento Fiscal aos Itens</h5>
-                            <small class="text-white-50" style="font-size: 11px;">
+                            <h5 class="modal-title mb-0">Aplicar Enquadramento Fiscal aos Itens</h5>
+                            <small class="opacity-75">
                                 Escolha uma opção para visualizar o resumo detalhado antes de repassar os dados para os itens.
                             </small>
                         </div>
                     </div>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar janela" title="Fechar janela" data-ui="modal.aplicar-enquadramento.btn-close"></button>
                 </div>
-                <div class="modal-body p-3 p-md-4">
+                <div class="modal-body" data-ui="modal.aplicar-enquadramento.body">
                     <div class="row g-3">
                         <!-- Coluna Esquerda: Escolha da Opção e Alvo -->
                         <div class="col-md-5 border-end">
-                            <h6 class="fw-bold mb-2 text-heading d-flex align-items-center gap-1">
-                                <i data-lucide="list" style="width: 15px; height: 15px;"></i>
+                            <h6 class="nft-section-title">
+                                <i data-lucide="list" class="nft-icon--sm"></i>
                                 <span>1. Escolha o Enquadramento</span>
                             </h6>
-                            <label class="form-label small text-muted mb-1">Enquadramentos Disponíveis:</label>
-                            <select id="modal_itens_select_enq" class="form-select form-select-sm fw-bold border-primary mb-3" onchange="window.atualizarResumoModalEnquadramento(this.value)">
-                                <!-- Opções com Apelido -->
-                            </select>
+                            <div class="nft-field nft-field--highlight mb-3" data-tone="primary" data-ui="modal.aplicar-enquadramento.field-enq">
+                                <label class="nft-field__label" for="modal_itens_select_enq">Enquadramentos Disponíveis</label>
+                                <select id="modal_itens_select_enq" class="nft-control form-select fw-bold" onchange="window.atualizarResumoModalEnquadramento(this.value)" title="Selecione o enquadramento fiscal a ser repassado aos itens" data-ui="modal.aplicar-enquadramento.select-enq">
+                                    <!-- Opções com Apelido -->
+                                </select>
+                            </div>
 
-                            <h6 class="fw-bold mb-2 text-heading d-flex align-items-center gap-1">
-                                <i data-lucide="target" style="width: 15px; height: 15px;"></i>
+                            <h6 class="nft-section-title">
+                                <i data-lucide="target" class="nft-icon--sm"></i>
                                 <span>2. Repassar Para:</span>
                             </h6>
-                            <div class="card bg-body-tertiary border p-2 mb-3">
+                            <div class="card p-2 mb-3">
                                 <div class="form-check mb-2">
-                                    <input class="form-check-input" type="radio" name="modal_itens_escopo" id="modal_itens_escopo_todos" value="todos" checked onchange="window.atualizarEscopoModalEnquadramento()">
+                                    <input class="form-check-input" type="radio" name="modal_itens_escopo" id="modal_itens_escopo_todos" value="todos" checked onchange="window.atualizarEscopoModalEnquadramento()" title="Aplicar o enquadramento a todos os itens da grade" data-ui="modal.aplicar-enquadramento.radio-todos">
                                     <label class="form-check-label fw-semibold small cursor-pointer" for="modal_itens_escopo_todos" id="lbl_modal_itens_todos">
-                                        Todos os Itens (<span id="modal_itens_qtd_todos">0</span>)
+                                        Todos os Itens (<span id="modal_itens_qtd_todos" data-ui="modal.aplicar-enquadramento.qtd-todos">0</span>)
                                     </label>
-                                    <div class="text-muted" style="font-size: 11px; margin-left: 2px;">
+                                    <div class="small text-muted">
                                         Aplica a todos os produtos da grade atual.
                                     </div>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="modal_itens_escopo" id="modal_itens_escopo_selecionados" value="selecionados" onchange="window.atualizarEscopoModalEnquadramento()">
+                                    <input class="form-check-input" type="radio" name="modal_itens_escopo" id="modal_itens_escopo_selecionados" value="selecionados" onchange="window.atualizarEscopoModalEnquadramento()" title="Aplicar o enquadramento apenas às linhas marcadas com checkbox" data-ui="modal.aplicar-enquadramento.radio-selecionados">
                                     <label class="form-check-label fw-semibold small cursor-pointer" for="modal_itens_escopo_selecionados" id="lbl_modal_itens_selecionados">
-                                        Somente Itens Selecionados (<span id="modal_itens_qtd_selecionados">0</span>)
+                                        Somente Itens Selecionados (<span id="modal_itens_qtd_selecionados" data-ui="modal.aplicar-enquadramento.qtd-selecionados">0</span>)
                                     </label>
-                                    <div class="text-muted" style="font-size: 11px; margin-left: 2px;" id="modal_itens_selecionados_hint">
+                                    <div class="small text-muted" id="modal_itens_selecionados_hint">
                                         Aplica apenas às linhas marcadas na grade.
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="card bg-primary-subtle border border-primary-subtle p-2 mb-3">
-                                <small class="text-primary fw-bold d-block mb-1">
-                                    <i data-lucide="package-check" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle;"></i>
-                                    Impacto da Aplicação:
+                            <div class="alert alert-info p-2 mb-3">
+                                <small class="text-primary fw-bold d-flex align-items-center gap-1 mb-1">
+                                    <i data-lucide="package-check" class="nft-icon--sm"></i>
+                                    <span>Impacto da Aplicação:</span>
                                 </small>
-                                <strong id="modal_itens_impacto_txt" class="text-primary fs-7">Será aplicado a todos os itens</strong>
-                                <small class="text-muted mt-1" style="font-size: 11px;">
+                                <strong id="modal_itens_impacto_txt" class="text-primary small d-block" data-ui="modal.aplicar-enquadramento.impacto">Será aplicado a todos os itens</strong>
+                                <small class="text-muted d-block mt-1">
                                     CSTs, CSOSN e cEnq serão atualizados. Alíquotas e valores existentes são mantidos.
                                 </small>
                             </div>
 
-                            <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-primary d-flex align-items-center gap-1" onclick="window.abrirModalConfigRegimes(document.getElementById('modal_itens_select_enq')?.value)">
-                                <i data-lucide="sliders" style="width: 13px; height: 13px;"></i>
-                                <span>⚙️ Gerenciar / Criar Enquadramentos</span>
+                            <button type="button" class="nft-btn nft-btn--link nft-btn--sm" onclick="window.abrirModalConfigRegimes(document.getElementById('modal_itens_select_enq')?.value)" title="Abrir configurações para gerenciar ou criar enquadramentos" data-ui="modal.aplicar-enquadramento.btn-gerenciar">
+                                <i data-lucide="sliders"></i>
+                                <span>Gerenciar / Criar Enquadramentos</span>
                             </button>
                         </div>
 
                         <!-- Coluna Direita: Resumo das Configurações do Enquadramento Solicitado -->
                         <div class="col-md-7 ps-md-3">
-                            <h6 class="fw-bold mb-2 text-heading d-flex align-items-center gap-1">
-                                <i data-lucide="file-text" style="width: 15px; height: 15px;"></i>
+                            <h6 class="nft-section-title">
+                                <i data-lucide="file-text" class="nft-icon--sm"></i>
                                 <span>3. Resumo das Configurações</span>
                             </h6>
-                            <div class="card border border-primary-subtle shadow-sm p-3 bg-light-subtle">
+                            <div class="card p-3">
                                 <div class="d-flex align-items-center justify-content-between mb-1">
-                                    <strong class="fs-6 text-primary" id="resumo_enq_apelido">-</strong>
-                                    <span class="badge bg-secondary-subtle text-secondary" id="resumo_enq_tipo_dest">0-Entrada</span>
+                                    <strong class="text-primary" id="resumo_enq_apelido" data-ui="modal.aplicar-enquadramento.resumo-apelido">-</strong>
+                                    <span class="nft-badge" data-tone="neutral" id="resumo_enq_tipo_dest" data-ui="modal.aplicar-enquadramento.resumo-tipo">0-Entrada</span>
                                 </div>
                                 <small class="text-muted d-block mb-2" id="resumo_enq_desc"></small>
 
                                 <!-- Parâmetros Fiscais -->
                                 <div class="table-responsive">
-                                    <table class="table table-sm table-borderless mb-0" style="font-size: 12px;">
+                                    <table class="table table-sm table-borderless mb-0 small">
                                         <tbody>
                                             <tr>
                                                 <td class="text-muted py-1" style="width: 40%;">CFOP Sugerido:</td>
@@ -1293,22 +1322,22 @@
                                 <!-- Fundamentação infCpl -->
                                 <div class="mt-2 pt-2 border-top">
                                     <small class="text-muted fw-bold d-block">Fundamentação Legal (infCpl sugerido):</small>
-                                    <div class="small text-muted font-monospace p-2 bg-body rounded mt-1 border text-break" style="max-height: 75px; overflow-y: auto; font-size: 11px;" id="resumo_enq_infcpl">
+                                    <div class="small text-muted font-monospace p-2 rounded mt-1 border text-break overflow-auto" style="max-height: 75px;" id="resumo_enq_infcpl">
                                         -
                                     </div>
                                 </div>
 
                                 <div class="alert alert-info py-2 px-3 small mt-2 mb-0 d-flex align-items-center gap-2" id="resumo_enq_alerta_impostos">
-                                    <i data-lucide="info" style="width: 16px; height: 16px;" class="flex-shrink-0"></i>
-                                    <span id="resumo_enq_alerta_txt" style="font-size: 11px;">Ao confirmar, os CSTs, CSOSN e cEnq configurados serão aplicados. As alíquotas e valores já existentes nos itens serão mantidos.</span>
+                                    <i data-lucide="info" class="nft-icon--sm flex-shrink-0"></i>
+                                    <span id="resumo_enq_alerta_txt">Ao confirmar, os CSTs, CSOSN e cEnq configurados serão aplicados. As alíquotas e valores já existentes nos itens serão mantidos.</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer d-flex justify-content-between py-2 bg-body-tertiary">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary btn-sm fw-bold shadow-sm d-flex align-items-center gap-1" id="btn_confirmar_aplicar_enq" onclick="window.confirmarEAplicarEnquadramentoAosItens()">
+                <div class="modal-footer d-flex justify-content-between" data-ui="modal.aplicar-enquadramento.footer">
+                    <button type="button" class="nft-btn nft-btn--ghost" data-bs-dismiss="modal" title="Fechar sem alterar os itens" data-ui="modal.aplicar-enquadramento.btn-cancelar">Cancelar</button>
+                    <button type="button" class="nft-btn nft-btn--primary" id="btn_confirmar_aplicar_enq" onclick="window.confirmarEAplicarEnquadramentoAosItens()" title="Confirmar e aplicar o enquadramento fiscal selecionado aos itens" data-ui="modal.aplicar-enquadramento.btn-confirmar">
                         <i data-lucide="check-circle"></i>
                         <span id="btn_confirmar_aplicar_enq_txt">Confirmar e Repassar aos Itens</span>
                     </button>
@@ -1647,45 +1676,46 @@
         modalDiv.setAttribute('aria-hidden', 'true');
         modalDiv.setAttribute('data-bs-backdrop', 'static');
 
+        modalDiv.setAttribute('data-ui', 'modal.zerar-impostos');
         modalDiv.innerHTML = `
-        <div class="modal-dialog modal-dialog-centered" style="max-width: 520px;">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-warning text-dark py-3">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header" data-tone="warning" data-ui="modal.zerar-impostos.header">
                     <div class="d-flex align-items-center gap-2">
-                        <i data-lucide="percent" style="width: 22px; height: 22px;"></i>
+                        <i data-lucide="percent" class="nft-icon--md"></i>
                         <div>
-                            <h5 class="modal-title fw-bold mb-0">Zerar Impostos dos Itens</h5>
-                            <small class="text-dark-50" style="font-size: 11px;">
+                            <h5 class="modal-title mb-0">Zerar Impostos dos Itens</h5>
+                            <small class="opacity-75">
                                 Zera Base de Cálculo, Alíquota (%) e Valores de II, IPI, PIS e COFINS.
                             </small>
                         </div>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar janela" title="Fechar janela" data-ui="modal.zerar-impostos.btn-close"></button>
                 </div>
-                <div class="modal-body p-3 p-md-4">
+                <div class="modal-body" data-ui="modal.zerar-impostos.body">
                     <div class="mb-3">
-                        <label class="form-label fw-bold small text-muted mb-2 d-flex align-items-center gap-1">
-                            <i data-lucide="target" style="width: 15px; height: 15px;"></i>
-                            <span>Escolha a Forma de Repasse:</span>
-                        </label>
+                        <h6 class="nft-section-title">
+                            <i data-lucide="target" class="nft-icon--sm"></i>
+                            <span>Escolha a Forma de Repasse</span>
+                        </h6>
 
-                        <div class="card bg-body-tertiary border p-3">
+                        <div class="card p-3">
                             <div class="form-check mb-2">
-                                <input class="form-check-input" type="radio" name="modal_zerar_escopo" id="modal_zerar_escopo_todos" value="todos" checked onchange="window.atualizarEscopoModalZerarImpostos()">
+                                <input class="form-check-input" type="radio" name="modal_zerar_escopo" id="modal_zerar_escopo_todos" value="todos" checked onchange="window.atualizarEscopoModalZerarImpostos()" title="Zerar impostos de todos os itens da nota" data-ui="modal.zerar-impostos.radio-todos">
                                 <label class="form-check-label fw-semibold cursor-pointer" for="modal_zerar_escopo_todos" id="lbl_modal_zerar_todos">
-                                    Zerar Todos os Itens (<span id="modal_zerar_qtd_todos">0</span>)
+                                    Zerar Todos os Itens (<span id="modal_zerar_qtd_todos" data-ui="modal.zerar-impostos.qtd-todos">0</span>)
                                 </label>
-                                <div class="text-muted" style="font-size: 11px; margin-left: 2px;">
+                                <div class="small text-muted">
                                     Zera os impostos de todos os itens cadastrados na nota.
                                 </div>
                             </div>
 
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="modal_zerar_escopo" id="modal_zerar_escopo_selecionados" value="selecionados" onchange="window.atualizarEscopoModalZerarImpostos()">
+                                <input class="form-check-input" type="radio" name="modal_zerar_escopo" id="modal_zerar_escopo_selecionados" value="selecionados" onchange="window.atualizarEscopoModalZerarImpostos()" title="Zerar impostos apenas dos itens marcados na grade" data-ui="modal.zerar-impostos.radio-selecionados">
                                 <label class="form-check-label fw-semibold cursor-pointer" for="modal_zerar_escopo_selecionados" id="lbl_modal_zerar_selecionados">
-                                    Zerar Itens Selecionados (<span id="modal_zerar_qtd_selecionados">0</span>)
+                                    Zerar Itens Selecionados (<span id="modal_zerar_qtd_selecionados" data-ui="modal.zerar-impostos.qtd-selecionados">0</span>)
                                 </label>
-                                <div class="text-muted" style="font-size: 11px; margin-left: 2px;" id="modal_zerar_selecionados_hint">
+                                <div class="small text-muted" id="modal_zerar_selecionados_hint">
                                     Zera os impostos apenas dos itens marcados com checkbox na tabela.
                                 </div>
                             </div>
@@ -1693,29 +1723,29 @@
                     </div>
 
                     <!-- Quadro de Alerta / Detalhes dos Impostos Zerados -->
-                    <div class="card bg-warning-subtle border border-warning-subtle p-3 mb-2">
-                        <strong class="text-warning-emphasis d-flex align-items-center gap-1 mb-2" style="font-size: 13px;">
-                            <i data-lucide="alert-triangle" style="width: 16px; height: 16px;"></i>
-                            <span id="modal_zerar_impacto_titulo">Impacto: Zerar Todos os Itens</span>
+                    <div class="alert alert-warning p-3 mb-0">
+                        <strong class="d-flex align-items-center gap-2 mb-2">
+                            <i data-lucide="alert-triangle" class="nft-icon--sm"></i>
+                            <span id="modal_zerar_impacto_titulo" data-ui="modal.zerar-impostos.impacto">Impacto: Zerar Todos os Itens</span>
                         </strong>
-                        <ul class="mb-2 ps-3 text-secondary" style="font-size: 12px; line-height: 1.5;">
+                        <ul class="mb-2 ps-3 small">
                             <li><strong>II:</strong> Base de Cálculo = 0.00, % = 0.00, Valor = 0.00</li>
                             <li><strong>IPI:</strong> Base de Cálculo = 0.00, % = 0.00, Valor = 0.00</li>
                             <li><strong>PIS:</strong> Base de Cálculo = 0.00, % = 0.00, Valor = 0.00</li>
                             <li><strong>COFINS:</strong> Base de Cálculo = 0.00, % = 0.00, Valor = 0.00</li>
                         </ul>
-                        <small class="text-muted" style="font-size: 11px;">
-                            <i data-lucide="info" style="width: 12px; height: 12px; display: inline-block;"></i>
-                            Todos os totais da nota fiscal e do rateio serão recalculados automaticamente.
+                        <small class="text-muted d-flex align-items-center gap-1">
+                            <i data-lucide="info" class="nft-icon--sm"></i>
+                            <span>Todos os totais da nota fiscal e do rateio serão recalculados automaticamente.</span>
                         </small>
                     </div>
                 </div>
-                <div class="modal-footer bg-light py-2 px-3 d-flex justify-content-between">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">
+                <div class="modal-footer d-flex justify-content-between" data-ui="modal.zerar-impostos.footer">
+                    <button type="button" class="nft-btn nft-btn--ghost" data-bs-dismiss="modal" title="Fechar sem zerar impostos" data-ui="modal.zerar-impostos.btn-cancelar">
                         Cancelar
                     </button>
-                    <button type="button" class="btn btn-sm btn-warning fw-bold d-flex align-items-center gap-1 shadow-sm" id="btn_confirmar_zerar_impostos" onclick="window.confirmarZerarImpostosModal()">
-                        <i data-lucide="check" style="width: 15px; height: 15px;"></i>
+                    <button type="button" class="nft-btn nft-btn--warning-solid" id="btn_confirmar_zerar_impostos" onclick="window.confirmarZerarImpostosModal()" title="Confirmar e zerar impostos dos itens selecionados" data-ui="modal.zerar-impostos.btn-confirmar">
+                        <i data-lucide="check"></i>
                         <span id="btn_confirmar_zerar_txt">Confirmar e Zerar Impostos</span>
                     </button>
                 </div>
@@ -2026,40 +2056,49 @@
             const regUpper = regRaw.toUpperCase();
 
             let apelidoBadge = regRaw;
-            let corBadge = 'bg-secondary-subtle text-secondary border border-secondary-subtle';
+            const confCache = window.regimesConfigCache || regimesConfigCache || REGIMES_FALLBACK;
+            let matchedConf = (confCache && (confCache[regRaw] || confCache[regUpper]))
+                || (REGIMES_FALLBACK && REGIMES_FALLBACK[regUpper]);
 
-            const confCache = window.regimesConfigCache || regimesConfigCache;
-            if (confCache && confCache[regRaw]) {
-                apelidoBadge = confCache[regRaw].apelido || confCache[regRaw].nome || regRaw;
-            } else if (confCache && confCache[regUpper]) {
-                apelidoBadge = confCache[regUpper].apelido || confCache[regUpper].nome || regRaw;
-            } else if (REGIMES_FALLBACK && REGIMES_FALLBACK[regUpper]) {
-                apelidoBadge = REGIMES_FALLBACK[regUpper].apelido || REGIMES_FALLBACK[regUpper].nome || regRaw;
+            if (!matchedConf && confCache) {
+                matchedConf = Object.values(confCache).find(c =>
+                    c && (
+                        String(c.codigo || '').trim().toUpperCase() === regUpper ||
+                        String(c.nome || '').trim().toUpperCase() === regUpper ||
+                        String(c.apelido || '').trim().toUpperCase() === regUpper
+                    )
+                );
             }
 
+            if (matchedConf) {
+                apelidoBadge = matchedConf.apelido || matchedConf.nome || regRaw;
+            }
+
+            let badgeTone = 'neutral';
             const compUpper = (apelidoBadge + ' ' + regUpper).toUpperCase();
             if (compUpper.includes('SUSPENS') || compUpper.includes('SUSPENSAO')) {
-                corBadge = 'bg-warning-subtle text-warning-emphasis border border-warning-subtle';
+                badgeTone = 'warning';
             } else if (compUpper.includes('ISENC') || compUpper.includes('ISENÇÃO') || compUpper.includes('ISENCAO')) {
-                corBadge = 'bg-success-subtle text-success-emphasis border border-success-subtle';
+                badgeTone = 'success';
             } else if (compUpper.includes('RECOLH') || compUpper.includes('RECOLHIMENTO')) {
-                corBadge = 'bg-primary-subtle text-primary border border-primary-subtle';
+                badgeTone = 'primary';
             } else if (compUpper.includes('IMUN') || compUpper.includes('IMUNIDADE')) {
-                corBadge = 'bg-info-subtle text-info-emphasis border border-info-subtle';
+                badgeTone = 'info';
             }
 
             if (apelidoBadge) {
-                const displayTxt = apelidoBadge.length > 20 ? (apelidoBadge.slice(0, 18) + '…') : apelidoBadge;
-                regimeBadge = `<span class="badge rounded-pill fw-semibold ${corBadge}" style="font-size: 10px; max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; vertical-align: middle;" title="${apelidoBadge}">${displayTxt}</span>`;
+                regimeBadge = `<span class="nft-badge nft-badge--pill" data-tone="${badgeTone}" title="Enquadramento fiscal: ${apelidoBadge}">${apelidoBadge}</span>`;
             }
 
             const tipoTxt = (op.tp_nf == '1') ? '1-Saída' : '0-Entrada';
             const destTxt = (op.id_dest == '1') ? 'Interna' : (op.id_dest == '2' ? 'Interestadual' : 'Exterior');
 
+            item.setAttribute('title', `Selecionar operação (${op.cfop_padrao}) ${op.nome_operacao}`);
+            item.setAttribute('data-ui', `operacoes.lista.item-${op.id}`);
             item.innerHTML = `
                 <div class="d-flex align-items-center justify-content-between">
                     <div class="d-flex align-items-center gap-2" style="min-width: 0;">
-                        ${!termoFiltro ? '<i data-lucide="grip-vertical" class="text-muted grip-handle cursor-grab flex-shrink-0" title="Arraste para reordenar" style="cursor: grab; width: 16px; height: 16px;"></i>' : ''}
+                        ${!termoFiltro ? '<i data-lucide="grip-vertical" class="text-muted grip-handle cursor-grab flex-shrink-0 nft-icon--sm" title="Arraste para reordenar"></i>' : ''}
                         <div class="text-truncate">
                             <span class="fw-bold font-monospace text-primary">(${op.cfop_padrao})</span>
                             <span class="fw-bold text-heading ms-1">${op.nome_operacao}</span>
@@ -2069,7 +2108,7 @@
                         ${regimeBadge}
                     </div>
                 </div>
-                <div class="d-flex align-items-center gap-2 mt-1 text-muted" style="font-size: 11px;">
+                <div class="d-flex align-items-center gap-2 mt-1 text-muted small">
                     <span>${tipoTxt}</span>
                     <span>•</span>
                     <span>Dest: ${destTxt}</span>

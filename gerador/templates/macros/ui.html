@@ -1,0 +1,131 @@
+{# ==========================================================================
+   NFT LOGISTICS — MACROS CANÔNICAS DE INTERFACE (macros/ui.html)
+   Garante 100% de consistência em inputs, labels (for=), botões pílula,
+   botões ícone, badges, KPIs, cabeçalhos, modais, title e data-ui.
+   ========================================================================== #}
+
+{% macro page_header(title, subtitle='', badge='', badge_tone='info', icon='', ui_id='page.header') -%}
+<header class="nft-page-header" data-ui="{{ ui_id }}">
+  <div class="nft-page-header__info">
+    <h1 class="nft-page-title" data-ui="{{ ui_id }}.title">
+      {% if icon %}<i data-lucide="{{ icon }}" class="nft-icon--md text-primary"></i>{% endif %}
+      <span>{{ title }}</span>
+      {% if badge %}<span class="nft-badge nft-badge--mono" data-tone="{{ badge_tone }}" data-ui="{{ ui_id }}.badge" title="{{ badge }}">{{ badge }}</span>{% endif %}
+    </h1>
+    {% if subtitle %}<p class="nft-page-subtitle" data-ui="{{ ui_id }}.subtitle">{{ subtitle }}</p>{% endif %}
+  </div>
+  {% if caller is defined %}
+  <div class="nft-page-actions" data-ui="{{ ui_id }}.actions">
+    {{ caller() }}
+  </div>
+  {% endif %}
+</header>
+{%- endmacro %}
+
+{% macro kpi_card(label, value, id='', icon='', tone='', ui_id='', title='') -%}
+<div class="nft-kpi-card" {% if ui_id %}data-ui="{{ ui_id }}"{% endif %} {% if title %}title="{{ title }}"{% endif %}>
+  <div>
+    <div class="nft-kpi-label">{{ label }}</div>
+    <div class="nft-kpi-value" {% if id %}id="{{ id }}"{% endif %} {% if tone %}data-tone="{{ tone }}"{% endif %}>{{ value }}</div>
+  </div>
+  {% if icon %}
+  <div class="nft-kpi-icon" {% if tone %}data-tone="{{ tone }}"{% endif %}>
+    <i data-lucide="{{ icon }}" class="nft-icon--md"></i>
+  </div>
+  {% endif %}
+</div>
+{%- endmacro %}
+
+{% macro btn(text, variant='secondary', size='', icon='', type='button', id='', title='', ui_id='', onclick='', href='', extra_class='', attrs='') -%}
+{%- set cls = 'nft-btn nft-btn--' ~ variant ~ (' nft-btn--' ~ size if size else '') ~ (' ' ~ extra_class if extra_class else '') -%}
+{%- if href -%}
+<a class="{{ cls }}" href="{{ href }}"{% if id %} id="{{ id }}"{% endif %}{% if title %} title="{{ title }}"{% endif %}{% if ui_id %} data-ui="{{ ui_id }}"{% endif %}{% if onclick %} onclick="{{ onclick }}"{% endif %}{% if attrs %} {{ attrs|safe }}{% endif %}>
+  {% if icon %}<i data-lucide="{{ icon }}"></i>{% endif %}
+  <span>{{ text }}</span>
+</a>
+{%- else -%}
+<button class="{{ cls }}" type="{{ type }}"{% if id %} id="{{ id }}"{% endif %}{% if title %} title="{{ title }}"{% endif %}{% if ui_id %} data-ui="{{ ui_id }}"{% endif %}{% if onclick %} onclick="{{ onclick }}"{% endif %}{% if attrs %} {{ attrs|safe }}{% endif %}>
+  {% if icon %}<i data-lucide="{{ icon }}"></i>{% endif %}
+  <span>{{ text }}</span>
+</button>
+{%- endif -%}
+{%- endmacro %}
+
+{% macro btn_icon(icon, title, variant='ghost', size='md', type='button', id='', ui_id='', onclick='', href='', extra_class='', attrs='') -%}
+{%- set cls = 'nft-btn-icon nft-btn-icon--' ~ variant ~ (' nft-btn-icon--' ~ size if size == 'sm' else '') ~ (' ' ~ extra_class if extra_class else '') -%}
+{%- set has_custom_toggle = attrs and 'data-bs-toggle=' in attrs -%}
+{%- if href -%}
+<a class="{{ cls }}" href="{{ href }}"{% if not has_custom_toggle %} data-bs-toggle="tooltip" data-bs-placement="bottom"{% endif %} title="{{ title }}" aria-label="{{ title }}"{% if id %} id="{{ id }}"{% endif %}{% if ui_id %} data-ui="{{ ui_id }}"{% endif %}{% if onclick %} onclick="{{ onclick }}"{% endif %}{% if attrs %} {{ attrs|safe }}{% endif %}>
+  <i data-lucide="{{ icon }}"></i>
+</a>
+{%- else -%}
+<button class="{{ cls }}" type="{{ type }}"{% if not has_custom_toggle %} data-bs-toggle="tooltip" data-bs-placement="bottom"{% endif %} title="{{ title }}" aria-label="{{ title }}"{% if id %} id="{{ id }}"{% endif %}{% if ui_id %} data-ui="{{ ui_id }}"{% endif %}{% if onclick %} onclick="{{ onclick }}"{% endif %}{% if attrs %} {{ attrs|safe }}{% endif %}>
+  <i data-lucide="{{ icon }}"></i>
+</button>
+{%- endif -%}
+{%- endmacro %}
+
+{% macro badge(text, tone='neutral', pill=False, mono=False, id='', title='', ui_id='', extra_class='') -%}
+<span class="nft-badge{% if pill %} nft-badge--pill{% endif %}{% if mono %} nft-badge--mono{% endif %}{% if extra_class %} {{ extra_class }}{% endif %}" data-tone="{{ tone }}"{% if id %} id="{{ id }}"{% endif %}{% if title %} title="{{ title }}"{% endif %}{% if ui_id %} data-ui="{{ ui_id }}"{% endif %}>{{ text }}</span>
+{%- endmacro %}
+
+{% macro field_input(id, label, type='text', value='', placeholder='', modifier='', tone='', required=False, readonly=False, icon='', help='', title='', ui_id='', name='', extra_class='', input_class='', attrs='') -%}
+{%- set wrap_cls = 'nft-field' ~ (' nft-field--' ~ modifier if modifier else '') ~ (' nft-field--has-icon' if icon else '') ~ (' ' ~ extra_class if extra_class else '') -%}
+<div class="{{ wrap_cls }}"{% if tone %} data-tone="{{ tone }}"{% endif %}{% if ui_id %} data-ui="{{ ui_id }}"{% endif %}>
+  <label class="nft-field__label" for="{{ id }}">{{ label }}{% if required %}<span class="nft-field__req" aria-hidden="true">*</span>{% endif %}</label>
+  {% if icon %}<span class="nft-field__icon"><i data-lucide="{{ icon }}" class="nft-icon--sm"></i></span>{% endif %}
+  <input class="nft-control{% if input_class %} {{ input_class }}{% endif %}" id="{{ id }}"{% if name %} name="{{ name }}"{% endif %} type="{{ type }}"{% if value != '' %} value="{{ value }}"{% endif %}{% if placeholder %} placeholder="{{ placeholder }}"{% endif %}{% if title %} title="{{ title }}"{% else %} title="{{ label }}"{% endif %}{% if ui_id %} data-ui="{{ ui_id }}.input"{% endif %}{% if required %} required{% endif %}{% if readonly %} readonly{% endif %}{% if attrs %} {{ attrs|safe }}{% endif %}/>
+  {% if help %}<small class="nft-field__help">{{ help }}</small>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro field_select(id, label, modifier='', tone='', required=False, icon='', help='', title='', ui_id='', name='', extra_class='', select_class='', attrs='') -%}
+{%- set wrap_cls = 'nft-field' ~ (' nft-field--' ~ modifier if modifier else '') ~ (' nft-field--has-icon' if icon else '') ~ (' ' ~ extra_class if extra_class else '') -%}
+<div class="{{ wrap_cls }}"{% if tone %} data-tone="{{ tone }}"{% endif %}{% if ui_id %} data-ui="{{ ui_id }}"{% endif %}>
+  <label class="nft-field__label" for="{{ id }}">{{ label }}{% if required %}<span class="nft-field__req" aria-hidden="true">*</span>{% endif %}</label>
+  {% if icon %}<span class="nft-field__icon"><i data-lucide="{{ icon }}" class="nft-icon--sm"></i></span>{% endif %}
+  <select class="nft-control form-select{% if select_class %} {{ select_class }}{% endif %}" id="{{ id }}"{% if name %} name="{{ name }}"{% endif %}{% if title %} title="{{ title }}"{% else %} title="{{ label }}"{% endif %}{% if ui_id %} data-ui="{{ ui_id }}.select"{% endif %}{% if required %} required{% endif %}{% if attrs %} {{ attrs|safe }}{% endif %}>
+    {{ caller() }}
+  </select>
+  {% if help %}<small class="nft-field__help">{{ help }}</small>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro field_textarea(id, label, rows=3, placeholder='', modifier='', required=False, help='', title='', ui_id='', name='', extra_class='', textarea_class='', attrs='') -%}
+{%- set wrap_cls = 'nft-field' ~ (' nft-field--' ~ modifier if modifier else '') ~ (' ' ~ extra_class if extra_class else '') -%}
+<div class="{{ wrap_cls }}"{% if ui_id %} data-ui="{{ ui_id }}"{% endif %}>
+  <label class="nft-field__label" for="{{ id }}">{{ label }}{% if required %}<span class="nft-field__req" aria-hidden="true">*</span>{% endif %}</label>
+  <textarea class="nft-control{% if textarea_class %} {{ textarea_class }}{% endif %}" id="{{ id }}"{% if name %} name="{{ name }}"{% endif %} rows="{{ rows }}"{% if placeholder %} placeholder="{{ placeholder }}"{% endif %}{% if title %} title="{{ title }}"{% else %} title="{{ label }}"{% endif %}{% if ui_id %} data-ui="{{ ui_id }}.textarea"{% endif %}{% if required %} required{% endif %}{% if attrs %} {{ attrs|safe }}{% endif %}></textarea>
+  {% if help %}<small class="nft-field__help">{{ help }}</small>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro field_wrap(id, label, modifier='', tone='', required=False, help='', icon='', ui_id='', extra_class='') -%}
+{%- set wrap_cls = 'nft-field' ~ (' nft-field--' ~ modifier if modifier else '') ~ (' nft-field--has-icon' if icon else '') ~ (' ' ~ extra_class if extra_class else '') -%}
+<div class="{{ wrap_cls }}"{% if tone %} data-tone="{{ tone }}"{% endif %}{% if ui_id %} data-ui="{{ ui_id }}"{% endif %}>
+  <label class="nft-field__label" for="{{ id }}">{{ label }}{% if required %}<span class="nft-field__req" aria-hidden="true">*</span>{% endif %}</label>
+  {% if icon %}<span class="nft-field__icon"><i data-lucide="{{ icon }}" class="nft-icon--sm"></i></span>{% endif %}
+  {{ caller() }}
+  {% if help %}<small class="nft-field__help">{{ help }}</small>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro modal_open(id, title, size='md', icon='', header_tone='', scrollable=False, ui_id='', title_id='') -%}
+{%- set dlg_cls = 'modal-dialog modal-dialog-centered' ~ (' modal-' ~ size if size in ['sm','lg','xl'] else '') ~ (' modal-dialog-scrollable' if scrollable else '') -%}
+<div class="modal fade" id="{{ id }}" tabindex="-1" aria-hidden="true"{% if ui_id %} data-ui="{{ ui_id }}"{% endif %}>
+  <div class="{{ dlg_cls }}">
+    <div class="modal-content">
+      <div class="modal-header"{% if header_tone %} data-tone="{{ header_tone }}"{% endif %}{% if ui_id %} data-ui="{{ ui_id }}.header"{% endif %}>
+        <h5 class="modal-title"{% if title_id %} id="{{ title_id }}"{% endif %}>
+          {% if icon %}<i data-lucide="{{ icon }}" class="nft-icon--md"></i>{% endif %}
+          <span>{{ title }}</span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar janela" title="Fechar janela"{% if ui_id %} data-ui="{{ ui_id }}.btn-close"{% endif %}></button>
+      </div>
+{%- endmacro %}
+
+{% macro modal_close() -%}
+    </div>
+  </div>
+</div>
+{%- endmacro %}

@@ -241,7 +241,7 @@
         // 2. Modais ativos ou formulários de cadastro (Empresas, Feiras, Localidades)
         const modalAberto = document.querySelector('.modal.show');
         if (modalAberto) {
-            const btnSalvarModal = modalAberto.querySelector('button[type="submit"], button.btn-primary, button.btn-nft:not([data-bs-dismiss])');
+            const btnSalvarModal = modalAberto.querySelector('button[type="submit"], button.nft-btn--primary, button.btn-primary');
             if (btnSalvarModal && typeof btnSalvarModal.click === 'function') {
                 btnSalvarModal.click();
                 showShortcutToast('Salvando formulário... (Ctrl + S)', 'success');

@@ -459,12 +459,48 @@
         }
     }
 
+    // Sincroniza em tempo real a altura de [data-ui="app.sidebar.header"] (.nft-sidebar-header)
+    // com a altura real renderizada do [data-ui="app.topbar.container"] (.nft-topbar) em qualquer tamanho de tela
+    window.sincronizarAlturaTopbarSidebar = function () {
+        const topbar = document.querySelector('[data-ui="app.topbar.container"]') || document.querySelector('.nft-topbar');
+        const sidebarHeader = document.querySelector('[data-ui="app.sidebar.header"]') || document.querySelector('.nft-sidebar-header');
+        if (!topbar || !sidebarHeader) return;
+
+        const rect = topbar.getBoundingClientRect();
+        const rawHeight = rect && rect.height ? Math.round(rect.height) : topbar.offsetHeight;
+        if (!rawHeight || rawHeight < 36) return;
+
+        const heightPx = `${rawHeight}px`;
+        document.documentElement.style.setProperty('--topbar-h-actual', heightPx);
+        if (sidebarHeader.style.height !== heightPx) {
+            sidebarHeader.style.height = heightPx;
+            sidebarHeader.style.minHeight = heightPx;
+        }
+    };
+
+    function initTopbarSidebarHeightObserver() {
+        window.sincronizarAlturaTopbarSidebar();
+
+        const topbar = document.querySelector('[data-ui="app.topbar.container"]') || document.querySelector('.nft-topbar');
+        if (topbar && typeof ResizeObserver !== 'undefined') {
+            const ro = new ResizeObserver(() => {
+                window.sincronizarAlturaTopbarSidebar();
+            });
+            ro.observe(topbar);
+            const emitPill = document.getElementById('topbar-emitente-pill');
+            if (emitPill) ro.observe(emitPill);
+        }
+
+        window.addEventListener('load', window.sincronizarAlturaTopbarSidebar);
+    }
+
     // Executa ao carregar o DOM
     document.addEventListener('DOMContentLoaded', function () {
         initSidebarState();
         initTabListeners();
         initBadgeObserver();
         syncSidebarBrandBadge();
+        initTopbarSidebarHeightObserver();
 
         // Detecta aba ativa inicial
         const activeTab = document.querySelector('.nav-tabs .nav-link.active');
@@ -486,6 +522,7 @@
 
         // Monitora redimensionamento de janela entre mobile e desktop
         window.addEventListener('resize', function () {
+            window.sincronizarAlturaTopbarSidebar();
             if (window.innerWidth >= 992) {
                 document.body.classList.remove('sidebar-mobile-open');
                 const isCollapsed = localStorage.getItem(STORAGE_KEY) === 'true';
@@ -647,12 +684,12 @@ document.addEventListener('DOMContentLoaded', function () {
         let html = '';
 
         if (matchedMenus.length > 0) {
-            html += `<div class="px-2 py-1 text-uppercase fw-bold text-muted" style="font-size: 10px; letter-spacing: 0.04em;">Módulos & Páginas</div>`;
+            html += `<div class="px-2 py-1 text-uppercase fw-bold text-muted small">Módulos &amp; Páginas</div>`;
             matchedMenus.forEach(m => {
                 html += `
-                    <a href="${escHtml(m.href)}" class="nft-gs-item d-flex align-items-center justify-content-between px-2 py-1 rounded text-decoration-none" style="color: inherit;">
+                    <a href="${escHtml(m.href)}" class="nft-gs-item d-flex align-items-center justify-content-between px-2 py-1 rounded text-decoration-none" style="color: inherit;" title="Abrir página ${escHtml(m.label)}" data-ui="sidebar.search.result-page">
                         <span class="fw-semibold text-truncate">${escHtml(m.label)}</span>
-                        <span class="badge bg-primary-subtle text-primary" style="font-size: 10px;">Página</span>
+                        <span class="nft-badge" data-tone="primary">Página</span>
                     </a>
                 `;
             });
@@ -666,7 +703,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const empresas = apiData.empresas || [];
 
             if (notas.length > 0) {
-                html += `<div class="px-2 pt-2 pb-1 text-uppercase fw-bold text-muted border-top mt-1" style="font-size: 10px; letter-spacing: 0.04em;">Notas Fiscais</div>`;
+                html += `<div class="px-2 pt-2 pb-1 text-uppercase fw-bold text-muted border-top mt-1 small">Notas Fiscais</div>`;
                 notas.forEach(n => {
                     const urlDestino = n.numero_nfe
                         ? `/relatorios?numero_nfe=${encodeURIComponent(n.numero_nfe)}`
@@ -674,44 +711,44 @@ document.addEventListener('DOMContentLoaded', function () {
                     const ambTxt = String(n.ambiente) === '1' ? 'Prod' : 'Homolog';
                     const titulo = `NF ${n.numero_nfe || '-'} ${n.referencia_interna ? '• ' + n.referencia_interna : ''}`;
                     html += `
-                        <a href="${urlDestino}" class="nft-gs-item d-flex align-items-center justify-content-between px-2 py-1 rounded text-decoration-none" style="color: inherit;">
+                        <a href="${urlDestino}" class="nft-gs-item d-flex align-items-center justify-content-between px-2 py-1 rounded text-decoration-none" style="color: inherit;" title="Abrir nota fiscal no relatório: ${escHtml(titulo)}" data-ui="sidebar.search.result-nfe">
                             <div class="text-truncate me-2">
                                 <div class="fw-semibold text-truncate">${escHtml(titulo)}</div>
-                                <div class="text-muted text-truncate" style="font-size: 10.5px;">${escHtml(n.status || 'Gerada')} • ${ambTxt}</div>
+                                <div class="text-muted text-truncate small">${escHtml(n.status || 'Gerada')} • ${ambTxt}</div>
                             </div>
-                            <span class="badge bg-info-subtle text-info" style="font-size: 10px;">NF-e</span>
+                            <span class="nft-badge" data-tone="info">NF-e</span>
                         </a>
                     `;
                 });
             }
 
             if (rascunhos.length > 0) {
-                html += `<div class="px-2 pt-2 pb-1 text-uppercase fw-bold text-muted border-top mt-1" style="font-size: 10px; letter-spacing: 0.04em;">Rascunhos Salvos</div>`;
+                html += `<div class="px-2 pt-2 pb-1 text-uppercase fw-bold text-muted border-top mt-1 small">Rascunhos Salvos</div>`;
                 rascunhos.forEach(r => {
                     const orig = String(r.origem || '');
                     const rota = orig === 'Nova NF' ? '/nova_nf' : (orig.includes('DI') ? '/di_duimp' : '/rascunho');
                     html += `
-                        <a href="${rota}?carregar_rascunho=${encodeURIComponent(r.id)}" class="nft-gs-item d-flex align-items-center justify-content-between px-2 py-1 rounded text-decoration-none" style="color: inherit;">
+                        <a href="${rota}?carregar_rascunho=${encodeURIComponent(r.id)}" class="nft-gs-item d-flex align-items-center justify-content-between px-2 py-1 rounded text-decoration-none" style="color: inherit;" title="Carregar rascunho: ${escHtml(r.referencia_interna || ('Rascunho #' + r.id))}" data-ui="sidebar.search.result-rascunho">
                             <div class="text-truncate me-2">
                                 <div class="fw-semibold text-truncate">${escHtml(r.referencia_interna || ('Rascunho #' + r.id))}</div>
-                                <div class="text-muted text-truncate" style="font-size: 10.5px;">${escHtml(orig || 'Rascunho')}</div>
+                                <div class="text-muted text-truncate small">${escHtml(orig || 'Rascunho')}</div>
                             </div>
-                            <span class="badge bg-warning-subtle text-warning" style="font-size: 10px;">Rascunho</span>
+                            <span class="nft-badge" data-tone="warning">Rascunho</span>
                         </a>
                     `;
                 });
             }
 
             if (empresas.length > 0) {
-                html += `<div class="px-2 pt-2 pb-1 text-uppercase fw-bold text-muted border-top mt-1" style="font-size: 10px; letter-spacing: 0.04em;">Empresas / Cadastros</div>`;
+                html += `<div class="px-2 pt-2 pb-1 text-uppercase fw-bold text-muted border-top mt-1 small">Empresas / Cadastros</div>`;
                 empresas.forEach(emp => {
                     html += `
-                        <a href="/empresas?q=${encodeURIComponent(emp.nome || emp.cnpj_cpf || '')}" class="nft-gs-item d-flex align-items-center justify-content-between px-2 py-1 rounded text-decoration-none" style="color: inherit;">
+                        <a href="/empresas?q=${encodeURIComponent(emp.nome || emp.cnpj_cpf || '')}" class="nft-gs-item d-flex align-items-center justify-content-between px-2 py-1 rounded text-decoration-none" style="color: inherit;" title="Visualizar cadastro da empresa: ${escHtml(emp.nome || '-')}" data-ui="sidebar.search.result-empresa">
                             <div class="text-truncate me-2">
                                 <div class="fw-semibold text-truncate">${escHtml(emp.nome || '-')}</div>
-                                <div class="text-muted text-truncate" style="font-size: 10.5px;">${escHtml(emp.tipo || '')} ${emp.cnpj_cpf ? '• ' + escHtml(emp.cnpj_cpf) : ''}</div>
+                                <div class="text-muted text-truncate small">${escHtml(emp.tipo || '')} ${emp.cnpj_cpf ? '• ' + escHtml(emp.cnpj_cpf) : ''}</div>
                             </div>
-                            <span class="badge bg-secondary-subtle text-secondary" style="font-size: 10px;">Empresa</span>
+                            <span class="nft-badge" data-tone="neutral">Empresa</span>
                         </a>
                     `;
                 });
@@ -869,8 +906,7 @@ window.aplicarDadosCertificadoSidebar = function (data) {
         }
         if (badgeEl) {
             let badgeText = 'Ativo';
-            let badgeClass = 'badge bg-success-subtle text-success small';
-            let badgeStyle = 'font-size: 0.6rem; padding: 2px 5px;';
+            let badgeTone = 'success';
 
             if (validadeFim && validadeFim.includes('/')) {
                 const partes = validadeFim.split('/');
@@ -883,18 +919,18 @@ window.aplicarDadosCertificadoSidebar = function (data) {
                         const diffDias = Math.ceil((dataVal.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
                         if (diffDias < 0) {
                             badgeText = 'Vencido';
-                            badgeClass = 'badge bg-danger-subtle text-danger small';
+                            badgeTone = 'danger';
                         } else if (diffDias <= 30) {
                             badgeText = 'Vence em breve';
-                            badgeClass = 'badge small';
-                            badgeStyle = 'font-size: 0.6rem; padding: 2px 5px; background-color: #FFEDD5; color: #C2410C;';
+                            badgeTone = 'warning';
                         }
                     }
                 }
             }
             badgeEl.textContent = badgeText;
-            badgeEl.className = badgeClass;
-            badgeEl.setAttribute('style', badgeStyle);
+            badgeEl.className = 'nft-badge';
+            badgeEl.setAttribute('data-tone', badgeTone);
+            badgeEl.removeAttribute('style');
         }
 
         const aba2Container = document.getElementById('cert-info-container');
@@ -903,26 +939,26 @@ window.aplicarDadosCertificadoSidebar = function (data) {
             aba2Container.innerHTML = `
                 <div class="col-md-5">
                     <div class="small text-muted mb-1 fw-semibold">Empresa / Titular Ativo para Emissão</div>
-                    <div class="fw-bold fs-6 text-dark text-truncate" id="aba2-cert-empresa" title="${nomeEmpresa}">
-                        <i data-lucide="building-2" style="width: 15px; height: 15px; vertical-align: -2px; color: var(--primary);"></i> ${nomeEmpresa}
+                    <div class="fw-bold text-heading text-truncate" id="aba2-cert-empresa" title="${nomeEmpresa}">
+                        <i data-lucide="building-2" class="text-primary nft-icon--sm"></i> ${nomeEmpresa}
                     </div>
                     <div class="small text-muted font-monospace mt-1">
-                        <i data-lucide="file-key" style="width: 12px; height: 12px;"></i> Arquivo: ${data.arquivo || 'Certificado A1'}
+                        <i data-lucide="file-key" class="nft-icon--sm"></i> Arquivo: ${data.arquivo || 'Certificado A1'}
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="small text-muted mb-1 fw-semibold">CNPJ Titular</div>
-                    <div class="fw-bold font-monospace text-primary fs-6">${data.cnpj || '-'}</div>
-                    <div class="small text-muted mt-1">Status: <span class="badge bg-success-subtle text-success fw-bold">Certificado Ativo</span></div>
+                    <div class="fw-bold font-monospace text-primary">${data.cnpj || '-'}</div>
+                    <div class="small text-muted mt-1">Status: <span class="nft-badge" data-tone="success">Certificado Ativo</span></div>
                 </div>
                 <div class="col-md-4">
                     <div class="small text-muted mb-1 fw-semibold">Validade do Certificado</div>
                     <div class="fw-bold text-success">${data.fim || '-'}</div>
-                    <div class="small text-muted mt-1">Emissor: <span class="font-monospace" style="font-size: 11px;">${emissorCurto}</span></div>
+                    <div class="small text-muted mt-1">Emissor: <span class="font-monospace">${emissorCurto}</span></div>
                 </div>
             `;
             if (window.lucide && typeof window.lucide.createIcons === 'function') {
-                window.lucide.createIcons();
+                window.lucide.createIcons({ root: aba2Container });
             }
         }
         return true;
@@ -935,8 +971,9 @@ window.aplicarDadosCertificadoSidebar = function (data) {
     if (validadeEl) validadeEl.textContent = '-';
     if (badgeEl) {
         badgeEl.textContent = 'Pendente';
-        badgeEl.className = 'badge bg-warning-subtle text-warning small';
-        badgeEl.setAttribute('style', 'font-size: 0.6rem; padding: 2px 5px;');
+        badgeEl.className = 'nft-badge';
+        badgeEl.setAttribute('data-tone', 'warning');
+        badgeEl.removeAttribute('style');
     }
     const aba2Container = document.getElementById('cert-info-container');
     if (aba2Container) {
@@ -1007,50 +1044,52 @@ window.garantirModalGerenciarCertificados = function () {
     let modalEl = document.getElementById('modalGerenciarCertificados');
     if (!modalEl) {
         const modalHtml = `
-<div class="modal fade" id="modalGerenciarCertificados" tabindex="-1" aria-labelledby="modalGerenciarCertificadosLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content shadow-lg border-0" style="border-radius: 16px; overflow: hidden;">
-      <div class="modal-header border-bottom py-3 px-4 bg-body-tertiary">
+<div class="modal fade" id="modalGerenciarCertificados" tabindex="-1" aria-labelledby="modalGerenciarCertificadosLabel" aria-hidden="true" data-ui="modal.certificados">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header" data-ui="modal.certificados.header">
         <div class="d-flex align-items-center gap-2">
-          <div class="p-2 rounded-3 bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-            <i data-lucide="shield-check" style="width: 20px; height: 20px;"></i>
+          <div class="nft-kpi-icon" data-tone="primary">
+            <i data-lucide="shield-check" class="nft-icon--md"></i>
           </div>
           <div>
-            <h5 class="modal-title fw-bold mb-0" id="modalGerenciarCertificadosLabel">Gerenciador de Certificados Digitais A1</h5>
-            <div class="small text-muted" style="font-size: 12px;">Instale, gerencie e selecione o certificado ativo para emissão de NF-e e SEFAZ</div>
+            <h5 class="modal-title mb-0" id="modalGerenciarCertificadosLabel">Gerenciador de Certificados Digitais A1</h5>
+            <div class="small text-muted">Instale, gerencie e selecione o certificado ativo para emissão de NF-e e SEFAZ</div>
           </div>
         </div>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar janela" title="Fechar janela" data-ui="modal.certificados.btn-close"></button>
       </div>
-      <div class="modal-body p-4">
+      <div class="modal-body" data-ui="modal.certificados.body">
         <!-- Card do Certificado Ativo -->
-        <div class="p-3 mb-4 rounded-3 border bg-light" id="cert-modal-active-card">
+        <div class="card p-3 mb-4" id="cert-modal-active-card" data-ui="modal.certificados.card-ativo">
           <div class="d-flex align-items-center justify-content-between mb-2">
-            <span class="small fw-bold text-uppercase text-muted" style="letter-spacing: 0.05em; font-size: 11px;">Certificado Ativo no Momento</span>
-            <span class="badge rounded-pill bg-success-subtle text-success fw-bold" id="cert-modal-active-badge" style="font-size: 0.75rem; line-height: 1.2; padding: 0.32rem 0.58rem;">Em Uso</span>
+            <span class="small fw-bold text-uppercase text-muted">Certificado Ativo no Momento</span>
+            <span class="nft-badge nft-badge--pill" data-tone="success" id="cert-modal-active-badge" title="Situação do certificado ativo" data-ui="modal.certificados.badge-ativo">Em Uso</span>
           </div>
           <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-            <div>
-              <h6 class="fw-bold mb-1 text-dark" id="cert-modal-active-empresa">Carregando...</h6>
-              <div class="small text-muted font-monospace" id="cert-modal-active-detalhes">CNPJ: -- | Válido até: --</div>
+            <div style="min-width: 0;">
+              <h6 class="fw-bold mb-1 text-heading" id="cert-modal-active-empresa" data-ui="modal.certificados.empresa-ativa">Carregando...</h6>
+              <div class="small text-muted font-monospace" id="cert-modal-active-detalhes" data-ui="modal.certificados.detalhes-ativos">CNPJ: -- | Válido até: --</div>
             </div>
-            <div class="small font-monospace text-muted" id="cert-modal-active-arquivo">Arquivo: --</div>
+            <div class="small font-monospace text-muted text-break" id="cert-modal-active-arquivo" data-ui="modal.certificados.arquivo-ativo">Arquivo: --</div>
           </div>
         </div>
 
         <!-- Seção: Certificados Instalados no Sistema -->
         <div class="mb-4">
           <div class="d-flex align-items-center justify-content-between mb-2">
-            <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
-              <i data-lucide="layers" style="width: 16px; height: 16px; color: var(--primary);"></i> Certificados Armazenados
+            <h6 class="nft-section-title border-0 pb-0 mb-0">
+              <i data-lucide="layers" class="text-primary nft-icon--sm"></i>
+              <span>Certificados Armazenados</span>
             </h6>
-            <button class="btn btn-sm btn-outline-secondary rounded-pill d-inline-flex align-items-center gap-1 fw-bold" onclick="carregarListaCertificadosModal()" type="button" style="font-size: 0.75rem; line-height: 1.2; padding: 0.32rem 0.58rem;">
-              <i data-lucide="refresh-cw" style="width: 12px; height: 12px;"></i> Atualizar Lista
+            <button class="nft-btn nft-btn--secondary nft-btn--sm" onclick="carregarListaCertificadosModal()" type="button" title="Recarregar lista de certificados instalados" data-ui="modal.certificados.btn-atualizar">
+              <i data-lucide="refresh-cw"></i>
+              <span>Atualizar Lista</span>
             </button>
           </div>
-          <div class="table-responsive border rounded-3 bg-white">
-            <table class="table table-hover align-middle mb-0" style="font-size: 12.5px;">
-              <thead class="table-light text-muted small text-uppercase">
+          <div class="nft-table-wrap table-responsive">
+            <table class="table table-hover align-middle mb-0 nft-table-cards" data-ui="modal.certificados.table">
+              <thead>
                 <tr>
                   <th class="ps-3">Empresa / Titular</th>
                   <th>CNPJ</th>
@@ -1059,7 +1098,7 @@ window.garantirModalGerenciarCertificados = function () {
                   <th class="text-end pe-3">Ação</th>
                 </tr>
               </thead>
-              <tbody id="tabela-certificados-corpo">
+              <tbody id="tabela-certificados-corpo" data-ui="modal.certificados.tbody">
                 <tr>
                   <td colspan="5" class="text-center py-3 text-muted small">Carregando certificados...</td>
                 </tr>
@@ -1069,34 +1108,40 @@ window.garantirModalGerenciarCertificados = function () {
         </div>
 
         <!-- Seção: Instalar Novo Certificado Digital -->
-        <div class="border rounded-3 p-3 bg-body-tertiary">
-          <h6 class="fw-bold mb-2 text-dark d-flex align-items-center gap-2">
-            <i data-lucide="plus-circle" style="width: 16px; height: 16px; color: #16A34A;"></i> Instalar Novo Certificado Digital (.pfx / .p12)
+        <div class="card p-3" data-ui="modal.certificados.card-instalar">
+          <h6 class="nft-section-title text-success">
+            <i data-lucide="plus-circle" class="nft-icon--sm"></i>
+            <span>Instalar Novo Certificado Digital (.pfx / .p12)</span>
           </h6>
-          <div class="row g-2 align-items-center">
+          <div class="row g-2 align-items-end">
             <div class="col-md-6">
-              <label class="form-label small fw-bold mb-1">Arquivo do Certificado (.pfx ou .p12) *</label>
-              <input type="file" class="form-control form-control-sm" id="inputModalNovoCertArquivo" accept=".pfx,.p12" style="height: 38px;">
+              <div class="nft-field nft-field--flush" data-ui="modal.certificados.field-arquivo">
+                <label class="nft-field__label" for="inputModalNovoCertArquivo">Arquivo do Certificado (.pfx ou .p12) <span class="nft-field__req">*</span></label>
+                <input type="file" class="nft-control form-control" id="inputModalNovoCertArquivo" accept=".pfx,.p12" title="Selecione o arquivo .pfx ou .p12 do certificado digital A1" data-ui="modal.certificados.input-arquivo">
+              </div>
             </div>
             <div class="col-md-4">
-              <label class="form-label small fw-bold mb-1">Senha do Certificado *</label>
-              <div class="input-group input-group-sm" style="height: 38px;">
-                <input type="password" class="form-control" id="inputModalNovoCertSenha" placeholder="Senha do PFX" style="height: 100%;">
-                <button class="btn btn-outline-secondary" type="button" onclick="alternarVisibilidadeSenhaModal()" style="height: 100%;">
-                  <i data-lucide="eye" id="icone-olho-modal-cert" style="width: 14px; height: 14px;"></i>
-                </button>
+              <div class="nft-field nft-field--flush" data-ui="modal.certificados.field-senha">
+                <label class="nft-field__label" for="inputModalNovoCertSenha">Senha do Certificado <span class="nft-field__req">*</span></label>
+                <div class="input-group">
+                  <input type="password" class="nft-control" id="inputModalNovoCertSenha" placeholder="Senha do PFX" title="Senha de proteção do arquivo .pfx/.p12" data-ui="modal.certificados.input-senha">
+                  <button class="nft-btn nft-btn--ghost" type="button" onclick="alternarVisibilidadeSenhaModal()" title="Mostrar ou ocultar senha do certificado" aria-label="Mostrar senha" data-ui="modal.certificados.btn-olho">
+                    <i data-lucide="eye" id="icone-olho-modal-cert"></i>
+                  </button>
+                </div>
               </div>
             </div>
             <div class="col-md-2">
-              <button type="button" class="btn btn-primary btn-sm w-100 rounded-pill fw-bold d-inline-flex align-items-center justify-content-center gap-1 shadow-sm" id="btnInstalarNovoCert" onclick="submeterInstalacaoNovoCertificado()" style="font-size: 0.75rem; line-height: 1.2; padding: 0.32rem 0.58rem; height: 38px;">
-                <i data-lucide="upload" style="width: 14px; height: 14px;"></i> Instalar
+              <button type="button" class="nft-btn nft-btn--primary w-100" id="btnInstalarNovoCert" onclick="submeterInstalacaoNovoCertificado()" title="Validar e instalar o certificado digital A1 selecionado" data-ui="modal.certificados.btn-instalar">
+                <i data-lucide="upload"></i>
+                <span>Instalar</span>
               </button>
             </div>
           </div>
         </div>
       </div>
-      <div class="modal-footer border-top py-2 px-4 bg-body-tertiary">
-        <button type="button" class="btn btn-sm btn-secondary rounded-pill fw-bold" data-bs-dismiss="modal" style="font-size: 0.75rem; line-height: 1.2; padding: 0.32rem 0.58rem;">Fechar</button>
+      <div class="modal-footer" data-ui="modal.certificados.footer">
+        <button type="button" class="nft-btn nft-btn--ghost" data-bs-dismiss="modal" title="Fechar gerenciador de certificados" data-ui="modal.certificados.btn-fechar">Fechar</button>
       </div>
     </div>
   </div>
@@ -1152,8 +1197,9 @@ window.carregarListaCertificadosModal = async function () {
             if (activeArquivo) activeArquivo.textContent = `Arquivo: ${ativoCert.arquivo}`;
             if (activeBadge) {
                 activeBadge.textContent = 'Em Uso';
-                activeBadge.className = 'badge rounded-pill bg-success-subtle text-success fw-bold';
-                activeBadge.setAttribute('style', 'font-size: 0.75rem; line-height: 1.2; padding: 0.32rem 0.58rem;');
+                activeBadge.className = 'nft-badge nft-badge--pill';
+                activeBadge.setAttribute('data-tone', 'success');
+                activeBadge.removeAttribute('style');
             }
             window.aplicarDadosCertificadoSidebar(ativoCert);
         } else {
@@ -1162,8 +1208,9 @@ window.carregarListaCertificadosModal = async function () {
             if (activeArquivo) activeArquivo.textContent = 'Arquivo: --';
             if (activeBadge) {
                 activeBadge.textContent = 'Pendente';
-                activeBadge.className = 'badge rounded-pill bg-warning-subtle text-warning fw-bold';
-                activeBadge.setAttribute('style', 'font-size: 0.75rem; line-height: 1.2; padding: 0.32rem 0.58rem;');
+                activeBadge.className = 'nft-badge nft-badge--pill';
+                activeBadge.setAttribute('data-tone', 'warning');
+                activeBadge.removeAttribute('style');
             }
         }
 
@@ -1183,28 +1230,28 @@ window.carregarListaCertificadosModal = async function () {
             const cnpjEsc = escHtml(c.cnpj);
             const validadeStr = c.fim ? escHtml(c.fim.split(' ')[0]) : '<span class="text-muted">--</span>';
             const statusBadge = isAtivo
-                ? '<span class="badge rounded-pill bg-success text-white fw-bold d-inline-flex align-items-center gap-1" style="font-size: 0.75rem; line-height: 1.2; padding: 0.32rem 0.58rem;"><i data-lucide="check" style="width: 12px; height: 12px;"></i> Em Uso (Ativo)</span>'
-                : `<button type="button" class="btn btn-sm btn-outline-primary rounded-pill fw-bold d-inline-flex align-items-center gap-1" onclick="selecionarCertificadoParaUso('${arqEsc}')" style="font-size: 0.75rem; line-height: 1.2; padding: 0.32rem 0.58rem;">
-                     <i data-lucide="check-circle-2" style="width: 12px; height: 12px;"></i> Usar
+                ? '<span class="nft-badge nft-badge--pill" data-tone="success" title="Certificado digital ativo no momento"><i data-lucide="check" class="nft-icon--sm"></i> Em Uso (Ativo)</span>'
+                : `<button type="button" class="nft-btn nft-btn--secondary nft-btn--sm" onclick="selecionarCertificadoParaUso('${arqEsc}')" title="Selecionar e ativar este certificado digital para emissão" data-ui="modal.certificados.btn-usar">
+                     <i data-lucide="check-circle-2"></i> <span>Usar</span>
                    </button>`;
 
             const deleteBtn = isAtivo ? '' : `
-                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill fw-bold d-inline-flex align-items-center justify-content-center" onclick="excluirCertificado('${arqEsc}')" title="Excluir certificado" style="font-size: 0.75rem; line-height: 1.2; padding: 8px;">
-                  <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
+                <button type="button" class="nft-btn-icon nft-btn-icon--danger nft-btn-icon--sm" onclick="excluirCertificado('${arqEsc}')" title="Excluir este certificado digital do sistema" aria-label="Excluir certificado" data-ui="modal.certificados.btn-excluir">
+                  <i data-lucide="trash-2"></i>
                 </button>
             `;
 
             html += `
-                <tr class="${rowClass}">
-                  <td class="ps-3">
-                    <div class="fw-bold text-dark text-truncate" style="max-width: 220px;" title="${empEsc}">
-                      <i data-lucide="shield" style="width: 13px; height: 13px; vertical-align: -1px; color: ${isAtivo ? '#16A34A' : '#64748B'};"></i> ${empEsc}
+                <tr class="${rowClass}" data-ui="modal.certificados.row">
+                  <td class="ps-3" data-card-title="true">
+                    <div class="fw-bold text-heading text-truncate" style="max-width: 220px;" title="${empEsc}">
+                      <i data-lucide="shield" class="nft-icon--sm ${isAtivo ? 'text-success' : 'text-muted'}"></i> ${empEsc}
                     </div>
                   </td>
-                  <td class="font-monospace small">${cnpjEsc || '<span class="text-muted">Protegido</span>'}</td>
-                  <td class="small">${validadeStr}</td>
-                  <td class="font-monospace small text-muted text-truncate" style="max-width: 180px;" title="${arqEsc}">${arqEsc}</td>
-                  <td class="text-end pe-3">
+                  <td data-label="CNPJ" class="font-monospace small">${cnpjEsc || '<span class="text-muted">Protegido</span>'}</td>
+                  <td data-label="Validade" class="small">${validadeStr}</td>
+                  <td data-label="Arquivo" class="font-monospace small text-muted text-truncate" style="max-width: 180px;" title="${arqEsc}">${arqEsc}</td>
+                  <td data-card-actions="true" class="text-end pe-3">
                     <div class="d-inline-flex align-items-center justify-content-end gap-1">
                       ${statusBadge}
                       ${deleteBtn}
@@ -1387,10 +1434,10 @@ window.submeterInstalacaoNovoCertificado = async function () {
         alert('Erro: ' + e.message);
     } finally {
         if (btn) {
-            btn.innerHTML = `<i data-lucide="upload" style="width: 14px; height: 14px;"></i> Instalar`;
+            btn.innerHTML = `<i data-lucide="upload"></i> <span>Instalar</span>`;
             btn.disabled = false;
             if (window.lucide && typeof window.lucide.createIcons === 'function') {
-                window.lucide.createIcons();
+                window.lucide.createIcons({ root: btn });
             }
         }
     }
@@ -1446,20 +1493,20 @@ window.carregarEmitentesTopbar = async function () {
             }
             const empInit = ((emp.nome || 'E').trim()[0] || 'E').toUpperCase();
             const thumbHtml = itemLogoSrc
-                ? `<img src="${itemLogoSrc}" alt="" style="width: 26px; height: 26px; object-fit: contain; border-radius: 4px; border: 1px solid #E2E8F0; background: #fff; flex-shrink: 0;" onerror="this.outerHTML='<span class=\'badge bg-secondary-subtle text-secondary me-1 font-monospace\'>${empInit}</span>'">`
-                : `<span class="badge bg-secondary-subtle text-secondary me-1 font-monospace" style="width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px;">${empInit}</span>`;
+                ? `<img src="${itemLogoSrc}" alt="" style="width:26px;height:26px;border-radius:6px;object-fit:contain;background:#fff;border:1px solid #e2e8f0;padding:2px;flex-shrink:0;" onerror="this.outerHTML='<span class=\\'font-monospace fw-bold d-inline-flex align-items-center justify-content-center\\' style=\\'width:26px;height:26px;border-radius:6px;background:#0F172A;color:#fff;font-size:11px;flex-shrink:0;\\'>${empInit}</span>'">`
+                : `<span class="font-monospace fw-bold d-inline-flex align-items-center justify-content-center" style="width:26px;height:26px;border-radius:6px;background:#0F172A;color:#fff;font-size:11px;flex-shrink:0;">${empInit}</span>`;
 
             html += `
                 <li>
-                    <a class="dropdown-item d-flex align-items-center justify-content-between py-2 px-3 ${isSelected ? 'active fw-bold' : ''}" href="javascript:void(0)" onclick="selecionarEmitenteTopbar('${emp.id}')">
+                    <a class="dropdown-item d-flex align-items-center justify-content-between py-2 px-3 ${isSelected ? 'active fw-bold' : ''}" href="javascript:void(0)" onclick="selecionarEmitenteTopbar('${emp.id}')" style="font-size: 0.82rem;" title="Selecionar emitente ativo: ${emp.nome}" data-ui="topbar.emitente.option-${emp.id}">
                         <div class="d-flex align-items-center gap-2" style="max-width: 250px;">
                             ${thumbHtml}
                             <div class="d-flex flex-column text-truncate">
                                 <span class="text-truncate" style="font-size: 12.5px;">${emp.nome}${apelidoStr}</span>
-                                <span class="text-muted font-monospace small" style="font-size: 11px;">${emp.cnpj_cpf || ''}</span>
+                                <span class="text-muted font-monospace" style="font-size: 11px;">${emp.cnpj_cpf || ''}</span>
                             </div>
                         </div>
-                        ${isSelected ? '<i data-lucide="check" style="width: 14px; height: 14px; color: #2563EB;"></i>' : ''}
+                        ${isSelected ? '<i data-lucide="check" style="width: 15px; height: 15px; color: #2563EB;"></i>' : ''}
                     </a>
                 </li>
             `;
@@ -1468,7 +1515,7 @@ window.carregarEmitentesTopbar = async function () {
         html += `
             <li><hr class="dropdown-divider my-1"></li>
             <li>
-                <a class="dropdown-item py-1 px-3 text-primary fw-semibold small d-flex align-items-center gap-2" href="/empresas">
+                <a class="dropdown-item py-1 px-3 text-primary fw-semibold small d-flex align-items-center gap-2" href="/empresas" style="font-size: 0.78rem;" title="Gerenciar empresas emitentes cadastradas" data-ui="topbar.emitente.link-gerenciar">
                     <i data-lucide="plus-circle" style="width: 13px; height: 13px;"></i> Gerenciar Empresas...
                 </a>
             </li>
@@ -1523,6 +1570,10 @@ window.atualizarVisualTopbarEmitente = function (emp) {
                 iconEl.style.border = 'none';
             }
         });
+    }
+
+    if (typeof window.sincronizarAlturaTopbarSidebar === 'function') {
+        requestAnimationFrame(window.sincronizarAlturaTopbarSidebar);
     }
 };
 
@@ -1847,41 +1898,47 @@ window.abrirModalEditarProprioPerfil = async function () {
         modalEl.className = 'modal fade';
         modalEl.tabIndex = -1;
         modalEl.setAttribute('aria-hidden', 'true');
+        modalEl.setAttribute('data-ui', 'modal.perfil-usuario');
         modalEl.innerHTML = `
             <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
-                    <div class="modal-header border-bottom py-3">
-                        <h5 class="modal-title fw-bold d-flex align-items-center gap-2 mb-0" style="font-size: 1rem;">
-                            <i data-lucide="user-cog" class="text-primary" style="width: 18px; height: 18px;"></i>
+                <div class="modal-content">
+                    <div class="modal-header" data-ui="modal.perfil-usuario.header">
+                        <h5 class="modal-title mb-0">
+                            <i data-lucide="user-cog" class="text-primary nft-icon--md"></i>
                             <span>Editar Meu Perfil</span>
                         </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar janela" title="Fechar janela" data-ui="modal.perfil-usuario.btn-close"></button>
                     </div>
-                    <form id="formEditarProprioPerfil">
-                        <div class="modal-body p-4">
-                            <div class="d-flex align-items-center gap-3 mb-3 p-3 rounded border bg-light">
-                                <img id="perfil-avatar-preview" src="${DEFAULT_AVATAR}" alt="Avatar" class="rounded-circle border flex-shrink-0" style="width: 56px; height: 56px; object-fit: cover;" onerror="this.onerror=null; this.src='${DEFAULT_AVATAR}';"/>
+                    <form id="formEditarProprioPerfil" data-ui="modal.perfil-usuario.form">
+                        <div class="modal-body" data-ui="modal.perfil-usuario.body">
+                            <div class="card p-3 mb-3 d-flex flex-row align-items-center gap-3">
+                                <img id="perfil-avatar-preview" src="${DEFAULT_AVATAR}" alt="Avatar" class="modal-avatar-preview flex-shrink-0" onerror="this.onerror=null; this.src='${DEFAULT_AVATAR}';"/>
                                 <div class="flex-grow-1" style="min-width: 0;">
-                                    <label class="form-label small fw-semibold mb-1" for="perfilFotoInput">Foto de Perfil (Opcional)</label>
-                                    <input type="file" class="form-control form-control-sm w-100" id="perfilFotoInput" accept="image/png,image/jpeg,image/webp"/>
+                                    <div class="nft-field nft-field--flush" data-ui="modal.perfil-usuario.field-foto">
+                                        <label class="nft-field__label" for="perfilFotoInput">Foto de Perfil (Opcional)</label>
+                                        <input type="file" class="nft-control form-control w-100" id="perfilFotoInput" accept="image/png,image/jpeg,image/webp" title="Selecionar nova imagem para o avatar do perfil" data-ui="modal.perfil-usuario.input-foto"/>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label small fw-semibold" for="perfilNomeInput">Nome Completo</label>
-                                <input type="text" class="form-control" id="perfilNomeInput" placeholder="Nome Completo" required minlength="2"/>
+                            <div class="nft-field mb-3" data-ui="modal.perfil-usuario.field-nome">
+                                <label class="nft-field__label" for="perfilNomeInput">Nome Completo</label>
+                                <input type="text" class="nft-control" id="perfilNomeInput" placeholder="Nome Completo" required minlength="2" title="Seu nome de exibição no sistema" data-ui="modal.perfil-usuario.input-nome"/>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label small fw-semibold" for="perfilEmailInput">E-mail de Acesso</label>
-                                <input type="email" class="form-control" id="perfilEmailInput" placeholder="E-mail Comercial" required style="text-transform: lowercase;"/>
+                            <div class="nft-field mb-3" data-ui="modal.perfil-usuario.field-email">
+                                <label class="nft-field__label" for="perfilEmailInput">E-mail de Acesso</label>
+                                <input type="email" class="nft-control text-lowercase" id="perfilEmailInput" placeholder="E-mail Comercial" required title="Seu e-mail de login" data-ui="modal.perfil-usuario.input-email"/>
                             </div>
-                            <div class="mb-1">
-                                <label class="form-label small fw-semibold" for="perfilSenhaInput">Nova Senha <span class="text-muted fw-normal">(Deixe em branco para manter a atual)</span></label>
-                                <input type="password" class="form-control" id="perfilSenhaInput" minlength="6" placeholder="Senha de no Mínimo 6 caracteres"/>
+                            <div class="nft-field nft-field--flush" data-ui="modal.perfil-usuario.field-senha">
+                                <label class="nft-field__label" for="perfilSenhaInput">Nova Senha (Opcional)</label>
+                                <input type="password" class="nft-control" id="perfilSenhaInput" minlength="6" placeholder="Deixe em branco para manter a senha atual" title="Digite uma nova senha de no mínimo 6 caracteres para alterar" data-ui="modal.perfil-usuario.input-senha"/>
                             </div>
                         </div>
-                        <div class="modal-footer bg-light py-2">
-                            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                            <button type="submit" class="btn btn-sm btn-primary fw-semibold" id="btnSalvarProprioPerfil">Salvar Alterações</button>
+                        <div class="modal-footer" data-ui="modal.perfil-usuario.footer">
+                            <button type="button" class="nft-btn nft-btn--ghost" data-bs-dismiss="modal" title="Fechar sem salvar alterações" data-ui="modal.perfil-usuario.btn-cancelar">Cancelar</button>
+                            <button type="submit" class="nft-btn nft-btn--primary" id="btnSalvarProprioPerfil" title="Salvar alterações do seu perfil" data-ui="modal.perfil-usuario.btn-salvar">
+                                <i data-lucide="save"></i>
+                                <span>Salvar Alterações</span>
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -1984,21 +2041,6 @@ function inicializarDadosGlobaisSidebar() {
     window.carregarEmitentesTopbar();
     window.carregarUsuarioAutenticadoTopbar();
     window.atualizarContadorRascunhosSidebar();
-
-    // Inicialização global de tooltips Bootstrap em todos os elementos com data-bs-toggle="tooltip"
-    try {
-        if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
-            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl, {
-                    trigger: 'hover',
-                    boundary: 'window'
-                });
-            });
-        }
-    } catch (e) {
-        console.warn('Erro ao inicializar tooltips:', e);
-    }
 }
 
 if (document.readyState === 'loading') {
@@ -2016,41 +2058,47 @@ window.abrirModalStatusSefaz = async function () {
         modalEl.className = 'modal fade';
         modalEl.tabIndex = -1;
         modalEl.setAttribute('aria-hidden', 'true');
+        modalEl.setAttribute('data-ui', 'modal.status-sefaz');
         modalEl.innerHTML = `
             <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content border-0 shadow-lg">
-                    <div class="modal-header py-3 border-bottom">
-                        <h5 class="modal-title fw-bold mb-0 d-flex align-items-center gap-2" style="font-size: 1rem;">
-                            <i data-lucide="activity" class="text-success" style="width: 18px; height: 18px;"></i>
+                <div class="modal-content">
+                    <div class="modal-header" data-ui="modal.status-sefaz.header">
+                        <h5 class="modal-title mb-0">
+                            <i data-lucide="activity" class="text-success nft-icon--md"></i>
                             <span>Status SEFAZ (UF: SP) &amp; Certificado A1</span>
                         </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar janela" title="Fechar janela" data-ui="modal.status-sefaz.btn-close"></button>
                     </div>
-                    <div class="modal-body p-3">
-                        <div class="p-3 rounded border bg-light mb-3" id="sefaz-global-cert-box" style="font-size: 0.82rem;">
+                    <div class="modal-body" data-ui="modal.status-sefaz.body">
+                        <div class="card p-3 mb-3 small" id="sefaz-global-cert-box" data-ui="modal.status-sefaz.cert-box">
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="fw-bold text-secondary text-uppercase" style="font-size: 0.72rem;">Certificado Digital A1</span>
-                                <span class="badge bg-secondary-subtle text-secondary" id="sefaz-global-cert-badge">Verificando...</span>
+                                <span class="fw-bold text-muted text-uppercase">Certificado Digital A1</span>
+                                <span class="nft-badge" data-tone="neutral" id="sefaz-global-cert-badge" data-ui="modal.status-sefaz.cert-badge">Verificando...</span>
                             </div>
-                            <div id="sefaz-global-cert-info" class="text-muted">Carregando dados do certificado...</div>
+                            <div id="sefaz-global-cert-info" class="text-muted" data-ui="modal.status-sefaz.cert-info">Carregando dados do certificado...</div>
                         </div>
 
                         <div class="d-flex gap-2 mb-3">
-                            <button type="button" class="btn btn-sm btn-primary flex-grow-1 fw-semibold" onclick="verificarStatusSefazTempoReal(1)">
-                                Consultar Produção (1)
+                            <button type="button" class="nft-btn nft-btn--primary flex-grow-1" onclick="verificarStatusSefazTempoReal(1)" title="Testar comunicação em tempo real com o ambiente de Produção SEFAZ" data-ui="modal.status-sefaz.btn-prod">
+                                <i data-lucide="shield-check"></i>
+                                <span>Consultar Produção (1)</span>
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary flex-grow-1 fw-semibold" onclick="verificarStatusSefazTempoReal(2)">
-                                Consultar Homologação (2)
+                            <button type="button" class="nft-btn nft-btn--secondary flex-grow-1" onclick="verificarStatusSefazTempoReal(2)" title="Testar comunicação em tempo real com o ambiente de Homologação SEFAZ" data-ui="modal.status-sefaz.btn-homolog">
+                                <i data-lucide="test-tube-2"></i>
+                                <span>Consultar Homologação (2)</span>
                             </button>
                         </div>
 
-                        <div id="sefaz-global-status-result" class="p-3 rounded border text-center small text-muted">
+                        <div id="sefaz-global-status-result" class="card p-3 text-center small text-muted" data-ui="modal.status-sefaz.resultado">
                             Clique em um dos ambientes acima para testar a comunicação em tempo real com o WebService da SEFAZ (NFeStatusServico4).
                         </div>
                     </div>
-                    <div class="modal-footer py-2 bg-light">
-                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="if(typeof abrirModalGerenciarCertificados==='function'){ bootstrap.Modal.getInstance(document.getElementById('modalStatusSefazGlobal'))?.hide(); abrirModalGerenciarCertificados(); }">Gerenciar Certificados</button>
-                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    <div class="modal-footer" data-ui="modal.status-sefaz.footer">
+                        <button type="button" class="nft-btn nft-btn--secondary" onclick="if(typeof abrirModalGerenciarCertificados==='function'){ bootstrap.Modal.getInstance(document.getElementById('modalStatusSefazGlobal'))?.hide(); abrirModalGerenciarCertificados(); }" title="Abrir gerenciador de certificados digitais A1" data-ui="modal.status-sefaz.btn-certificados">
+                            <i data-lucide="key-round"></i>
+                            <span>Gerenciar Certificados</span>
+                        </button>
+                        <button type="button" class="nft-btn nft-btn--ghost" data-bs-dismiss="modal" title="Fechar janela de status SEFAZ" data-ui="modal.status-sefaz.btn-fechar">Fechar</button>
                     </div>
                 </div>
             </div>
@@ -2073,7 +2121,8 @@ window.abrirModalStatusSefaz = async function () {
         const infoEl = document.getElementById('sefaz-global-cert-info');
         if (certData && certData.status === 'success') {
             if (badgeEl) {
-                badgeEl.className = 'badge bg-success-subtle text-success';
+                badgeEl.className = 'nft-badge';
+                badgeEl.setAttribute('data-tone', 'success');
                 badgeEl.textContent = 'Ativo';
             }
             if (infoEl) {
@@ -2081,7 +2130,8 @@ window.abrirModalStatusSefaz = async function () {
             }
         } else {
             if (badgeEl) {
-                badgeEl.className = 'badge bg-warning-subtle text-warning';
+                badgeEl.className = 'nft-badge';
+                badgeEl.setAttribute('data-tone', 'warning');
                 badgeEl.textContent = 'Não carregado';
             }
             if (infoEl) {
@@ -2146,23 +2196,26 @@ window.abrirModalAjudaSistema = function () {
         modalEl.className = 'modal fade';
         modalEl.tabIndex = -1;
         modalEl.setAttribute('aria-hidden', 'true');
+        modalEl.setAttribute('data-ui', 'modal.ajuda');
         modalEl.innerHTML = `
             <div class="modal-dialog modal-lg modal-dialog-centered">
-                <div class="modal-content border-0 shadow-lg">
-                    <div class="modal-header py-3 border-bottom">
-                        <h5 class="modal-title fw-bold mb-0 d-flex align-items-center gap-2" style="font-size: 1rem;">
-                            <i data-lucide="help-circle" class="text-primary" style="width: 18px; height: 18px;"></i>
+                <div class="modal-content">
+                    <div class="modal-header" data-ui="modal.ajuda.header">
+                        <h5 class="modal-title mb-0">
+                            <i data-lucide="help-circle" class="text-primary nft-icon--md"></i>
                             <span>Central de Ajuda &amp; Atalhos Rápidos</span>
                         </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar janela" title="Fechar janela" data-ui="modal.ajuda.btn-close"></button>
                     </div>
-                    <div class="modal-body p-3">
+                    <div class="modal-body" data-ui="modal.ajuda.body">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <div class="p-3 border rounded h-100 bg-light">
-                                    <h6 class="fw-bold mb-2 text-primary" style="font-size: 0.85rem;">Atalhos de Teclado</h6>
+                                <div class="card p-3 h-100">
+                                    <h6 class="nft-section-title text-primary">Atalhos de Teclado</h6>
                                     <ul class="list-unstyled small mb-0 lh-lg">
                                         <li><kbd>/</kbd> ou <kbd>Ctrl+K</kbd> — Busca rápida global (Notas, Rascunhos, Empresas e Páginas)</li>
+                                        <li><kbd>Alt+E</kbd> — Abrir / fechar Espelho do Documento Fiscal</li>
+                                        <li><kbd>Alt+Shift+I</kbd> — Modo Inspetor Dev (exibe <code>data-ui</code>, ID e eventos; <kbd>Alt+Clique</kbd> copia <code>data-ui</code>)</li>
                                         <li><kbd>↑</kbd> <kbd>↓</kbd> + <kbd>Enter</kbd> — Navegar e abrir resultado da busca</li>
                                         <li><kbd>Esc</kbd> — Limpar busca e fechar menus</li>
                                         <li><kbd>Ctrl+Enter</kbd> — Confirmar caixas de texto (CC-e / Cancelamento)</li>
@@ -2170,8 +2223,8 @@ window.abrirModalAjudaSistema = function () {
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <div class="p-3 border rounded h-100 bg-light">
-                                    <h6 class="fw-bold mb-2 text-success" style="font-size: 0.85rem;">Principais Códigos SEFAZ</h6>
+                                <div class="card p-3 h-100">
+                                    <h6 class="nft-section-title text-success">Principais Códigos SEFAZ</h6>
                                     <ul class="list-unstyled small mb-0 lh-lg font-monospace">
                                         <li><strong>100</strong> — Autorizado o uso da NF-e</li>
                                         <li><strong>101</strong> — Cancelamento de NF-e homologado</li>
@@ -2182,22 +2235,22 @@ window.abrirModalAjudaSistema = function () {
                                 </div>
                             </div>
                             <div class="col-12">
-                                <div class="p-3 border rounded bg-white small">
-                                    <h6 class="fw-bold mb-2 text-secondary" style="font-size: 0.85rem;">Acesso Rápido aos Módulos</h6>
+                                <div class="card p-3 small">
+                                    <h6 class="nft-section-title">Acesso Rápido aos Módulos</h6>
                                     <div class="d-flex flex-wrap gap-2">
-                                        <a href="/nova_nf?nova_nota=1" class="btn btn-sm btn-outline-primary">Nova NF</a>
-                                        <a href="/rascunho?nova_nota=1" class="btn btn-sm btn-outline-primary">XML Rascunho</a>
-                                        <a href="/di_duimp?nova_nota=1" class="btn btn-sm btn-outline-primary">XML DI / DUIMP</a>
-                                        <a href="/rascunhos_salvos" class="btn btn-sm btn-outline-secondary">Rascunhos Salvos</a>
-                                        <a href="/relatorios" class="btn btn-sm btn-outline-secondary">Relatórios / Notas</a>
-                                        <a href="/tipo_nota" class="btn btn-sm btn-outline-secondary">Tipo de Nota (Impostos)</a>
+                                        <a href="/nova_nf?nova_nota=1" class="nft-btn nft-btn--primary nft-btn--sm" title="Abrir emissor de Nova NF-e" data-ui="modal.ajuda.link-nova-nf">Nova NF</a>
+                                        <a href="/rascunho?nova_nota=1" class="nft-btn nft-btn--primary nft-btn--sm" title="Abrir importador de XML Rascunho" data-ui="modal.ajuda.link-rascunho">XML Rascunho</a>
+                                        <a href="/di_duimp?nova_nota=1" class="nft-btn nft-btn--primary nft-btn--sm" title="Abrir importador de DI / DUIMP" data-ui="modal.ajuda.link-di">XML DI / DUIMP</a>
+                                        <a href="/rascunhos_salvos" class="nft-btn nft-btn--secondary nft-btn--sm" title="Ver lista de rascunhos salvos" data-ui="modal.ajuda.link-rascunhos">Rascunhos Salvos</a>
+                                        <a href="/relatorios" class="nft-btn nft-btn--secondary nft-btn--sm" title="Abrir relatório de notas fiscais" data-ui="modal.ajuda.link-relatorios">Relatórios / Notas</a>
+                                        <a href="/tipo_nota" class="nft-btn nft-btn--secondary nft-btn--sm" title="Configurar tipos de nota e impostos" data-ui="modal.ajuda.link-tipo-nota">Tipo de Nota (Impostos)</a>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer py-2 bg-light">
-                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    <div class="modal-footer" data-ui="modal.ajuda.footer">
+                        <button type="button" class="nft-btn nft-btn--ghost" data-bs-dismiss="modal" title="Fechar central de ajuda" data-ui="modal.ajuda.btn-fechar">Fechar</button>
                     </div>
                 </div>
             </div>
