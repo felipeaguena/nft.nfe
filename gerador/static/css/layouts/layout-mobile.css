@@ -6,41 +6,253 @@
 
 @media (max-width: 767.98px) {
   :root {
-    --ctl-h: 44px;
-    --ctl-h-sm: 40px;
-    --ctl-icon-md: 40px;
-    --ctl-icon-sm: 36px;
-    --ctl-px: 12px;
+    --ctl-h: 34px;
+    --ctl-h-sm: 28px;
+    --ctl-icon-md: 32px;
+    --ctl-icon-sm: 26px;
+    --ctl-px: 10px;
 
-    --fs-page-title: 18px;
-    --fs-modal-title: 16px;
-    --fs-section-title: 14px;
-    --fs-control: 16px;
-    --fs-compact: 13px;
-    --fs-label: 12px;
+    --fs-page-title: 16px;
+    --fs-modal-title: 14px;
+    --fs-section-title: 12px;
+    --fs-control: 13px;
+    --fs-compact: 12px;
+    --fs-label: 11px;
 
-    --space-container: 10px;
-    --space-card: 12px;
-    --space-gap: 10px;
+    --space-container: 6px;
+    --space-card: 8px;
+    --space-gap: 6px;
     --topbar-h: 48px;
   }
 
   /* NOTA: A dinâmica responsiva do Topbar segue sua configuração original dedicada em components/navigation.css */
 
+  /* Tipografia compacta exclusiva do Mobile para maximizar conteúdo em tela */
+  body {
+    font-size: 12.5px;
+    line-height: 1.4;
+  }
+
+  h1, .h1 { font-size: 17px; }
+  h2, .h2 { font-size: 16px; }
+  h3, .h3 { font-size: 15px; }
+  h4, .h4 { font-size: 14px; }
+  h5, .h5 { font-size: 13px; }
+  h6, .h6 { font-size: 12px; }
+
+  .nft-page-subtitle,
+  small,
+  .small,
+  .nft-field__help,
+  .form-text {
+    font-size: 11px;
+  }
+
+  .nft-kpi-value {
+    font-size: 15px;
+  }
+
+  .nft-badge,
+  .badge {
+    font-size: 11px;
+    padding: 2px 6px;
+  }
+
+  .table {
+    font-size: 12px;
+  }
+
+  .nft-control,
+  .form-control,
+  .form-select,
+  textarea.nft-control {
+    font-size: 13px;
+  }
+
+  .nft-field,
+  .nft-notch-field {
+    margin-top: 8px;
+    margin-bottom: 2px;
+  }
+
+  .nft-field__label,
+  .nft-notch-label {
+    top: -7px;
+    left: 10px;
+    padding: 0 4px;
+  }
+
+  /* Botões mais compactos (menor altura, padding e fonte) */
+  .nft-btn,
+  .btn {
+    height: 32px;
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: 12px;
+    gap: 4px;
+  }
+
+  .nft-btn svg,
+  .nft-btn [data-lucide],
+  .btn svg,
+  .btn [data-lucide] {
+    width: 13px;
+    height: 13px;
+  }
+
+  .nft-btn--sm,
+  .btn.btn-sm {
+    height: 28px;
+    min-height: 28px;
+    padding: 0 8px;
+    font-size: 11px;
+    gap: 4px;
+  }
+
+  .nft-btn--sm svg,
+  .nft-btn--sm [data-lucide],
+  .btn.btn-sm svg,
+  .btn.btn-sm [data-lucide] {
+    width: 12px;
+    height: 12px;
+  }
+
+  .nft-btn-icon {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+  }
+
+  .nft-btn-icon svg,
+  .nft-btn-icon [data-lucide] {
+    width: 14px;
+    height: 14px;
+  }
+
+  .nft-btn-icon--sm {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    min-height: 26px;
+  }
+
+  .nft-btn-icon--sm svg,
+  .nft-btn-icon--sm [data-lucide] {
+    width: 12px;
+    height: 12px;
+  }
+
+  .nft-btn--link,
+  .btn-link {
+    height: auto;
+    min-height: 0;
+    padding: 2px 5px;
+    font-size: 11px;
+  }
+
+  .nft-espelho-fab-trigger {
+    right: 12px;
+    bottom: 12px;
+  }
+
+  /* Redução de paddings em seções e containers aninhados no Mobile */
+  .nft-page-container {
+    padding: 8px 6px 20px;
+  }
+
   .nft-page-header {
     flex-direction: column;
     align-items: stretch;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    gap: 6px;
   }
 
   .nft-page-actions {
     justify-content: flex-start;
+    gap: 5px;
   }
 
-  /* Abas ocupam largura total de forma confortável */
+  .tab-content {
+    padding: 8px;
+    border-radius: var(--radius-md);
+  }
+
+  .card {
+    border-radius: var(--radius-md);
+  }
+
+  .card-header {
+    padding: 8px 10px;
+  }
+
+  .card-body {
+    padding: 8px;
+  }
+
+  .card-footer {
+    padding: 8px 10px;
+  }
+
+  .nft-section-box {
+    padding: 8px;
+    border-radius: var(--radius-sm);
+  }
+
+  .nft-section-box .nft-section-box,
+  .tab-content .card-body,
+  .card .card .card-body {
+    padding: 7px;
+  }
+
+  .card.p-3,
+  .card.p-4,
+  .nft-section-box.p-3,
+  .nft-section-box.p-4,
+  .nft-section-box.py-4 {
+    padding: 8px !important;
+  }
+
+  .nft-section-title {
+    padding-bottom: 5px;
+    margin-bottom: 8px;
+    gap: 6px;
+  }
+
+  .nft-kpi-card {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .nft-kpi-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .alert {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  /* Abas ocupam largura total de forma confortável e #myTab fica sticky no Mobile */
   .nav-tabs,
   ul.nav-tabs {
     width: 100%;
     justify-content: space-between;
+    padding: 3px;
+    gap: 3px;
+    margin-bottom: 10px;
+  }
+
+  #myTab {
+    position: sticky;
+    top: var(--topbar-h-actual, var(--topbar-h));
+    z-index: 1020;
+    background-color: var(--surface-tertiary);
+    border: 1px solid var(--border);
+    box-shadow: var(--card-shadow);
+    margin-bottom: 10px !important;
   }
 
   .nav-tabs .nav-item {
@@ -51,24 +263,27 @@
   .nav-tabs .nav-link {
     width: 100%;
     justify-content: center;
-    padding: 8px 10px;
+    padding: 6px 8px;
+    font-size: 11px;
+    gap: 4px;
   }
 
   /* Modais confortáveis no Mobile */
   .modal-dialog {
-    margin: 8px;
-    max-width: calc(100vw - 16px);
+    margin: 6px;
+    max-width: calc(100vw - 12px);
   }
 
   .modal-header,
   .modal-body,
   .modal-footer {
-    padding: 12px 14px;
+    padding: 10px 12px;
   }
 
   .modal-footer {
     flex-direction: column-reverse;
     align-items: stretch;
+    gap: 6px;
   }
 
   .modal-footer > .nft-btn,
@@ -77,7 +292,7 @@
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
   }
 
   .modal-footer > div > .nft-btn,
@@ -149,7 +364,7 @@
   table.nft-table-cards tbody {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     width: 100%;
     min-width: 0;
   }
@@ -157,7 +372,7 @@
   table.nft-table-cards tbody tr {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
     width: 100%;
     min-width: 0;
     max-width: 100%;
@@ -165,7 +380,7 @@
     background-color: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    padding: 12px 14px;
+    padding: 9px 10px;
     box-shadow: var(--card-shadow);
   }
 
@@ -173,14 +388,14 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: 6px;
     width: 100%;
     min-width: 0;
     max-width: 100%;
     box-sizing: border-box;
-    padding: 4px 0;
+    padding: 2px 0;
     border: none;
-    font-size: var(--fs-compact);
+    font-size: 12px;
     text-align: right;
   }
 
@@ -255,8 +470,12 @@
   .nft-espelho-header {
     flex-direction: column;
     align-items: stretch;
-    padding: 12px 14px;
-    gap: 10px;
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  .nft-espelho-body {
+    padding: 10px;
   }
 
   .nft-espelho-header-left {
