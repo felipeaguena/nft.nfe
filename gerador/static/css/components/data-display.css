@@ -804,12 +804,6 @@
   font-weight: 800;
 }
 
-.texto-categoria-rascunho {
-  font-size: var(--fs-compact);
-  font-weight: 600;
-  color: var(--foreground);
-}
-
 .error-item-row:hover,
 .alert-item-row:hover {
   filter: brightness(0.97);

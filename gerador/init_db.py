@@ -319,7 +319,6 @@ def init_db(target_db_path=None):
         CREATE TABLE IF NOT EXISTS rascunhos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             referencia_interna TEXT,
-            categoria TEXT DEFAULT 'Geral',
             origem TEXT NOT NULL,
             tipo_operacao TEXT,
             operacao_id TEXT,

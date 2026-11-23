@@ -7,19 +7,6 @@
       {{ ui.field_input('rascunho_ref_input', 'Referência Interna', name='rascunho_ref_doc', icon='tag', modifier='code', placeholder=editor_cfg.modal_rascunho_placeholder, help='Esta referência permite identificar rapidamente seu trabalho em andamento.', title='Referência interna para identificação deste rascunho', ui_id='modal.salvar-rascunho.field-ref', attrs='autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute(\'readonly\')"') }}
     </div>
 
-    <div class="mb-3">
-      {% call ui.field_select('rascunho_cat_select', 'Categoria do Rascunho', icon='folder', title='Agrupamento organizacional do rascunho', ui_id='modal.salvar-rascunho.field-cat', attrs='onchange="verificarCategoriaOutra(this)"') %}
-        <option {% if editor_modo == 'di_duimp' %}selected{% endif %} value="Importação">Importação</option>
-        <option {% if editor_modo != 'di_duimp' %}selected{% endif %} value="Geral">Geral</option>
-        <option value="Exportação">Exportação</option>
-        <option value="Remessa">Remessa</option>
-        <option value="Devolução">Devolução</option>
-        <option value="Venda">Venda</option>
-        <option value="__nova__">+ Nova Categoria...</option>
-      {% endcall %}
-      <input class="nft-control mt-2 d-none" id="rascunho_cat_custom" placeholder="Digite o nome da nova categoria..." title="Nome da nova categoria personalizada do rascunho" type="text" data-ui="modal.salvar-rascunho.input-cat-custom"/>
-    </div>
-
     <div class="nft-section-box mb-2" data-ui="modal.salvar-rascunho.preview">
       <div class="row g-2">
         <div class="col-6">
@@ -148,21 +135,16 @@
     </div>
 
     <div class="row g-2 mb-3 align-items-end">
-      <div class="col-md-5">
+      <div class="col-md-7">
         {{ ui.field_input('filtro_busca_rascunho', 'Buscar por referência, arquivo ou chave', icon='search', placeholder='Digite para filtrar...', title='Filtrar lista de rascunhos em tempo real', ui_id='modal.lista-rascunhos.field-busca', extra_class='nft-field--flush', attrs='oninput="filtrarTabelaRascunhos()"') }}
       </div>
-      <div class="col-md-3">
+      <div class="col-md-4">
         {% call ui.field_select('filtro_origem_rascunho', 'Origem', title='Filtrar rascunhos pelo módulo de origem', ui_id='modal.lista-rascunhos.field-origem', extra_class='nft-field--flush', attrs='onchange="carregarListaRascunhos()"') %}
           <option value="">Todas as Origens</option>
           <option value="XML da DI ou DUIMP">XML da DI ou DUIMP</option>
           <option value="DUIMP Importada">DUIMP Importada</option>
           <option value="XML Rascunho">XML Rascunho</option>
           <option value="Nova NF">Nova NF</option>
-        {% endcall %}
-      </div>
-      <div class="col-md-3">
-        {% call ui.field_select('filtro_cat_rascunho', 'Categoria', title='Filtrar rascunhos por categoria', ui_id='modal.lista-rascunhos.field-cat', extra_class='nft-field--flush', attrs='onchange="carregarListaRascunhos()"') %}
-          <option value="">Todas as Categorias</option>
         {% endcall %}
       </div>
       <div class="col-md-1 d-flex justify-content-end">
@@ -175,7 +157,7 @@
         <thead class="sticky-top">
           <tr>
             <th>Referência Interna</th>
-            <th>Categoria / Origem</th>
+            <th>Origem</th>
             <th>Tipo de Operação</th>
             <th class="text-center" title="Quantidade de Itens">Qtd.</th>
             <th class="text-end">Valor Total</th>

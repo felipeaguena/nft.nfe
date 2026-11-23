@@ -285,7 +285,6 @@ def get_db_connection():
                     CREATE TABLE IF NOT EXISTS rascunhos (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         referencia_interna TEXT,
-                        categoria TEXT DEFAULT 'Geral',
                         origem TEXT NOT NULL,
                         tipo_operacao TEXT,
                         operacao_id TEXT,
@@ -299,6 +298,14 @@ def get_db_connection():
                     )
                 ''')
                 conn.commit()
+            else:
+                try:
+                    cols_rasc = [r[1] for r in conn.execute("PRAGMA table_info(rascunhos)").fetchall()]
+                    if 'categoria' in cols_rasc:
+                        conn.execute("ALTER TABLE rascunhos DROP COLUMN categoria")
+                        conn.commit()
+                except Exception:
+                    pass
 
             if 'notas_fiscais' not in tables:
                 conn.execute('''
@@ -3004,7 +3011,6 @@ def salvar_rascunho():
 
         rascunho_id = data.get('id')
         referencia_interna = str(data.get('referencia_interna') or '').strip()
-        categoria = str(data.get('categoria') or 'Geral').strip() or 'Geral'
         origem = str(data.get('origem') or 'XML Rascunho').strip()
         tipo_operacao = str(data.get('tipo_operacao') or '').strip()
         operacao_id = str(data.get('operacao_id') or '').strip()
@@ -3088,7 +3094,6 @@ def salvar_rascunho():
             c.execute('''
                 UPDATE rascunhos SET
                     referencia_interna = ?,
-                    categoria = ?,
                     origem = ?,
                     tipo_operacao = ?,
                     operacao_id = ?,
@@ -3100,7 +3105,7 @@ def salvar_rascunho():
                     data_atualizacao = datetime('now', 'localtime')
                 WHERE id = ?
             ''', (
-                referencia_interna, categoria, origem, tipo_operacao, operacao_id,
+                referencia_interna, origem, tipo_operacao, operacao_id,
                 nome_arquivo_original, nome_arquivo_original, qtd_itens, round(valor_total, 2),
                 chave_acesso, json_payload_str, rascunho_id
             ))
@@ -3109,12 +3114,12 @@ def salvar_rascunho():
         else:
             c.execute('''
                 INSERT INTO rascunhos (
-                    referencia_interna, categoria, origem, tipo_operacao, operacao_id,
+                    referencia_interna, origem, tipo_operacao, operacao_id,
                     nome_arquivo_original, caminho_arquivo_isolado, qtd_itens, valor_total,
                     chave_acesso, payload_json, data_criacao, data_atualizacao
-                ) VALUES (?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))
+                ) VALUES (?, ?, ?, ?, ?, '', ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))
             ''', (
-                referencia_interna, categoria, origem, tipo_operacao, operacao_id,
+                referencia_interna, origem, tipo_operacao, operacao_id,
                 nome_arquivo_original, qtd_itens, round(valor_total, 2), chave_acesso, json_payload_str
             ))
             rascunho_id = c.lastrowid
@@ -3129,7 +3134,6 @@ def salvar_rascunho():
             caminho_arquivo = os.path.join(RASCUNHOS_DIR, arquivo_nome)
             data['id'] = rascunho_id
             data['referencia_interna'] = referencia_interna
-            data['categoria'] = categoria
             data['origem'] = origem
             data['tipo_operacao'] = tipo_operacao
             data['operacao_id'] = operacao_id
@@ -3148,7 +3152,6 @@ def salvar_rascunho():
             "success": True,
             "id": rascunho_id,
             "referencia_interna": referencia_interna,
-            "categoria": categoria,
             "origem": origem,
             "tipo_operacao": tipo_operacao,
             "qtd_itens": qtd_itens,
@@ -3165,12 +3168,11 @@ def listar_rascunhos():
         conn = get_db_connection()
         c = conn.cursor()
         
-        categoria = request.args.get('categoria', '').strip()
         origem = request.args.get('origem', '').strip()
         busca = request.args.get('busca', '').strip()
         
         query = """
-            SELECT id, referencia_interna, categoria, origem, tipo_operacao, operacao_id, 
+            SELECT id, referencia_interna, origem, tipo_operacao, operacao_id, 
                    nome_arquivo_original, caminho_arquivo_isolado, qtd_itens, valor_total, 
                    chave_acesso, data_criacao, data_atualizacao,
                    COALESCE(strftime('%d/%m/%Y %H:%M', data_atualizacao), strftime('%d/%m/%Y %H:%M', data_criacao), strftime('%d/%m/%Y %H:%M', 'now', 'localtime')) as data_atualizacao_formatada,
@@ -3179,16 +3181,13 @@ def listar_rascunhos():
             WHERE 1=1
         """
         params = []
-        if categoria:
-            query += " AND categoria = ?"
-            params.append(categoria)
         if origem:
             query += " AND origem = ?"
             params.append(origem)
         if busca:
-            query += " AND (referencia_interna LIKE ? OR tipo_operacao LIKE ? OR nome_arquivo_original LIKE ? OR categoria LIKE ?)"
+            query += " AND (referencia_interna LIKE ? OR tipo_operacao LIKE ? OR nome_arquivo_original LIKE ?)"
             lk = f"%{busca}%"
-            params.extend([lk, lk, lk, lk])
+            params.extend([lk, lk, lk])
             
         query += " ORDER BY data_atualizacao DESC, id DESC LIMIT 200"
         rows = c.execute(query, params).fetchall()
@@ -3229,7 +3228,6 @@ def obter_rascunho(rascunho_id):
 
         payload['id'] = row['id']
         payload['referencia_interna'] = row['referencia_interna']
-        payload['categoria'] = row['categoria']
         payload['origem'] = row['origem']
         payload['tipo_operacao'] = row['tipo_operacao']
         payload['operacao_id'] = row['operacao_id']
@@ -3304,12 +3302,12 @@ def duplicar_rascunho(rascunho_id):
         payload_str = json.dumps(payload, ensure_ascii=False)
         c.execute('''
             INSERT INTO rascunhos (
-                referencia_interna, categoria, origem, tipo_operacao, operacao_id,
+                referencia_interna, origem, tipo_operacao, operacao_id,
                 nome_arquivo_original, caminho_arquivo_isolado, qtd_itens, valor_total,
                 chave_acesso, payload_json, data_criacao, data_atualizacao
-            ) VALUES (?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))
+            ) VALUES (?, ?, ?, ?, ?, '', ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))
         ''', (
-            nova_ref, row['categoria'], row['origem'], row['tipo_operacao'], row['operacao_id'],
+            nova_ref, row['origem'], row['tipo_operacao'], row['operacao_id'],
             row['nome_arquivo_original'], row['qtd_itens'], row['valor_total'], row['chave_acesso'],
             payload_str
         ))
@@ -3334,7 +3332,6 @@ def duplicar_rascunho(rascunho_id):
         novo_rascunho_obj = {
             "id": novo_id,
             "referencia_interna": nova_ref,
-            "categoria": row['categoria'] or 'Geral',
             "origem": row['origem'] or 'XML Rascunho',
             "tipo_operacao": row['tipo_operacao'] or '',
             "operacao_id": row['operacao_id'] or '',
@@ -3356,19 +3353,6 @@ def duplicar_rascunho(rascunho_id):
             "nova_referencia": nova_ref,
             "rascunho": novo_rascunho_obj
         })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/rascunhos/categorias', methods=['GET'])
-def listar_categorias_rascunhos():
-    try:
-        conn = get_db_connection()
-        rows = conn.execute("SELECT DISTINCT categoria FROM rascunhos WHERE categoria IS NOT NULL AND categoria != ''").fetchall()
-        conn.close()
-        base_cats = ['Geral', 'Importação', 'Exportação', 'Remessa', 'Devolução', 'Vendas']
-        db_cats = [r['categoria'] for r in rows if r['categoria']]
-        all_cats = list(dict.fromkeys(base_cats + db_cats))
-        return jsonify(all_cats)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -3494,7 +3478,6 @@ def api_importar_duimp_por_numero():
             pass
 
         # 4. Cria automaticamente novo rascunho com Origem "DUIMP Importada" e grava payload_json no Turso/SQLite
-        categoria = "Importação"
         origem = "DUIMP Importada"
         tipo_operacao = "(3101) COMPRA PARA INDUSTRIALIZAÇÃO (IMPORTAÇÃO)"
         operacao_id = "3101"
@@ -3505,7 +3488,6 @@ def api_importar_duimp_por_numero():
         payload_rascunho = {
             "id": None,
             "referencia_interna": referencia_interna,
-            "categoria": categoria,
             "origem": origem,
             "tipo_operacao": tipo_operacao,
             "operacao_id": operacao_id,
@@ -3531,12 +3513,12 @@ def api_importar_duimp_por_numero():
         c = conn.cursor()
         c.execute('''
             INSERT INTO rascunhos (
-                referencia_interna, categoria, origem, tipo_operacao, operacao_id,
+                referencia_interna, origem, tipo_operacao, operacao_id,
                 nome_arquivo_original, caminho_arquivo_isolado, qtd_itens, valor_total,
                 chave_acesso, payload_json, data_criacao, data_atualizacao
-            ) VALUES (?, ?, ?, ?, ?, ?, '', ?, ?, '', '', datetime('now', 'localtime'), datetime('now', 'localtime'))
+            ) VALUES (?, ?, ?, ?, ?, '', ?, ?, '', '', datetime('now', 'localtime'), datetime('now', 'localtime'))
         ''', (
-            referencia_interna, categoria, origem, tipo_operacao, operacao_id,
+            referencia_interna, origem, tipo_operacao, operacao_id,
             nome_arquivo_original, qtd_itens, valor_total
         ))
         rascunho_id = c.lastrowid

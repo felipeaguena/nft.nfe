@@ -3,6 +3,12 @@
    Estilos globais, acessibilidade, Lucide icons e adaptação Bootstrap Dark.
    ========================================================================== */
 
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
 body {
   background-color: var(--background);
   color: var(--foreground);

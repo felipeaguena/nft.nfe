@@ -18,7 +18,7 @@
   <div class="card mb-3" data-ui="rascunhos.filtros.card">
     <div class="card-body">
       <div class="row g-2 align-items-end">
-        <div class="col-md-5">
+        <div class="col-md-6">
           {% call ui.field_wrap('filtro_busca_rascunho', 'Buscar por referência, arquivo ou chave', ui_id='rascunhos.filtros.field-busca', extra_class='nft-field--flush') %}
             <div class="input-group">
               <span class="input-group-text"><i data-lucide="search" class="nft-icon--sm"></i></span>
@@ -29,7 +29,7 @@
             </div>
           {% endcall %}
         </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
           {% call ui.field_select('filtro_origem_rascunho', 'Origem do Rascunho', title='Filtrar rascunhos pelo módulo de origem', ui_id='rascunhos.filtros.field-origem', extra_class='nft-field--flush', attrs='onchange="carregarListaRascunhos()"') %}
             <option value="">Todas as Origens</option>
             <option value="Nova NF">Nova NF</option>
@@ -38,12 +38,7 @@
             <option value="DUIMP Importada">DUIMP Importada</option>
           {% endcall %}
         </div>
-        <div class="col-md-3">
-          {% call ui.field_select('filtro_cat_rascunho', 'Categoria', title='Filtrar rascunhos por categoria', ui_id='rascunhos.filtros.field-cat', extra_class='nft-field--flush', attrs='onchange="carregarListaRascunhos()"') %}
-            <option value="">Todas as Categorias</option>
-          {% endcall %}
-        </div>
-        <div class="col-md-1 text-md-end">
+        <div class="col-md-2 text-md-end">
           <small class="text-muted fw-semibold" id="info-rodape-rascunhos" data-ui="rascunhos.filtros.contador">0 itens</small>
         </div>
       </div>
@@ -56,7 +51,7 @@
       <thead class="sticky-top">
         <tr>
           <th>Referência Interna</th>
-          <th>Categoria / Origem</th>
+          <th>Origem</th>
           <th>Tipo de Operação</th>
           <th class="text-center" title="Quantidade de Itens">Qtd.</th>
           <th class="text-end">Valor Total</th>
@@ -85,37 +80,16 @@
         return num.toLocaleString('pt-BR', { minimumFractionDigits: minDec, maximumFractionDigits: maxDec });
     }
 
-    async function carregarCategoriasRascunhos() {
-        try {
-            const respCats = await fetch('/api/rascunhos/categorias');
-            const cats = await respCats.json();
-            const selCat = document.getElementById('filtro_cat_rascunho');
-            if (selCat && Array.isArray(cats)) {
-                const valAtual = selCat.value;
-                selCat.innerHTML = '<option value="">Todas as Categorias</option>';
-                cats.forEach(c => {
-                    const opt = document.createElement('option');
-                    opt.value = c;
-                    opt.textContent = c;
-                    if (c === valAtual) opt.selected = true;
-                    selCat.appendChild(opt);
-                });
-            }
-        } catch (e) {}
-    }
-
     async function carregarListaRascunhos() {
         const tbody = document.getElementById('tbody-lista-rascunhos');
         if (!tbody) return;
 
         tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm me-2"></span>Carregando rascunhos salvos...</td></tr>`;
 
-        const cat = getVal('filtro_cat_rascunho') || '';
         const origem = getVal('filtro_origem_rascunho') || '';
         const busca = (getVal('filtro_busca_rascunho') || '').trim();
 
         const params = new URLSearchParams();
-        if (cat) params.append('categoria', cat);
         if (origem) params.append('origem', origem);
         if (busca) params.append('busca', busca);
 
@@ -173,22 +147,19 @@
             html += `
             <tr id="tr-rascunho-${r.id}" data-ui="rascunhos.tabela.row-${r.id}">
                 <td data-card-title="true">
-                    <div class="d-flex align-items-center gap-1">
-                        <i data-lucide="tag" class="nft-icon--sm text-muted"></i>
+                    <div class="d-flex align-items-center gap-1 mw-100" style="min-width: 0;">
+                        <i data-lucide="tag" class="nft-icon--sm text-muted flex-shrink-0"></i>
                         <strong class="text-truncate" title="${r.referencia_interna || 'Sem referência'}">
                             ${r.referencia_interna || '<span class="text-muted fst-italic">Sem referência</span>'}
                         </strong>
                     </div>
-                    <small class="text-muted font-monospace d-block text-truncate">#${r.id} ${r.nome_arquivo_original ? '• ' + r.nome_arquivo_original : ''}</small>
+                    <small class="text-muted font-monospace d-block text-truncate mw-100">#${r.id} ${r.nome_arquivo_original ? '• ' + r.nome_arquivo_original : ''}</small>
                 </td>
-                <td data-label="Categoria / Origem">
-                    <div class="d-flex flex-column align-items-md-start align-items-end gap-1">
-                        <span class="texto-categoria-rascunho" title="Categoria: ${r.categoria || 'Geral'}">${r.categoria || 'Geral'}</span>
-                        <span class="nft-badge nft-badge--mono" data-tone="${badgeTone}" title="Módulo de origem: ${orig}">
-                            <i data-lucide="${iconeOrigem}" class="nft-icon--sm"></i>
-                            <span>${orig}</span>
-                        </span>
-                    </div>
+                <td data-label="Origem">
+                    <span class="nft-badge nft-badge--mono" data-tone="${badgeTone}" title="Módulo de origem: ${orig}">
+                        <i data-lucide="${iconeOrigem}" class="nft-icon--sm"></i>
+                        <span>${orig}</span>
+                    </span>
                 </td>
                 <td data-label="Operação">
                     <span class="text-truncate d-inline-block text-muted" title="${r.tipo_operacao || '-'}">
@@ -238,7 +209,6 @@
             return (
                 (r.referencia_interna || '').toLowerCase().includes(termo) ||
                 (r.nome_arquivo_original || '').toLowerCase().includes(termo) ||
-                (r.categoria || '').toLowerCase().includes(termo) ||
                 (r.tipo_operacao || '').toLowerCase().includes(termo) ||
                 (r.chave_acesso || '').toLowerCase().includes(termo)
             );
@@ -333,11 +303,10 @@
         }
     }
 
-    document.addEventListener('DOMContentLoaded', async () => {
+    document.addEventListener('DOMContentLoaded', () => {
         if (window.lucide && typeof window.lucide.createIcons === 'function') {
             window.lucide.createIcons();
         }
-        await carregarCategoriasRascunhos();
         carregarListaRascunhos();
     });
 </script>

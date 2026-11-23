@@ -4599,30 +4599,6 @@
         window._rascunhoValorTotalCalc = vTotalNum;
         window._rascunhoTipoOperacaoCalc = (opAtivaTexto !== 'Nenhuma selecionada') ? opAtivaTexto : (getVal('natOp') || getVal('select_operacao') || '');
 
-        // Carrega categorias disponíveis dinamicamente no select
-        fetch('/api/rascunhos/categorias')
-            .then(res => res.json())
-            .then(cats => {
-                const sel = document.getElementById('rascunho_cat_select');
-                if (sel) {
-                    const defCat = (_modoAtual && _modoAtual.defaultCategoria) ? _modoAtual.defaultCategoria : 'Geral';
-                    const valorAtual = sel.value || defCat;
-                    sel.innerHTML = '';
-                    (cats || [defCat, 'Geral', 'Importação', 'Exportação', 'Remessa', 'Devolução', 'Venda'].filter((v, i, a) => a.indexOf(v) === i)).forEach(c => {
-                        const opt = document.createElement('option');
-                        opt.value = c;
-                        opt.textContent = c;
-                        if (c === valorAtual) opt.selected = true;
-                        sel.appendChild(opt);
-                    });
-                    const optNova = document.createElement('option');
-                    optNova.value = '__nova__';
-                    optNova.textContent = '+ Nova Categoria...';
-                    sel.appendChild(optNova);
-                }
-            })
-            .catch(() => {});
-
         const modalEl = document.getElementById('modalSalvarRascunho');
         if (modalEl) {
             const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
@@ -4634,29 +4610,9 @@
         }
     }
 
-    function verificarCategoriaOutra(sel) {
-        const inputNova = document.getElementById('rascunho_cat_custom');
-        if (!inputNova) return;
-        if (sel && sel.value === '__nova__') {
-            inputNova.classList.remove('d-none');
-            inputNova.focus();
-        } else {
-            inputNova.classList.add('d-none');
-            inputNova.value = '';
-        }
-    }
-
     async function confirmarSalvarRascunho(silent = false) {
         const refInput = document.getElementById('rascunho_ref_input');
         const refVal = (refInput ? refInput.value : '').trim();
-
-        const defCatSave = (_modoAtual && _modoAtual.defaultCategoria) ? _modoAtual.defaultCategoria : 'Geral';
-        const catSelect = document.getElementById('rascunho_cat_select');
-        let catVal = catSelect ? catSelect.value : defCatSave;
-        if (catVal === '__nova__') {
-            const catCustom = document.getElementById('rascunho_cat_custom');
-            catVal = (catCustom ? catCustom.value : '').trim() || defCatSave;
-        }
 
         // Sincroniza de volta com os campos de referência principal
         definirReferenciaInterna(refVal);
@@ -4741,7 +4697,6 @@
         const payloadRascunho = {
             id: window.idRascunhoAtual,
             referencia_interna: refVal,
-            categoria: catVal,
             origem: window.NOME_MODULO_ORIGEM,
             tipo_operacao: opFinal,
             operacao_id: getVal('cfop_padrao') || '',
@@ -4756,7 +4711,6 @@
                 xml_original: xmlOriginalData || '',
                 nome_arquivo_original: window.nomeArquivoOriginal || '',
                 referencia_interna: refVal,
-                categoria: catVal,
                 origem: window.NOME_MODULO_ORIGEM,
                 tipo_operacao: opFinal
             }
@@ -4787,7 +4741,7 @@
 
                 atualizarContadorRascunhos();
 
-                alert(`✅ Rascunho salvo com sucesso!\n\nID: #${result.id}\nReferência: ${refVal || "(Não informada)"}\nCategoria: ${catVal}\nOrigem: ${window.NOME_MODULO_ORIGEM}\nArquivo isolado gerado e gravado no servidor.`);
+                alert(`✅ Rascunho salvo com sucesso!\n\nID: #${result.id}\nReferência: ${refVal || "(Não informada)"}\nOrigem: ${window.NOME_MODULO_ORIGEM}\nArquivo isolado gerado e gravado no servidor.`);
             }
         } catch (err) {
             console.error("Erro ao salvar rascunho:", err);
@@ -4807,12 +4761,10 @@
 
         tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm me-2"></span>Carregando rascunhos salvos...</td></tr>`;
 
-        const cat = getVal('filtro_cat_rascunho') || '';
         const origem = getVal('filtro_origem_rascunho') || '';
         const busca = (getVal('filtro_busca_rascunho') || '').trim();
 
         const params = new URLSearchParams();
-        if (cat) params.append('categoria', cat);
         if (origem) params.append('origem', origem);
         if (busca) params.append('busca', busca);
 
@@ -4868,16 +4820,11 @@
                     </div>
                     <small class="text-muted font-monospace d-block text-truncate" style="max-width: 220px;">#${r.id} ${r.nome_arquivo_original ? '• ' + r.nome_arquivo_original : ''}</small>
                 </td>
-                <td data-label="Categoria / Origem">
-                    <div class="d-flex flex-column align-items-start gap-1">
-                        <span class="texto-categoria-rascunho text-truncate" style="max-width: 150px;" title="Categoria: ${r.categoria || 'Geral'}">
-                            ${r.categoria || 'Geral'}
-                        </span>
-                        <span class="nft-badge ${badgeOrigemClass}" title="Origem: ${r.origem || window.NOME_MODULO_ORIGEM}">
-                            <i data-lucide="${iconeOrigem}" class="nft-icon--sm"></i>
-                            <span>${r.origem || window.NOME_MODULO_ORIGEM}</span>
-                        </span>
-                    </div>
+                <td data-label="Origem">
+                    <span class="nft-badge ${badgeOrigemClass}" title="Origem: ${r.origem || window.NOME_MODULO_ORIGEM}">
+                        <i data-lucide="${iconeOrigem}" class="nft-icon--sm"></i>
+                        <span>${r.origem || window.NOME_MODULO_ORIGEM}</span>
+                    </span>
                 </td>
                 <td data-label="Tipo de Operação">
                     <span class="text-truncate d-inline-block text-muted small" style="max-width: 220px;" title="${r.tipo_operacao || '-'}">
@@ -4926,7 +4873,6 @@
             return (
                 (r.referencia_interna || '').toLowerCase().includes(termo) ||
                 (r.nome_arquivo_original || '').toLowerCase().includes(termo) ||
-                (r.categoria || '').toLowerCase().includes(termo) ||
                 (r.tipo_operacao || '').toLowerCase().includes(termo) ||
                 (r.chave_acesso || '').toLowerCase().includes(termo)
             );
@@ -5159,9 +5105,9 @@
 
             if (!silencioso) {
                 if (window.nftAlert) {
-                    await window.nftAlert(`Rascunho #${rascunho.id} carregado com sucesso!\n\nReferência: ${rascunho.referencia_interna || '(Sem referência)'}\nCategoria: ${rascunho.categoria}\nOrigem: ${rascunho.origem || window.NOME_MODULO_ORIGEM}\nItens: ${rascunho.qtd_itens}`, { title: 'Rascunho Carregado', type: 'success' });
+                    await window.nftAlert(`Rascunho #${rascunho.id} carregado com sucesso!\n\nReferência: ${rascunho.referencia_interna || '(Sem referência)'}\nOrigem: ${rascunho.origem || window.NOME_MODULO_ORIGEM}\nItens: ${rascunho.qtd_itens}`, { title: 'Rascunho Carregado', type: 'success' });
                 } else {
-                    alert(`✅ Rascunho #${rascunho.id} carregado com sucesso!\n\nReferência: ${rascunho.referencia_interna || '(Sem referência)'}\nCategoria: ${rascunho.categoria}\nOrigem: ${rascunho.origem || window.NOME_MODULO_ORIGEM}\nItens: ${rascunho.qtd_itens}`);
+                    alert(`✅ Rascunho #${rascunho.id} carregado com sucesso!\n\nReferência: ${rascunho.referencia_interna || '(Sem referência)'}\nOrigem: ${rascunho.origem || window.NOME_MODULO_ORIGEM}\nItens: ${rascunho.qtd_itens}`);
                 }
             }
         } catch (err) {

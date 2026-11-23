@@ -123,7 +123,6 @@ class RascunhoPayloadSchema(BaseModel):
     model_config = ConfigDict(extra='allow')
     id: Optional[Union[int, str]] = None
     referencia_interna: Optional[str] = Field(default='', max_length=150)
-    categoria: Optional[str] = Field(default='Geral', max_length=60)
     origem: Optional[str] = Field(default='XML Rascunho', max_length=60)
     tipo_operacao: Optional[str] = Field(default='', max_length=150)
     operacao_id: Optional[Union[str, int]] = Field(default='')

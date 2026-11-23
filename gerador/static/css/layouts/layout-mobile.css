@@ -134,6 +134,10 @@
   }
 
   table.nft-table-cards {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
     background: transparent;
     border: none;
   }
@@ -146,12 +150,18 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+    width: 100%;
+    min-width: 0;
   }
 
   table.nft-table-cards tbody tr {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
     background-color: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
@@ -164,10 +174,19 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
     padding: 4px 0;
     border: none;
     font-size: var(--fs-compact);
     text-align: right;
+  }
+
+  table.nft-table-cards tbody td > * {
+    min-width: 0;
+    max-width: 100%;
   }
 
   table.nft-table-cards tbody td[data-label]::before {
@@ -181,10 +200,13 @@
   }
 
   table.nft-table-cards tbody td[data-card-title="true"] {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 4px;
     font-size: var(--fs-section-title);
     font-weight: 700;
     color: var(--heading);
-    justify-content: flex-start;
     text-align: left;
     padding-bottom: 6px;
     border-bottom: 1px solid var(--border);
@@ -193,6 +215,11 @@
     overflow-wrap: anywhere;
     min-width: 0;
     max-width: 100%;
+  }
+
+  table.nft-table-cards tbody td[data-card-title="true"] > * {
+    max-width: 100%;
+    min-width: 0;
   }
 
   .text-heading {
